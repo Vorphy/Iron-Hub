@@ -57,7 +57,15 @@ export function Hud({ actions }: { actions: HudActions }) {
             </button>
           ))}
         </span>
+        <span class="sep" />
+        <span class="buttons">
+          <button class={s.menuOpen ? 'active' : ''} title="Menu gry" onClick={actions.toggleMenu}>
+            ☰ Menu
+          </button>
+        </span>
       </div>
+
+      {s.menuOpen && <Menu actions={actions} saves={s.saves} />}
 
       <div class="panel toolbar">
         {TOOLS.map((t) => (
@@ -97,6 +105,31 @@ export function Hud({ actions }: { actions: HudActions }) {
       <CursorLabel label={s.cursorLabel} />
       <Toast message={s.message} />
     </>
+  );
+}
+
+function formatSaveDate(iso: string | null): string {
+  if (!iso) return 'brak';
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? 'brak' : d.toLocaleString('pl-PL', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+function Menu({ actions, saves }: { actions: HudActions; saves: HudState['saves'] }) {
+  return (
+    <div class="panel menu">
+      <div class="menu-title">Gra</div>
+      <button onClick={actions.quickSave}>Zapisz</button>
+      <button onClick={actions.quickLoad} disabled={!saves.quick}>
+        Wczytaj <small>{formatSaveDate(saves.quick)}</small>
+      </button>
+      <div class="menu-note">Autozapis co 30 s: {formatSaveDate(saves.auto)}</div>
+      <div class="menu-title">Plik</div>
+      <button onClick={actions.exportFile}>Eksportuj do pliku</button>
+      <button onClick={actions.importFile}>Importuj z pliku</button>
+      <div class="menu-title" />
+      <button onClick={actions.newGame}>Nowa gra (losowa mapa)</button>
+      <div class="menu-note">Zapisy w przeglądarce są widoczne tylko na tym urządzeniu i tej stronie.</div>
+    </div>
   );
 }
 

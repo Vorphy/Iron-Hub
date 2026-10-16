@@ -11,7 +11,7 @@ Etapy są ułożone tak, żeby po każdym istniała działająca, testowalna wer
 
 *Zrealizowano:* mapa 128×128 generowana z ziarna (trawa, woda, nieużytki), rysowanie w kawałkach 16×16 z cullingiem, kamera (przeciąganie, WASD/strzałki, zoom 0.25–4× wokół kursora), podświetlenie kafelka, HUD (data, pieniądze, prędkości 0/1/2/4/8×, FPS), pierwsza komenda `clearTile` (oczyszczenie nieużytku) jako test ścieżki wejście → komenda → symulacja → render, 16 testów, automatyczna publikacja na GitHub Pages.
 
-## Etap 1 – Mapa i tory
+## Etap 1 – Mapa i tory ✅ (2026-10-16)
 - Generowanie płaskiej mapy (teren, woda).
 - Narzędzie budowy torów (bitmaski kafelków), rozbiórka, koszt.
 - Przyrostowa budowa grafu torów z kafelków.
@@ -19,6 +19,8 @@ Etapy są ułożone tak, żeby po każdym istniała działająca, testowalna wer
 - **Zapis / odczyt gry** (IndexedDB + eksport pliku).
 
 **Gotowe, gdy:** można zbudować sieć ze stacjami, zapisać, wczytać i graf zgadza się z kafelkami (testy).
+
+*Zrealizowano:* budowa torów przeciąganiem (proste i ukosy, podgląd z kosztem), buldożer, graf torów z podglądem (G), stacje z zasięgiem i nazwami, zapis: autozapis co 30 s i przy zamknięciu karty, slot ręczny, eksport/import pliku JSON. 50 testów, w tym determinizm gry po wczytaniu.
 
 ## Etap 2 – Pociągi
 - Zajezdnia, zakup lokomotywy i wagonów z definicji danych.

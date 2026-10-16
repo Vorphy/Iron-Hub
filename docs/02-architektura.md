@@ -9,7 +9,7 @@
 | Rendering | **PixiJS v8** | Szybki renderer 2D/WebGL; pętlę gry i projekcję izometryczną mamy własną, więc pełny silnik (Phaser) nie jest potrzebny |
 | UI | **Preact** + CSS (Tailwind opcjonalnie) | Okna, listy pociągów, rozkłady, budżet – HTML nad canvasem, z zarządzaniem stanem |
 | Testy | **Vitest** | Testy jednostkowe symulacji bez przeglądarki |
-| Zapis lokalny | **IndexedDB** + eksport/import pliku | Zapis gry u gracza od pierwszego etapu |
+| Zapis lokalny | **IndexedDB** + eksport/import pliku | Zapis gry u gracza od pierwszego etapu (`src/persistence/`, format w `sim/serialize.ts`) |
 | Backend (później) | do ustalenia (np. Node.js + PostgreSQL) | Zapis w chmurze, rankingi, zakupy dodatków |
 
 ## Zasada naczelna: symulacja oddzielona od prezentacji
@@ -121,3 +121,11 @@ Pojazdy, typy przemysłu, ładunki i ich parametry są w `data/*.json` (wersjono
 - **Picking** (który kafelek pod kursorem): odwrotna projekcja ekran → logiczne (x, y); przy wprowadzeniu wysokości – korekta po wysokości kafelka.
 - Culling: rysujemy tylko kafelki w widoku kamery; statyczny teren w buforowanych chunkach.
 - Kierunki pojazdów: 8 sprite'ów (co 45°), wybierane wg kierunku krawędzi.
+
+## Zapis gry
+
+- Format: JSON `{ format: 'iron-hub-save', savedAt, state }`, gdzie `state` to wynik `serializeState()` z polem `version` (obecnie 1). Tablice kafelków zakodowane w base64 (mapa 128×128 ≈ 130 KB).
+- Zapisujemy wyłącznie `GameState`. Stan pochodny (graf torów) i prezentacja (kamera, narzędzie) nie trafiają do zapisu.
+- Przy niezgodnej zmianie formatu podbijamy `SAVE_VERSION` i dopisujemy migrację starszych wersji w `deserializeState()`.
+- Sloty w IndexedDB: `auto` (co 30 s, gdy gra nie stoi, i przy ukryciu karty) oraz `quick` (przycisk Zapisz). Start strony bez `?seed=` wczytuje autozapis.
+- IndexedDB jest osobne dla każdej domeny i przeglądarki – przeniesienie gry tylko przez eksport/import pliku.

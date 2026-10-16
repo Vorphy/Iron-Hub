@@ -45,12 +45,25 @@ export class Input {
     el.addEventListener('pointermove', this.onMove);
     el.addEventListener('pointerup', this.onUp);
     el.addEventListener('pointercancel', this.onUp);
-    el.addEventListener('pointerleave', () => handlers.onPointerLeave());
+    el.addEventListener('pointerleave', this.onLeave);
     el.addEventListener('wheel', this.onWheel, { passive: false });
-    el.addEventListener('contextmenu', (e) => e.preventDefault());
+    el.addEventListener('contextmenu', preventDefault);
     window.addEventListener('keydown', this.onKeyDown);
-    window.addEventListener('keyup', (e) => this.held.delete(e.code));
-    window.addEventListener('blur', () => this.held.clear());
+    window.addEventListener('keyup', this.onKeyUp);
+    window.addEventListener('blur', this.onBlur);
+  }
+
+  destroy(): void {
+    this.el.removeEventListener('pointerdown', this.onDown);
+    this.el.removeEventListener('pointermove', this.onMove);
+    this.el.removeEventListener('pointerup', this.onUp);
+    this.el.removeEventListener('pointercancel', this.onUp);
+    this.el.removeEventListener('pointerleave', this.onLeave);
+    this.el.removeEventListener('wheel', this.onWheel);
+    this.el.removeEventListener('contextmenu', preventDefault);
+    window.removeEventListener('keydown', this.onKeyDown);
+    window.removeEventListener('keyup', this.onKeyUp);
+    window.removeEventListener('blur', this.onBlur);
   }
 
   /** Przesuwanie klawiszami – wywoływane co klatkę. */
@@ -107,9 +120,19 @@ export class Input {
     if (e.deltaY !== 0) this.camera.zoomAt(e.offsetX, e.offsetY, e.deltaY < 0 ? 1 : -1);
   };
 
+  private onLeave = (): void => this.handlers.onPointerLeave();
+  private onKeyUp = (e: KeyboardEvent): void => {
+    this.held.delete(e.code);
+  };
+  private onBlur = (): void => this.held.clear();
+
   private onKeyDown = (e: KeyboardEvent): void => {
     if (e.target instanceof HTMLInputElement) return;
     this.held.add(e.code);
     if (!e.repeat) this.handlers.onKey(e.code);
   };
+}
+
+function preventDefault(e: Event): void {
+  e.preventDefault();
 }

@@ -13,7 +13,7 @@ import type { GameState } from './sim/state';
 import { tickToDate } from './sim/time';
 import { getTerrain, inBounds } from './sim/world/map';
 import { FAIL_MESSAGES, Tools, type Tool } from './tools';
-import { hudStore } from './ui/hudStore';
+import { hudStore, showMessage } from './ui/hudStore';
 
 const KEY_SPEEDS: Record<string, Speed> = { Digit1: 1, Digit2: 2, Digit3: 4, Digit4: 8 };
 const KEY_TOOLS: Record<string, Tool> = {
@@ -37,7 +37,9 @@ export class Game {
   private readonly input: Input;
   private pointer: Point | null = null;
   private lastSpeed: Speed = 1;
-  private messageId = 0;
+  private readonly world = new Container();
+  private readonly onResize = (w: number, h: number) => this.camera.resize(w, h);
+  private readonly onTick = (ticker: { deltaMS: number }) => this.frame(ticker.deltaMS);
 
   constructor(
     private readonly app: Application,
@@ -47,7 +49,7 @@ export class Game {
     this.loop = new GameLoop(this.sim);
     this.tools = new Tools(this.sim, this.overlay);
 
-    const world = new Container();
+    const world = this.world;
     this.mapRenderer = new MapRenderer(state.map);
     world.addChild(this.mapRenderer.container, this.graphDebug.gfx, this.overlay.container, this.stationLabels.container);
     this.stationLabels.rebuild(state.stations, state.map.width);
@@ -73,8 +75,21 @@ export class Game {
       onKey: (code) => this.onKey(code),
     });
 
-    app.renderer.on('resize', (w: number, h: number) => this.camera.resize(w, h));
-    app.ticker.add((ticker) => this.frame(ticker.deltaMS));
+    app.renderer.on('resize', this.onResize);
+    app.ticker.add(this.onTick);
+  }
+
+  /** Odłącza grę od aplikacji (przed wczytaniem innego stanu). */
+  destroy(): void {
+    this.app.ticker.remove(this.onTick);
+    this.app.renderer.off('resize', this.onResize);
+    this.input.destroy();
+    this.app.stage.removeChild(this.world);
+    this.world.destroy({ children: true });
+  }
+
+  get state(): GameState {
+    return this.sim.state;
   }
 
   setSpeed(speed: Speed): void {
@@ -114,7 +129,7 @@ export class Game {
       if (ev.type === 'tileChanged') this.mapRenderer.markTileDirty(ev.x, ev.y);
       else if (ev.type === 'stationsChanged') this.stationLabels.rebuild(this.sim.state.stations, this.sim.state.map.width);
       else if (ev.type === 'commandFailed') {
-        hudStore.set({ message: { id: ++this.messageId, text: FAIL_MESSAGES[ev.reason] } });
+        showMessage(FAIL_MESSAGES[ev.reason]);
       }
     }
     if (events.length) {

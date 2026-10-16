@@ -15,7 +15,19 @@ npm test           # testy symulacji (Vitest)
 npm run build      # typecheck + build produkcyjny do dist/
 ```
 
-Parametr `?seed=123` w adresie generuje inną mapę.
+Gra wczytuje autozapis z przeglądarki; parametr `?seed=123` w adresie wymusza nową grę na danej mapie.
+
+## Sterowanie
+
+| | |
+|---|---|
+| Przeciąganie myszą, strzałki, WASD | przesuwanie mapy (prawy przycisk – zawsze) |
+| Kółko myszy | zoom |
+| T / P / X / Esc | narzędzia: tory / stacja / rozbiórka / kursor |
+| R | obrót stacji przy kwadratowym zaznaczeniu |
+| Spacja, 1–4 | pauza, prędkość gry |
+| G | podgląd grafu torów |
+| ☰ Menu | zapis, wczytanie, eksport/import pliku, nowa gra |
 
 ## Struktura kodu
 
@@ -23,6 +35,8 @@ Parametr `?seed=123` w adresie generuje inną mapę.
 src/sim/      logika gry – deterministyczna, bez DOM/Pixi (patrz docs/02-architektura.md)
 src/render/   PixiJS: rzut izometryczny, kamera, teren
 src/input/    mysz i klawiatura
+src/persistence/  zapis w IndexedDB i do pliku
+src/tools.ts  narzędzia gracza (podgląd + komendy)
 src/ui/       interfejs w Preact
 src/loop.ts   stały krok symulacji (20 ticków/s) i prędkości gry
 tests/        testy jednostkowe

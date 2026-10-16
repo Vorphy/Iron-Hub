@@ -16,6 +16,9 @@ export interface HudState {
   /** Koszt / błąd przy kursorze podczas używania narzędzia (x, y – piksele ekranu). */
   cursorLabel: { x: number; y: number; text: string; ok: boolean } | null;
   message: { id: number; text: string } | null;
+  /** Daty zapisów w przeglądarce (ISO) – do menu. */
+  saves: { quick: string | null; auto: string | null };
+  menuOpen: boolean;
 }
 
 export const hudStore = new Store<HudState>({
@@ -29,9 +32,23 @@ export const hudStore = new Store<HudState>({
   hover: null,
   cursorLabel: null,
   message: null,
+  saves: { quick: null, auto: null },
+  menuOpen: false,
 });
+
+let messageId = 0;
+
+export function showMessage(text: string): void {
+  hudStore.set({ message: { id: ++messageId, text } });
+}
 
 export interface HudActions {
   setSpeed(speed: Speed): void;
   setTool(tool: Tool): void;
+  toggleMenu(): void;
+  quickSave(): void;
+  quickLoad(): void;
+  exportFile(): void;
+  importFile(): void;
+  newGame(): void;
 }
