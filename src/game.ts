@@ -2,6 +2,7 @@ import { Application, Container } from 'pixi.js';
 import { Input } from './input/input';
 import { GameLoop, SPEEDS, type Speed } from './loop';
 import { Camera } from './render/camera';
+import { GraphDebug } from './render/graphDebug';
 import { tileCenter, worldToTileF, type Point } from './render/iso';
 import { MapRenderer } from './render/mapRenderer';
 import { Overlay } from './render/overlay';
@@ -22,6 +23,7 @@ export class Game {
   private readonly camera: Camera;
   private readonly mapRenderer: MapRenderer;
   private readonly overlay = new Overlay();
+  private readonly graphDebug = new GraphDebug();
   private readonly tools: Tools;
   private readonly input: Input;
   private pointer: Point | null = null;
@@ -38,7 +40,7 @@ export class Game {
 
     const world = new Container();
     this.mapRenderer = new MapRenderer(state.map);
-    world.addChild(this.mapRenderer.container, this.overlay.container);
+    world.addChild(this.mapRenderer.container, this.graphDebug.gfx, this.overlay.container);
     app.stage.addChild(world);
 
     this.camera = new Camera(world, state.map.width, state.map.height);
@@ -85,6 +87,10 @@ export class Game {
     }
     const tool = KEY_TOOLS[code];
     if (tool) this.setTool(tool);
+    if (code === 'KeyG') {
+      this.graphDebug.visible = !this.graphDebug.visible;
+      if (this.graphDebug.visible) this.graphDebug.draw(this.sim.graph);
+    }
   }
 
   private frame(deltaMs: number): void {
@@ -99,7 +105,10 @@ export class Game {
         hudStore.set({ message: { id: ++this.messageId, text: FAIL_MESSAGES[ev.reason] } });
       }
     }
-    if (events.length) this.tools.invalidate();
+    if (events.length) {
+      this.tools.invalidate();
+      if (this.graphDebug.visible) this.graphDebug.draw(this.sim.graph);
+    }
 
     this.camera.apply();
     // Kamera ruszyła (klawisze/zoom), a kursor stoi – zmienia się kafelek pod nim.
@@ -138,6 +147,7 @@ export class Game {
       tool: this.tools.tool,
       fps: Math.round(this.app.ticker.FPS),
       zoom: this.camera.zoom,
+      graphInfo: this.graphDebug.visible ? `${this.sim.graph.nodes.length} węzłów · ${this.sim.graph.edges.length} krawędzi` : null,
       hover: hoverChanged ? (tile && terrain !== null ? { ...tile, terrain } : null) : h,
       cursorLabel: labelChanged ? label : pl,
     });

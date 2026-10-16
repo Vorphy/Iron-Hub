@@ -10,6 +10,8 @@ export interface HudState {
   tool: Tool;
   fps: number;
   zoom: number;
+  /** Podsumowanie grafu torów, gdy włączony podgląd (G). */
+  graphInfo: string | null;
   hover: { x: number; y: number; terrain: Terrain } | null;
   /** Koszt / błąd przy kursorze podczas używania narzędzia (x, y – piksele ekranu). */
   cursorLabel: { x: number; y: number; text: string; ok: boolean } | null;
@@ -23,6 +25,7 @@ export const hudStore = new Store<HudState>({
   tool: 'cursor',
   fps: 0,
   zoom: 1,
+  graphInfo: null,
   hover: null,
   cursorLabel: null,
   message: null,

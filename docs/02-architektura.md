@@ -88,17 +88,19 @@ interface Tile {
 
 ### Tory: kafelki jako źródło prawdy, graf jako widok pochodny
 - **Na kafelku** tor zapisany jest jak w TTD – bitmaska 6 elementów: `X`, `Y` (proste) oraz `N`, `S`, `E`, `W` (łuki w ćwiartkach). Budowanie i rozbiórka operują na bitach kafelka.
-- **Graf torów** jest wyprowadzany z kafelków i aktualizowany przyrostowo po każdej zmianie:
-  - **węzeł** – rozjazd, koniec toru, sygnał, krawędź peronu,
-  - **krawędź** – ciągły odcinek bez rozgałęzień, z długością i listą kafelków.
-- Pociągi, wyszukiwanie tras (A*) i rezerwacje działają **wyłącznie na grafie**.
+- **Graf torów** (`sim/track/graph.ts`) jest **stanem pochodnym**: budowany z kafelków leniwie po każdej zmianie torów, nigdy nie zapisywany.
+  - **port** – granica dwóch kafelków (środek boku); każdy element toru łączy dwa porty. Port ma dwie połówki (po jednej na kafelek) – pociąg przechodzi zawsze z jednej połówki do drugiej, więc nie zawraca pod ostrym kątem,
+  - **węzeł** – port, który nie jest zwykłym przejściem 1→1: koniec toru albo zwrotnica (później także sygnał, krawędź peronu),
+  - **krawędź** – ciąg elementów między węzłami, z długością w całkowitych jednostkach (prosty 16, łuk 11).
+  - Pełna przebudowa kosztuje O(liczba kafelków z torem) – wystarcza; przyrostowa aktualizacja w razie potrzeby później.
+- Wyszukiwanie tras (A*) i rezerwacje działają na grafie. Podgląd grafu w grze: klawisz **G**.
 
 ### Pociąg
 ```ts
 interface Train {
   id: EntityId;
   consist: VehicleRef[];     // lokomotywa(y) + wagony (z definicji danych)
-  head: { edge: EdgeId; offset: number; dir: Dir };  // pozycja czoła na grafie
+  head: { x: number; y: number; track: Track; dir: Side; progress: number };  // pozycja czoła w układzie kafelków
   speed: number;
   orders: Order[];           // lista stacji (+ opcje ładuj/rozładuj)
   currentOrder: number;
@@ -107,7 +109,7 @@ interface Train {
   cargo: CargoLoad[];
 }
 ```
-Wagony podążają za czołem w zadanych odstępach wzdłuż historii przebytej ścieżki.
+Pozycja jest zapisana w układzie kafelków (jak w TTD), a nie jako krawędź grafu – dzięki temu przebudowa grafu po zmianie torów nie unieważnia pozycji pociągów. Graf służy do wyboru drogi na zwrotnicach. Wagony podążają za czołem w zadanych odstępach wzdłuż historii przebytej ścieżki.
 
 ### Definicje danymi
 Pojazdy, typy przemysłu, ładunki i ich parametry są w `data/*.json` (wersjonowane, z ID). Dodatki płatne = dodatkowe pakiety definicji + grafik, ładowane tym samym mechanizmem.

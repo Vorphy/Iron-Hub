@@ -17,6 +17,7 @@
 | 11 | 2026-10-16 | Gra **bezpłatna**, ewentualne płatne dodatki; treści **definiowane danymi** | Dodatek = pakiet danych + grafik |
 | 12 | 2026-10-16 | Zapis lokalny (IndexedDB) od etapu 1; backend na końcu | Backend nie jest potrzebny do sprawdzenia gry |
 | 13 | 2026-10-16 | **OpenGFX tylko jako placeholder** w prototypie; przed wydaniem zamiana na darmową grafikę z licencją pozwalającą na zamknięty kod (np. CC0) lub własną | Zachowuje możliwość płatnych dodatków |
+| 14 | 2026-10-16 | Graf torów **pochodny i niezapisywany**; pozycja pociągu w układzie kafelków (nie krawędź+offset) | Przebudowa grafu nie psuje pozycji pociągów; prostszy zapis gry |
 
 ## Otwarte pytania
 

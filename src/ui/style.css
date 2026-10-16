@@ -145,6 +145,10 @@ body {
   border-color: #c0634a;
 }
 
+.graph-info {
+  color: #4cc9f0;
+}
+
 .statusbar {
   bottom: 8px;
   left: 8px;

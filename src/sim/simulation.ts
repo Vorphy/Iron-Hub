@@ -1,9 +1,11 @@
 import { applyCommand, type Command, type SimEvent } from './commands';
 import type { GameState } from './state';
+import { buildTrackGraph, type TrackGraph } from './track/graph';
 
 export class Simulation {
   private queue: Command[] = [];
   private events: SimEvent[] = [];
+  private trackGraph: TrackGraph | null = null;
 
   constructor(readonly state: GameState) {}
 
@@ -18,6 +20,8 @@ export class Simulation {
     for (const cmd of cmds) {
       const result = applyCommand(this.state, cmd, this.events);
       if (!result.ok) this.events.push({ type: 'commandFailed', command: cmd, reason: result.reason });
+      // Udana komenda mogła zmienić tory – graf przebudujemy przy następnym odczycie.
+      else this.trackGraph = null;
     }
   }
 
@@ -25,6 +29,11 @@ export class Simulation {
   step(): void {
     this.processCommands();
     this.state.tick++;
+  }
+
+  /** Graf torów – stan pochodny, przebudowywany leniwie po zmianie torów. */
+  get graph(): TrackGraph {
+    return (this.trackGraph ??= buildTrackGraph(this.state.map));
   }
 
   drainEvents(): SimEvent[] {

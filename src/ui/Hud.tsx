@@ -18,7 +18,7 @@ const TOOLS: { tool: Tool; icon: string; name: string; key: string }[] = [
 ];
 
 const TOOL_HELP: Record<Tool, string> = {
-  cursor: 'Przeciąganie / strzałki / WASD – przesuwanie · kółko – zoom · spacja – pauza · 1–4 – prędkość',
+  cursor: 'Przeciąganie / strzałki / WASD – przesuwanie · kółko – zoom · spacja – pauza · 1–4 – prędkość · G – podgląd grafu torów',
   track:
     'Przeciągnij, aby położyć tor: wzdłuż osi lub ukośnie. Pozycja kursora w kafelku wybiera łuk. Prawy przycisk – przesuwanie mapy · Esc – anuluj',
   bulldozer: 'Klik – usuń tory z kafelka lub oczyść nieużytek · przeciągnięcie – rozbierz odcinek toru (zwrot 25%)',
@@ -75,6 +75,12 @@ export function Hud({ actions }: { actions: HudActions }) {
         <span>
           {s.hover ? `Kafelek (${s.hover.x}, ${s.hover.y}) · ${TERRAIN_NAMES[s.hover.terrain]}` : '—'}
         </span>
+        {s.graphInfo && (
+          <>
+            <span class="sep" />
+            <span class="graph-info">Graf: {s.graphInfo}</span>
+          </>
+        )}
         <span class="sep" />
         <span>zoom {s.zoom}×</span>
         <span class="sep" />
