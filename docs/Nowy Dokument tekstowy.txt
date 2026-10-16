@@ -1,0 +1,4 @@
+Do zrobienia:
+- lvle pociągów, rodzaje kolei i przechodzenie miedzy nimi, jakies prosty upgrade
+- mapa nierówna góry kaniony, generator map i edytor.
+- budowa mostów i tuneli

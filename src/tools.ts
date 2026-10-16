@@ -12,6 +12,7 @@ import {
 } from './sim/station/station';
 import { planTrackLine } from './sim/track/autorail';
 import { planBuildTrack, planRemoveTrack, type TrackPlan } from './sim/track/build';
+import { nextSignalState } from './sim/signals/signals';
 import { getTrackBits, Side, Track, TRACK_SIDES, tracksOn } from './sim/track/track';
 import type { Simulation } from './sim/simulation';
 import { getTerrain, inBounds, Terrain } from './sim/world/map';
@@ -169,15 +170,17 @@ export class Tools {
         this.label = { text: 'Wskaż tor', ok: false };
         return;
       }
-      this.overlay.setPieceHighlight(piece.x, piece.y, piece.track);
       const existing = this.sim.state.signals.find((s) => s.x === piece.x && s.y === piece.y && s.track === piece.track);
+      const after =
+        this.signalKind === 'remove' ? null : { ...piece, ...nextSignalState(existing, this.signalKind === 'oneway') };
+      this.overlay.setPieceHighlight(piece.x, piece.y, piece.track, after);
       this.label =
         this.signalKind === 'remove'
           ? existing
             ? { text: 'Usuń semafor', ok: true }
             : { text: 'Brak semafora', ok: false }
           : existing
-            ? { text: 'Zmień kierunek', ok: true }
+            ? { text: after?.dirs === 3 ? 'Kliknij: oba kierunki' : 'Kliknij: zmień kierunek', ok: true }
             : { text: `Koszt: ${formatMoney(SIGNAL_COST)}`, ok: this.sim.state.money >= SIGNAL_COST };
       return;
     }

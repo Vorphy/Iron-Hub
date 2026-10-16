@@ -58,9 +58,17 @@ export class SignalIndex {
 }
 
 /**
- * Stawia semafor albo zmienia kierunek istniejącego (kolejne kliknięcia):
- * ścieżkowy 1 → 2 → oba → 1, jednokierunkowy 1 ↔ 2.
+ * Stan semafora po kliknięciu: nowy – kierunek 1; istniejący – kolejny kierunek
+ * (ścieżkowy 1 → 2 → oba → 1, jednokierunkowy 1 ↔ 2); zmiana rodzaju zostawia kierunek.
  */
+export function nextSignalState(existing: Signal | undefined, oneWay: boolean): { dirs: 1 | 2 | 3; oneWay: boolean } {
+  if (!existing) return { dirs: 1, oneWay };
+  if (existing.oneWay !== oneWay) return { dirs: oneWay && existing.dirs === 3 ? 1 : existing.dirs, oneWay };
+  const dirs = existing.dirs === 1 ? 2 : existing.dirs === 2 && !oneWay ? 3 : 1;
+  return { dirs, oneWay };
+}
+
+/** Stawia semafor albo zmienia kierunek istniejącego (patrz `nextSignalState`). */
 export function placeSignal(
   state: GameState,
   x: number,
@@ -75,9 +83,7 @@ export function placeSignal(
   if (map.station[i] || map.depot[i]) return { ok: false, reason: 'blocked' };
   const existing = state.signals.find((s) => s.x === x && s.y === y && s.track === track);
   if (existing) {
-    if (existing.oneWay !== oneWay) existing.oneWay = oneWay;
-    else existing.dirs = existing.dirs === 1 ? 2 : existing.dirs === 2 && !oneWay ? 3 : 1;
-    if (oneWay && existing.dirs === 3) existing.dirs = 1;
+    Object.assign(existing, nextSignalState(existing, oneWay));
   } else {
     if (state.money < SIGNAL_COST) return { ok: false, reason: 'noMoney' };
     state.money -= SIGNAL_COST;
