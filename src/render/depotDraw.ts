@@ -41,6 +41,19 @@ export function drawDepot(
   g.poly(poly(up(a), up(b), up(c), up(d))).fill({ color: style.roof, alpha: style.alpha });
   g.poly(poly(up(a), up(b), up(c), up(d))).stroke({ width: 1, color: 0x000000, alpha: 0.35 * style.alpha });
 
+  // Wjazd od tyłu (NE/NW): ściana jest zasłonięta – zaznaczamy otwór na krawędzi dachu.
+  const back = side === Side.NE ? [up(a), up(b)] : side === Side.NW ? [up(d), up(a)] : null;
+  if (back) {
+    const [p, q] = back as [Point, Point];
+    const roofC = { x: (a.x + c.x) / 2, y: (a.y + c.y) / 2 - WALL_H };
+    const at = (t: number, k: number): Point => {
+      const ex = p.x + (q.x - p.x) * t;
+      const ey = p.y + (q.y - p.y) * t;
+      return { x: ex + (roofC.x - ex) * k, y: ey + (roofC.y - ey) * k };
+    };
+    g.poly(poly(at(0.28, 0), at(0.72, 0), at(0.72, 0.35), at(0.28, 0.35))).fill({ color: style.door, alpha: style.alpha });
+  }
+
   // Brama na ścianie od strony wjazdu (jeśli ta ściana jest widoczna).
   const face = side === Side.SE ? [b, c] : side === Side.SW ? [c, d] : null;
   if (face) {

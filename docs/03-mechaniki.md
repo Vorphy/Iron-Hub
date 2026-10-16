@@ -11,7 +11,7 @@ Wartości liczbowe w tym dokumencie są **startowe** – do strojenia w trakcie 
   - Jak w TTD nie ma skrętów o 90° – skręca się łukami (ukosami).
 - Rozbiórka (buldożer): klik usuwa wszystkie tory z kafelka (lub oczyszcza nieużytek), przeciągnięcie rozbiera odcinek. Zwrot: 25% kosztu toru.
 - Stacja: prostokąt peronów (długość × liczba torów, max 12 × 6). Każda stacja ma **zasięg** (4 kafelki od peronów) – z niego zbiera pasażerów i ładunek oraz do niego dostarcza.
-  - Narzędzie Stacja (P): przeciągnięcie prostokąta; dłuższy bok = długość peronu, przy kwadracie oś wybiera klawisz R.
+  - Narzędzie Stacja (P): przeciągnięcie prostokąta; dłuższy bok = długość peronu, przy kwadracie oś wybiera panel obok paska narzędzi lub klawisz R.
   - Stację można postawić na pustym terenie albo na istniejącej prostej w osi peronu (wpięcie w linię). Nie na łuku, torze w innej osi, wodzie ani innej stacji.
   - Koszt: 300 zł za kafelek peronu (razem z torem). Buldożer usuwa pojedynczy kafelek (zwrot 25%); ostatni kafelek usuwa stację.
   - Na peronie nie da się dołożyć łuku ani rozebrać toru osobno.
@@ -21,7 +21,7 @@ Wartości liczbowe w tym dokumencie są **startowe** – do strojenia w trakcie 
 
 ## Zajezdnie
 
-- Narzędzie Zajezdnia (Z): klik stawia zajezdnię na wolnym kafelku (1000 zł). Wjazd ustawia się sam w stronę sąsiedniego toru, który prowadzi do kafelka; bez toru – według obrotu (R).
+- Narzędzie Zajezdnia (Z): klik stawia zajezdnię na wolnym kafelku (1000 zł). Kierunek wjazdu wybiera się w panelu obok paska narzędzi (4 kierunki, jak w OpenTTD) lub klawiszem R. Tryb **Auto** obraca wjazd w stronę sąsiedniego toru.
 - Na kafelek zajezdni nie można położyć toru ani stacji. Buldożer usuwa zajezdnię (zwrot 25%).
 - W grafie torów wjazd zajezdni jest węzłem (jak koniec toru).
 

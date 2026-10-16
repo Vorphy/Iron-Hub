@@ -18,7 +18,7 @@ import type { GameState } from './sim/state';
 import { tickToDate } from './sim/time';
 import { getTerrain, inBounds } from './sim/world/map';
 import { FAIL_MESSAGES, Tools, type Tool } from './tools';
-import { hudStore, showMessage, type WindowRef } from './ui/hudStore';
+import { hudStore, showMessage, type HudState, type WindowRef } from './ui/hudStore';
 import { buildWindowData } from './ui/windowData';
 
 const KEY_SPEEDS: Record<string, Speed> = { Digit1: 1, Digit2: 2, Digit3: 4, Digit4: 8 };
@@ -151,6 +151,10 @@ export class Game {
     if (depot) this.openWindow({ kind: 'depot', depotId: depot.id });
   }
 
+  get toolController(): Tools {
+    return this.tools;
+  }
+
   setTool(tool: Tool, ordersTrain: number | null = null): void {
     this.input.cancelToolDrag();
     this.tools.setTool(tool, ordersTrain);
@@ -232,6 +236,14 @@ export class Game {
     return worldToTileF(w.x, w.y);
   }
 
+  /** Ten sam obiekt, dopóki nic się nie zmieniło (UI nie przerysowuje się co klatkę). */
+  private toolOptions(prev: HudState['toolOptions']): HudState['toolOptions'] {
+    const t = this.tools;
+    return prev.depotSide === t.depotSide && prev.depotAuto === t.depotAuto && prev.stationAxis === t.stationAxis
+      ? prev
+      : { depotSide: t.depotSide, depotAuto: t.depotAuto, stationAxis: t.stationAxis };
+  }
+
   private updateHud(): void {
     const { state } = this.sim;
     const d = tickToDate(state.tick);
@@ -254,6 +266,7 @@ export class Game {
       money: state.money,
       speed: this.loop.speed,
       tool: this.tools.tool,
+      toolOptions: this.toolOptions(prev.toolOptions),
       fps: Math.round(this.app.ticker.FPS),
       zoom: this.camera.zoom,
       graphInfo: this.graphDebug.visible ? `${this.sim.graph.nodes.length} węzłów · ${this.sim.graph.edges.length} krawędzi` : null,

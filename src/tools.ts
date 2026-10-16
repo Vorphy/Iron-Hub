@@ -46,8 +46,10 @@ export class Tools {
   tool: Tool = 'cursor';
   /** Oś peronu przy kwadratowym zaznaczeniu (klawisz R). */
   stationAxis: StationAxis = 'x';
-  /** Preferowany wjazd zajezdni (R); gdy obok jest tor, wjazd ustawia się sam. */
+  /** Wjazd zajezdni wybrany przez gracza (panel kierunków lub R). */
   depotSide: Side = Side.SE;
+  /** Auto: wjazd sam obraca się w stronę sąsiedniego toru. */
+  depotAuto = true;
   /** Pociąg, któremu dopisujemy stacje (narzędzie 'orders'). */
   ordersTrain: number | null = null;
   private dragStart: Point | null = null;
@@ -92,8 +94,22 @@ export class Tools {
 
   /** Klawisz R: obrót stacji albo wjazdu zajezdni. */
   rotate(): void {
-    if (this.tool === 'depot') this.depotSide = ((this.depotSide + 1) & 3) as Side;
-    else this.stationAxis = this.stationAxis === 'x' ? 'y' : 'x';
+    if (this.tool === 'depot') this.setDepotSide(((this.depotSide + 1) & 3) as Side);
+    else this.setStationAxis(this.stationAxis === 'x' ? 'y' : 'x');
+  }
+
+  /** Kierunek wjazdu albo 'auto'. Ręczny wybór wyłącza automatyczne obracanie. */
+  setDepotSide(side: Side | 'auto'): void {
+    if (side === 'auto') this.depotAuto = true;
+    else {
+      this.depotSide = side;
+      this.depotAuto = false;
+    }
+    this.dirty = true;
+  }
+
+  setStationAxis(axis: StationAxis): void {
+    this.stationAxis = axis;
     this.dirty = true;
   }
 
@@ -189,7 +205,7 @@ export class Tools {
   }
 
   private depotSideAt(x: number, y: number): Side {
-    return autoDepotSide(this.sim.state.map, x, y, this.depotSide);
+    return this.depotAuto ? autoDepotSide(this.sim.state.map, x, y, this.depotSide) : this.depotSide;
   }
 
   private stationPlan(start: Point, end: Point) {

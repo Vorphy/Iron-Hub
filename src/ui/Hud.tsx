@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { SPEEDS, type Speed } from '../loop';
+import { Side } from '../sim/track/track';
 import { Terrain } from '../sim/world/map';
 import { formatMoney, type Tool } from '../tools';
 import { DepotWindow } from './DepotWindow';
@@ -28,7 +29,7 @@ const TOOL_HELP: Record<Tool, string> = {
   station:
     'Przeciągnij prostokąt: dłuższy bok to długość peronu, krótszy – liczba torów. R – obrót przy kwadracie. Niebieskie pole to zasięg stacji',
   depot:
-    'Klik stawia zajezdnię (1000 zł). Wjazd ustawia się w stronę sąsiedniego toru; R – obrót. W zajezdni kupuje się pociągi',
+    'Klik stawia zajezdnię (1000 zł). Kierunek wjazdu wybierz w panelu obok (lub R); Auto – w stronę sąsiedniego toru',
   orders: 'Klikaj stacje, aby dopisać je do rozkładu pociągu · Esc – koniec',
   bulldozer: 'Klik – usuń zajezdnię, kafelek stacji, tory z kafelka lub oczyść nieużytek · przeciągnięcie – rozbierz odcinek toru (zwrot 25%)',
 };
@@ -90,6 +91,8 @@ export function Hud({ actions }: { actions: HudActions }) {
         ))}
       </div>
 
+      <ToolOptions tool={s.tool} options={s.toolOptions} actions={actions} />
+
       <div class="panel statusbar">
         <span>
           {s.hover
@@ -114,6 +117,61 @@ export function Hud({ actions }: { actions: HudActions }) {
       <Toast message={s.message} />
     </>
   );
+}
+
+// Kierunki na ekranie (rzut izometryczny): NE – prawo-góra, SE – prawo-dół, SW – lewo-dół, NW – lewo-góra.
+const DEPOT_DIRS: { side: Side; icon: string; name: string }[] = [
+  { side: Side.NW, icon: '↖', name: 'lewo-góra' },
+  { side: Side.NE, icon: '↗', name: 'prawo-góra' },
+  { side: Side.SW, icon: '↙', name: 'lewo-dół' },
+  { side: Side.SE, icon: '↘', name: 'prawo-dół' },
+];
+
+/** Panel opcji przy pasku narzędzi: kierunek wjazdu zajezdni, oś peronów. */
+function ToolOptions({ tool, options, actions }: { tool: Tool; options: HudState['toolOptions']; actions: HudActions }) {
+  if (tool === 'depot') {
+    return (
+      <div class="panel tool-options">
+        <div class="section-title">Wjazd</div>
+        <div class="dir-grid">
+          {DEPOT_DIRS.map((d) => (
+            <button
+              key={d.side}
+              class={!options.depotAuto && options.depotSide === d.side ? 'active' : ''}
+              title={`Wjazd od strony: ${d.name}`}
+              onClick={() => actions.setDepotSide(d.side)}
+            >
+              {d.icon}
+            </button>
+          ))}
+        </div>
+        <button
+          class={options.depotAuto ? 'active' : ''}
+          title="Wjazd sam obraca się w stronę sąsiedniego toru"
+          onClick={() => actions.setDepotSide('auto')}
+        >
+          Auto
+        </button>
+      </div>
+    );
+  }
+  if (tool === 'station') {
+    return (
+      <div class="panel tool-options">
+        <div class="section-title">Perony</div>
+        <div class="dir-grid">
+          <button class={options.stationAxis === 'y' ? 'active' : ''} title="Perony w osi ↙↗" onClick={() => actions.setStationAxis('y')}>
+            ⟋
+          </button>
+          <button class={options.stationAxis === 'x' ? 'active' : ''} title="Perony w osi ↖↘" onClick={() => actions.setStationAxis('x')}>
+            ⟍
+          </button>
+        </div>
+        <div class="muted small">przy kwadracie</div>
+      </div>
+    );
+  }
+  return null;
 }
 
 function formatSaveDate(iso: string | null): string {

@@ -67,6 +67,8 @@ async function loadFrom(slot: Slot): Promise<boolean> {
 const actions: HudActions = {
   setSpeed: (s) => game?.setSpeed(s),
   setTool: (t) => game?.setTool(t),
+  setDepotSide: (s) => game?.toolController.setDepotSide(s),
+  setStationAxis: (a) => game?.toolController.setStationAxis(a),
   toggleMenu: () => hudStore.set({ menuOpen: !hudStore.get().menuOpen }),
   quickSave: () => void saveTo('quick'),
   quickLoad: () => {

@@ -1,5 +1,7 @@
 import type { Speed } from '../loop';
 import type { Terrain } from '../sim/world/map';
+import type { StationAxis } from '../sim/station/station';
+import type { Side } from '../sim/track/track';
 import type { Tool } from '../tools';
 import { Store } from './store';
 
@@ -48,6 +50,8 @@ export interface HudState {
   money: number;
   speed: Speed;
   tool: Tool;
+  /** Ustawienia narzędzi budowy (panel opcji). */
+  toolOptions: { depotSide: Side; depotAuto: boolean; stationAxis: StationAxis };
   fps: number;
   zoom: number;
   /** Podsumowanie grafu torów, gdy włączony podgląd (G). */
@@ -69,6 +73,7 @@ export const hudStore = new Store<HudState>({
   money: 0,
   speed: 1,
   tool: 'cursor',
+  toolOptions: { depotSide: 1, depotAuto: true, stationAxis: 'x' },
   fps: 0,
   zoom: 1,
   graphInfo: null,
@@ -90,6 +95,8 @@ export function showMessage(text: string): void {
 export interface HudActions {
   setSpeed(speed: Speed): void;
   setTool(tool: Tool): void;
+  setDepotSide(side: Side | 'auto'): void;
+  setStationAxis(axis: StationAxis): void;
   toggleMenu(): void;
   quickSave(): void;
   quickLoad(): void;

@@ -135,6 +135,31 @@ body {
   color: #1b1f24;
 }
 
+.tool-options {
+  top: 50%;
+  left: 170px;
+  transform: translateY(-50%);
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  padding: 6px;
+}
+
+.tool-options .section-title {
+  margin-top: 0;
+}
+
+.dir-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+}
+
+.dir-grid button {
+  font-size: 16px;
+  padding: 4px 10px;
+}
+
 .cursor-label {
   position: absolute;
   pointer-events: none;
@@ -351,6 +376,9 @@ body {
   }
   .toolbar .name {
     display: none;
+  }
+  .tool-options {
+    left: 70px;
   }
   .toolbar button {
     grid-template-columns: 18px auto;
