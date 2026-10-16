@@ -14,6 +14,7 @@ const TERRAIN_NAMES: Record<Terrain, string> = {
 const TOOLS: { tool: Tool; icon: string; name: string; key: string }[] = [
   { tool: 'cursor', icon: '↖', name: 'Kursor', key: 'Esc' },
   { tool: 'track', icon: '═', name: 'Tory', key: 'T' },
+  { tool: 'station', icon: '▤', name: 'Stacja', key: 'P' },
   { tool: 'bulldozer', icon: '✖', name: 'Rozbiórka', key: 'X' },
 ];
 
@@ -21,7 +22,9 @@ const TOOL_HELP: Record<Tool, string> = {
   cursor: 'Przeciąganie / strzałki / WASD – przesuwanie · kółko – zoom · spacja – pauza · 1–4 – prędkość · G – podgląd grafu torów',
   track:
     'Przeciągnij, aby położyć tor: wzdłuż osi lub ukośnie. Pozycja kursora w kafelku wybiera łuk. Prawy przycisk – przesuwanie mapy · Esc – anuluj',
-  bulldozer: 'Klik – usuń tory z kafelka lub oczyść nieużytek · przeciągnięcie – rozbierz odcinek toru (zwrot 25%)',
+  station:
+    'Przeciągnij prostokąt: dłuższy bok to długość peronu, krótszy – liczba torów. R – obrót przy kwadracie. Niebieskie pole to zasięg stacji',
+  bulldozer: 'Klik – usuń kafelek stacji, tory z kafelka lub oczyść nieużytek · przeciągnięcie – rozbierz odcinek toru (zwrot 25%)',
 };
 
 const MESSAGE_MS = 2500;
@@ -73,7 +76,9 @@ export function Hud({ actions }: { actions: HudActions }) {
 
       <div class="panel statusbar">
         <span>
-          {s.hover ? `Kafelek (${s.hover.x}, ${s.hover.y}) · ${TERRAIN_NAMES[s.hover.terrain]}` : '—'}
+          {s.hover
+            ? `Kafelek (${s.hover.x}, ${s.hover.y}) · ${s.hover.station ?? TERRAIN_NAMES[s.hover.terrain]}`
+            : '—'}
         </span>
         {s.graphInfo && (
           <>

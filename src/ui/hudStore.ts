@@ -12,7 +12,7 @@ export interface HudState {
   zoom: number;
   /** Podsumowanie grafu torów, gdy włączony podgląd (G). */
   graphInfo: string | null;
-  hover: { x: number; y: number; terrain: Terrain } | null;
+  hover: { x: number; y: number; terrain: Terrain; station: string | null } | null;
   /** Koszt / błąd przy kursorze podczas używania narzędzia (x, y – piksele ekranu). */
   cursorLabel: { x: number; y: number; text: string; ok: boolean } | null;
   message: { id: number; text: string } | null;

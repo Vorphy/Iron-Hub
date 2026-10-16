@@ -10,7 +10,13 @@ Wartości liczbowe w tym dokumencie są **startowe** – do strojenia w trakcie 
   - Koszt: 100 zł za element toru, +50 zł za oczyszczenie nieużytku pod torem. Istniejące elementy są pomijane bez opłaty.
   - Jak w TTD nie ma skrętów o 90° – skręca się łukami (ukosami).
 - Rozbiórka (buldożer): klik usuwa wszystkie tory z kafelka (lub oczyszcza nieużytek), przeciągnięcie rozbiera odcinek. Zwrot: 25% kosztu toru.
-- Stacja: prostokąt peronów (długość × liczba torów). Każda stacja ma **zasięg** (np. 4 kafelki od krawędzi) – z niego zbiera pasażerów i ładunek oraz do niego dostarcza.
+- Stacja: prostokąt peronów (długość × liczba torów, max 12 × 6). Każda stacja ma **zasięg** (4 kafelki od peronów) – z niego zbiera pasażerów i ładunek oraz do niego dostarcza.
+  - Narzędzie Stacja (P): przeciągnięcie prostokąta; dłuższy bok = długość peronu, przy kwadracie oś wybiera klawisz R.
+  - Stację można postawić na pustym terenie albo na istniejącej prostej w osi peronu (wpięcie w linię). Nie na łuku, torze w innej osi, wodzie ani innej stacji.
+  - Koszt: 300 zł za kafelek peronu (razem z torem). Buldożer usuwa pojedynczy kafelek (zwrot 25%); ostatni kafelek usuwa stację.
+  - Na peronie nie da się dołożyć łuku ani rozebrać toru osobno.
+  - Nazwy na razie z listy fikcyjnych nazw; po dodaniu miast – od najbliższego miasta.
+  - Sąsiednie stacje się nie łączą (do rozważenia później).
 - MVP: płaski teren (bez zboczy, mostów, tuneli). Model danych przewiduje wysokości na później.
 
 ## Pociągi i rozkłady

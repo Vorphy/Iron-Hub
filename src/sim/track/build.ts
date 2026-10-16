@@ -2,7 +2,7 @@ import { CLEAR_ROUGH_COST, TRACK_COST, TRACK_REFUND_RATE } from '../config';
 import type { CommandResult, SimEvent } from '../commands';
 import type { GameState } from '../state';
 import { getTerrain, inBounds, setTerrain, Terrain, type WorldMap } from '../world/map';
-import { hasTrack, type TrackPiece } from './track';
+import { hasTrack, Track, type TrackPiece } from './track';
 
 export type PieceStatus = 'new' | 'exists' | 'blocked';
 
@@ -22,7 +22,7 @@ export function planBuildTrack(state: GameState, pieces: readonly TrackPiece[]):
   let blocked = false;
   for (const piece of unique(pieces)) {
     let status: PieceStatus;
-    if (!buildable(map, piece.x, piece.y)) {
+    if (!buildable(map, piece)) {
       status = 'blocked';
       blocked = true;
     } else if (hasTrack(map, piece.x, piece.y, piece.track)) {
@@ -64,7 +64,11 @@ export function planRemoveTrack(state: GameState, pieces: readonly TrackPiece[])
   const out: TrackPlan['pieces'] = [];
   let count = 0;
   for (const piece of unique(pieces)) {
-    const exists = inBounds(map, piece.x, piece.y) && hasTrack(map, piece.x, piece.y, piece.track);
+    // Torów na peronie nie rozbieramy osobno – usuwa się kafelek stacji.
+    const exists =
+      inBounds(map, piece.x, piece.y) &&
+      !map.station[piece.y * map.width + piece.x] &&
+      hasTrack(map, piece.x, piece.y, piece.track);
     if (exists) count++;
     out.push({ piece, status: exists ? 'exists' : 'blocked' });
   }
@@ -89,8 +93,11 @@ export function refund(): number {
   return Math.round(TRACK_COST * TRACK_REFUND_RATE);
 }
 
-function buildable(map: WorldMap, x: number, y: number): boolean {
-  return inBounds(map, x, y) && getTerrain(map, x, y) !== Terrain.Water;
+function buildable(map: WorldMap, { x, y, track }: TrackPiece): boolean {
+  if (!inBounds(map, x, y) || getTerrain(map, x, y) === Terrain.Water) return false;
+  // Na peronie wolno mieć tylko prosty tor w osi stacji (już istnieje).
+  if (map.station[y * map.width + x]) return (track === Track.X || track === Track.Y) && hasTrack(map, x, y, track);
+  return true;
 }
 
 function unique(pieces: readonly TrackPiece[]): TrackPiece[] {

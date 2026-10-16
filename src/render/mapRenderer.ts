@@ -14,6 +14,8 @@ const COLORS: Record<Terrain, number[]> = {
   [Terrain.Rough]: [0x7a7346, 0x766f43, 0x7e7749, 0x736c41],
 };
 const ROUGH_DOT = 0x4f4a2b;
+const PLATFORM = [0xa9a49b, 0xa5a097, 0xaca79e, 0xa29d94];
+const PLATFORM_EDGE = 0x6d6860;
 
 interface Chunk {
   gfx: Graphics;
@@ -81,8 +83,12 @@ export class MapRenderer {
       for (let x = x0; x < x1; x++) {
         const t = getTerrain(this.map, x, y);
         const h = tileHash(x, y);
-        g.poly(tileDiamond(x, y)).fill(COLORS[t][h & 3]!).stroke({ width: 1, color: 0x000000, alpha: 0.08 });
-        if (t === Terrain.Rough) drawRoughDots(g, x, y, h);
+        if (this.map.station[y * this.map.width + x]) {
+          g.poly(tileDiamond(x, y)).fill(PLATFORM[h & 3]!).stroke({ width: 1, color: PLATFORM_EDGE, alpha: 0.6 });
+        } else {
+          g.poly(tileDiamond(x, y)).fill(COLORS[t][h & 3]!).stroke({ width: 1, color: 0x000000, alpha: 0.08 });
+          if (t === Terrain.Rough) drawRoughDots(g, x, y, h);
+        }
         for (const track of tracksOn(getTrackBits(this.map, x, y))) drawTrackPiece(chunk.tracks, x, y, track, TRACK_STYLE);
       }
     }

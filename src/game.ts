@@ -6,6 +6,8 @@ import { GraphDebug } from './render/graphDebug';
 import { tileCenter, worldToTileF, type Point } from './render/iso';
 import { MapRenderer } from './render/mapRenderer';
 import { Overlay } from './render/overlay';
+import { StationLabels } from './render/stationLabels';
+import { stationAt } from './sim/station/station';
 import { Simulation } from './sim/simulation';
 import type { GameState } from './sim/state';
 import { tickToDate } from './sim/time';
@@ -14,7 +16,13 @@ import { FAIL_MESSAGES, Tools, type Tool } from './tools';
 import { hudStore } from './ui/hudStore';
 
 const KEY_SPEEDS: Record<string, Speed> = { Digit1: 1, Digit2: 2, Digit3: 4, Digit4: 8 };
-const KEY_TOOLS: Record<string, Tool> = { Escape: 'cursor', KeyT: 'track', KeyX: 'bulldozer', Delete: 'bulldozer' };
+const KEY_TOOLS: Record<string, Tool> = {
+  Escape: 'cursor',
+  KeyT: 'track',
+  KeyP: 'station',
+  KeyX: 'bulldozer',
+  Delete: 'bulldozer',
+};
 
 /** Spina symulację z prezentacją: pętla, renderer, wejście, narzędzia, HUD. */
 export class Game {
@@ -24,6 +32,7 @@ export class Game {
   private readonly mapRenderer: MapRenderer;
   private readonly overlay = new Overlay();
   private readonly graphDebug = new GraphDebug();
+  private readonly stationLabels = new StationLabels();
   private readonly tools: Tools;
   private readonly input: Input;
   private pointer: Point | null = null;
@@ -40,7 +49,8 @@ export class Game {
 
     const world = new Container();
     this.mapRenderer = new MapRenderer(state.map);
-    world.addChild(this.mapRenderer.container, this.graphDebug.gfx, this.overlay.container);
+    world.addChild(this.mapRenderer.container, this.graphDebug.gfx, this.overlay.container, this.stationLabels.container);
+    this.stationLabels.rebuild(state.stations, state.map.width);
     app.stage.addChild(world);
 
     this.camera = new Camera(world, state.map.width, state.map.height);
@@ -87,6 +97,7 @@ export class Game {
     }
     const tool = KEY_TOOLS[code];
     if (tool) this.setTool(tool);
+    if (code === 'KeyR') this.tools.rotateStation();
     if (code === 'KeyG') {
       this.graphDebug.visible = !this.graphDebug.visible;
       if (this.graphDebug.visible) this.graphDebug.draw(this.sim.graph);
@@ -101,6 +112,7 @@ export class Game {
     const events = this.sim.drainEvents();
     for (const ev of events) {
       if (ev.type === 'tileChanged') this.mapRenderer.markTileDirty(ev.x, ev.y);
+      else if (ev.type === 'stationsChanged') this.stationLabels.rebuild(this.sim.state.stations, this.sim.state.map.width);
       else if (ev.type === 'commandFailed') {
         hudStore.set({ message: { id: ++this.messageId, text: FAIL_MESSAGES[ev.reason] } });
       }
@@ -111,6 +123,7 @@ export class Game {
     }
 
     this.camera.apply();
+    this.stationLabels.setZoom(this.camera.zoom);
     // Kamera ruszyła (klawisze/zoom), a kursor stoi – zmienia się kafelek pod nim.
     if (this.pointer && cameraBefore !== `${this.camera.cx},${this.camera.cy},${this.camera.zoom}`) {
       this.tools.pointerMoved(this.tileF(this.pointer.x, this.pointer.y));
@@ -134,8 +147,11 @@ export class Game {
     // Nowy obiekt tylko przy zmianie – inaczej UI przerysowywałoby się co klatkę.
     const prev = hudStore.get();
     const terrain = tile ? getTerrain(state.map, tile.x, tile.y) : null;
+    const station = tile ? (stationAt(state, tile.x, tile.y)?.name ?? null) : null;
     const h = prev.hover;
-    const hoverChanged = !h !== !tile || (h && tile && (h.x !== tile.x || h.y !== tile.y || h.terrain !== terrain));
+    const hoverChanged =
+      !h !== !tile ||
+      (h && tile && (h.x !== tile.x || h.y !== tile.y || h.terrain !== terrain || h.station !== station));
     const label = this.tools.label && this.pointer ? { ...this.tools.label, ...this.pointer } : null;
     const pl = prev.cursorLabel;
     const labelChanged =
@@ -148,7 +164,7 @@ export class Game {
       fps: Math.round(this.app.ticker.FPS),
       zoom: this.camera.zoom,
       graphInfo: this.graphDebug.visible ? `${this.sim.graph.nodes.length} węzłów · ${this.sim.graph.edges.length} krawędzi` : null,
-      hover: hoverChanged ? (tile && terrain !== null ? { ...tile, terrain } : null) : h,
+      hover: hoverChanged ? (tile && terrain !== null ? { ...tile, terrain, station } : null) : h,
       cursorLabel: labelChanged ? label : pl,
     });
   }

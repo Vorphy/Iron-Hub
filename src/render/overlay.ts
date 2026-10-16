@@ -1,4 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
+import type { StationPlan } from '../sim/station/station';
 import type { TrackPlan } from '../sim/track/build';
 import { tileDiamond } from './iso';
 import { drawTrackPiece, type TrackStyle } from './trackDraw';
@@ -10,11 +11,33 @@ const PREVIEW_BAD: TrackStyle = { ballast: 0xe0503a, sleeper: 0x8a2010, rail: 0x
 /** Nakładki nad terenem: kafelek pod kursorem i podgląd budowy. */
 export class Overlay {
   readonly container = new Container();
+  private readonly catchment = new Graphics();
   private readonly hover = new Graphics();
   private readonly preview = new Graphics();
 
   constructor() {
-    this.container.addChild(this.hover, this.preview);
+    this.container.addChild(this.catchment, this.hover, this.preview);
+  }
+
+  /** Zasięg stacji: indeksy kafelków (y * width + x). */
+  setCatchment(tiles: readonly number[] | null, mapWidth = 0): void {
+    this.catchment.clear();
+    if (!tiles) return;
+    for (const t of tiles) this.catchment.poly(tileDiamond(t % mapWidth, Math.floor(t / mapWidth)));
+    this.catchment.fill({ color: 0x4cc9f0, alpha: 0.18 });
+  }
+
+  setStationPreview(plan: StationPlan | null): void {
+    this.preview.clear();
+    if (!plan) return;
+    const failed = !plan.result.ok;
+    for (const { x, y, ok } of plan.tiles) {
+      const bad = failed || !ok;
+      this.preview
+        .poly(tileDiamond(x, y))
+        .fill({ color: bad ? 0xe0503a : 0xffffff, alpha: bad ? 0.45 : 0.35 })
+        .stroke({ width: 1.5, color: bad ? 0xe0503a : 0xffe066, alpha: 0.9 });
+    }
   }
 
   setHover(tile: { x: number; y: number } | null, color = 0xffe066): void {
