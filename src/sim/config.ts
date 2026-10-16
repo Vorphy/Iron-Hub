@@ -13,5 +13,8 @@ export const STATION_MAX_PLATFORMS = 6;
 /** Zasięg stacji w kafelkach od krawędzi peronów. */
 export const CATCHMENT_RADIUS = 4;
 
+/** Koszt zajezdni. */
+export const DEPOT_COST = 1000;
+
 /** Jaka część kosztu wraca przy rozbiórce toru lub stacji. */
 export const TRACK_REFUND_RATE = 0.25;

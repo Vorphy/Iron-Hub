@@ -1,17 +1,21 @@
+import type { Depot } from './depot/depot';
 import type { Station } from './station/station';
 import type { GameState } from './state';
+import { Side } from './track/track';
 
-/** Wersja formatu zapisu – podbijana przy niezgodnych zmianach (wtedy potrzebna migracja). */
-export const SAVE_VERSION = 1;
+/** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
+export const SAVE_VERSION = 2;
 
 export interface SerializedState {
   version: number;
   tick: number;
   rng: number;
   money: number;
-  map: { width: number; height: number; terrain: string; track: string; station: string };
+  map: { width: number; height: number; terrain: string; track: string; station: string; depot: string };
   stations: Station[];
   nextStationId: number;
+  depots: Depot[];
+  nextDepotId: number;
 }
 
 export class SaveError extends Error {}
@@ -29,38 +33,79 @@ export function serializeState(state: GameState): SerializedState {
       height: map.height,
       terrain: toBase64(map.terrain),
       track: toBase64(map.track),
-      station: toBase64(new Uint8Array(map.station.buffer, map.station.byteOffset, map.station.byteLength)),
+      station: u32ToBase64(map.station),
+      depot: u32ToBase64(map.depot),
     },
     stations: state.stations.map((s) => ({ ...s, tiles: [...s.tiles] })),
     nextStationId: state.nextStationId,
+    depots: state.depots.map((d) => ({ ...d })),
+    nextDepotId: state.nextDepotId,
   };
+}
+
+/** Uzupełnia zapisy ze starszych wersji gry. */
+function migrate(data: Record<string, unknown>): Partial<SerializedState> {
+  const d = { ...data } as Record<string, unknown> & { map?: Record<string, unknown> };
+  if (d.version === 1) {
+    // v2: zajezdnie
+    const m = d.map ? { ...d.map } : undefined;
+    d.map = m;
+    if (m && isInt(m.width) && isInt(m.height)) m.depot = u32ToBase64(new Uint32Array(m.width * m.height));
+    d.depots = [];
+    d.nextDepotId = 1;
+    d.version = 2;
+  }
+  return d as Partial<SerializedState>;
 }
 
 /** Obiekt JSON -> stan gry. Rzuca SaveError przy uszkodzonych lub obcych danych. */
 export function deserializeState(data: unknown): GameState {
-  const d = data as Partial<SerializedState>;
-  if (!d || typeof d !== 'object') throw new SaveError('Brak danych');
+  if (!data || typeof data !== 'object') throw new SaveError('Brak danych');
+  const d = migrate(data as Record<string, unknown>);
   if (d.version !== SAVE_VERSION) throw new SaveError(`Nieobsługiwana wersja zapisu: ${String(d.version)}`);
   const m = d.map;
   if (!m || !isInt(m.width) || !isInt(m.height) || m.width <= 0 || m.height <= 0) throw new SaveError('Uszkodzona mapa');
   const n = m.width * m.height;
   const terrain = fromBase64(m.terrain, n);
   const track = fromBase64(m.track, n);
-  const stationBytes = fromBase64(m.station, n * 4);
-  const station = new Uint32Array(stationBytes.buffer, stationBytes.byteOffset, n);
-  if (!isInt(d.tick) || !isInt(d.rng) || typeof d.money !== 'number' || !isInt(d.nextStationId)) {
+  const station = u32FromBase64(m.station, n);
+  const depot = u32FromBase64(m.depot, n);
+  if (
+    !isInt(d.tick) ||
+    !isInt(d.rng) ||
+    typeof d.money !== 'number' ||
+    !isInt(d.nextStationId) ||
+    !isInt(d.nextDepotId)
+  ) {
     throw new SaveError('Uszkodzone dane gry');
   }
   if (!Array.isArray(d.stations) || !d.stations.every(isStation)) throw new SaveError('Uszkodzone stacje');
+  if (!Array.isArray(d.depots) || !d.depots.every(isDepot)) throw new SaveError('Uszkodzone zajezdnie');
   return {
     version: 1,
     tick: d.tick,
     rng: { state: d.rng >>> 0 },
     money: d.money,
-    map: { width: m.width, height: m.height, terrain, track, station: new Uint32Array(station) },
+    map: { width: m.width, height: m.height, terrain, track, station, depot },
     stations: d.stations.map((s) => ({ ...s, tiles: [...s.tiles] })),
     nextStationId: d.nextStationId,
+    depots: d.depots.map((dep) => ({ ...dep })),
+    nextDepotId: d.nextDepotId,
   };
+}
+
+function isDepot(v: unknown): v is Depot {
+  const d = v as Depot;
+  return !!d && isInt(d.id) && isInt(d.x) && isInt(d.y) && Object.values(Side).includes(d.side);
+}
+
+function u32ToBase64(arr: Uint32Array): string {
+  return toBase64(new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength));
+}
+
+function u32FromBase64(s: unknown, length: number): Uint32Array {
+  const bytes = fromBase64(s, length * 4);
+  return new Uint32Array(bytes.buffer, bytes.byteOffset, length);
 }
 
 function isInt(v: unknown): v is number {

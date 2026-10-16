@@ -1,3 +1,4 @@
+import type { Depot } from '../depot/depot';
 import type { WorldMap } from '../world/map';
 import { Side, Track, TRACK_SIDES, tracksOn, type TrackPiece } from './track';
 
@@ -39,6 +40,8 @@ export interface EdgeEnd {
 export interface TrackNode {
   id: number;
   port: Port;
+  /** Zajezdnia, której wjazd leży w tym porcie. */
+  depot?: number;
   /** Krawędzie wychodzące w połówkę 0 (kafelek-właściciel) i 1 (sąsiad). */
   halves: [EdgeEnd[], EdgeEnd[]];
 }
@@ -83,7 +86,10 @@ interface PortSlot {
   halves: [number[], number[]];
 }
 
-export function buildTrackGraph(map: WorldMap): TrackGraph {
+/** Znacznik zajezdni w połówce portu (ujemny, żeby nie mylić z indeksem elementu toru). */
+const depotMark = (id: number) => -id;
+
+export function buildTrackGraph(map: WorldMap, depots: readonly Depot[] = []): TrackGraph {
   const pieces: TrackPiece[] = [];
   for (let y = 0; y < map.height; y++) {
     for (let x = 0; x < map.width; x++) {
@@ -108,14 +114,27 @@ export function buildTrackGraph(map: WorldMap): TrackGraph {
     piecePorts.push(keys);
   }
 
-  const isSimple = (s: PortSlot) => s.halves[0].length === 1 && s.halves[1].length === 1;
+  // Wjazd zajezdni jest jak koniec toru – zawsze węzeł.
+  for (const d of depots) {
+    const { port, half } = portOf(d.x, d.y, d.side);
+    const key = portKey(port);
+    let slot = slots.get(key);
+    if (!slot) slots.set(key, (slot = { port, halves: [[], []] }));
+    slot.halves[half].push(depotMark(d.id));
+  }
+
+  const isSimple = (s: PortSlot) =>
+    s.halves[0].length === 1 && s.halves[1].length === 1 && s.halves[0][0]! >= 0 && s.halves[1][0]! >= 0;
 
   const graph: TrackGraph = { nodes: [], edges: [] };
   const nodeByKey = new Map<number, TrackNode>();
   const addNode = (key: number): TrackNode => {
     let node = nodeByKey.get(key);
     if (!node) {
-      node = { id: graph.nodes.length, port: slots.get(key)!.port, halves: [[], []] };
+      const slot = slots.get(key)!;
+      node = { id: graph.nodes.length, port: slot.port, halves: [[], []] };
+      const depot = [...slot.halves[0], ...slot.halves[1]].find((v) => v < 0);
+      if (depot !== undefined) node.depot = -depot;
       graph.nodes.push(node);
       nodeByKey.set(key, node);
     }
@@ -157,7 +176,7 @@ export function buildTrackGraph(map: WorldMap): TrackGraph {
   const startEdges = (key: number) => {
     const slot = slots.get(key)!;
     for (const half of [0, 1] as const) {
-      for (const piece of slot.halves[half]) if (!used[piece]) walk(key, half, piece);
+      for (const piece of slot.halves[half]) if (piece >= 0 && !used[piece]) walk(key, half, piece);
     }
   };
 

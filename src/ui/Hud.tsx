@@ -15,6 +15,7 @@ const TOOLS: { tool: Tool; icon: string; name: string; key: string }[] = [
   { tool: 'cursor', icon: '↖', name: 'Kursor', key: 'Esc' },
   { tool: 'track', icon: '═', name: 'Tory', key: 'T' },
   { tool: 'station', icon: '▤', name: 'Stacja', key: 'P' },
+  { tool: 'depot', icon: '⌂', name: 'Zajezdnia', key: 'Z' },
   { tool: 'bulldozer', icon: '✖', name: 'Rozbiórka', key: 'X' },
 ];
 
@@ -24,7 +25,9 @@ const TOOL_HELP: Record<Tool, string> = {
     'Przeciągnij, aby położyć tor: wzdłuż osi lub ukośnie. Pozycja kursora w kafelku wybiera łuk. Prawy przycisk – przesuwanie mapy · Esc – anuluj',
   station:
     'Przeciągnij prostokąt: dłuższy bok to długość peronu, krótszy – liczba torów. R – obrót przy kwadracie. Niebieskie pole to zasięg stacji',
-  bulldozer: 'Klik – usuń kafelek stacji, tory z kafelka lub oczyść nieużytek · przeciągnięcie – rozbierz odcinek toru (zwrot 25%)',
+  depot:
+    'Klik stawia zajezdnię (1000 zł). Wjazd ustawia się w stronę sąsiedniego toru; R – obrót. W zajezdni kupuje się pociągi',
+  bulldozer: 'Klik – usuń zajezdnię, kafelek stacji, tory z kafelka lub oczyść nieużytek · przeciągnięcie – rozbierz odcinek toru (zwrot 25%)',
 };
 
 const MESSAGE_MS = 2500;

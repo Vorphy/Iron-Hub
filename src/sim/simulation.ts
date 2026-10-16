@@ -33,7 +33,7 @@ export class Simulation {
 
   /** Graf torów – stan pochodny, przebudowywany leniwie po zmianie torów. */
   get graph(): TrackGraph {
-    return (this.trackGraph ??= buildTrackGraph(this.state.map));
+    return (this.trackGraph ??= buildTrackGraph(this.state.map, this.state.depots));
   }
 
   drainEvents(): SimEvent[] {

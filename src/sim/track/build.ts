@@ -95,6 +95,7 @@ export function refund(): number {
 
 function buildable(map: WorldMap, { x, y, track }: TrackPiece): boolean {
   if (!inBounds(map, x, y) || getTerrain(map, x, y) === Terrain.Water) return false;
+  if (map.depot[y * map.width + x]) return false;
   // Na peronie wolno mieć tylko prosty tor w osi stacji (już istnieje).
   if (map.station[y * map.width + x]) return (track === Track.X || track === Track.Y) && hasTrack(map, x, y, track);
   return true;

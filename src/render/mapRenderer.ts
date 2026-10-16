@@ -1,8 +1,10 @@
 import { Container, Graphics } from 'pixi.js';
+import type { Depot } from '../sim/depot/depot';
 import { getTrackBits, tracksOn } from '../sim/track/track';
 import { getTerrain, Terrain, type WorldMap } from '../sim/world/map';
 import type { Rect } from './camera';
 import { TILE_H, TILE_W, tileDiamond, tileToWorld } from './iso';
+import { drawDepot } from './depotDraw';
 import { drawTrackPiece, TRACK_STYLE } from './trackDraw';
 
 const CHUNK = 16;
@@ -34,7 +36,11 @@ export class MapRenderer {
   private readonly chunks: Chunk[] = [];
   private readonly chunksX: number;
 
-  constructor(private readonly map: WorldMap) {
+  constructor(
+    private readonly map: WorldMap,
+    /** Zajezdnie czytane przy rysowaniu kafelka (tablica stanu może być podmieniana). */
+    private readonly getDepots: () => readonly Depot[],
+  ) {
     this.container.addChild(this.terrainLayer, this.trackLayer);
     this.chunksX = Math.ceil(map.width / CHUNK);
     const chunksY = Math.ceil(map.height / CHUNK);
@@ -90,6 +96,11 @@ export class MapRenderer {
           if (t === Terrain.Rough) drawRoughDots(g, x, y, h);
         }
         for (const track of tracksOn(getTrackBits(this.map, x, y))) drawTrackPiece(chunk.tracks, x, y, track, TRACK_STYLE);
+        const depotId = this.map.depot[y * this.map.width + x];
+        if (depotId) {
+          const depot = this.getDepots().find((d) => d.id === depotId);
+          if (depot) drawDepot(chunk.tracks, x, y, depot.side);
+        }
       }
     }
   }

@@ -1,6 +1,7 @@
 import type { Overlay } from './render/overlay';
 import type { Command, FailReason } from './sim/commands';
 import { CLEAR_ROUGH_COST } from './sim/config';
+import { autoDepotSide, depotAt, depotRefund, planDepot } from './sim/depot/depot';
 import {
   catchment,
   planStation,
@@ -11,12 +12,12 @@ import {
 } from './sim/station/station';
 import { planTrackLine } from './sim/track/autorail';
 import { planBuildTrack, planRemoveTrack, type TrackPlan } from './sim/track/build';
-import { getTrackBits, tracksOn } from './sim/track/track';
+import { getTrackBits, Side, tracksOn } from './sim/track/track';
 import type { Simulation } from './sim/simulation';
 import { getTerrain, inBounds, Terrain } from './sim/world/map';
 import type { Point } from './render/iso';
 
-export type Tool = 'cursor' | 'track' | 'station' | 'bulldozer';
+export type Tool = 'cursor' | 'track' | 'station' | 'depot' | 'bulldozer';
 
 export const FAIL_MESSAGES: Record<FailReason, string> = {
   outOfBounds: 'Poza mapą',
@@ -40,6 +41,8 @@ export class Tools {
   tool: Tool = 'cursor';
   /** Oś peronu przy kwadratowym zaznaczeniu (klawisz R). */
   stationAxis: StationAxis = 'x';
+  /** Preferowany wjazd zajezdni (R); gdy obok jest tor, wjazd ustawia się sam. */
+  depotSide: Side = Side.SE;
   private dragStart: Point | null = null;
   private pointer: Point | null = null;
   private dirty = true;
@@ -79,8 +82,10 @@ export class Tools {
     if (cmd) this.sim.enqueue(cmd);
   }
 
-  rotateStation(): void {
-    this.stationAxis = this.stationAxis === 'x' ? 'y' : 'x';
+  /** Klawisz R: obrót stacji albo wjazdu zajezdni. */
+  rotate(): void {
+    if (this.tool === 'depot') this.depotSide = ((this.depotSide + 1) & 3) as Side;
+    else this.stationAxis = this.stationAxis === 'x' ? 'y' : 'x';
     this.dirty = true;
   }
 
@@ -124,6 +129,15 @@ export class Tools {
       return;
     }
 
+    if (this.tool === 'depot') {
+      this.overlay.setHover(null);
+      if (!tile) return;
+      const plan = planDepot(this.sim.state, tile.x, tile.y);
+      this.overlay.setDepotPreview(tile.x, tile.y, this.depotSideAt(tile.x, tile.y), plan.result.ok);
+      this.label = planLabel(plan);
+      return;
+    }
+
     if (this.tool === 'station') {
       this.overlay.setHover(null);
       const plan = this.stationPlan(start, p);
@@ -141,6 +155,8 @@ export class Tools {
       const bits = getTrackBits(map, tile.x, tile.y);
       if (stationAt(this.sim.state, tile.x, tile.y)) {
         this.label = { text: `Zwrot: ${formatMoney(stationTileRefund())}`, ok: true };
+      } else if (depotAt(this.sim.state, tile.x, tile.y)) {
+        this.label = { text: `Zwrot: ${formatMoney(depotRefund())}`, ok: true };
       } else if (bits) {
         const plan = planRemoveTrack(this.sim.state, tracksOn(bits).map((track) => ({ ...tile, track })));
         this.overlay.setTrackPreview(plan, true);
@@ -156,6 +172,10 @@ export class Tools {
     this.label = planLabel(plan);
   }
 
+  private depotSideAt(x: number, y: number): Side {
+    return autoDepotSide(this.sim.state.map, x, y, this.depotSide);
+  }
+
   private stationPlan(start: Point, end: Point) {
     const [x0, y0, x1, y1] = [start.x, start.y, end.x, end.y].map(Math.floor) as [number, number, number, number];
     return planStation(this.sim.state, x0, y0, x1, y1, stationAxis(x0, y0, x1, y1, this.stationAxis));
@@ -164,6 +184,11 @@ export class Tools {
   private commandFor(start: Point, end: Point): Command | null {
     if (this.tool === 'track') {
       return { type: 'buildTrack', pieces: planTrackLine(start.x, start.y, end.x, end.y) };
+    }
+    if (this.tool === 'depot') {
+      const x = Math.floor(end.x);
+      const y = Math.floor(end.y);
+      return { type: 'buildDepot', x, y, side: this.depotSideAt(x, y) };
     }
     if (this.tool === 'station') {
       const plan = this.stationPlan(start, end);

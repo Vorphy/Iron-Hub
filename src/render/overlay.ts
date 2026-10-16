@@ -1,6 +1,8 @@
 import { Container, Graphics } from 'pixi.js';
 import type { StationPlan } from '../sim/station/station';
 import type { TrackPlan } from '../sim/track/build';
+import type { Side } from '../sim/track/track';
+import { drawDepot } from './depotDraw';
 import { tileDiamond } from './iso';
 import { drawTrackPiece, type TrackStyle } from './trackDraw';
 
@@ -38,6 +40,19 @@ export class Overlay {
         .fill({ color: bad ? 0xe0503a : 0xffffff, alpha: bad ? 0.45 : 0.35 })
         .stroke({ width: 1.5, color: bad ? 0xe0503a : 0xffe066, alpha: 0.9 });
     }
+  }
+
+  setDepotPreview(x: number, y: number, side: Side, ok: boolean): void {
+    this.preview.clear();
+    const tint = ok ? 0xffffff : 0xe0503a;
+    drawDepot(
+      this.preview,
+      x,
+      y,
+      side,
+      { wallLight: tint, wallDark: tint, roof: ok ? 0xffe066 : 0xe0503a, door: 0x1e1a18, alpha: 0.55 },
+      ok ? PREVIEW_OK : PREVIEW_BAD,
+    );
   }
 
   setHover(tile: { x: number; y: number } | null, color = 0xffe066): void {

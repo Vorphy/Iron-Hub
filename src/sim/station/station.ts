@@ -96,7 +96,7 @@ export function planStation(
 /** Kafelek nadaje się na peron: ląd, bez stacji, bez torów albo z samą prostą w osi peronu. */
 function canPlace(map: WorldMap, x: number, y: number, axisTrack: Track): boolean {
   if (!inBounds(map, x, y) || getTerrain(map, x, y) === Terrain.Water) return false;
-  if (map.station[y * map.width + x]) return false;
+  if (map.station[y * map.width + x] || map.depot[y * map.width + x]) return false;
   const bits = getTrackBits(map, x, y);
   return bits === 0 || bits === axisTrack;
 }

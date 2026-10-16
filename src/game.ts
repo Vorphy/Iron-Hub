@@ -20,6 +20,7 @@ const KEY_TOOLS: Record<string, Tool> = {
   Escape: 'cursor',
   KeyT: 'track',
   KeyP: 'station',
+  KeyZ: 'depot',
   KeyX: 'bulldozer',
   Delete: 'bulldozer',
 };
@@ -50,7 +51,7 @@ export class Game {
     this.tools = new Tools(this.sim, this.overlay);
 
     const world = this.world;
-    this.mapRenderer = new MapRenderer(state.map);
+    this.mapRenderer = new MapRenderer(state.map, () => this.sim.state.depots);
     world.addChild(this.mapRenderer.container, this.graphDebug.gfx, this.overlay.container, this.stationLabels.container);
     this.stationLabels.rebuild(state.stations, state.map.width);
     app.stage.addChild(world);
@@ -112,7 +113,7 @@ export class Game {
     }
     const tool = KEY_TOOLS[code];
     if (tool) this.setTool(tool);
-    if (code === 'KeyR') this.tools.rotateStation();
+    if (code === 'KeyR') this.tools.rotate();
     if (code === 'KeyG') {
       this.graphDebug.visible = !this.graphDebug.visible;
       if (this.graphDebug.visible) this.graphDebug.draw(this.sim.graph);

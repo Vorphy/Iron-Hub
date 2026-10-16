@@ -7,6 +7,7 @@ const EDGE_COLORS = [0x4cc9f0, 0xf72585, 0xb5e48c, 0xffb703, 0x9d4edd, 0x06d6a0,
 const DEAD_END = 0xe0503a;
 const SWITCH = 0xffe066;
 const PASS = 0x4cc9f0;
+const DEPOT = 0x9d4edd;
 
 const SIDE_MID: Record<Side, readonly [number, number]> = {
   [Side.NE]: [0.5, 0],
@@ -44,7 +45,7 @@ export class GraphDebug {
     for (const node of graph.nodes) {
       const p = portCenter(node.port);
       const degree = node.halves[0].length + node.halves[1].length;
-      const color = degree === 1 ? DEAD_END : degree > 2 ? SWITCH : PASS;
+      const color = node.depot ? DEPOT : degree === 1 ? DEAD_END : degree > 2 ? SWITCH : PASS;
       g.circle(p.x, p.y, 5).fill(color).stroke({ width: 1.5, color: 0x000000 });
     }
   }

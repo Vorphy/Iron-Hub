@@ -12,7 +12,7 @@ export interface TrackStyle {
 export const TRACK_STYLE: TrackStyle = { ballast: 0x8c8172, sleeper: 0x5b3f26, rail: 0xd0d2d8, alpha: 1 };
 
 // Środki boków kafelka w układzie logicznym (ułamki kafelka).
-const SIDE_MID: Record<Side, readonly [number, number]> = {
+export const SIDE_MID: Record<Side, readonly [number, number]> = {
   [Side.NE]: [0.5, 0],
   [Side.SE]: [1, 0.5],
   [Side.SW]: [0.5, 1],
@@ -31,10 +31,11 @@ export function drawTrackPiece(g: Graphics, x: number, y: number, track: Track, 
   const [sa, sb] = TRACK_SIDES[track];
   const [ax, ay] = SIDE_MID[sa];
   const [bx, by] = SIDE_MID[sb];
-  const x0 = x + ax;
-  const y0 = y + ay;
-  const x1 = x + bx;
-  const y1 = y + by;
+  drawTrackSegment(g, x + ax, y + ay, x + bx, y + by, style);
+}
+
+/** Odcinek toru między dwoma punktami w układzie logicznym. */
+export function drawTrackSegment(g: Graphics, x0: number, y0: number, x1: number, y1: number, style: TrackStyle): void {
   const len = Math.hypot(x1 - x0, y1 - y0);
   const px = -(y1 - y0) / len;
   const py = (x1 - x0) / len;
@@ -45,7 +46,7 @@ export function drawTrackPiece(g: Graphics, x: number, y: number, track: Track, 
   const q = [off(x0, y0, BALLAST_HALF), off(x1, y1, BALLAST_HALF), off(x1, y1, -BALLAST_HALF), off(x0, y0, -BALLAST_HALF)];
   g.poly(q.flatMap((v) => [v.x, v.y])).fill({ color: style.ballast, alpha: style.alpha });
 
-  const sleepers = len > 0.9 ? 4 : 3;
+  const sleepers = Math.max(2, Math.round(len * 4));
   for (let i = 0; i < sleepers; i++) {
     const t = (i + 0.5) / sleepers;
     const cx = x0 + (x1 - x0) * t;

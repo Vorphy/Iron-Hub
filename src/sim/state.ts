@@ -1,4 +1,5 @@
 import { START_MONEY } from './config';
+import type { Depot } from './depot/depot';
 import type { Station } from './station/station';
 import { generateMap, type WorldMap } from './world/map';
 
@@ -13,6 +14,8 @@ export interface GameState {
   stations: Station[];
   /** Kolejne id stacji (od 1; 0 na mapie oznacza brak stacji). */
   nextStationId: number;
+  depots: Depot[];
+  nextDepotId: number;
 }
 
 export interface NewGameOptions {
@@ -30,5 +33,7 @@ export function createGame({ width, height, seed }: NewGameOptions): GameState {
     map: generateMap(width, height, seed),
     stations: [],
     nextStationId: 1,
+    depots: [],
+    nextDepotId: 1,
   };
 }

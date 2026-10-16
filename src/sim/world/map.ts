@@ -17,6 +17,8 @@ export interface WorldMap {
   track: Uint8Array;
   /** Id stacji na kafelku (0 – brak), indeks jak terrain. */
   station: Uint32Array;
+  /** Id zajezdni na kafelku (0 – brak), indeks jak terrain. */
+  depot: Uint32Array;
 }
 
 export function inBounds(map: WorldMap, x: number, y: number): boolean {
@@ -46,7 +48,8 @@ export function generateMap(width: number, height: number, seed: number): WorldM
     else if (rough[i]! > ROUGH_LEVEL) terrain[i] = Terrain.Rough;
     else terrain[i] = Terrain.Grass;
   }
-  return { width, height, terrain, track: new Uint8Array(width * height), station: new Uint32Array(width * height) };
+  const n = width * height;
+  return { width, height, terrain, track: new Uint8Array(n), station: new Uint32Array(n), depot: new Uint32Array(n) };
 }
 
 function noiseField(rng: Rng, width: number, height: number): Float32Array {

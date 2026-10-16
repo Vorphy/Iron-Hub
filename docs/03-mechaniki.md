@@ -19,6 +19,12 @@ Wartości liczbowe w tym dokumencie są **startowe** – do strojenia w trakcie 
   - Sąsiednie stacje się nie łączą (do rozważenia później).
 - MVP: płaski teren (bez zboczy, mostów, tuneli). Model danych przewiduje wysokości na później.
 
+## Zajezdnie
+
+- Narzędzie Zajezdnia (Z): klik stawia zajezdnię na wolnym kafelku (1000 zł). Wjazd ustawia się sam w stronę sąsiedniego toru, który prowadzi do kafelka; bez toru – według obrotu (R).
+- Na kafelek zajezdni nie można położyć toru ani stacji. Buldożer usuwa zajezdnię (zwrot 25%).
+- W grafie torów wjazd zajezdni jest węzłem (jak koniec toru).
+
 ## Pociągi i rozkłady
 
 - Gracz kupuje pociąg w zajezdni, składa skład (lokomotywa + wagony), ustawia **rozkład = lista stacji** z opcjami (ładuj / rozładuj / czekaj na pełny załadunek).
