@@ -27,7 +27,8 @@ Gra wczytuje autozapis z przeglądarki; parametr `?seed=123` w adresie wymusza n
 | R | obrót stacji (przy kwadracie) lub wjazdu zajezdni |
 | Klik na zajezdnię / pociąg | okno zajezdni (zakup) / okno pociągu (rozkład, start/stop) |
 | Spacja, 1–4 | pauza, prędkość gry |
-| G | podgląd grafu torów |
+| G / V | podgląd grafu torów / rezerwacji torów |
+| B | semafor (tryb Ekspert – przełącznik w Menu) |
 | ☰ Menu | zapis, wczytanie, eksport/import pliku, nowa gra |
 
 ## Struktura kodu

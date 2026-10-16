@@ -1,7 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { StationPlan } from '../sim/station/station';
 import type { TrackPlan } from '../sim/track/build';
-import type { Side } from '../sim/track/track';
+import type { Side, Track } from '../sim/track/track';
 import { drawDepot } from './depotDraw';
 import { tileDiamond } from './iso';
 import { drawTrackPiece, type TrackStyle } from './trackDraw';
@@ -53,6 +53,12 @@ export class Overlay {
       { wallLight: tint, wallDark: tint, roof: ok ? 0xffe066 : 0xe0503a, door: 0x1e1a18, alpha: 0.55 },
       ok ? PREVIEW_OK : PREVIEW_BAD,
     );
+  }
+
+  /** Podświetlenie jednego elementu toru (narzędzie Semafor). */
+  setPieceHighlight(x: number, y: number, track: number): void {
+    this.preview.clear();
+    drawTrackPiece(this.preview, x, y, track as Track, PREVIEW_OK);
   }
 
   setHover(tile: { x: number; y: number } | null, color = 0xffe066): void {

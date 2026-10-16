@@ -4,67 +4,91 @@ import {
   BRAKE_KMH_PER_TICK,
   CREEP_SPEED,
   PHYS_DT,
+  RESERVE_RETRY_TICKS,
   STATION_WAIT_TICKS,
   UNITS_PER_KMH_TICK,
 } from '../config';
 import type { SimEvent } from '../commands';
+import { SignalIndex } from '../signals/signals';
 import type { GameState } from '../state';
 import { trainLength } from './geometry';
 import { planRoute, type Plan } from './path';
-import { flipStep, isBend, stepKey, stepLength } from './steps';
-import type { Step, Train } from './train';
+import { addTaken, buildTaken, isFree, isSafeStop, type Taken } from './reservation';
+import { flipStep, isBend, stepLength } from './steps';
+import { depotExit, leaveDepot, type Step, type Train } from './train';
 import { consistStats, engineDef } from './vehicles';
 
 /**
- * Pamięć tras (stan pochodny, nie trafia do zapisu). Trasa jest liczona od nowa, gdy zmieni się
- * odcinek czoła, cel pociągu albo tory – zawsze z tych samych danych, więc gra po wczytaniu
- * zachowuje się identycznie.
+ * Informacje o pociągach dla interfejsu (stan pochodny, nie trafia do zapisu i nie wpływa
+ * na symulację): czy pociąg nie może dojechać do celu, czy czeka na wolny tor.
  */
 export class Planner {
-  private cache = new Map<number, { key: string; plan: Plan }>();
-  private revision = 0;
+  private lost = new Set<number>();
+  private waiting = new Set<number>();
 
-  /** Wywoływane po każdej zmianie torów/stacji/zajezdni. */
-  invalidate(): void {
-    this.revision++;
-  }
+  /** Zostawione dla zgodności z Simulation – trasy nie są już pamiętane między tickami. */
+  invalidate(): void {}
 
-  get(state: GameState, train: Train): Plan {
-    const head = train.trail[0]!;
-    const key = [
-      this.revision,
-      stepKey(head, state.map.width),
-      train.goToDepot ? 'D' : (train.orders[train.currentOrder] ?? '-'),
-      train.mayReverse ? stepKey(train.trail[train.trail.length - 1]!, state.map.width) : '',
-    ].join(':');
-    const hit = this.cache.get(train.id);
-    if (hit?.key === key) return hit.plan;
-    const plan = planRoute(state, train);
-    this.cache.set(train.id, { key, plan });
-    return plan;
-  }
-
-  /** Czy pociąg nie może dojechać do celu (do wyświetlenia w UI). */
   isLost(trainId: number): boolean {
-    return this.cache.get(trainId)?.plan.lost ?? false;
+    return this.lost.has(trainId);
+  }
+
+  isWaiting(trainId: number): boolean {
+    return this.waiting.has(trainId);
+  }
+
+  setLost(trainId: number, lost: boolean): void {
+    if (lost) this.lost.add(trainId);
+    else this.lost.delete(trainId);
+  }
+
+  setWaiting(trainId: number, waiting: boolean): void {
+    if (waiting) this.waiting.add(trainId);
+    else this.waiting.delete(trainId);
   }
 }
 
+interface TickContext {
+  state: GameState;
+  planner: Planner;
+  taken: Taken;
+  signals: SignalIndex;
+  events: SimEvent[];
+}
+
 export function tickTrains(state: GameState, planner: Planner, events: SimEvent[]): void {
+  const ctx: TickContext = { state, planner, taken: buildTaken(state), signals: new SignalIndex(state), events };
+  // Kolejność pociągów jest stała (po id), więc rozstrzyganie, kto pierwszy zarezerwuje tor, jest deterministyczne.
   for (const train of state.trains) {
-    if (train.status === 'depot') continue;
+    if (train.status === 'depot') {
+      if (!train.stopped) tryLeaveDepot(ctx, train);
+      continue;
+    }
     if (train.status === 'loading') {
       if (--train.waitTicks <= 0) departStation(train);
       continue;
     }
-    moveTrain(state, planner, train, events);
+    moveTrain(ctx, train);
   }
+}
+
+/** Pociąg czekający na wyjazd wyjeżdża, gdy wyjazd z zajezdni jest wolny. */
+function tryLeaveDepot(ctx: TickContext, train: Train): void {
+  const exit = depotExit(ctx.state, train);
+  if (!exit || !isFree(ctx.state, ctx.taken, exit, train.id)) {
+    ctx.planner.setWaiting(train.id, true);
+    return;
+  }
+  leaveDepot(train, exit, ctx.events);
+  addTaken(ctx.state, ctx.taken, exit, train.id);
+  ctx.planner.setWaiting(train.id, false);
 }
 
 function departStation(train: Train): void {
   train.status = 'running';
   if (train.orders.length) train.currentOrder = (train.currentOrder + 1) % train.orders.length;
   train.mayReverse = true;
+  train.resTerminal = null;
 }
 
 /** Przyspieszenie (km/h na tick) z mocy, przyczepności i oporów. */
@@ -83,74 +107,127 @@ function brakingCap(d: number, limit: number): number {
   return Math.sqrt(limit * limit + (2 * BRAKE_KMH_PER_TICK * Math.max(0, d)) / UNITS_PER_KMH_TICK);
 }
 
-function moveTrain(state: GameState, planner: Planner, train: Train, events: SimEvent[]): void {
-  let plan = planner.get(state, train);
+/** Droga hamowania z prędkości maksymalnej + zapas – tyle pociąg stara się mieć zarezerwowane. */
+function reserveDistance(train: Train): number {
+  const v = engineDef(train.engine)!.maxSpeed;
+  return (v * v * UNITS_PER_KMH_TICK) / (2 * BRAKE_KMH_PER_TICK) + 24;
+}
 
-  if (plan.terminal === 'reverseNow') {
-    reverseTrain(train);
-    train.mayReverse = false;
-    plan = planner.get(state, train);
+/** Długość drogi od czoła do końca rezerwacji. */
+function reservedDistance(train: Train): number {
+  return stepLength(train.trail[0]!) - train.progress + train.reservedAhead.reduce((d, s) => d + stepLength(s), 0);
+}
+
+function moveTrain(ctx: TickContext, train: Train): void {
+  const { state } = ctx;
+  if (!train.stopped && !train.resTerminal && reservedDistance(train) < reserveDistance(train)) {
+    // Czekający pociąg ponawia próbę co kilka ticków (mniej liczenia tras).
+    const retry = !ctx.planner.isWaiting(train.id) || (state.tick + train.id) % RESERVE_RETRY_TICKS === 0;
+    if (retry && extendReservation(ctx, train) === 'reversed') return;
   }
 
   const maxSpeed = engineDef(train.engine)!.maxSpeed;
   const head = train.trail[0]!;
-  const hasStop = plan.terminal !== 'continue';
-  // Droga do punktu zatrzymania i ograniczenia na łukach przed nami.
-  let dist = stepLength(head) - train.progress;
+  const dist = reservedDistance(train);
   let target = train.stopped ? 0 : maxSpeed;
+  // Łuki na zarezerwowanej drodze.
+  let d = stepLength(head) - train.progress;
   let prev = head;
-  const lookahead = (maxSpeed * maxSpeed * UNITS_PER_KMH_TICK) / (2 * BRAKE_KMH_PER_TICK) + 32;
-  for (const s of plan.steps) {
-    if (isBend(prev, s)) target = Math.min(target, brakingCap(dist, BEND_SPEED));
-    if (dist > lookahead) break;
-    dist += stepLength(s);
+  for (const s of train.reservedAhead) {
+    if (isBend(prev, s)) target = Math.min(target, brakingCap(d, BEND_SPEED));
+    d += stepLength(s);
     prev = s;
   }
-  const distToStop = hasStop ? stepLength(head) - train.progress + plan.steps.reduce((d, s) => d + stepLength(s), 0) : Infinity;
-  if (hasStop) target = Math.min(target, brakingCap(distToStop, 0));
+  // Zawsze musimy zdążyć stanąć na końcu rezerwacji.
+  target = Math.min(target, brakingCap(dist, 0));
 
   if (train.speed < target) train.speed = Math.min(target, train.speed + acceleration(train));
   else train.speed = Math.max(target, train.speed - BRAKE_KMH_PER_TICK);
-  // Dojazd do celu: ostatnie metry „pełzając”, żeby nie zatrzymać się tuż przed nim.
-  if (!train.stopped && hasStop && train.speed < CREEP_SPEED && distToStop > 0) train.speed = CREEP_SPEED;
+  // Dojazd do celu (peron, zajezdnia, koniec toru) na ostatnich metrach „pełzając”.
+  if (!train.stopped && train.resTerminal && train.speed < CREEP_SPEED && dist > 0) train.speed = CREEP_SPEED;
   if (train.speed > 0) train.mayReverse = false;
 
   const move = train.speed * UNITS_PER_KMH_TICK;
-  if (move >= distToStop) {
-    advance(train, plan.steps, distToStop);
-    arrive(state, train, plan, events);
+  if (move >= dist) {
+    advance(train, dist);
+    train.speed = 0;
+    if (train.resTerminal) arrive(ctx, train);
     return;
   }
-  advance(train, plan.steps, move);
+  advance(train, move);
 }
 
 /**
- * Przesuwa czoło o `move`, wchodząc w kolejne odcinki planu policzonego na początku ticku
- * (w następnym ticku plan liczy się od nowa z nowego czoła).
+ * Dokłada rezerwację porcjami: każda porcja kończy się w bezpiecznym miejscu (zwykły tor w trybie
+ * Amator, semafor w trybie Ekspert) albo u celu i jest brana tylko w całości, gdy cała jest wolna.
  */
-function advance(train: Train, steps: readonly Step[], move: number): void {
-  let remaining = move;
+function extendReservation(ctx: TickContext, train: Train): 'ok' | 'blocked' | 'reversed' {
+  const { state, planner } = ctx;
+  const from = train.reservedAhead[train.reservedAhead.length - 1] ?? train.trail[0]!;
+  const plan: Plan = planRoute(state, train, {
+    from,
+    allowReverseStart: train.mayReverse && train.reservedAhead.length === 0,
+    taken: ctx.taken,
+    signals: ctx.signals,
+  });
+  planner.setLost(train.id, plan.lost);
+
+  if (plan.terminal === 'reverseNow') {
+    reverseTrain(train);
+    train.mayReverse = false;
+    planner.setWaiting(train.id, false);
+    return 'reversed';
+  }
+
+  const need = reserveDistance(train);
+  let have = reservedDistance(train);
   let i = 0;
+  while (have < need && i < plan.steps.length) {
+    // Porcja do najbliższego bezpiecznego miejsca (albo do końca planu).
+    const chunk: Step[] = [];
+    while (i < plan.steps.length) {
+      const s = plan.steps[i++]!;
+      chunk.push(s);
+      if (isSafeStop(state, s, ctx.signals)) break;
+    }
+    if (!chunk.every((s) => isFree(state, ctx.taken, s, train.id))) {
+      planner.setWaiting(train.id, true);
+      return 'blocked';
+    }
+    for (const s of chunk) {
+      train.reservedAhead.push(s);
+      addTaken(state, ctx.taken, s, train.id);
+      have += stepLength(s);
+    }
+  }
+  planner.setWaiting(train.id, false);
+  // Cały plan zarezerwowany i kończy się celem – po dojechaniu pociąg wykona akcję końcową.
+  if (i >= plan.steps.length && plan.terminal !== 'continue') train.resTerminal = plan.terminal;
+  return 'ok';
+}
+
+/** Przesuwa czoło o `move` po zarezerwowanych odcinkach. */
+function advance(train: Train, move: number): void {
+  let remaining = move;
   for (;;) {
     const head = train.trail[0]!;
     const room = stepLength(head) - train.progress;
-    if (remaining < room) {
-      train.progress += remaining;
+    if (remaining < room || train.reservedAhead.length === 0) {
+      train.progress = Math.min(stepLength(head), train.progress + remaining);
       break;
     }
     remaining -= room;
-    train.progress = stepLength(head);
-    const next = steps[i++];
-    if (!next) break;
-    train.trail.unshift(next);
+    train.trail.unshift(train.reservedAhead.shift()!);
     train.progress = 0;
   }
   trimTrail(train);
 }
 
-function arrive(state: GameState, train: Train, plan: Plan, events: SimEvent[]): void {
-  train.speed = 0;
-  switch (plan.terminal) {
+function arrive(ctx: TickContext, train: Train): void {
+  const { state } = ctx;
+  const terminal = train.resTerminal;
+  train.resTerminal = null;
+  switch (terminal) {
     case 'stop':
       train.status = 'loading';
       train.waitTicks = STATION_WAIT_TICKS;
@@ -160,19 +237,21 @@ function arrive(state: GameState, train: Train, plan: Plan, events: SimEvent[]):
       train.status = 'depot';
       train.depotId = state.map.depot[head.y * state.map.width + head.x] || null;
       train.trail = [];
+      train.reservedAhead = [];
       train.progress = 0;
       train.stopped = true;
       train.goToDepot = false;
       train.reversed = false;
-      events.push({ type: 'trainsChanged' });
+      ctx.events.push({ type: 'trainsChanged' });
       break;
     }
-    default:
+    case 'reverse':
       reverseTrain(train);
+      break;
   }
 }
 
-/** Usuwa z końca odcinki, których skład już nie zajmuje. */
+/** Usuwa z końca odcinki, których skład już nie zajmuje (zwalnia je dla innych pociągów). */
 function trimTrail(train: Train): void {
   const length = trainLength(train);
   let covered = train.progress;
@@ -185,7 +264,7 @@ function trimTrail(train: Train): void {
   }
 }
 
-/** Zawrócenie: koniec składu staje się czołem, kierunek jazdy odwrotny. */
+/** Zawrócenie: koniec składu staje się czołem; rezerwacja przed starym czołem jest zwalniana. */
 export function reverseTrain(train: Train): void {
   const length = trainLength(train);
   // Odległość od czoła do wejścia w odcinek k.
@@ -203,6 +282,8 @@ export function reverseTrain(train: Train): void {
     .reverse()
     .map(flipStep);
   train.progress = stepLength(tailStep) - fromEntry;
+  train.reservedAhead = [];
+  train.resTerminal = null;
   train.reversed = !train.reversed;
   train.speed = 0;
 }

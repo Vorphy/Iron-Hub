@@ -1,7 +1,9 @@
-import { BEND_PENALTY, REVERSE_PENALTY } from '../config';
+import { BEND_PENALTY, OCCUPIED_PENALTY, REVERSE_PENALTY } from '../config';
+import type { SignalIndex } from '../signals/signals';
 import type { GameState } from '../state';
 import { SIDE_DELTA, Track } from '../track/track';
 import { inBounds } from '../world/map';
+import { isFree, type Taken } from './reservation';
 import { flipStep, isBend, stepKey, stepLength, successors } from './steps';
 import type { Step, Train } from './train';
 
@@ -61,14 +63,29 @@ interface Node {
   seq: number;
 }
 
+export interface RouteContext {
+  /** Odcinek, od którego liczymy trasę – koniec obecnej rezerwacji albo czoło. */
+  from: Step;
+  /** Pociąg stoi i nie ma rezerwacji – może zawrócić w miejscu. */
+  allowReverseStart: boolean;
+  taken: Taken;
+  signals: SignalIndex;
+}
+
 /**
- * Trasa od czoła pociągu do celu (Dijkstra po skierowanych odcinkach toru).
- * Wynik zależy tylko od stanu gry – ten sam stan zawsze daje tę samą trasę (determinizm).
+ * Trasa do celu (Dijkstra po skierowanych odcinkach toru). Tory zajęte przez inne pociągi
+ * kosztują więcej, więc pociąg wybiera wolny peron, jeśli jest. Wynik zależy tylko od stanu gry
+ * (determinizm).
  */
-export function planRoute(state: GameState, train: Train): Plan {
-  const head = train.trail[0]!;
+export function planRoute(state: GameState, train: Train, ctx: RouteContext): Plan {
+  const head = ctx.from;
   const goal = trainGoal(train);
-  if (!goal) return wander(state, head);
+  const manual = state.signalMode === 'manual';
+  const next = (s: Step) => {
+    const out = successors(state, s);
+    return manual ? out.filter((n) => !ctx.signals.forbids(n)) : out;
+  };
+  if (!goal) return wander(head, next);
 
   const isGoal = goalTest(state, goal);
   const W = state.map.width;
@@ -84,7 +101,7 @@ export function planRoute(state: GameState, train: Train): Plan {
   };
 
   push({ step: head, cost: 0, parent: null, viaReverse: false, reversedStart: false });
-  if (train.mayReverse) {
+  if (ctx.allowReverseStart) {
     const tail = train.trail[train.trail.length - 1]!;
     push({ step: flipStep(tail), cost: REVERSE_PENALTY, parent: null, viaReverse: false, reversedStart: true });
   }
@@ -94,18 +111,22 @@ export function planRoute(state: GameState, train: Train): Plan {
     const node = heap.pop()!;
     if (best.get(stepKey(node.step, W))! < node.cost) continue;
     if (isGoal(node.step)) return toPlan(node, goal);
-    const next = successors(state, node.step);
-    for (const s of next) {
-      const cost = node.cost + stepLength(s) + (isBend(node.step, s) ? BEND_PENALTY : 0);
+    const nexts = next(node.step);
+    for (const s of nexts) {
+      const cost =
+        node.cost +
+        stepLength(s) +
+        (isBend(node.step, s) ? BEND_PENALTY : 0) +
+        (isFree(state, ctx.taken, s, train.id) ? 0 : OCCUPIED_PENALTY);
       push({ step: s, cost, parent: node, viaReverse: false, reversedStart: node.reversedStart });
     }
-    if (next.length === 0) {
+    if (nexts.length === 0) {
       // Koniec toru: zawracamy (kara, żeby wybierać jazdę naprzód, gdy się da).
       const back = flipStep(node.step);
       push({ step: back, cost: node.cost + REVERSE_PENALTY, parent: node, viaReverse: true, reversedStart: node.reversedStart });
     }
   }
-  return { ...wander(state, head), lost: true };
+  return { ...wander(head, next), lost: true };
 }
 
 function toPlan(goalNode: Node, goal: NonNullable<Goal>): Plan {
@@ -123,11 +144,11 @@ function toPlan(goalNode: Node, goal: NonNullable<Goal>): Plan {
 }
 
 /** Bez celu: jedziemy przed siebie (najchętniej bez łuków), na końcu toru zawracamy. */
-function wander(state: GameState, head: Step): Plan {
+function wander(head: Step, successorsOf: (s: Step) => Step[]): Plan {
   const steps: Step[] = [];
   let cur = head;
   for (let i = 0; i < WANDER_LOOKAHEAD; i++) {
-    const next = successors(state, cur).filter((s) => s.track !== 0);
+    const next = successorsOf(cur).filter((s) => s.track !== 0);
     if (next.length === 0) return { steps, terminal: 'reverse', lost: false };
     cur = next.find((s) => !isBend(cur, s)) ?? next[0]!;
     steps.push(cur);

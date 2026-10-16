@@ -1,6 +1,6 @@
 import type { Overlay } from './render/overlay';
 import type { Command, FailReason } from './sim/commands';
-import { CLEAR_ROUGH_COST } from './sim/config';
+import { CLEAR_ROUGH_COST, SIGNAL_COST } from './sim/config';
 import { autoDepotSide, depotAt, depotRefund, planDepot } from './sim/depot/depot';
 import {
   catchment,
@@ -12,13 +12,16 @@ import {
 } from './sim/station/station';
 import { planTrackLine } from './sim/track/autorail';
 import { planBuildTrack, planRemoveTrack, type TrackPlan } from './sim/track/build';
-import { getTrackBits, Side, tracksOn } from './sim/track/track';
+import { getTrackBits, Side, Track, TRACK_SIDES, tracksOn } from './sim/track/track';
 import type { Simulation } from './sim/simulation';
 import { getTerrain, inBounds, Terrain } from './sim/world/map';
 import type { Point } from './render/iso';
 
 /** 'orders' – wskazywanie stacji do rozkładu pociągu `ordersTrain` (z okna pociągu). */
-export type Tool = 'cursor' | 'track' | 'station' | 'depot' | 'bulldozer' | 'orders';
+export type Tool = 'cursor' | 'track' | 'station' | 'depot' | 'signal' | 'bulldozer' | 'orders';
+
+/** Rodzaj semafora stawianego narzędziem (albo usuwanie). */
+export type SignalKind = 'path' | 'oneway' | 'remove';
 
 export const FAIL_MESSAGES: Record<FailReason, string> = {
   outOfBounds: 'Poza mapą',
@@ -50,6 +53,7 @@ export class Tools {
   depotSide: Side = Side.SE;
   /** Auto: wjazd sam obraca się w stronę sąsiedniego toru. */
   depotAuto = true;
+  signalKind: SignalKind = 'path';
   /** Pociąg, któremu dopisujemy stacje (narzędzie 'orders'). */
   ordersTrain: number | null = null;
   private dragStart: Point | null = null;
@@ -108,6 +112,11 @@ export class Tools {
     this.dirty = true;
   }
 
+  setSignalKind(kind: SignalKind): void {
+    this.signalKind = kind;
+    this.dirty = true;
+  }
+
   setStationAxis(axis: StationAxis): void {
     this.stationAxis = axis;
     this.dirty = true;
@@ -150,6 +159,26 @@ export class Tools {
       const plan = planBuildTrack(this.sim.state, planTrackLine(start.x, start.y, p.x, p.y));
       this.overlay.setTrackPreview(plan);
       if (this.dragStart) this.label = planLabel(plan);
+      return;
+    }
+
+    if (this.tool === 'signal') {
+      const piece = tile && nearestPiece(this.sim, p);
+      this.overlay.setHover(tile, 0x9aa0a8);
+      if (!piece) {
+        this.label = { text: 'Wskaż tor', ok: false };
+        return;
+      }
+      this.overlay.setPieceHighlight(piece.x, piece.y, piece.track);
+      const existing = this.sim.state.signals.find((s) => s.x === piece.x && s.y === piece.y && s.track === piece.track);
+      this.label =
+        this.signalKind === 'remove'
+          ? existing
+            ? { text: 'Usuń semafor', ok: true }
+            : { text: 'Brak semafora', ok: false }
+          : existing
+            ? { text: 'Zmień kierunek', ok: true }
+            : { text: `Koszt: ${formatMoney(SIGNAL_COST)}`, ok: this.sim.state.money >= SIGNAL_COST };
       return;
     }
 
@@ -214,6 +243,12 @@ export class Tools {
   }
 
   private commandFor(start: Point, end: Point): Command | null {
+    if (this.tool === 'signal') {
+      const piece = nearestPiece(this.sim, end);
+      if (!piece) return null;
+      if (this.signalKind === 'remove') return { type: 'removeSignal', ...piece };
+      return { type: 'placeSignal', ...piece, oneWay: this.signalKind === 'oneway' };
+    }
     if (this.tool === 'track') {
       return { type: 'buildTrack', pieces: planTrackLine(start.x, start.y, end.x, end.y) };
     }
@@ -247,6 +282,42 @@ export class Tools {
     }
     return null;
   }
+}
+
+// Środki boków kafelka (do wyboru najbliższego elementu toru).
+const MID: Record<Side, readonly [number, number]> = {
+  [Side.NE]: [0.5, 0],
+  [Side.SE]: [1, 0.5],
+  [Side.SW]: [0.5, 1],
+  [Side.NW]: [0, 0.5],
+};
+
+/** Element toru na kafelku pod kursorem najbliższy kursorowi (do stawiania semaforów). */
+function nearestPiece(sim: Simulation, p: Point): { x: number; y: number; track: Track } | null {
+  const x = Math.floor(p.x);
+  const y = Math.floor(p.y);
+  if (!inBounds(sim.state.map, x, y)) return null;
+  const fx = p.x - x;
+  const fy = p.y - y;
+  let best: Track | null = null;
+  let bestD = Infinity;
+  for (const track of tracksOn(getTrackBits(sim.state.map, x, y))) {
+    const [a, b] = TRACK_SIDES[track];
+    const d = distToSegment(fx, fy, MID[a], MID[b]);
+    if (d < bestD) {
+      bestD = d;
+      best = track;
+    }
+  }
+  return best === null ? null : { x, y, track: best };
+}
+
+function distToSegment(px: number, py: number, a: readonly [number, number], b: readonly [number, number]): number {
+  const [ax, ay] = a;
+  const dx = b[0] - ax;
+  const dy = b[1] - ay;
+  const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)));
+  return Math.hypot(px - (ax + dx * t), py - (ay + dy * t));
 }
 
 function sameTile(a: Point, b: Point): boolean {

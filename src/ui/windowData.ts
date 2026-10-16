@@ -8,12 +8,13 @@ function stationName(sim: Simulation, id: number | undefined): string {
 }
 
 function trainStatus(sim: Simulation, t: Train): string {
-  if (t.status === 'depot') return 'W zajezdni';
+  if (t.status === 'depot') return t.stopped ? 'W zajezdni' : 'Czeka na wyjazd z zajezdni';
   if (t.status === 'loading') {
     const h = t.trail[0]!;
     return `Postój: ${stationName(sim, sim.state.map.station[h.y * sim.state.map.width + h.x])}`;
   }
   if (t.stopped) return t.speed > 0 ? 'Hamuje' : 'Zatrzymany';
+  if (sim.planner.isWaiting(t.id) && t.speed < 1) return 'Czeka na wolny tor';
   if (t.goToDepot) return 'Jedzie do zajezdni';
   const target = t.orders[t.currentOrder];
   if (target === undefined) return 'Jedzie (brak rozkładu)';

@@ -19,6 +19,8 @@
 | 13 | 2026-10-16 | **OpenGFX tylko jako placeholder** w prototypie; przed wydaniem zamiana na darmową grafikę z licencją pozwalającą na zamknięty kod (np. CC0) lub własną | Zachowuje możliwość płatnych dodatków |
 | 14 | 2026-10-16 | Graf torów **pochodny i niezapisywany**; pozycja pociągu w układzie kafelków (nie krawędź+offset) | Przebudowa grafu nie psuje pozycji pociągów; prostszy zapis gry |
 | 15 | 2026-10-16 | Trasy pociągów: **Dijkstra po skierowanych elementach toru**, nie po węzłach grafu | Prostsze i odporne na zawracanie; przy obecnej skali szybkie. Graf węzłów zostaje do sygnalizacji (etap 3) |
+| 16 | 2026-10-16 | Tryb Amator = **ruchomy odstęp blokowy** (pociąg może stanąć na każdym zwykłym kafelku), zamiast automatycznego stawiania semaforów | Ten sam silnik co Ekspert, brak przypadków brzegowych z rozmieszczaniem semaforów, większa przepustowość |
+| 17 | 2026-10-16 | Trasa liczona przy dokładaniu rezerwacji (bez pamięci tras między tickami); uwzględnia zajętość torów | Wybór wolnego peronu; zachowany determinizm po wczytaniu |
 
 ## Otwarte pytania
 
@@ -32,7 +34,6 @@ Opcje:
 Do decyzji przed etapem 7. Do tego czasu nie mieszać grafiki OpenGFX z docelowymi zasobami w repozytorium (osobny katalog z plikiem licencji).
 
 ### Pozostałe
-- Czy tryb sygnalizacji można zmienić w trakcie gry (Amator → Ekspert)? Przejście w jedną stronę jest proste (auto-sygnały stają się ręcznymi).
 - Czy fabryka może zostać zamknięta po spadku poniżej poziomu 1?
 - Wskaźnik zaopatrzenia fabryki przetwórczej: minimum z wejść czy średnia ważona?
 - Czy pasażerowie dowiezieni do fabryki (siła robocza) są osobnym wejściem obowiązkowym, czy bonusem?

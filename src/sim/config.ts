@@ -45,3 +45,9 @@ export const VEHICLE_GAP = 1;
 /** Kary w wyszukiwaniu trasy (jednostki toru). */
 export const REVERSE_PENALTY = 64;
 export const BEND_PENALTY = 2;
+/** Kara za element toru zajęty przez inny pociąg – trasa omija zajęte perony i tory. */
+export const OCCUPIED_PENALTY = 48;
+/** Czekający pociąg ponawia próbę rezerwacji co tyle ticków. */
+export const RESERVE_RETRY_TICKS = 10;
+/** Koszt semafora. */
+export const SIGNAL_COST = 200;

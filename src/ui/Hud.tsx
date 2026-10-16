@@ -2,7 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { SPEEDS, type Speed } from '../loop';
 import { Side } from '../sim/track/track';
 import { Terrain } from '../sim/world/map';
-import { formatMoney, type Tool } from '../tools';
+import { formatMoney, type SignalKind, type Tool } from '../tools';
 import { DepotWindow } from './DepotWindow';
 import { TrainWindow } from './TrainWindow';
 import { hudStore, type HudActions, type HudState } from './hudStore';
@@ -19,17 +19,20 @@ const TOOLS: { tool: Tool; icon: string; name: string; key: string }[] = [
   { tool: 'track', icon: '═', name: 'Tory', key: 'T' },
   { tool: 'station', icon: '▤', name: 'Stacja', key: 'P' },
   { tool: 'depot', icon: '⌂', name: 'Zajezdnia', key: 'Z' },
+  { tool: 'signal', icon: '⊙', name: 'Semafor', key: 'B' },
   { tool: 'bulldozer', icon: '✖', name: 'Rozbiórka', key: 'X' },
 ];
 
 const TOOL_HELP: Record<Tool, string> = {
-  cursor: 'Klik na pociąg lub zajezdnię – okno · przeciąganie / strzałki / WASD – przesuwanie · kółko – zoom · spacja – pauza · 1–4 – prędkość · G – podgląd grafu torów',
+  cursor: 'Klik na pociąg lub zajezdnię – okno · przeciąganie / strzałki / WASD – przesuwanie · kółko – zoom · spacja – pauza · 1–4 – prędkość · G – graf torów · V – rezerwacje torów',
   track:
     'Przeciągnij, aby położyć tor: wzdłuż osi lub ukośnie. Pozycja kursora w kafelku wybiera łuk. Prawy przycisk – przesuwanie mapy · Esc – anuluj',
   station:
     'Przeciągnij prostokąt: dłuższy bok to długość peronu, krótszy – liczba torów. R – obrót przy kwadracie. Niebieskie pole to zasięg stacji',
   depot:
     'Klik stawia zajezdnię (1000 zł). Kierunek wjazdu wybierz w panelu obok (lub R); Auto – w stronę sąsiedniego toru',
+  signal:
+    'Klik na tor stawia semafor ścieżkowy (200 zł); kolejne kliknięcia zmieniają kierunek. Pociąg może stanąć tylko przed semaforem, na końcu peronu lub toru · V – podgląd rezerwacji',
   orders: 'Klikaj stacje, aby dopisać je do rozkładu pociągu · Esc – koniec',
   bulldozer: 'Klik – usuń zajezdnię, kafelek stacji, tory z kafelka lub oczyść nieużytek · przeciągnięcie – rozbierz odcinek toru (zwrot 25%)',
 };
@@ -72,12 +75,12 @@ export function Hud({ actions }: { actions: HudActions }) {
         </span>
       </div>
 
-      {s.menuOpen && <Menu actions={actions} saves={s.saves} />}
+      {s.menuOpen && <Menu actions={actions} saves={s.saves} signalMode={s.signalMode} />}
       {s.windowData?.kind === 'depot' && <DepotWindow data={s.windowData} money={s.money} actions={actions} />}
       {s.windowData?.kind === 'train' && <TrainWindow data={s.windowData} actions={actions} />}
 
       <div class="panel toolbar">
-        {TOOLS.map((t) => (
+        {TOOLS.filter((t) => t.tool !== 'signal' || s.signalMode === 'manual').map((t) => (
           <button
             key={t.tool}
             class={t.tool === s.tool ? 'active' : ''}
@@ -155,6 +158,28 @@ function ToolOptions({ tool, options, actions }: { tool: Tool; options: HudState
       </div>
     );
   }
+  if (tool === 'signal') {
+    const kinds: { kind: SignalKind; label: string; title: string }[] = [
+      { kind: 'path', label: 'Ścieżkowy', title: 'Przejezdny w obie strony; pociąg staje przed nim w ustawionym kierunku' },
+      { kind: 'oneway', label: 'Jednokier.', title: 'Zabrania jazdy pod prąd' },
+      { kind: 'remove', label: 'Usuń', title: 'Usuwa semafor (zwrot 25%)' },
+    ];
+    return (
+      <div class="panel tool-options">
+        <div class="section-title">Semafor</div>
+        {kinds.map((k) => (
+          <button
+            key={k.kind}
+            class={options.signalKind === k.kind ? 'active' : ''}
+            title={k.title}
+            onClick={() => actions.setSignalKind(k.kind)}
+          >
+            {k.label}
+          </button>
+        ))}
+      </div>
+    );
+  }
   if (tool === 'station') {
     return (
       <div class="panel tool-options">
@@ -180,9 +205,31 @@ function formatSaveDate(iso: string | null): string {
   return Number.isNaN(d.getTime()) ? 'brak' : d.toLocaleString('pl-PL', { dateStyle: 'short', timeStyle: 'short' });
 }
 
-function Menu({ actions, saves }: { actions: HudActions; saves: HudState['saves'] }) {
+function Menu({
+  actions,
+  saves,
+  signalMode,
+}: {
+  actions: HudActions;
+  saves: HudState['saves'];
+  signalMode: HudState['signalMode'];
+}) {
   return (
     <div class="panel menu">
+      <div class="menu-title">Sygnalizacja</div>
+      <div class="buttons">
+        <button class={signalMode === 'auto' ? 'active' : ''} onClick={() => actions.setSignalMode('auto')}>
+          Amator
+        </button>
+        <button class={signalMode === 'manual' ? 'active' : ''} onClick={() => actions.setSignalMode('manual')}>
+          Ekspert
+        </button>
+      </div>
+      <div class="menu-note">
+        {signalMode === 'auto'
+          ? 'Pociągi same trzymają odstęp i nie wjeżdżają na zajęte rozjazdy.'
+          : 'Pociąg staje tylko przed semaforem, na końcu peronu lub toru. Semafory stawiasz sam (B).'}
+      </div>
       <div class="menu-title">Gra</div>
       <button onClick={actions.quickSave}>Zapisz</button>
       <button onClick={actions.quickLoad} disabled={!saves.quick}>

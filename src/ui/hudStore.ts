@@ -2,7 +2,8 @@ import type { Speed } from '../loop';
 import type { Terrain } from '../sim/world/map';
 import type { StationAxis } from '../sim/station/station';
 import type { Side } from '../sim/track/track';
-import type { Tool } from '../tools';
+import type { SignalMode } from '../sim/signals/signals';
+import type { SignalKind, Tool } from '../tools';
 import { Store } from './store';
 
 export type WindowRef = { kind: 'depot'; depotId: number } | { kind: 'train'; trainId: number };
@@ -51,7 +52,8 @@ export interface HudState {
   speed: Speed;
   tool: Tool;
   /** Ustawienia narzędzi budowy (panel opcji). */
-  toolOptions: { depotSide: Side; depotAuto: boolean; stationAxis: StationAxis };
+  toolOptions: { depotSide: Side; depotAuto: boolean; stationAxis: StationAxis; signalKind: SignalKind };
+  signalMode: SignalMode;
   fps: number;
   zoom: number;
   /** Podsumowanie grafu torów, gdy włączony podgląd (G). */
@@ -73,7 +75,8 @@ export const hudStore = new Store<HudState>({
   money: 0,
   speed: 1,
   tool: 'cursor',
-  toolOptions: { depotSide: 1, depotAuto: true, stationAxis: 'x' },
+  toolOptions: { depotSide: 1, depotAuto: true, stationAxis: 'x', signalKind: 'path' },
+  signalMode: 'auto',
   fps: 0,
   zoom: 1,
   graphInfo: null,
@@ -97,6 +100,8 @@ export interface HudActions {
   setTool(tool: Tool): void;
   setDepotSide(side: Side | 'auto'): void;
   setStationAxis(axis: StationAxis): void;
+  setSignalKind(kind: SignalKind): void;
+  setSignalMode(mode: SignalMode): void;
   toggleMenu(): void;
   quickSave(): void;
   quickLoad(): void;

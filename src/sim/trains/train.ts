@@ -40,6 +40,10 @@ export interface Train {
   progress: number;
   /** Zajmowane odcinki, od czoła do końca składu. */
   trail: Step[];
+  /** Odcinki zarezerwowane przed czołem, w kolejności jazdy. Pociąg wjeżdża tylko na nie. */
+  reservedAhead: Step[];
+  /** Rezerwacja sięga celu: co zrobić po dojechaniu do jej końca (null – to tylko granica rezerwacji). */
+  resTerminal: 'stop' | 'depot' | 'reverse' | null;
   /** Skład jedzie „tyłem” (po zawróceniu lokomotywa jest na końcu). */
   reversed: boolean;
   /** Pozostały czas postoju na stacji (ticki). */
@@ -93,6 +97,8 @@ export function buyTrain(
     speed: 0,
     progress: 0,
     trail: [],
+    reservedAhead: [],
+    resTerminal: null,
     reversed: false,
     waitTicks: 0,
     value: plan.cost,
@@ -119,30 +125,44 @@ export function resaleValue(train: Train): number {
 /** Kafelki zajęte przez pociągi na torach – tam nie wolno rozbierać torów ani stacji. */
 export function occupiedTiles(state: GameState): Set<number> {
   const out = new Set<number>();
-  for (const t of state.trains) for (const s of t.trail) out.add(s.y * state.map.width + s.x);
+  for (const t of state.trains) for (const s of [...t.trail, ...t.reservedAhead]) out.add(s.y * state.map.width + s.x);
   return out;
 }
 
-/** Wyjazd z zajezdni albo wznowienie jazdy zatrzymanego pociągu. */
-export function startTrain(state: GameState, trainId: number, events: SimEvent[]): CommandResult {
+/**
+ * Start: w zajezdni – zgłoszenie wyjazdu (pociąg wyjedzie, gdy wyjazd będzie wolny),
+ * na torze – wznowienie jazdy.
+ */
+export function startTrain(state: GameState, trainId: number): CommandResult {
   const train = trainById(state, trainId);
   if (!train) return { ok: false, reason: 'blocked' };
   if (train.status === 'depot') {
-    const depot = state.depots.find((d) => d.id === train.depotId);
-    if (!depot) return { ok: false, reason: 'blocked' };
-    const exit: Step = { x: depot.x, y: depot.y, track: 0, entry: -1, exit: depot.side };
+    const exit = depotExit(state, train);
+    if (!exit) return { ok: false, reason: 'blocked' };
     if (successors(state, exit).length === 0) return { ok: false, reason: 'depotNotConnected' };
-    train.status = 'running';
-    train.depotId = null;
-    train.trail = [exit];
-    train.progress = 0;
-    train.speed = 0;
-    train.reversed = false;
-    train.mayReverse = false;
-    events.push({ type: 'trainsChanged' });
   }
   train.stopped = false;
   return { ok: true };
+}
+
+/** Odcinek wyjazdu z zajezdni, w której stoi pociąg. */
+export function depotExit(state: GameState, train: Train): Step | null {
+  const depot = state.depots.find((d) => d.id === train.depotId);
+  return depot ? { x: depot.x, y: depot.y, track: 0, entry: -1, exit: depot.side } : null;
+}
+
+/** Wystawia pociąg na wyjazd z zajezdni (wywoływane, gdy wyjazd jest wolny). */
+export function leaveDepot(train: Train, exit: Step, events: SimEvent[]): void {
+  train.status = 'running';
+  train.depotId = null;
+  train.trail = [exit];
+  train.reservedAhead = [];
+  train.resTerminal = null;
+  train.progress = 0;
+  train.speed = 0;
+  train.reversed = false;
+  train.mayReverse = false;
+  events.push({ type: 'trainsChanged' });
 }
 
 export function stopTrain(state: GameState, trainId: number): CommandResult {
@@ -157,6 +177,8 @@ export function sendToDepot(state: GameState, trainId: number): CommandResult {
   const train = trainById(state, trainId);
   if (!train || train.status === 'depot') return { ok: false, reason: 'blocked' };
   train.goToDepot = !train.goToDepot;
+  // Cel się zmienił – po dojechaniu do końca obecnej rezerwacji trasa zostanie policzona od nowa.
+  train.resTerminal = null;
   return { ok: true };
 }
 
@@ -165,6 +187,7 @@ export function setOrders(state: GameState, trainId: number, orders: readonly nu
   if (!train || orders.some((id) => !state.stations.some((s) => s.id === id))) return { ok: false, reason: 'blocked' };
   train.orders = [...orders];
   if (train.currentOrder >= train.orders.length) train.currentOrder = 0;
+  train.resTerminal = null;
   return { ok: true };
 }
 
@@ -176,5 +199,6 @@ export function dropStationFromOrders(state: GameState, stationId: number): void
     t.orders = t.orders.filter((id) => id !== stationId);
     if (i < t.currentOrder) t.currentOrder--;
     if (t.currentOrder >= t.orders.length) t.currentOrder = 0;
+    t.resTerminal = null;
   }
 }

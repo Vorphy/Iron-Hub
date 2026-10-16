@@ -1,12 +1,13 @@
 import type { Depot } from './depot/depot';
 import type { Station } from './station/station';
 import type { GameState } from './state';
-import { Side } from './track/track';
+import type { Signal, SignalMode } from './signals/signals';
+import { ALL_TRACKS, Side } from './track/track';
 import type { Step, Train } from './trains/train';
 import { engineDef, wagonDef } from './trains/vehicles';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 export interface SerializedState {
   version: number;
@@ -20,6 +21,8 @@ export interface SerializedState {
   nextDepotId: number;
   trains: Train[];
   nextTrainId: number;
+  signals: Signal[];
+  signalMode: SignalMode;
 }
 
 export class SaveError extends Error {}
@@ -46,11 +49,19 @@ export function serializeState(state: GameState): SerializedState {
     nextDepotId: state.nextDepotId,
     trains: state.trains.map(cloneTrain),
     nextTrainId: state.nextTrainId,
+    signals: state.signals.map((s) => ({ ...s })),
+    signalMode: state.signalMode,
   };
 }
 
 function cloneTrain(t: Train): Train {
-  return { ...t, wagons: [...t.wagons], orders: [...t.orders], trail: t.trail.map((s) => ({ ...s })) };
+  return {
+    ...t,
+    wagons: [...t.wagons],
+    orders: [...t.orders],
+    trail: t.trail.map((s) => ({ ...s })),
+    reservedAhead: t.reservedAhead.map((s) => ({ ...s })),
+  };
 }
 
 /** Uzupełnia zapisy ze starszych wersji gry. */
@@ -70,6 +81,15 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     d.trains = [];
     d.nextTrainId = 1;
     d.version = 3;
+  }
+  if (d.version === 3) {
+    // v4: semafory i rezerwacje torów
+    d.signals = [];
+    d.signalMode = 'auto';
+    if (Array.isArray(d.trains)) {
+      d.trains = d.trains.map((t: Record<string, unknown>) => ({ ...t, reservedAhead: [], resTerminal: null }));
+    }
+    d.version = 4;
   }
   return d as Partial<SerializedState>;
 }
@@ -99,6 +119,8 @@ export function deserializeState(data: unknown): GameState {
   if (!Array.isArray(d.stations) || !d.stations.every(isStation)) throw new SaveError('Uszkodzone stacje');
   if (!Array.isArray(d.depots) || !d.depots.every(isDepot)) throw new SaveError('Uszkodzone zajezdnie');
   if (!Array.isArray(d.trains) || !d.trains.every(isTrain)) throw new SaveError('Uszkodzone pociągi');
+  if (!Array.isArray(d.signals) || !d.signals.every(isSignal)) throw new SaveError('Uszkodzone semafory');
+  if (d.signalMode !== 'auto' && d.signalMode !== 'manual') throw new SaveError('Uszkodzony tryb sygnalizacji');
   return {
     version: 1,
     tick: d.tick,
@@ -111,7 +133,21 @@ export function deserializeState(data: unknown): GameState {
     nextDepotId: d.nextDepotId,
     trains: d.trains.map(cloneTrain),
     nextTrainId: d.nextTrainId,
+    signals: d.signals.map((s) => ({ ...s })),
+    signalMode: d.signalMode,
   };
+}
+
+function isSignal(v: unknown): v is Signal {
+  const s = v as Signal;
+  return (
+    !!s &&
+    isInt(s.x) &&
+    isInt(s.y) &&
+    ALL_TRACKS.includes(s.track) &&
+    (s.dirs === 1 || s.dirs === 2 || s.dirs === 3) &&
+    typeof s.oneWay === 'boolean'
+  );
 }
 
 const SIDES: readonly number[] = Object.values(Side);
@@ -143,6 +179,9 @@ function isTrain(v: unknown): v is Train {
     typeof t.progress === 'number' &&
     Array.isArray(t.trail) &&
     t.trail.every(isStep) &&
+    Array.isArray(t.reservedAhead) &&
+    t.reservedAhead.every(isStep) &&
+    (t.resTerminal === null || ['stop', 'depot', 'reverse'].includes(t.resTerminal)) &&
     typeof t.reversed === 'boolean' &&
     isInt(t.waitTicks) &&
     typeof t.value === 'number'

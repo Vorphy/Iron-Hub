@@ -7,6 +7,7 @@ import { tileCenter, worldToTileF, type Point } from './render/iso';
 import { MapRenderer } from './render/mapRenderer';
 import { Overlay } from './render/overlay';
 import { StationLabels } from './render/stationLabels';
+import { SignalRenderer } from './render/signals';
 import { TrainRenderer } from './render/trains';
 import type { Command } from './sim/commands';
 import { depotAt } from './sim/depot/depot';
@@ -27,6 +28,7 @@ const KEY_TOOLS: Record<string, Tool> = {
   KeyT: 'track',
   KeyP: 'station',
   KeyZ: 'depot',
+  KeyB: 'signal',
   KeyX: 'bulldozer',
   Delete: 'bulldozer',
 };
@@ -41,6 +43,7 @@ export class Game {
   private readonly graphDebug = new GraphDebug();
   private readonly stationLabels = new StationLabels();
   private readonly trains = new TrainRenderer();
+  private readonly signals = new SignalRenderer();
   private readonly tools: Tools;
   private readonly input: Input;
   private pointer: Point | null = null;
@@ -64,6 +67,7 @@ export class Game {
       this.mapRenderer.container,
       this.graphDebug.gfx,
       this.overlay.container,
+      this.signals.gfx,
       this.trains.gfx,
       this.stationLabels.container,
     );
@@ -177,7 +181,9 @@ export class Game {
       return;
     }
     const tool = KEY_TOOLS[code];
-    if (tool) this.setTool(tool);
+    // Semafory tylko w trybie Ekspert.
+    if (tool && (tool !== 'signal' || this.sim.state.signalMode === 'manual')) this.setTool(tool);
+    if (code === 'KeyV') this.signals.showReservations = !this.signals.showReservations;
     if (code === 'KeyR') this.tools.rotate();
     if (code === 'KeyG') {
       this.graphDebug.visible = !this.graphDebug.visible;
@@ -211,7 +217,9 @@ export class Game {
     }
     this.mapRenderer.cull(this.camera.viewRect());
     const win = hudStore.get().window;
+    this.signals.draw(this.sim.state);
     this.trains.draw(this.sim.state, this.loop.alpha, win?.kind === 'train' ? win.trainId : null);
+    if (this.tools.tool === 'signal' && this.sim.state.signalMode !== 'manual') this.setTool('cursor');
     this.tools.update();
     this.updateWindow();
     this.updateHud();
@@ -239,9 +247,12 @@ export class Game {
   /** Ten sam obiekt, dopóki nic się nie zmieniło (UI nie przerysowuje się co klatkę). */
   private toolOptions(prev: HudState['toolOptions']): HudState['toolOptions'] {
     const t = this.tools;
-    return prev.depotSide === t.depotSide && prev.depotAuto === t.depotAuto && prev.stationAxis === t.stationAxis
+    return prev.depotSide === t.depotSide &&
+      prev.depotAuto === t.depotAuto &&
+      prev.stationAxis === t.stationAxis &&
+      prev.signalKind === t.signalKind
       ? prev
-      : { depotSide: t.depotSide, depotAuto: t.depotAuto, stationAxis: t.stationAxis };
+      : { depotSide: t.depotSide, depotAuto: t.depotAuto, stationAxis: t.stationAxis, signalKind: t.signalKind };
   }
 
   private updateHud(): void {
@@ -266,6 +277,7 @@ export class Game {
       money: state.money,
       speed: this.loop.speed,
       tool: this.tools.tool,
+      signalMode: state.signalMode,
       toolOptions: this.toolOptions(prev.toolOptions),
       fps: Math.round(this.app.ticker.FPS),
       zoom: this.camera.zoom,

@@ -1,5 +1,6 @@
 import { START_MONEY } from './config';
 import type { Depot } from './depot/depot';
+import type { Signal, SignalMode } from './signals/signals';
 import type { Station } from './station/station';
 import type { Train } from './trains/train';
 import { generateMap, type WorldMap } from './world/map';
@@ -19,6 +20,8 @@ export interface GameState {
   nextDepotId: number;
   trains: Train[];
   nextTrainId: number;
+  signals: Signal[];
+  signalMode: SignalMode;
 }
 
 export interface NewGameOptions {
@@ -40,5 +43,7 @@ export function createGame({ width, height, seed }: NewGameOptions): GameState {
     nextDepotId: 1,
     trains: [],
     nextTrainId: 1,
+    signals: [],
+    signalMode: 'auto',
   };
 }

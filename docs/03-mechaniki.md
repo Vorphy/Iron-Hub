@@ -40,24 +40,27 @@ Wartości liczbowe w tym dokumencie są **startowe** – do strojenia w trakcie 
 
 ## Sygnalizacja
 
-### Jeden silnik: rezerwacja ścieżek
-Rdzeniem jest system **rezerwacji ścieżek** (jak path signals / PBS w OpenTTD):
-- Pociąg przed wjazdem w obszar sygnałów rezerwuje ciąg odcinków grafu aż do najbliższego **bezpiecznego miejsca zatrzymania** (sygnał lub peron).
-- Rezerwacja się nie powiedzie, jeśli którykolwiek odcinek / rozjazd jest zajęty lub zarezerwowany – pociąg czeka przed sygnałem.
-- Odcinki zwalniane są, gdy ostatni wagon je opuści.
+### Jeden silnik: rezerwacja torów
+- Pociąg wjeżdża **wyłącznie na tory, które zarezerwował**. Każdy element toru ma najwyżej jednego właściciela: pociąg, który na nim stoi, albo który zarezerwował go przed sobą.
+- Kolidują elementy na tym samym kafelku, które mają wspólny bok (zwrotnica) albo krzyżują się (X i Y). Równoległe łuki (górny/dolny, lewy/prawy) nie kolidują.
+- Rezerwacja jest dokładana **porcjami** – każda porcja kończy się w bezpiecznym miejscu zatrzymania i jest brana tylko w całości. Pociąg stara się mieć zarezerwowaną drogę hamowania z prędkości maksymalnej; jeśli następna porcja jest zajęta, hamuje i czeka (status „Czeka na wolny tor”).
+- Trasa omija tory zajęte przez inne pociągi (kara w wyszukiwaniu) – np. na stacji z kilkoma peronami pociąg wybiera wolny.
+- Wyjazd z zajezdni następuje dopiero, gdy wyjazd jest wolny („Czeka na wyjazd z zajezdni”).
+- Pociągi jadące naprzeciw siebie po jednym torze zatrzymują się i blokują (jak w OpenTTD) – na liniach z ruchem w obie strony potrzebne są mijanki lub dwa tory.
+- Podgląd rezerwacji: klawisz **V** (kolory pociągów; jaśniej – tor pod pociągiem, mocniej – rezerwacja przed nim).
 
-### Tryb Amator
-Gra **automatycznie** stawia sygnały na tym samym silniku:
-- sygnał ścieżkowy przed każdym rozjazdem i wjazdem na stację,
-- sygnały blokowe co N kafelków na długich odcinkach (przepustowość),
-- automatyczna aktualizacja przy każdej zmianie torów.
-
-Gracz nie widzi narzędzia sygnałów (może widzieć sygnały na mapie). Cel: brak kolizji i brak blokad na typowych układach. Złożone układy jednotorowe z ruchem dwukierunkowym mogą nadal się korkować – gra powinna wtedy wskazać problematyczne miejsce.
+### Tryb Amator (domyślny)
+- Bezpieczne miejsce zatrzymania: **każdy zwykły kafelek toru** (z jednym elementem – nie zwrotnica, nie skrzyżowanie). Działa jak „ruchomy odstęp blokowy”: pociągi same trzymają odstęp i nigdy nie stają na rozjazdach. Gracz nie stawia semaforów.
 
 ### Tryb Ekspert
-Gracz stawia sygnały ręcznie: blokowe, ścieżkowe, jednokierunkowe ścieżkowe (+ ewentualnie później: wjazdowe/wyjazdowe/kombi). Auto-sygnalizacja wyłączona.
+- Bezpieczne miejsce zatrzymania: **tylko przed semaforem** skierowanym w stronę jazdy (oraz koniec peronu, koniec toru, zajezdnia). Bez semaforów pociąg rezerwuje całą drogę do celu.
+- Narzędzie Semafor (B, widoczne tylko w trybie Ekspert), 200 zł:
+  - **ścieżkowy** – kolejne kliknięcia zmieniają kierunek: jeden → drugi → oba; od tyłu przejezdny,
+  - **jednokierunkowy** – zabrania jazdy pod prąd,
+  - semafor zielony, gdy pociąg zarezerwował drogę przez niego.
+- Rozbiórka toru usuwa jego semafory; na peronach semaforów nie ma.
 
-Tryb wybierany przy tworzeniu gry (możliwość zmiany w trakcie – do decyzji, patrz [05-decyzje](05-decyzje.md)).
+Tryb przełącza się w Menu w dowolnym momencie (semafory zostają, w trybie Amator są ignorowane).
 
 ## Miasta
 

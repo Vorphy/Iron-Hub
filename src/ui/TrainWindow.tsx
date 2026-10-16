@@ -4,7 +4,7 @@ import type { HudActions, TrainWindowData } from './hudStore';
 
 export function TrainWindow({ data: t, actions }: { data: TrainWindowData; actions: HudActions }) {
   const id = t.trainId;
-  const running = !t.inDepot && !t.stopped;
+  const running = !t.stopped;
   return (
     <div class="panel window">
       <div class="window-head">
@@ -36,9 +36,9 @@ export function TrainWindow({ data: t, actions }: { data: TrainWindowData; actio
         <button
           class={running ? '' : 'primary'}
           onClick={() => (running ? actions.stopTrain(id) : actions.startTrain(id))}
-          title={t.inDepot ? 'Wyjedź z zajezdni' : running ? 'Zatrzymaj pociąg' : 'Wznów jazdę'}
+          title={t.inDepot ? 'Wyjazd z zajezdni' : running ? 'Zatrzymaj pociąg' : 'Wznów jazdę'}
         >
-          {t.inDepot ? '▶ Wyjedź' : running ? '■ Stop' : '▶ Start'}
+          {t.inDepot ? (running ? '■ Anuluj wyjazd' : '▶ Wyjedź') : running ? '■ Stop' : '▶ Start'}
         </button>
         <button disabled={t.inDepot} class={t.goToDepot ? 'active' : ''} onClick={() => actions.sendToDepot(id)}>
           ⌂ Do zajezdni

@@ -1,9 +1,10 @@
 import { CLEAR_ROUGH_COST } from './config';
 import { buildDepot, depotAt, removeDepot } from './depot/depot';
+import { dropOrphanSignals, placeSignal, removeSignal, type SignalMode } from './signals/signals';
 import type { GameState } from './state';
 import { buildStation, removeStationTile, type StationAxis } from './station/station';
 import { buildTrack, removeTrack } from './track/build';
-import { getTrackBits, tracksOn, type Side, type TrackPiece } from './track/track';
+import { getTrackBits, tracksOn, type Side, type Track, type TrackPiece } from './track/track';
 import {
   buyTrain,
   occupiedTiles,
@@ -28,7 +29,10 @@ export type Command =
   | { type: 'startTrain'; trainId: number }
   | { type: 'stopTrain'; trainId: number }
   | { type: 'sendToDepot'; trainId: number }
-  | { type: 'setOrders'; trainId: number; orders: number[] };
+  | { type: 'setOrders'; trainId: number; orders: number[] }
+  | { type: 'placeSignal'; x: number; y: number; track: Track; oneWay: boolean }
+  | { type: 'removeSignal'; x: number; y: number; track: Track }
+  | { type: 'setSignalMode'; mode: SignalMode };
 
 export type FailReason =
   | 'outOfBounds'
@@ -49,9 +53,19 @@ export type SimEvent =
   | { type: 'tileChanged'; x: number; y: number }
   | { type: 'stationsChanged' }
   | { type: 'trainsChanged' }
+  | { type: 'signalsChanged' }
   | { type: 'commandFailed'; command: Command; reason: FailReason };
 
 export function applyCommand(state: GameState, cmd: Command, events: SimEvent[]): CommandResult {
+  const result = apply(state, cmd, events);
+  // Rozbiórka toru lub stacji mogła zostawić semafory bez toru.
+  if (result.ok && (cmd.type === 'removeTrack' || cmd.type === 'clearTile' || cmd.type === 'buildStation')) {
+    dropOrphanSignals(state, events);
+  }
+  return result;
+}
+
+function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResult {
   switch (cmd.type) {
     case 'clearTile':
       return clearTile(state, cmd.x, cmd.y, events);
@@ -68,13 +82,21 @@ export function applyCommand(state: GameState, cmd: Command, events: SimEvent[])
     case 'sellTrain':
       return sellTrain(state, cmd.trainId, events);
     case 'startTrain':
-      return startTrain(state, cmd.trainId, events);
+      return startTrain(state, cmd.trainId);
     case 'stopTrain':
       return stopTrain(state, cmd.trainId);
     case 'sendToDepot':
       return sendToDepot(state, cmd.trainId);
     case 'setOrders':
       return setOrders(state, cmd.trainId, cmd.orders);
+    case 'placeSignal':
+      return placeSignal(state, cmd.x, cmd.y, cmd.track, cmd.oneWay, events);
+    case 'removeSignal':
+      return removeSignal(state, cmd.x, cmd.y, cmd.track, events);
+    case 'setSignalMode':
+      state.signalMode = cmd.mode;
+      events.push({ type: 'signalsChanged' });
+      return { ok: true };
   }
 }
 

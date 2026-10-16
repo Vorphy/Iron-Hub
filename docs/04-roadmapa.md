@@ -31,12 +31,14 @@ Etapy są ułożone tak, żeby po każdym istniała działająca, testowalna wer
 
 *Zrealizowano:* zajezdnie, 3 lokomotywy i 6 wagonów z pliku danych, okno zajezdni (zakup/sprzedaż), ruch z fizyką i hamowaniem przed celem, zawracanie, okno pociągu z rozkładem, płynna interpolacja ruchu. Zapis v3 z migracją. 75 testów, w tym determinizm gry wczytanej w trakcie jazdy.
 
-## Etap 3 – Rezerwacje i tryb Amator
+## Etap 3 – Rezerwacje i tryb Amator ✅ (2026-10-16)
 - Silnik rezerwacji ścieżek.
 - Auto-sygnalizacja (tryb Amator).
 - Wykrywanie i sygnalizowanie zakleszczeń.
 
 **Gotowe, gdy:** wiele pociągów na wspólnej sieci z rozjazdami jeździ bez kolizji; testy scenariuszy (mijanki, stacje przelotowe, węzły).
+
+*Zrealizowano:* rezerwacja torów porcjami, tryb Amator jako ruchomy odstęp blokowy (bez stawiania semaforów), omijanie zajętych peronów, kolejka wyjazdu z zajezdni, podgląd rezerwacji (V). Zakleszczenia na jednym torze są sygnalizowane statusem „Czeka na wolny tor” (bez automatycznego rozwiązywania).
 
 ## Etap 4 – Ekonomia
 - Miasta (populacja, budynki, generowanie pasażerów, wzrost wzdłuż korytarzy).
@@ -52,7 +54,7 @@ Etapy są ułożone tak, żeby po każdym istniała działająca, testowalna wer
 
 **Gotowe, gdy:** sesja 30–60 min jest wciągająca bez instrukcji z zewnątrz. Dopiero potem inwestujemy w grafikę.
 
-## Etap 6 – Tryb Ekspert
+## Etap 6 – Tryb Ekspert ✅ (2026-10-16, zrobiony razem z etapem 3)
 - Ręczne sygnały: blokowe, ścieżkowe, jednokierunkowe.
 - Narzędzia diagnostyki (podgląd rezerwacji, stan sygnałów).
 
