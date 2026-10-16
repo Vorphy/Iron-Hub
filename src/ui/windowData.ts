@@ -9,6 +9,9 @@ import {
   monthlyProduction,
 } from '../sim/economy/industry';
 import { townHouseCount, townPopulation } from '../sim/economy/town';
+import { CARGOS, type Cargo } from '../sim/economy/cargo';
+import { stationAccepts, stationRating } from '../sim/economy/cargoFlow';
+import { wagonDef } from '../sim/trains/vehicles';
 import type { TrainSummary, WindowData, WindowRef } from './hudStore';
 
 function stationName(sim: Simulation, id: number | undefined): string {
@@ -30,6 +33,18 @@ function trainStatus(sim: Simulation, t: Train): string {
   return `Jedzie do: ${stationName(sim, target)}`;
 }
 
+function trainLoad(t: Train): { cargo: Cargo; amount: number; capacity: number }[] {
+  const sums = new Map<Cargo, { amount: number; capacity: number }>();
+  t.wagons.forEach((id, k) => {
+    const def = wagonDef(id)!;
+    const s = sums.get(def.cargo) ?? { amount: 0, capacity: 0 };
+    s.amount += t.loads[k]?.amount ?? 0;
+    s.capacity += def.capacity;
+    sums.set(def.cargo, s);
+  });
+  return [...sums].map(([cargo, s]) => ({ cargo, ...s }));
+}
+
 function summary(sim: Simulation, t: Train): TrainSummary {
   return {
     id: t.id,
@@ -47,6 +62,22 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
   if (ref.kind === 'depot') {
     if (!state.depots.some((d) => d.id === ref.depotId)) return null;
     return { kind: 'depot', depotId: ref.depotId, trains: trainsInDepot(state, ref.depotId).map((t) => summary(sim, t)) };
+  }
+  if (ref.kind === 'station') {
+    const st = state.stations.find((s) => s.id === ref.stationId);
+    if (!st) return null;
+    return {
+      kind: 'station',
+      stationId: st.id,
+      name: st.name,
+      platforms: st.tiles.length,
+      cargo: CARGOS.filter((c) => st.cargo[c]).map((c) => ({
+        cargo: c,
+        waiting: Math.floor(st.cargo[c]!.waiting),
+        rating: stationRating(state, st.cargo[c]),
+      })),
+      accepts: CARGOS.filter((c) => stationAccepts(state, st).has(c)),
+    };
   }
   if (ref.kind === 'town') {
     const town = state.towns.find((t) => t.id === ref.townId);
@@ -107,5 +138,6 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
     currentOrder: t.currentOrder,
     resale: resaleValue(t),
     picking: pickingFor === t.id,
+    load: trainLoad(t),
   };
 }

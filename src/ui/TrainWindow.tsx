@@ -1,3 +1,4 @@
+import { CARGO_DEFS } from '../sim/economy/cargo';
 import { engineDef, wagonDef } from '../sim/trains/vehicles';
 import { formatMoney } from '../tools';
 import type { HudActions, TrainWindowData } from './hudStore';
@@ -26,6 +27,15 @@ export function TrainWindow({ data: t, actions }: { data: TrainWindowData; actio
       </div>
 
       <div class={t.lost ? 'status bad' : 'status'}>{t.status}</div>
+      {t.load.map((l) => (
+        <div class="row small" key={l.cargo}>
+          <span class="swatch" style={{ background: CARGO_DEFS[l.cargo].color }} />
+          <span class="grow">{CARGO_DEFS[l.cargo].name}</span>
+          <span>
+            {l.amount} / {l.capacity} {CARGO_DEFS[l.cargo].unit}
+          </span>
+        </div>
+      ))}
       {!t.inDepot && (
         <div class="muted small">
           Prędkość {t.speed} / {t.maxSpeed} km/h

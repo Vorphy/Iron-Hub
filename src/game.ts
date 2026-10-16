@@ -7,6 +7,7 @@ import { tileCenter, worldToTileF, type Point } from './render/iso';
 import { MapRenderer } from './render/mapRenderer';
 import { Overlay } from './render/overlay';
 import { IndustryRenderer } from './render/buildings';
+import { FloatingTexts } from './render/floatingText';
 import { MapLabels } from './render/mapLabels';
 import { SignalRenderer } from './render/signals';
 import { TrainRenderer } from './render/trains';
@@ -21,7 +22,7 @@ import { Simulation } from './sim/simulation';
 import type { GameState } from './sim/state';
 import { tickToDate } from './sim/time';
 import { getTerrain, inBounds } from './sim/world/map';
-import { FAIL_MESSAGES, Tools, type Tool } from './tools';
+import { FAIL_MESSAGES, formatMoney, Tools, type Tool } from './tools';
 import { hudStore, showMessage, type HudState, type WindowRef } from './ui/hudStore';
 import { buildWindowData } from './ui/windowData';
 
@@ -46,6 +47,7 @@ export class Game {
   private readonly graphDebug = new GraphDebug();
   private readonly labels = new MapLabels();
   private readonly industries = new IndustryRenderer();
+  private readonly floaters = new FloatingTexts();
   private readonly trains = new TrainRenderer();
   private readonly signals = new SignalRenderer();
   private readonly tools: Tools;
@@ -75,6 +77,7 @@ export class Game {
       this.signals.gfx,
       this.trains.gfx,
       this.labels.container,
+      this.floaters.container,
     );
     this.loop.onBeforeStep = () => this.trains.capture(this.sim.state);
     this.labels.rebuild(state);
@@ -168,6 +171,8 @@ export class Game {
     const y = Math.floor(f.y);
     const depot = depotAt(this.sim.state, x, y);
     if (depot) return this.openWindow({ kind: 'depot', depotId: depot.id });
+    const station = stationAt(this.sim.state, x, y);
+    if (station) return this.openWindow({ kind: 'station', stationId: station.id });
     const industry = industryAt(this.sim.state, x, y);
     if (industry) return this.openWindow({ kind: 'industry', industryId: industry.id });
     const town = townNear(this.sim.state, x, y);
@@ -219,6 +224,7 @@ export class Game {
     for (const ev of events) {
       if (ev.type === 'tileChanged') this.mapRenderer.markTileDirty(ev.x, ev.y);
       else if (ev.type === 'stationsChanged') this.labels.rebuild(this.sim.state);
+      else if (ev.type === 'income') this.floaters.spawn(`+${formatMoney(ev.amount)}`, ev.x, ev.y);
       else if (ev.type === 'commandFailed') {
         showMessage(FAIL_MESSAGES[ev.reason]);
       }
@@ -230,6 +236,7 @@ export class Game {
 
     this.camera.apply();
     this.labels.setZoom(this.camera.zoom);
+    this.floaters.update(deltaMs, this.camera.zoom);
     // Kamera ruszyła (klawisze/zoom), a kursor stoi – zmienia się kafelek pod nim.
     if (this.pointer && cameraBefore !== `${this.camera.cx},${this.camera.cy},${this.camera.zoom}`) {
       this.tools.pointerMoved(this.tileF(this.pointer.x, this.pointer.y));

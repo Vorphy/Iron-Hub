@@ -55,6 +55,8 @@ export type SimEvent =
   | { type: 'stationsChanged' }
   | { type: 'trainsChanged' }
   | { type: 'signalsChanged' }
+  /** Zapłata za dostawę – (x, y) w układzie logicznym, do napisu nad pociągiem. */
+  | { type: 'income'; amount: number; x: number; y: number }
   | { type: 'commandFailed'; command: Command; reason: FailReason };
 
 export function applyCommand(state: GameState, cmd: Command, events: SimEvent[]): CommandResult {

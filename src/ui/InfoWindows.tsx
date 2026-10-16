@@ -1,5 +1,5 @@
 import { CARGO_DEFS } from '../sim/economy/cargo';
-import type { HudActions, IndustryWindowData, TownWindowData } from './hudStore';
+import type { HudActions, IndustryWindowData, StationWindowData, TownWindowData } from './hudStore';
 
 function percent(v: number): string {
   return `${Math.round(v * 100)}%`;
@@ -105,6 +105,42 @@ export function IndustryWindow({ data: d, actions }: { data: IndustryWindowData;
       </div>
       <div class="muted small">
         Od 75% zakład rośnie, poniżej 50% powoli podupada. {primary ? '' : 'Bez dostaw pracuje na 30% mocy.'}
+      </div>
+    </div>
+  );
+}
+
+export function StationWindow({ data: d, actions }: { data: StationWindowData; actions: HudActions }) {
+  return (
+    <div class="panel window">
+      <Head title={d.name} actions={actions} />
+      <div class="muted small">Peronów (kafelków): {d.platforms}</div>
+
+      <div class="section-title">Czeka na odbiór</div>
+      {d.cargo.length === 0 && (
+        <div class="muted small">
+          Nic – stacja zaczyna zbierać ładunek, gdy zatrzyma się na niej pociąg z odpowiednim wagonem.
+        </div>
+      )}
+      {d.cargo.map((c) => (
+        <div class="row" key={c.cargo}>
+          <span class="swatch" style={{ background: CARGO_DEFS[c.cargo].color }} />
+          <span class="grow">{CARGO_DEFS[c.cargo].name}</span>
+          <span>
+            {c.waiting} {CARGO_DEFS[c.cargo].unit}
+          </span>
+          <span
+            class={c.rating >= 0.75 ? 'rating good' : c.rating > 0 ? 'rating' : 'rating bad'}
+            title="Ocena stacji: jaka część produkcji trafia na stację (zależy od częstości kursów)"
+          >
+            {c.rating > 0 ? percent(c.rating) : 'brak obsługi'}
+          </span>
+        </div>
+      ))}
+
+      <div class="section-title">Przyjmuje</div>
+      <div class="muted small">
+        {d.accepts.length ? d.accepts.map((c) => CARGO_DEFS[c].name).join(', ') : 'nic – w zasięgu nie ma odbiorców'}
       </div>
     </div>
   );

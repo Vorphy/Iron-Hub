@@ -11,7 +11,8 @@ export type WindowRef =
   | { kind: 'depot'; depotId: number }
   | { kind: 'train'; trainId: number }
   | { kind: 'town'; townId: number }
-  | { kind: 'industry'; industryId: number };
+  | { kind: 'industry'; industryId: number }
+  | { kind: 'station'; stationId: number };
 
 /** Skrót pociągu do list w oknach. */
 export interface TrainSummary {
@@ -47,6 +48,8 @@ export interface TrainWindowData {
   resale: number;
   /** Trwa wskazywanie stacji do rozkładu. */
   picking: boolean;
+  /** Ładunek w składzie, zsumowany po rodzajach. */
+  load: { cargo: Cargo; amount: number; capacity: number }[];
 }
 
 export interface TownWindowData {
@@ -80,7 +83,17 @@ export interface IndustryWindowData {
   supply: number | null;
 }
 
-export type WindowData = DepotWindowData | TrainWindowData | TownWindowData | IndustryWindowData;
+export interface StationWindowData {
+  kind: 'station';
+  stationId: number;
+  name: string;
+  platforms: number;
+  /** Ładunki obsługiwane lub czekające: ilość i ocena (0–1, 0 – brak obsługi). */
+  cargo: { cargo: Cargo; waiting: number; rating: number }[];
+  accepts: Cargo[];
+}
+
+export type WindowData = DepotWindowData | TrainWindowData | TownWindowData | IndustryWindowData | StationWindowData;
 
 export interface HudState {
   date: string;

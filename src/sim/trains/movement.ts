@@ -9,6 +9,7 @@ import {
   UNITS_PER_KMH_TICK,
 } from '../config';
 import type { SimEvent } from '../commands';
+import { serveTrainAtStation } from '../economy/cargoFlow';
 import { SignalIndex } from '../signals/signals';
 import type { GameState } from '../state';
 import { trainLength } from './geometry';
@@ -65,7 +66,12 @@ export function tickTrains(state: GameState, planner: Planner, events: SimEvent[
       continue;
     }
     if (train.status === 'loading') {
-      if (--train.waitTicks <= 0) departStation(train);
+      if (--train.waitTicks <= 0) {
+        // Przed odjazdem dobieramy ładunek, który pojawił się w czasie postoju.
+        const st = stationUnderHead(state, train);
+        if (st) serveTrainAtStation(state, train, st, events, false);
+        departStation(train);
+      }
       continue;
     }
     moveTrain(ctx, train);
@@ -228,10 +234,13 @@ function arrive(ctx: TickContext, train: Train): void {
   const terminal = train.resTerminal;
   train.resTerminal = null;
   switch (terminal) {
-    case 'stop':
+    case 'stop': {
       train.status = 'loading';
       train.waitTicks = STATION_WAIT_TICKS;
+      const st = stationUnderHead(state, train);
+      if (st) serveTrainAtStation(state, train, st, ctx.events, true);
       break;
+    }
     case 'depot': {
       const head = train.trail[0]!;
       train.status = 'depot';
@@ -249,6 +258,12 @@ function arrive(ctx: TickContext, train: Train): void {
       reverseTrain(train);
       break;
   }
+}
+
+function stationUnderHead(state: GameState, train: Train) {
+  const h = train.trail[0]!;
+  const id = state.map.station[h.y * state.map.width + h.x];
+  return id ? state.stations.find((s) => s.id === id) : undefined;
 }
 
 /** Usuwa z końca odcinki, których skład już nie zajmuje (zwalnia je dla innych pociągów). */

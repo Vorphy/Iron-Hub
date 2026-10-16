@@ -350,6 +350,21 @@ body {
   cursor: default;
 }
 
+.rating {
+  min-width: 58px;
+  text-align: right;
+  font-size: 11px;
+  color: var(--text);
+}
+
+.rating.good {
+  color: var(--money);
+}
+
+.rating.bad {
+  color: var(--muted);
+}
+
 .level-bar {
   height: 6px;
   background: #2c323b;
