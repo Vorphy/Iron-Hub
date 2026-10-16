@@ -1,0 +1,95 @@
+import { Graphics } from 'pixi.js';
+import { industryDef, type Industry } from '../sim/economy/industry';
+import { darken, drawBox, drawChimney, drawGableRoof, drawPile, drawTree, lighten } from './shapes';
+
+// Placeholder – proste bryły do czasu podpięcia grafiki.
+const WALLS = [0xe8dcc0, 0xd9b38c, 0xc9c2b8, 0xe0c9a6];
+const ROOFS = [0xa0412d, 0x7a4a2e, 0x8a3b2a, 0x6b4a3a];
+
+/** Dom w mieście; wysokość rośnie z poziomem, poziom 4 – kamienica z płaskim dachem. */
+export function drawHouse(g: Graphics, x: number, y: number, level: number, hash: number): void {
+  const inset = 0.16 + ((hash >>> 3) & 3) * 0.02;
+  const wall = WALLS[hash & 3]!;
+  const h = 6 + level * 6;
+  const box = { left: wall, right: darken(wall, 0.78), roof: level >= 4 ? 0x8f9196 : wall };
+  drawBox(g, x + inset, y + inset, x + 1 - inset, y + 1 - inset, h, box);
+  if (level < 4) {
+    const roof = ROOFS[(hash >>> 5) & 3]!;
+    drawGableRoof(g, x + inset, y + inset, x + 1 - inset, y + 1 - inset, h, 7, roof, darken(roof, 0.75));
+  }
+}
+
+/** Wszystkie zakłady w jednej warstwie (jest ich kilkanaście – rysowane raz, odświeżane po zmianach). */
+export class IndustryRenderer {
+  readonly gfx = new Graphics();
+
+  draw(industries: readonly Industry[]): void {
+    const g = this.gfx;
+    g.clear();
+    // Od tyłu do przodu (mniejsze x + y wcześniej).
+    for (const ind of [...industries].sort((a, b) => a.x + a.y - (b.x + b.y))) drawIndustry(g, ind);
+  }
+}
+
+function drawIndustry(g: Graphics, ind: Industry): void {
+  const def = industryDef(ind.type)!;
+  const [w, h] = def.size;
+  const { x, y } = ind;
+  const color = parseInt(def.color.slice(1), 16);
+  const ground = { left: 0x77736b, right: 0x6a665f, roof: 0x8a857c };
+
+  switch (ind.type) {
+    case 'forest': {
+      // Drzewa w siatce z lekkim przesunięciem.
+      for (let i = 0; i < w * 3; i++) {
+        for (let j = 0; j < h * 3; j++) {
+          const jx = ((i * 7 + j * 13) % 5) / 20;
+          const jy = ((i * 11 + j * 3) % 5) / 20;
+          drawTree(g, x + (i + 0.5) / 3 + jx - 0.1, y + (j + 0.5) / 3 + jy - 0.1, 10 + ((i + j) % 3) * 2, i % 2 ? color : lighten(color, 1.15));
+        }
+      }
+      return;
+    }
+    case 'coal_mine':
+    case 'ore_mine': {
+      drawBox(g, x + 0.1, y + 0.1, x + w - 0.1, y + h - 0.1, 2, ground);
+      drawBox(g, x + 0.3, y + 0.3, x + 1.6, y + 1.4, 18, { left: 0x9c9a92, right: 0x7f7d76, roof: 0x5a5d63 });
+      // Szyb wydobywczy (wieża).
+      drawBox(g, x + 1.9, y + 0.4, x + 2.4, y + 0.9, 34, { left: 0x5a5d63, right: 0x44474c, roof: 0x2f3236 });
+      drawPile(g, x + 1.3, y + 2.3, 11, color);
+      drawPile(g, x + 2.4, y + 2.1, 8, color);
+      return;
+    }
+    case 'power_plant': {
+      drawBox(g, x + 0.2, y + 0.2, x + w - 0.2, y + h - 0.2, 2, ground);
+      drawBox(g, x + 0.3, y + 1.2, x + 2.7, y + 2.7, 22, { left: color, right: darken(color, 0.78), roof: darken(color, 0.9) });
+      drawChimney(g, x + 0.9, y + 0.7, 0, 52, 7, 0xb0b3b8);
+      drawChimney(g, x + 2.0, y + 0.7, 0, 52, 7, 0xb0b3b8);
+      return;
+    }
+    case 'steel_mill': {
+      drawBox(g, x + 0.1, y + 0.1, x + w - 0.1, y + h - 0.1, 2, ground);
+      drawBox(g, x + 0.3, y + 0.4, x + 3.7, y + 1.8, 24, { left: color, right: darken(color, 0.75), roof: 0x4a4f57 });
+      drawChimney(g, x + 3.2, y + 2.4, 0, 46, 6, 0x8d6e63);
+      drawChimney(g, x + 2.4, y + 2.4, 0, 40, 6, 0x8d6e63);
+      drawPile(g, x + 0.9, y + 2.4, 9, 0x8a5a3c);
+      return;
+    }
+    case 'sawmill': {
+      drawBox(g, x + 0.1, y + 0.1, x + w - 0.1, y + h - 0.1, 2, ground);
+      drawBox(g, x + 0.3, y + 0.3, x + 2.2, y + 1.5, 16, { left: color, right: darken(color, 0.78), roof: color });
+      drawGableRoof(g, x + 0.3, y + 0.3, x + 2.2, y + 1.5, 16, 9, 0x6b4a3a, 0x4f3528);
+      // Sterty drewna.
+      for (const [dx, dy] of [
+        [0.8, 2.2],
+        [1.8, 2.3],
+        [2.5, 1.2],
+      ] as const) {
+        drawBox(g, x + dx - 0.3, y + dy - 0.2, x + dx + 0.3, y + dy + 0.2, 7, { left: 0x8c7a5a, right: 0x6f5f45, roof: 0xa58f6a });
+      }
+      return;
+    }
+    default:
+      drawBox(g, x + 0.2, y + 0.2, x + w - 0.2, y + h - 0.2, 20, { left: color, right: darken(color, 0.78), roof: color });
+  }
+}

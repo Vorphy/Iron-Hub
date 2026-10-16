@@ -53,7 +53,7 @@ describe('time', () => {
 });
 
 function simWithRoughAt(x: number, y: number): Simulation {
-  const state = createGame({ width: 16, height: 16, seed: 1 });
+  const state = createGame({ width: 16, height: 16, seed: 1, empty: true });
   state.map.terrain.fill(Terrain.Grass);
   setTerrain(state.map, x, y, Terrain.Rough);
   return new Simulation(state);
@@ -97,7 +97,7 @@ describe('Simulation', () => {
 
 describe('GameLoop', () => {
   it('wykonuje ticki zgodnie z upływem czasu i prędkością', () => {
-    const sim = new Simulation(createGame({ width: 8, height: 8, seed: 1 }));
+    const sim = new Simulation(createGame({ width: 8, height: 8, seed: 1, empty: true }));
     const loop = new GameLoop(sim);
     expect(loop.advance(TICK_MS * 3)).toBe(3);
     loop.speed = 4;
@@ -106,7 +106,7 @@ describe('GameLoop', () => {
   });
 
   it('akumuluje ułamki klatek', () => {
-    const sim = new Simulation(createGame({ width: 8, height: 8, seed: 1 }));
+    const sim = new Simulation(createGame({ width: 8, height: 8, seed: 1, empty: true }));
     const loop = new GameLoop(sim);
     expect(loop.advance(TICK_MS * 0.6)).toBe(0);
     expect(loop.advance(TICK_MS * 0.6)).toBe(1);

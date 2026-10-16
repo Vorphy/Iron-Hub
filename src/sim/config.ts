@@ -13,6 +13,9 @@ export const STATION_MAX_PLATFORMS = 6;
 /** Zasięg stacji w kafelkach od krawędzi peronów. */
 export const CATCHMENT_RADIUS = 4;
 
+/** Koszt wyburzenia domu. */
+export const HOUSE_DEMOLISH_COST = 500;
+
 /** Koszt zajezdni. */
 export const DEPOT_COST = 1000;
 

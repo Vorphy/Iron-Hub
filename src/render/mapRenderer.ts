@@ -4,6 +4,7 @@ import { getTrackBits, tracksOn } from '../sim/track/track';
 import { getTerrain, Terrain, type WorldMap } from '../sim/world/map';
 import type { Rect } from './camera';
 import { TILE_H, TILE_W, tileDiamond, tileToWorld } from './iso';
+import { drawHouse } from './buildings';
 import { drawDepot } from './depotDraw';
 import { drawTrackPiece, TRACK_STYLE } from './trackDraw';
 
@@ -96,6 +97,8 @@ export class MapRenderer {
           if (t === Terrain.Rough) drawRoughDots(g, x, y, h);
         }
         for (const track of tracksOn(getTrackBits(this.map, x, y))) drawTrackPiece(chunk.tracks, x, y, track, TRACK_STYLE);
+        const house = this.map.house[y * this.map.width + x]!;
+        if (house) drawHouse(chunk.tracks, x, y, house, h);
         const depotId = this.map.depot[y * this.map.width + x];
         if (depotId) {
           const depot = this.getDepots().find((d) => d.id === depotId);

@@ -18,6 +18,15 @@ export interface Step {
 
 export type TrainStatus = 'depot' | 'running' | 'loading';
 
+/** Ładunek w wagonie (rodzaj wynika z typu wagonu). */
+export interface WagonLoad {
+  amount: number;
+  /** Stacja załadunku (0 – pusty). */
+  source: number;
+  /** Tick załadunku – do liczenia czasu przewozu. */
+  loadedTick: number;
+}
+
 export interface Train {
   id: number;
   name: string;
@@ -50,6 +59,8 @@ export interface Train {
   waitTicks: number;
   /** Cena zakupu (do sprzedaży). */
   value: number;
+  /** Ładunek, po jednym wpisie na wagon (w kolejności `wagons`). */
+  loads: WagonLoad[];
 }
 
 export function trainById(state: GameState, id: number): Train | undefined {
@@ -102,6 +113,7 @@ export function buyTrain(
     reversed: false,
     waitTicks: 0,
     value: plan.cost,
+    loads: wagons.map(() => ({ amount: 0, source: 0, loadedTick: 0 })),
   });
   state.money -= plan.cost;
   events.push({ type: 'trainsChanged' });

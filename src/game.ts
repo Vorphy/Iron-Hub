@@ -6,11 +6,14 @@ import { GraphDebug } from './render/graphDebug';
 import { tileCenter, worldToTileF, type Point } from './render/iso';
 import { MapRenderer } from './render/mapRenderer';
 import { Overlay } from './render/overlay';
-import { StationLabels } from './render/stationLabels';
+import { IndustryRenderer } from './render/buildings';
+import { MapLabels } from './render/mapLabels';
 import { SignalRenderer } from './render/signals';
 import { TrainRenderer } from './render/trains';
 import type { Command } from './sim/commands';
 import { depotAt } from './sim/depot/depot';
+import { industryAt } from './sim/economy/industry';
+import { townAt, townNear, townPopulation } from './sim/economy/town';
 import { stationAt } from './sim/station/station';
 import { pointBehindHead } from './sim/trains/geometry';
 import { trainById } from './sim/trains/train';
@@ -41,7 +44,8 @@ export class Game {
   private readonly mapRenderer: MapRenderer;
   private readonly overlay = new Overlay();
   private readonly graphDebug = new GraphDebug();
-  private readonly stationLabels = new StationLabels();
+  private readonly labels = new MapLabels();
+  private readonly industries = new IndustryRenderer();
   private readonly trains = new TrainRenderer();
   private readonly signals = new SignalRenderer();
   private readonly tools: Tools;
@@ -65,19 +69,23 @@ export class Game {
     this.mapRenderer = new MapRenderer(state.map, () => this.sim.state.depots);
     world.addChild(
       this.mapRenderer.container,
+      this.industries.gfx,
       this.graphDebug.gfx,
       this.overlay.container,
       this.signals.gfx,
       this.trains.gfx,
-      this.stationLabels.container,
+      this.labels.container,
     );
     this.loop.onBeforeStep = () => this.trains.capture(this.sim.state);
-    this.stationLabels.rebuild(state.stations, state.map.width);
+    this.labels.rebuild(state);
+    this.industries.draw(state.industries);
     app.stage.addChild(world);
 
     this.camera = new Camera(world, state.map.width, state.map.height);
     this.camera.resize(app.screen.width, app.screen.height);
-    this.camera.centerOn(tileCenter(state.map.width / 2, state.map.height / 2));
+    // Start przy największym mieście (na nowej mapie jest od razu co oglądać).
+    const town = [...state.towns].sort((a, b) => townPopulation(state, b) - townPopulation(state, a))[0];
+    this.camera.centerOn(town ? tileCenter(town.x, town.y) : tileCenter(state.map.width / 2, state.map.height / 2));
 
     this.input = new Input(app.canvas, this.camera, {
       onPrimaryDown: (sx, sy) => this.tools.primaryDown(this.tileF(sx, sy)),
@@ -137,6 +145,11 @@ export class Game {
     this.setTool(active ? 'cursor' : 'orders', trainId);
   }
 
+  /** Centruje kamerę na kafelku. */
+  focusTile(x: number, y: number): void {
+    this.camera.centerOn(tileCenter(x, y));
+  }
+
   /** Centruje kamerę na pociągu (na torze). */
   focusTrain(trainId: number): void {
     const t = trainById(this.sim.state, trainId);
@@ -151,8 +164,14 @@ export class Game {
     const trainId = this.trains.hitTest(w.x, w.y, this.camera.zoom);
     if (trainId !== null) return this.openWindow({ kind: 'train', trainId });
     const f = this.tileF(sx, sy);
-    const depot = depotAt(this.sim.state, Math.floor(f.x), Math.floor(f.y));
-    if (depot) this.openWindow({ kind: 'depot', depotId: depot.id });
+    const x = Math.floor(f.x);
+    const y = Math.floor(f.y);
+    const depot = depotAt(this.sim.state, x, y);
+    if (depot) return this.openWindow({ kind: 'depot', depotId: depot.id });
+    const industry = industryAt(this.sim.state, x, y);
+    if (industry) return this.openWindow({ kind: 'industry', industryId: industry.id });
+    const town = townNear(this.sim.state, x, y);
+    if (town) return this.openWindow({ kind: 'town', townId: town.id });
   }
 
   get toolController(): Tools {
@@ -199,7 +218,7 @@ export class Game {
     const events = this.sim.drainEvents();
     for (const ev of events) {
       if (ev.type === 'tileChanged') this.mapRenderer.markTileDirty(ev.x, ev.y);
-      else if (ev.type === 'stationsChanged') this.stationLabels.rebuild(this.sim.state.stations, this.sim.state.map.width);
+      else if (ev.type === 'stationsChanged') this.labels.rebuild(this.sim.state);
       else if (ev.type === 'commandFailed') {
         showMessage(FAIL_MESSAGES[ev.reason]);
       }
@@ -210,7 +229,7 @@ export class Game {
     }
 
     this.camera.apply();
-    this.stationLabels.setZoom(this.camera.zoom);
+    this.labels.setZoom(this.camera.zoom);
     // Kamera ruszyła (klawisze/zoom), a kursor stoi – zmienia się kafelek pod nim.
     if (this.pointer && cameraBefore !== `${this.camera.cx},${this.camera.cy},${this.camera.zoom}`) {
       this.tools.pointerMoved(this.tileF(this.pointer.x, this.pointer.y));
@@ -263,7 +282,7 @@ export class Game {
     // Nowy obiekt tylko przy zmianie – inaczej UI przerysowywałoby się co klatkę.
     const prev = hudStore.get();
     const terrain = tile ? getTerrain(state.map, tile.x, tile.y) : null;
-    const station = tile ? (stationAt(state, tile.x, tile.y)?.name ?? null) : null;
+    const station = tile ? objectName(state, tile.x, tile.y) : null;
     const h = prev.hover;
     const hoverChanged =
       !h !== !tile ||
@@ -286,6 +305,16 @@ export class Game {
       cursorLabel: labelChanged ? label : pl,
     });
   }
+}
+
+/** Nazwa obiektu na kafelku do paska stanu (stacja, zakład, dom w mieście). */
+function objectName(state: GameState, x: number, y: number): string | null {
+  const st = stationAt(state, x, y);
+  if (st) return st.name;
+  const ind = industryAt(state, x, y);
+  if (ind) return ind.name;
+  const town = townAt(state, x, y);
+  return town ? `Dom · ${town.name}` : null;
 }
 
 function pad(n: number): string {

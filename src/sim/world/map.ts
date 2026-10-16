@@ -19,6 +19,17 @@ export interface WorldMap {
   station: Uint32Array;
   /** Id zajezdni na kafelku (0 – brak), indeks jak terrain. */
   depot: Uint32Array;
+  /** Poziom domu na kafelku (0 – brak, 1–4), indeks jak terrain. */
+  house: Uint8Array;
+  /** Id miasta, do którego należy dom (0 – brak). */
+  town: Uint16Array;
+  /** Id zakładu przemysłowego na kafelku (0 – brak). */
+  industry: Uint32Array;
+}
+
+/** Na kafelku stoi budynek (dom lub zakład) – nie da się tu nic zbudować. */
+export function hasBuilding(map: WorldMap, i: number): boolean {
+  return map.house[i] !== 0 || map.industry[i] !== 0;
 }
 
 export function inBounds(map: WorldMap, x: number, y: number): boolean {
@@ -49,7 +60,17 @@ export function generateMap(width: number, height: number, seed: number): WorldM
     else terrain[i] = Terrain.Grass;
   }
   const n = width * height;
-  return { width, height, terrain, track: new Uint8Array(n), station: new Uint32Array(n), depot: new Uint32Array(n) };
+  return {
+    width,
+    height,
+    terrain,
+    track: new Uint8Array(n),
+    station: new Uint32Array(n),
+    depot: new Uint32Array(n),
+    house: new Uint8Array(n),
+    town: new Uint16Array(n),
+    industry: new Uint32Array(n),
+  };
 }
 
 function noiseField(rng: Rng, width: number, height: number): Float32Array {

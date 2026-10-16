@@ -1,12 +1,17 @@
 import type { Speed } from '../loop';
 import type { Terrain } from '../sim/world/map';
+import type { Cargo } from '../sim/economy/cargo';
 import type { StationAxis } from '../sim/station/station';
 import type { Side } from '../sim/track/track';
 import type { SignalMode } from '../sim/signals/signals';
 import type { SignalKind, Tool } from '../tools';
 import { Store } from './store';
 
-export type WindowRef = { kind: 'depot'; depotId: number } | { kind: 'train'; trainId: number };
+export type WindowRef =
+  | { kind: 'depot'; depotId: number }
+  | { kind: 'train'; trainId: number }
+  | { kind: 'town'; townId: number }
+  | { kind: 'industry'; industryId: number };
 
 /** Skrót pociągu do list w oknach. */
 export interface TrainSummary {
@@ -44,7 +49,38 @@ export interface TrainWindowData {
   picking: boolean;
 }
 
-export type WindowData = DepotWindowData | TrainWindowData;
+export interface TownWindowData {
+  kind: 'town';
+  townId: number;
+  name: string;
+  population: number;
+  houses: number;
+  passengers: number;
+  passengersTransported: number;
+  mail: number;
+  mailTransported: number;
+  lastTransported: number;
+}
+
+export interface IndustryWindowData {
+  kind: 'industry';
+  industryId: number;
+  name: string;
+  typeName: string;
+  level: number;
+  maxLevel: number;
+  growth: number;
+  produces: Cargo | null;
+  /** Produkcja na miesiąc przy obecnym poziomie i zaopatrzeniu. */
+  production: number;
+  accepts: { cargo: Cargo; demand: number; delivered: number }[];
+  produced: number;
+  transported: number;
+  /** Wskaźnik zaopatrzenia/wywozu z ostatnich miesięcy (0–1). */
+  supply: number | null;
+}
+
+export type WindowData = DepotWindowData | TrainWindowData | TownWindowData | IndustryWindowData;
 
 export interface HudState {
   date: string;

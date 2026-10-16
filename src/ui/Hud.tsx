@@ -4,6 +4,7 @@ import { Side } from '../sim/track/track';
 import { Terrain } from '../sim/world/map';
 import { formatMoney, type SignalKind, type Tool } from '../tools';
 import { DepotWindow } from './DepotWindow';
+import { IndustryWindow, TownWindow } from './InfoWindows';
 import { TrainWindow } from './TrainWindow';
 import { hudStore, type HudActions, type HudState } from './hudStore';
 import { useStore } from './store';
@@ -24,7 +25,7 @@ const TOOLS: { tool: Tool; icon: string; name: string; key: string }[] = [
 ];
 
 const TOOL_HELP: Record<Tool, string> = {
-  cursor: 'Klik na pociąg lub zajezdnię – okno · przeciąganie / strzałki / WASD – przesuwanie · kółko – zoom · spacja – pauza · 1–4 – prędkość · G – graf torów · V – rezerwacje torów',
+  cursor: 'Klik na pociąg, zajezdnię, miasto lub zakład – okno · przeciąganie / strzałki / WASD – przesuwanie · kółko – zoom · spacja – pauza · 1–4 – prędkość · G – graf torów · V – rezerwacje torów',
   track:
     'Przeciągnij, aby położyć tor: wzdłuż osi lub ukośnie. Pozycja kursora w kafelku wybiera łuk. Prawy przycisk – przesuwanie mapy · Esc – anuluj',
   station:
@@ -78,6 +79,8 @@ export function Hud({ actions }: { actions: HudActions }) {
       {s.menuOpen && <Menu actions={actions} saves={s.saves} signalMode={s.signalMode} />}
       {s.windowData?.kind === 'depot' && <DepotWindow data={s.windowData} money={s.money} actions={actions} />}
       {s.windowData?.kind === 'train' && <TrainWindow data={s.windowData} actions={actions} />}
+      {s.windowData?.kind === 'town' && <TownWindow data={s.windowData} actions={actions} />}
+      {s.windowData?.kind === 'industry' && <IndustryWindow data={s.windowData} actions={actions} />}
 
       <div class="panel toolbar">
         {TOOLS.filter((t) => t.tool !== 'signal' || s.signalMode === 'manual').map((t) => (

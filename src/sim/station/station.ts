@@ -7,12 +7,25 @@ import {
   TRACK_REFUND_RATE,
 } from '../config';
 import type { CommandResult, SimEvent } from '../commands';
+import type { Cargo } from '../economy/cargo';
 import type { GameState } from '../state';
+import { nearestTown } from '../economy/town';
 import { getTrackBits, Track } from '../track/track';
 import { dropStationFromOrders } from '../trains/train';
-import { getTerrain, inBounds, setTerrain, Terrain, type WorldMap } from '../world/map';
+import { getTerrain, hasBuilding, inBounds, setTerrain, Terrain, type WorldMap } from '../world/map';
+
+/** Stacja bierze nazwę od miasta, którego rynek jest bliżej niż tyle kafelków. */
+const TOWN_NAME_RADIUS = 16;
 
 export type StationAxis = 'x' | 'y';
+
+/** Stan jednego rodzaju ładunku na stacji. */
+export interface StationCargo {
+  /** Czeka na odbiór. */
+  waiting: number;
+  /** Tick ostatniego załadunku tego ładunku (-1 – nigdy). Bez obsługi stacja nie zbiera ładunku. */
+  lastPickup: number;
+}
 
 export interface Station {
   id: number;
@@ -20,14 +33,34 @@ export interface Station {
   axis: StationAxis;
   /** Indeksy kafelków peronów (y * width + x), rosnąco. */
   tiles: number[];
+  cargo: Partial<Record<Cargo, StationCargo>>;
 }
 
-/** Fikcyjne nazwy stacji do czasu, aż pojawią się miasta. */
+/** Nazwy stacji z dala od miast. */
 const STATION_NAMES = [
   'Żelazna Góra', 'Stalowo', 'Kolejowice', 'Parowiec', 'Węglin', 'Szynobrzeg', 'Dymno', 'Torzyn',
   'Rudnik', 'Iskrzyca', 'Semaforowo', 'Wagonin', 'Mostowo', 'Zwrotnica', 'Kłębowo', 'Hamulec',
   'Gwizdów', 'Przystań', 'Podkład', 'Kotłowo',
 ];
+
+/** Dopiski do nazwy, gdy miasto ma już stację o tej nazwie. */
+const SUFFIXES = ['Główna', 'Wschód', 'Zachód', 'Północ', 'Południe', 'Towarowa', 'Osiedle', 'Park'];
+
+/** Nazwa nowej stacji: od najbliższego miasta (z dopiskiem, gdy zajęta), inaczej z listy. */
+export function stationNameFor(state: GameState, tiles: readonly number[]): string {
+  const W = state.map.width;
+  const cx = tiles.reduce((s, t) => s + (t % W), 0) / tiles.length;
+  const cy = tiles.reduce((s, t) => s + Math.floor(t / W), 0) / tiles.length;
+  const town = nearestTown(state, cx, cy, TOWN_NAME_RADIUS);
+  const taken = new Set(state.stations.map((s) => s.name));
+  if (town) {
+    for (const name of [town.name, ...SUFFIXES.map((s) => `${town.name} ${s}`)]) if (!taken.has(name)) return name;
+  }
+  for (let i = 0; ; i++) {
+    const name = stationName(i);
+    if (!taken.has(name)) return name;
+  }
+}
 
 export function stationName(index: number): string {
   const base = STATION_NAMES[index % STATION_NAMES.length]!;
@@ -97,7 +130,8 @@ export function planStation(
 /** Kafelek nadaje się na peron: ląd, bez stacji, bez torów albo z samą prostą w osi peronu. */
 function canPlace(map: WorldMap, x: number, y: number, axisTrack: Track): boolean {
   if (!inBounds(map, x, y) || getTerrain(map, x, y) === Terrain.Water) return false;
-  if (map.station[y * map.width + x] || map.depot[y * map.width + x]) return false;
+  const i = y * map.width + x;
+  if (map.station[i] || map.depot[i] || hasBuilding(map, i)) return false;
   const bits = getTrackBits(map, x, y);
   return bits === 0 || bits === axisTrack;
 }
@@ -126,7 +160,7 @@ export function buildStation(
     events.push({ type: 'tileChanged', x, y });
   }
   tiles.sort((a, b) => a - b);
-  state.stations.push({ id, name: stationName(id - 1), axis, tiles });
+  state.stations.push({ id, name: stationNameFor(state, tiles), axis, tiles, cargo: {} });
   state.money -= plan.cost;
   events.push({ type: 'stationsChanged' });
   return { ok: true };

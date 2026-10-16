@@ -1,8 +1,12 @@
 import { START_MONEY } from './config';
 import type { Depot } from './depot/depot';
+import { emptyFinances, type Finances } from './economy/finance';
+import type { Industry } from './economy/industry';
+import type { Town } from './economy/town';
 import type { Signal, SignalMode } from './signals/signals';
 import type { Station } from './station/station';
 import type { Train } from './trains/train';
+import { generateWorld } from './world/generate';
 import { generateMap, type WorldMap } from './world/map';
 
 /** Pełny stan gry. Wszystko, co tu jest, trafi do zapisu. */
@@ -22,16 +26,21 @@ export interface GameState {
   nextTrainId: number;
   signals: Signal[];
   signalMode: SignalMode;
+  towns: Town[];
+  industries: Industry[];
+  finances: Finances;
 }
 
 export interface NewGameOptions {
   width: number;
   height: number;
   seed: number;
+  /** Bez miast i przemysłu (testy, w przyszłości edytor map). */
+  empty?: boolean;
 }
 
-export function createGame({ width, height, seed }: NewGameOptions): GameState {
-  return {
+export function createGame({ width, height, seed, empty = false }: NewGameOptions): GameState {
+  const state: GameState = {
     version: 1,
     tick: 0,
     rng: { state: seed >>> 0 },
@@ -45,5 +54,10 @@ export function createGame({ width, height, seed }: NewGameOptions): GameState {
     nextTrainId: 1,
     signals: [],
     signalMode: 'auto',
+    towns: [],
+    industries: [],
+    finances: emptyFinances(),
   };
+  if (!empty) generateWorld(state, seed);
+  return state;
 }

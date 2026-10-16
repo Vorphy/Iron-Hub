@@ -1,4 +1,4 @@
-import { CLEAR_ROUGH_COST } from './config';
+import { CLEAR_ROUGH_COST, HOUSE_DEMOLISH_COST } from './config';
 import { buildDepot, depotAt, removeDepot } from './depot/depot';
 import { dropOrphanSignals, placeSignal, removeSignal, type SignalMode } from './signals/signals';
 import type { GameState } from './state';
@@ -44,7 +44,8 @@ export type FailReason =
   | 'depotNotEmpty'
   | 'notInDepot'
   | 'depotNotConnected'
-  | 'trainInWay';
+  | 'trainInWay'
+  | 'industry';
 
 export type CommandResult = { ok: true } | { ok: false; reason: FailReason };
 
@@ -106,6 +107,16 @@ function clearTile(state: GameState, x: number, y: number, events: SimEvent[]): 
   if (!inBounds(map, x, y)) return { ok: false, reason: 'outOfBounds' };
   if (occupiedTiles(state).has(y * map.width + x)) return { ok: false, reason: 'trainInWay' };
   if (map.station[y * map.width + x]) return removeStationTile(state, x, y, events);
+  const i = y * map.width + x;
+  if (map.industry[i]) return { ok: false, reason: 'industry' };
+  if (map.house[i]) {
+    if (state.money < HOUSE_DEMOLISH_COST) return { ok: false, reason: 'noMoney' };
+    state.money -= HOUSE_DEMOLISH_COST;
+    map.house[i] = 0;
+    map.town[i] = 0;
+    events.push({ type: 'tileChanged', x, y });
+    return { ok: true };
+  }
   const depot = depotAt(state, x, y);
   if (depot) {
     if (trainsInDepot(state, depot.id).length) return { ok: false, reason: 'depotNotEmpty' };

@@ -1,39 +1,61 @@
 import { Container, Graphics, Text } from 'pixi.js';
-import type { Station } from '../sim/station/station';
-import { tileCenter } from './iso';
+import { industryDef } from '../sim/economy/industry';
+import type { GameState } from '../sim/state';
+import { tileCenter, tileToWorld } from './iso';
 
-/** Tabliczki z nazwami stacji – stały rozmiar na ekranie niezależnie od zoomu. */
-export class StationLabels {
+type Kind = 'station' | 'town' | 'industry';
+
+const STYLES: Record<Kind, { size: number; fill: number; border: number | null; bg: number; bold: boolean }> = {
+  town: { size: 14, fill: 0xffffff, border: null, bg: 0x1b1f24, bold: true },
+  station: { size: 12, fill: 0xffffff, border: 0xffe066, bg: 0x1b1f24, bold: false },
+  industry: { size: 11, fill: 0xd8d4c8, border: null, bg: 0x2a2620, bold: false },
+};
+
+/** Nazwy miast, stacji i zakładów – stały rozmiar na ekranie niezależnie od zoomu. */
+export class MapLabels {
   readonly container = new Container();
 
-  rebuild(stations: readonly Station[], mapWidth: number): void {
+  rebuild(state: GameState): void {
     for (const child of this.container.removeChildren()) child.destroy({ children: true });
-    for (const st of stations) {
+    const W = state.map.width;
+    for (const ind of state.industries) {
+      const [w, h] = industryDef(ind.type)!.size;
+      const c = tileToWorld(ind.x + w / 2, ind.y + h / 2);
+      this.add('industry', ind.name, c.x, c.y - 30);
+    }
+    for (const town of state.towns) {
+      const c = tileCenter(town.x, town.y);
+      this.add('town', town.name, c.x, c.y - 36);
+    }
+    for (const st of state.stations) {
       let sx = 0;
-      let sy = 0;
       let top = Infinity;
       for (const t of st.tiles) {
-        const c = tileCenter(t % mapWidth, Math.floor(t / mapWidth));
+        const c = tileCenter(t % W, Math.floor(t / W));
         sx += c.x;
-        sy += c.y;
         top = Math.min(top, c.y);
       }
-      const label = new Container();
-      const text = new Text({
-        text: st.name,
-        style: { fontFamily: 'Consolas, monospace', fontSize: 12, fill: 0xffffff },
-        resolution: 2,
-      });
-      const pad = 4;
-      const bg = new Graphics()
-        .rect(-text.width / 2 - pad, -text.height - pad, text.width + pad * 2, text.height + pad)
-        .fill({ color: 0x1b1f24, alpha: 0.85 })
-        .stroke({ width: 1, color: 0xffe066 });
-      text.position.set(-text.width / 2, -text.height - pad / 2);
-      label.addChild(bg, text);
-      label.position.set(sx / st.tiles.length, top - 6);
-      this.container.addChild(label);
+      this.add('station', st.name, sx / st.tiles.length, top - 6);
     }
+  }
+
+  private add(kind: Kind, name: string, x: number, y: number): void {
+    const s = STYLES[kind];
+    const label = new Container();
+    const text = new Text({
+      text: name,
+      style: { fontFamily: 'Consolas, monospace', fontSize: s.size, fill: s.fill, fontWeight: s.bold ? 'bold' : 'normal' },
+      resolution: 2,
+    });
+    const pad = 4;
+    const bg = new Graphics()
+      .rect(-text.width / 2 - pad, -text.height - pad, text.width + pad * 2, text.height + pad)
+      .fill({ color: s.bg, alpha: kind === 'town' ? 0.55 : 0.85 });
+    if (s.border !== null) bg.stroke({ width: 1, color: s.border });
+    text.position.set(-text.width / 2, -text.height - pad / 2);
+    label.addChild(bg, text);
+    label.position.set(x, y);
+    this.container.addChild(label);
   }
 
   /** Odwrotność zoomu kamery, żeby napisy nie rosły ani nie znikały. */

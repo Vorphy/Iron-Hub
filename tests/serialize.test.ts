@@ -5,7 +5,7 @@ import { createGame } from '../src/sim/state';
 import { Track } from '../src/sim/track/track';
 
 function playedSim(): Simulation {
-  const sim = new Simulation(createGame({ width: 32, height: 24, seed: 3 }));
+  const sim = new Simulation(createGame({ width: 32, height: 24, seed: 3, empty: true }));
   sim.state.map.terrain.fill(0);
   sim.enqueue({ type: 'buildTrack', pieces: [1, 2, 3, 4, 5, 6].map((x) => ({ x, y: 4, track: Track.X })) });
   sim.enqueue({ type: 'buildStation', x0: 2, y0: 4, x1: 4, y1: 5, axis: 'x' });

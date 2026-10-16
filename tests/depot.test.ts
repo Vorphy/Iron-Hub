@@ -8,7 +8,7 @@ import { Side, Track, type TrackPiece } from '../src/sim/track/track';
 import { Terrain } from '../src/sim/world/map';
 
 function flatSim(): Simulation {
-  const state = createGame({ width: 16, height: 16, seed: 1 });
+  const state = createGame({ width: 16, height: 16, seed: 1, empty: true });
   state.map.terrain.fill(Terrain.Grass);
   return new Simulation(state);
 }

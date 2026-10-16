@@ -35,6 +35,7 @@ export const FAIL_MESSAGES: Record<FailReason, string> = {
   notInDepot: 'Pociąg musi stać w zajezdni',
   depotNotConnected: 'Zajezdnia nie ma toru przy wjeździe',
   trainInWay: 'Na drodze stoi pociąg',
+  industry: 'Zakładów przemysłowych nie można burzyć',
 };
 
 export interface CursorLabel {

@@ -2,7 +2,7 @@ import { CLEAR_ROUGH_COST, DEPOT_COST, TRACK_REFUND_RATE } from '../config';
 import type { CommandResult, SimEvent } from '../commands';
 import type { GameState } from '../state';
 import { oppositeSide, Side, SIDE_DELTA, TRACK_SIDES, tracksOn } from '../track/track';
-import { getTerrain, inBounds, setTerrain, Terrain, type WorldMap } from '../world/map';
+import { getTerrain, hasBuilding, inBounds, setTerrain, Terrain, type WorldMap } from '../world/map';
 
 /**
  * Zajezdnia zajmuje kafelek; tor wychodzi z niej jednym bokiem (wjazd).
@@ -45,7 +45,7 @@ export function planDepot(state: GameState, x: number, y: number): { cost: numbe
   if (!inBounds(map, x, y)) return { cost: 0, result: { ok: false, reason: 'outOfBounds' } };
   const i = y * map.width + x;
   const cost = DEPOT_COST + (getTerrain(map, x, y) === Terrain.Rough ? CLEAR_ROUGH_COST : 0);
-  if (getTerrain(map, x, y) === Terrain.Water || map.track[i] || map.station[i] || map.depot[i]) {
+  if (getTerrain(map, x, y) === Terrain.Water || map.track[i] || map.station[i] || map.depot[i] || hasBuilding(map, i)) {
     return { cost, result: { ok: false, reason: 'blocked' } };
   }
   if (cost > state.money) return { cost, result: { ok: false, reason: 'noMoney' } };

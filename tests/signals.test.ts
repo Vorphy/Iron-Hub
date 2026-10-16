@@ -31,7 +31,7 @@ function expectNoConflicts(sim: Simulation): void {
 
 /** Linia y=5: zajezdnia (0,5)→SE, tor x=1..30, stacja A x=5..8, stacja B x=22..25. */
 function lineSim(): Simulation {
-  const state = createGame({ width: 40, height: 12, seed: 1 });
+  const state = createGame({ width: 40, height: 12, seed: 1, empty: true });
   state.map.terrain.fill(Terrain.Grass);
   const sim = new Simulation(state);
   sim.enqueue({ type: 'buildTrack', pieces: xLine(1, 30, 5) });
@@ -101,7 +101,7 @@ describe('tryb Amator (automatyczna sygnalizacja)', () => {
   });
 
   it('na stacji z dwoma peronami drugi pociąg wybiera wolny peron', () => {
-    const state = createGame({ width: 40, height: 12, seed: 1 });
+    const state = createGame({ width: 40, height: 12, seed: 1, empty: true });
     state.map.terrain.fill(Terrain.Grass);
     const sim = new Simulation(state);
     // Mijanka: zjazd na y=6 przy x=10, powrót na y=5 przy x=20.

@@ -27,6 +27,8 @@ function startGame(state: GameState): void {
   game?.destroy();
   game = new Game(app, state);
   game.closeWindow();
+  // Dostęp z konsoli przeglądarki przy pracy lokalnej (testy, debugowanie).
+  if (import.meta.env.DEV) (window as unknown as { game: Game }).game = game;
   autosavedTick = state.tick;
   hudStore.set({ menuOpen: false });
 }

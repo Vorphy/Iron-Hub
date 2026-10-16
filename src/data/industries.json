@@ -1,0 +1,70 @@
+{
+  "industries": [
+    {
+      "id": "coal_mine",
+      "name": "Kopalnia węgla",
+      "size": [3, 3],
+      "produces": "coal",
+      "accepts": [],
+      "baseProduction": 60,
+      "baseDemand": 0,
+      "color": "#3d3d3d",
+      "perMap": 4
+    },
+    {
+      "id": "power_plant",
+      "name": "Elektrownia",
+      "size": [3, 3],
+      "produces": null,
+      "accepts": ["coal"],
+      "baseProduction": 0,
+      "baseDemand": 80,
+      "color": "#8a8f99",
+      "perMap": 2
+    },
+    {
+      "id": "ore_mine",
+      "name": "Kopalnia rudy",
+      "size": [3, 3],
+      "produces": "ore",
+      "accepts": [],
+      "baseProduction": 50,
+      "baseDemand": 0,
+      "color": "#8a5a3c",
+      "perMap": 2
+    },
+    {
+      "id": "steel_mill",
+      "name": "Huta",
+      "size": [4, 3],
+      "produces": "goods",
+      "accepts": ["ore", "coal"],
+      "baseProduction": 40,
+      "baseDemand": 50,
+      "color": "#6d4c41",
+      "perMap": 1
+    },
+    {
+      "id": "forest",
+      "name": "Las",
+      "size": [4, 4],
+      "produces": "wood",
+      "accepts": [],
+      "baseProduction": 50,
+      "baseDemand": 0,
+      "color": "#2e5e2a",
+      "perMap": 2
+    },
+    {
+      "id": "sawmill",
+      "name": "Tartak",
+      "size": [3, 3],
+      "produces": "goods",
+      "accepts": ["wood"],
+      "baseProduction": 35,
+      "baseDemand": 50,
+      "color": "#9c7a4a",
+      "perMap": 1
+    }
+  ]
+}

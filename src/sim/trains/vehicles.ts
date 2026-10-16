@@ -1,15 +1,9 @@
 import data from '../../data/vehicles.json';
+import { CARGO_DEFS, type Cargo } from '../economy/cargo';
 
-export type Cargo = 'passengers' | 'mail' | 'coal' | 'ore' | 'goods' | 'wood';
-
-export const CARGO_NAMES: Record<Cargo, string> = {
-  passengers: 'pasażerowie',
-  mail: 'poczta',
-  coal: 'węgiel',
-  ore: 'ruda',
-  goods: 'towary',
-  wood: 'drewno',
-};
+export const CARGO_NAMES: Record<Cargo, string> = Object.fromEntries(
+  Object.entries(CARGO_DEFS).map(([k, v]) => [k, v.name]),
+) as Record<Cargo, string>;
 
 /** Lokomotywa. Moc w kW, prędkość w km/h, masa w tonach, długość w jednostkach toru (kafelek = 16). */
 export interface EngineDef {

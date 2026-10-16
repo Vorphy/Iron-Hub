@@ -54,4 +54,4 @@ tests/        testy jednostkowe
 | [docs/04-roadmapa.md](docs/04-roadmapa.md) | Etapy implementacji i kryteria ukończenia |
 | [docs/05-decyzje.md](docs/05-decyzje.md) | Rejestr decyzji projektowych (ADR) i otwarte pytania |
 
-Pierwotna specyfikacja: [rail_tycoon_browser_project_specification.md](rail_tycoon_browser_project_specification.md) (archiwalna – obowiązuje `docs/`).
+Pierwotna specyfikacja: [docs/rail_tycoon_browser_project_specification.md](docs/rail_tycoon_browser_project_specification.md) (archiwalna – obowiązuje `docs/`).

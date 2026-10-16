@@ -19,7 +19,7 @@ const xLine = (x0: number, x1: number, y: number): TrackPiece[] =>
  * stacja A na x=5..8, stacja B na x=22..25.
  */
 function lineSim(engine = 'iskra', wagons = ['osobowy', 'osobowy']): { sim: Simulation; train: Train } {
-  const state = createGame({ width: 40, height: 12, seed: 1 });
+  const state = createGame({ width: 40, height: 12, seed: 1, empty: true });
   state.map.terrain.fill(Terrain.Grass);
   const sim = new Simulation(state);
   sim.enqueue({ type: 'buildTrack', pieces: xLine(1, 30, 5) });
@@ -148,7 +148,7 @@ describe('ruch pociągu', () => {
   });
 
   it('zwalnia przed łukiem', () => {
-    const state = createGame({ width: 40, height: 20, seed: 1 });
+    const state = createGame({ width: 40, height: 20, seed: 1, empty: true });
     state.map.terrain.fill(Terrain.Grass);
     const sim = new Simulation(state);
     // Długa prosta, potem ukos z łuków (pierwszy łuk na (21,10)).

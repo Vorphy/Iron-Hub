@@ -1,20 +1,36 @@
 import type { Depot } from './depot/depot';
+import { isCargo } from './economy/cargo';
+import type { Finances, Ledger } from './economy/finance';
+import { industryDef, type Industry } from './economy/industry';
+import type { Town } from './economy/town';
+import type { Signal, SignalMode } from './signals/signals';
 import type { Station } from './station/station';
 import type { GameState } from './state';
-import type { Signal, SignalMode } from './signals/signals';
 import { ALL_TRACKS, Side } from './track/track';
-import type { Step, Train } from './trains/train';
+import type { Step, Train, WagonLoad } from './trains/train';
 import { engineDef, wagonDef } from './trains/vehicles';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
+
+/** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
+const LAYERS = {
+  terrain: 1,
+  track: 1,
+  station: 4,
+  depot: 4,
+  house: 1,
+  town: 2,
+  industry: 4,
+} as const;
+type LayerName = keyof typeof LAYERS;
 
 export interface SerializedState {
   version: number;
   tick: number;
   rng: number;
   money: number;
-  map: { width: number; height: number; terrain: string; track: string; station: string; depot: string };
+  map: { width: number; height: number } & Record<LayerName, string>;
   stations: Station[];
   nextStationId: number;
   depots: Depot[];
@@ -23,55 +39,53 @@ export interface SerializedState {
   nextTrainId: number;
   signals: Signal[];
   signalMode: SignalMode;
+  towns: Town[];
+  industries: Industry[];
+  finances: Finances;
 }
 
 export class SaveError extends Error {}
 
-/** Stan gry -> obiekt JSON. Tablice kafelków jako base64 (128×128 to ~130 KB). */
+/** Stan gry -> obiekt JSON. Tablice kafelków jako base64 (mapa 128×128 to ~300 KB). */
 export function serializeState(state: GameState): SerializedState {
   const { map } = state;
+  const layers = Object.fromEntries(
+    (Object.keys(LAYERS) as LayerName[]).map((name) => [name, layerToBase64(map[name])]),
+  ) as Record<LayerName, string>;
   return {
     version: SAVE_VERSION,
     tick: state.tick,
     rng: state.rng.state,
     money: state.money,
-    map: {
-      width: map.width,
-      height: map.height,
-      terrain: toBase64(map.terrain),
-      track: toBase64(map.track),
-      station: u32ToBase64(map.station),
-      depot: u32ToBase64(map.depot),
-    },
-    stations: state.stations.map((s) => ({ ...s, tiles: [...s.tiles] })),
+    map: { width: map.width, height: map.height, ...layers },
+    stations: structuredClone(state.stations),
     nextStationId: state.nextStationId,
-    depots: state.depots.map((d) => ({ ...d })),
+    depots: structuredClone(state.depots),
     nextDepotId: state.nextDepotId,
-    trains: state.trains.map(cloneTrain),
+    trains: structuredClone(state.trains),
     nextTrainId: state.nextTrainId,
-    signals: state.signals.map((s) => ({ ...s })),
+    signals: structuredClone(state.signals),
     signalMode: state.signalMode,
+    towns: structuredClone(state.towns),
+    industries: structuredClone(state.industries),
+    finances: structuredClone(state.finances),
   };
 }
 
-function cloneTrain(t: Train): Train {
-  return {
-    ...t,
-    wagons: [...t.wagons],
-    orders: [...t.orders],
-    trail: t.trail.map((s) => ({ ...s })),
-    reservedAhead: t.reservedAhead.map((s) => ({ ...s })),
-  };
-}
-
-/** Uzupełnia zapisy ze starszych wersji gry. */
+/** Uzupełnia zapisy ze starszych wersji gry (każdy krok podnosi wersję o jeden). */
 function migrate(data: Record<string, unknown>): Partial<SerializedState> {
-  const d = { ...data } as Record<string, unknown> & { map?: Record<string, unknown> };
+  const d = structuredClone(data) as Record<string, unknown> & { map?: Record<string, unknown> };
+  const emptyLayer = (name: LayerName) =>
+    d.map && isInt(d.map.width) && isInt(d.map.height)
+      ? toBase64(new Uint8Array(d.map.width * d.map.height * LAYERS[name]))
+      : undefined;
+  const mapTrains = (f: (t: Record<string, unknown>) => Record<string, unknown>) => {
+    if (Array.isArray(d.trains)) d.trains = d.trains.map(f);
+  };
+
   if (d.version === 1) {
     // v2: zajezdnie
-    const m = d.map ? { ...d.map } : undefined;
-    d.map = m;
-    if (m && isInt(m.width) && isInt(m.height)) m.depot = u32ToBase64(new Uint32Array(m.width * m.height));
+    if (d.map) d.map.depot = emptyLayer('depot');
     d.depots = [];
     d.nextDepotId = 1;
     d.version = 2;
@@ -86,10 +100,21 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     // v4: semafory i rezerwacje torów
     d.signals = [];
     d.signalMode = 'auto';
-    if (Array.isArray(d.trains)) {
-      d.trains = d.trains.map((t: Record<string, unknown>) => ({ ...t, reservedAhead: [], resTerminal: null }));
-    }
+    mapTrains((t) => ({ ...t, reservedAhead: [], resTerminal: null }));
     d.version = 4;
+  }
+  if (d.version === 4) {
+    // v5: miasta, przemysł, ładunki, finanse (stare mapy zostają bez miast i zakładów)
+    if (d.map) for (const name of ['house', 'town', 'industry'] as const) d.map[name] = emptyLayer(name);
+    d.towns = [];
+    d.industries = [];
+    d.finances = { month: { income: 0, trains: 0, infrastructure: 0, construction: 0 }, history: [] };
+    if (Array.isArray(d.stations)) d.stations = d.stations.map((s: Record<string, unknown>) => ({ ...s, cargo: {} }));
+    mapTrains((t) => ({
+      ...t,
+      loads: Array.isArray(t.wagons) ? t.wagons.map(() => ({ amount: 0, source: 0, loadedTick: 0 })) : [],
+    }));
+    d.version = 5;
   }
   return d as Partial<SerializedState>;
 }
@@ -102,66 +127,88 @@ export function deserializeState(data: unknown): GameState {
   const m = d.map;
   if (!m || !isInt(m.width) || !isInt(m.height) || m.width <= 0 || m.height <= 0) throw new SaveError('Uszkodzona mapa');
   const n = m.width * m.height;
-  const terrain = fromBase64(m.terrain, n);
-  const track = fromBase64(m.track, n);
-  const station = u32FromBase64(m.station, n);
-  const depot = u32FromBase64(m.depot, n);
-  if (
-    !isInt(d.tick) ||
-    !isInt(d.rng) ||
-    typeof d.money !== 'number' ||
-    !isInt(d.nextStationId) ||
-    !isInt(d.nextDepotId) ||
-    !isInt(d.nextTrainId)
-  ) {
-    throw new SaveError('Uszkodzone dane gry');
-  }
-  if (!Array.isArray(d.stations) || !d.stations.every(isStation)) throw new SaveError('Uszkodzone stacje');
-  if (!Array.isArray(d.depots) || !d.depots.every(isDepot)) throw new SaveError('Uszkodzone zajezdnie');
-  if (!Array.isArray(d.trains) || !d.trains.every(isTrain)) throw new SaveError('Uszkodzone pociągi');
-  if (!Array.isArray(d.signals) || !d.signals.every(isSignal)) throw new SaveError('Uszkodzone semafory');
+  const bytes = (name: LayerName) => fromBase64(m[name], n * LAYERS[name]);
+  const map = {
+    width: m.width,
+    height: m.height,
+    terrain: bytes('terrain'),
+    track: bytes('track'),
+    station: new Uint32Array(bytes('station').buffer),
+    depot: new Uint32Array(bytes('depot').buffer),
+    house: bytes('house'),
+    town: new Uint16Array(bytes('town').buffer),
+    industry: new Uint32Array(bytes('industry').buffer),
+  };
+  const ints = [d.tick, d.rng, d.nextStationId, d.nextDepotId, d.nextTrainId];
+  if (!ints.every(isInt) || typeof d.money !== 'number') throw new SaveError('Uszkodzone dane gry');
+  check(d.stations, isStation, 'stacje');
+  check(d.depots, isDepot, 'zajezdnie');
+  check(d.trains, isTrain, 'pociągi');
+  check(d.signals, isSignal, 'semafory');
+  check(d.towns, isTown, 'miasta');
+  check(d.industries, isIndustry, 'zakłady');
   if (d.signalMode !== 'auto' && d.signalMode !== 'manual') throw new SaveError('Uszkodzony tryb sygnalizacji');
+  if (!isFinances(d.finances)) throw new SaveError('Uszkodzone finanse');
   return {
     version: 1,
-    tick: d.tick,
-    rng: { state: d.rng >>> 0 },
+    tick: d.tick!,
+    rng: { state: d.rng! >>> 0 },
     money: d.money,
-    map: { width: m.width, height: m.height, terrain, track, station, depot },
-    stations: d.stations.map((s) => ({ ...s, tiles: [...s.tiles] })),
-    nextStationId: d.nextStationId,
-    depots: d.depots.map((dep) => ({ ...dep })),
-    nextDepotId: d.nextDepotId,
-    trains: d.trains.map(cloneTrain),
-    nextTrainId: d.nextTrainId,
-    signals: d.signals.map((s) => ({ ...s })),
+    map,
+    stations: d.stations!,
+    nextStationId: d.nextStationId!,
+    depots: d.depots!,
+    nextDepotId: d.nextDepotId!,
+    trains: d.trains!,
+    nextTrainId: d.nextTrainId!,
+    signals: d.signals!,
     signalMode: d.signalMode,
+    towns: d.towns!,
+    industries: d.industries!,
+    finances: d.finances,
   };
 }
 
-function isSignal(v: unknown): v is Signal {
-  const s = v as Signal;
-  return (
-    !!s &&
-    isInt(s.x) &&
-    isInt(s.y) &&
-    ALL_TRACKS.includes(s.track) &&
-    (s.dirs === 1 || s.dirs === 2 || s.dirs === 3) &&
-    typeof s.oneWay === 'boolean'
-  );
+function check<T>(v: unknown, guard: (x: unknown) => x is T, what: string): asserts v is T[] {
+  if (!Array.isArray(v) || !v.every(guard)) throw new SaveError(`Uszkodzone dane: ${what}`);
 }
 
+// --- Walidacja ---
+
 const SIDES: readonly number[] = Object.values(Side);
+
+function isInt(v: unknown): v is number {
+  return typeof v === 'number' && Number.isInteger(v);
+}
+
+function isNum(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v);
+}
+
+function isObj(v: unknown): v is Record<string, unknown> {
+  return !!v && typeof v === 'object' && !Array.isArray(v);
+}
+
+/** Obiekt z kluczami-ładunkami i wartościami spełniającymi `guard`. */
+function isCargoRecord(v: unknown, guard: (x: unknown) => boolean): boolean {
+  return isObj(v) && Object.entries(v).every(([k, x]) => isCargo(k) && guard(x));
+}
 
 function isStep(v: unknown): v is Step {
   const s = v as Step;
   const side = (x: unknown) => x === -1 || SIDES.includes(x as number);
-  return !!s && isInt(s.x) && isInt(s.y) && isInt(s.track) && side(s.entry) && side(s.exit);
+  return isObj(s) && isInt(s.x) && isInt(s.y) && isInt(s.track) && side(s.entry) && side(s.exit);
+}
+
+function isLoad(v: unknown): v is WagonLoad {
+  const l = v as WagonLoad;
+  return isObj(l) && isNum(l.amount) && isInt(l.source) && isInt(l.loadedTick);
 }
 
 function isTrain(v: unknown): v is Train {
   const t = v as Train;
   return (
-    !!t &&
+    isObj(t) &&
     isInt(t.id) &&
     typeof t.name === 'string' &&
     !!engineDef(t.engine) &&
@@ -175,8 +222,8 @@ function isTrain(v: unknown): v is Train {
     isInt(t.currentOrder) &&
     typeof t.goToDepot === 'boolean' &&
     typeof t.mayReverse === 'boolean' &&
-    typeof t.speed === 'number' &&
-    typeof t.progress === 'number' &&
+    isNum(t.speed) &&
+    isNum(t.progress) &&
     Array.isArray(t.trail) &&
     t.trail.every(isStep) &&
     Array.isArray(t.reservedAhead) &&
@@ -184,38 +231,91 @@ function isTrain(v: unknown): v is Train {
     (t.resTerminal === null || ['stop', 'depot', 'reverse'].includes(t.resTerminal)) &&
     typeof t.reversed === 'boolean' &&
     isInt(t.waitTicks) &&
-    typeof t.value === 'number'
+    isNum(t.value) &&
+    Array.isArray(t.loads) &&
+    t.loads.length === t.wagons.length &&
+    t.loads.every(isLoad)
+  );
+}
+
+function isSignal(v: unknown): v is Signal {
+  const s = v as Signal;
+  return (
+    isObj(s) &&
+    isInt(s.x) &&
+    isInt(s.y) &&
+    ALL_TRACKS.includes(s.track) &&
+    (s.dirs === 1 || s.dirs === 2 || s.dirs === 3) &&
+    typeof s.oneWay === 'boolean'
   );
 }
 
 function isDepot(v: unknown): v is Depot {
   const d = v as Depot;
-  return !!d && isInt(d.id) && isInt(d.x) && isInt(d.y) && Object.values(Side).includes(d.side);
+  return isObj(d) && isInt(d.id) && isInt(d.x) && isInt(d.y) && SIDES.includes(d.side);
 }
 
-function u32ToBase64(arr: Uint32Array): string {
-  return toBase64(new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength));
-}
-
-function u32FromBase64(s: unknown, length: number): Uint32Array {
-  const bytes = fromBase64(s, length * 4);
-  return new Uint32Array(bytes.buffer, bytes.byteOffset, length);
-}
-
-function isInt(v: unknown): v is number {
-  return typeof v === 'number' && Number.isInteger(v);
-}
-
-function isStation(s: unknown): s is Station {
-  const st = s as Station;
+function isStation(v: unknown): v is Station {
+  const st = v as Station;
   return (
-    !!st &&
+    isObj(st) &&
     isInt(st.id) &&
     typeof st.name === 'string' &&
     (st.axis === 'x' || st.axis === 'y') &&
     Array.isArray(st.tiles) &&
-    st.tiles.every(isInt)
+    st.tiles.every(isInt) &&
+    isCargoRecord(st.cargo, (c) => isObj(c) && isNum(c.waiting) && isInt(c.lastPickup))
   );
+}
+
+function isTown(v: unknown): v is Town {
+  const t = v as Town;
+  return (
+    isObj(t) &&
+    isInt(t.id) &&
+    typeof t.name === 'string' &&
+    isInt(t.x) &&
+    isInt(t.y) &&
+    isObj(t.month) &&
+    Object.values(t.month).every(isNum) &&
+    isNum(t.lastTransported)
+  );
+}
+
+function isIndustry(v: unknown): v is Industry {
+  const i = v as Industry;
+  return (
+    isObj(i) &&
+    isInt(i.id) &&
+    !!industryDef(i.type) &&
+    typeof i.name === 'string' &&
+    isInt(i.x) &&
+    isInt(i.y) &&
+    isInt(i.level) &&
+    isNum(i.growth) &&
+    isObj(i.month) &&
+    isNum(i.month.produced) &&
+    isNum(i.month.transported) &&
+    isCargoRecord(i.month.delivered, isNum) &&
+    Array.isArray(i.history) &&
+    i.history.every(isNum)
+  );
+}
+
+function isLedger(v: unknown): v is Ledger {
+  const l = v as Ledger;
+  return isObj(l) && isNum(l.income) && isNum(l.trains) && isNum(l.infrastructure) && isNum(l.construction);
+}
+
+function isFinances(v: unknown): v is Finances {
+  const f = v as Finances;
+  return isObj(f) && isLedger(f.month) && Array.isArray(f.history) && f.history.every(isLedger);
+}
+
+// --- base64 ---
+
+function layerToBase64(arr: Uint8Array | Uint16Array | Uint32Array): string {
+  return toBase64(new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength));
 }
 
 function toBase64(bytes: Uint8Array): string {

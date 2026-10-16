@@ -1,7 +1,7 @@
 import { CLEAR_ROUGH_COST, TRACK_COST, TRACK_REFUND_RATE } from '../config';
 import type { CommandResult, SimEvent } from '../commands';
 import type { GameState } from '../state';
-import { getTerrain, inBounds, setTerrain, Terrain, type WorldMap } from '../world/map';
+import { getTerrain, hasBuilding, inBounds, setTerrain, Terrain, type WorldMap } from '../world/map';
 import { occupiedTiles } from '../trains/train';
 import { hasTrack, Track, type TrackPiece } from './track';
 
@@ -102,7 +102,7 @@ export function refund(): number {
 
 function buildable(map: WorldMap, { x, y, track }: TrackPiece): boolean {
   if (!inBounds(map, x, y) || getTerrain(map, x, y) === Terrain.Water) return false;
-  if (map.depot[y * map.width + x]) return false;
+  if (map.depot[y * map.width + x] || hasBuilding(map, y * map.width + x)) return false;
   // Na peronie wolno mieć tylko prosty tor w osi stacji (już istnieje).
   if (map.station[y * map.width + x]) return (track === Track.X || track === Track.Y) && hasTrack(map, x, y, track);
   return true;

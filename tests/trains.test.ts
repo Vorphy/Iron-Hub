@@ -9,7 +9,7 @@ import { consistStats, ENGINES, WAGONS } from '../src/sim/trains/vehicles';
 import { Terrain } from '../src/sim/world/map';
 
 function simWithDepot(): Simulation {
-  const state = createGame({ width: 16, height: 16, seed: 1 });
+  const state = createGame({ width: 16, height: 16, seed: 1, empty: true });
   state.map.terrain.fill(Terrain.Grass);
   const sim = new Simulation(state);
   sim.enqueue({ type: 'buildDepot', x: 4, y: 4, side: Side.SE });
@@ -86,7 +86,7 @@ describe('zakup pociągu', () => {
 });
 
 it('nowa gra startuje bez pociągów i z pełnym budżetem', () => {
-  const s = createGame({ width: 8, height: 8, seed: 1 });
+  const s = createGame({ width: 8, height: 8, seed: 1, empty: true });
   expect(s.trains).toEqual([]);
   expect(s.money).toBe(START_MONEY);
 });

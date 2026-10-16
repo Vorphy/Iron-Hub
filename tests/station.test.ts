@@ -7,7 +7,7 @@ import { getTrackBits, Track, type TrackPiece } from '../src/sim/track/track';
 import { setTerrain, Terrain } from '../src/sim/world/map';
 
 function flatSim(): Simulation {
-  const state = createGame({ width: 20, height: 20, seed: 1 });
+  const state = createGame({ width: 20, height: 20, seed: 1, empty: true });
   state.map.terrain.fill(Terrain.Grass);
   return new Simulation(state);
 }
@@ -123,7 +123,7 @@ describe('rozbiórka stacji', () => {
 
 describe('zasięg stacji', () => {
   it('kwadrat o promieniu 4 przycięty do mapy', () => {
-    const map = createGame({ width: 20, height: 20, seed: 1 }).map;
+    const map = createGame({ width: 20, height: 20, seed: 1, empty: true }).map;
     expect(catchment(map, [0])).toHaveLength(25);
     expect(catchment(map, [10 * 20 + 10])).toHaveLength(81);
     // Dwa sąsiednie perony – zasięgi się sumują bez duplikatów.

@@ -350,6 +350,17 @@ body {
   cursor: default;
 }
 
+.level-bar {
+  height: 6px;
+  background: #2c323b;
+  border: 1px solid var(--panel-border);
+}
+
+.level-fill {
+  display: block;
+  height: 100%;
+}
+
 .statusbar {
   bottom: 8px;
   left: 8px;
