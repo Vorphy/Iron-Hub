@@ -68,3 +68,9 @@ Etapy są ułożone tak, żeby po każdym istniała działająca, testowalna wer
 - Backend: zapis w chmurze, rankingi.
 - Płatne dodatki (pakiety pojazdów) – wymaga backendu i systemu płatności.
 - Symulacja w Web Workerze, ewentualnie multiplayer.
+
+## Pomysły (lista otwarta – dopisuj na dole)
+
+- Poziomy pociągów, rodzaje kolei (np. parowa → spalinowa → elektryczna) i przechodzenie między nimi; prosty system ulepszeń.
+- Mapa nierówna: góry, kaniony; generator map i edytor.
+- Budowa mostów i tuneli.
