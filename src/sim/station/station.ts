@@ -9,6 +9,7 @@ import {
 import type { CommandResult, SimEvent } from '../commands';
 import type { GameState } from '../state';
 import { getTrackBits, Track } from '../track/track';
+import { dropStationFromOrders } from '../trains/train';
 import { getTerrain, inBounds, setTerrain, Terrain, type WorldMap } from '../world/map';
 
 export type StationAxis = 'x' | 'y';
@@ -140,7 +141,10 @@ export function removeStationTile(state: GameState, x: number, y: number, events
   map.station[i] = 0;
   map.track[i] = 0;
   station.tiles = station.tiles.filter((t) => t !== i);
-  if (station.tiles.length === 0) state.stations = state.stations.filter((s) => s !== station);
+  if (station.tiles.length === 0) {
+    state.stations = state.stations.filter((s) => s !== station);
+    dropStationFromOrders(state, station.id);
+  }
   state.money += stationTileRefund();
   events.push({ type: 'tileChanged', x, y }, { type: 'stationsChanged' });
   return { ok: true };

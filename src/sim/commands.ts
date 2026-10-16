@@ -4,7 +4,16 @@ import type { GameState } from './state';
 import { buildStation, removeStationTile, type StationAxis } from './station/station';
 import { buildTrack, removeTrack } from './track/build';
 import { getTrackBits, tracksOn, type Side, type TrackPiece } from './track/track';
-import { buyTrain, sellTrain, trainsInDepot } from './trains/train';
+import {
+  buyTrain,
+  occupiedTiles,
+  sellTrain,
+  sendToDepot,
+  setOrders,
+  startTrain,
+  stopTrain,
+  trainsInDepot,
+} from './trains/train';
 import { getTerrain, inBounds, setTerrain, Terrain } from './world/map';
 
 /** Jedyny sposób zmiany stanu gry z zewnątrz. */
@@ -15,7 +24,11 @@ export type Command =
   | { type: 'buildStation'; x0: number; y0: number; x1: number; y1: number; axis: StationAxis }
   | { type: 'buildDepot'; x: number; y: number; side: Side }
   | { type: 'buyTrain'; depotId: number; engine: string; wagons: string[] }
-  | { type: 'sellTrain'; trainId: number };
+  | { type: 'sellTrain'; trainId: number }
+  | { type: 'startTrain'; trainId: number }
+  | { type: 'stopTrain'; trainId: number }
+  | { type: 'sendToDepot'; trainId: number }
+  | { type: 'setOrders'; trainId: number; orders: number[] };
 
 export type FailReason =
   | 'outOfBounds'
@@ -25,7 +38,9 @@ export type FailReason =
   | 'nothingToRemove'
   | 'tooBig'
   | 'depotNotEmpty'
-  | 'notInDepot';
+  | 'notInDepot'
+  | 'depotNotConnected'
+  | 'trainInWay';
 
 export type CommandResult = { ok: true } | { ok: false; reason: FailReason };
 
@@ -52,6 +67,14 @@ export function applyCommand(state: GameState, cmd: Command, events: SimEvent[])
       return buyTrain(state, cmd.depotId, cmd.engine, cmd.wagons, events);
     case 'sellTrain':
       return sellTrain(state, cmd.trainId, events);
+    case 'startTrain':
+      return startTrain(state, cmd.trainId, events);
+    case 'stopTrain':
+      return stopTrain(state, cmd.trainId);
+    case 'sendToDepot':
+      return sendToDepot(state, cmd.trainId);
+    case 'setOrders':
+      return setOrders(state, cmd.trainId, cmd.orders);
   }
 }
 
@@ -59,6 +82,7 @@ export function applyCommand(state: GameState, cmd: Command, events: SimEvent[])
 function clearTile(state: GameState, x: number, y: number, events: SimEvent[]): CommandResult {
   const { map } = state;
   if (!inBounds(map, x, y)) return { ok: false, reason: 'outOfBounds' };
+  if (occupiedTiles(state).has(y * map.width + x)) return { ok: false, reason: 'trainInWay' };
   if (map.station[y * map.width + x]) return removeStationTile(state, x, y, events);
   const depot = depotAt(state, x, y);
   if (depot) {

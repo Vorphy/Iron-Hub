@@ -2,6 +2,7 @@ import { CLEAR_ROUGH_COST, TRACK_COST, TRACK_REFUND_RATE } from '../config';
 import type { CommandResult, SimEvent } from '../commands';
 import type { GameState } from '../state';
 import { getTerrain, inBounds, setTerrain, Terrain, type WorldMap } from '../world/map';
+import { occupiedTiles } from '../trains/train';
 import { hasTrack, Track, type TrackPiece } from './track';
 
 export type PieceStatus = 'new' | 'exists' | 'blocked';
@@ -72,7 +73,13 @@ export function planRemoveTrack(state: GameState, pieces: readonly TrackPiece[])
     if (exists) count++;
     out.push({ piece, status: exists ? 'exists' : 'blocked' });
   }
-  const result: CommandResult = count > 0 ? { ok: true } : { ok: false, reason: 'nothingToRemove' };
+  const occupied = occupiedTiles(state);
+  const blocked = out.some(({ piece, status }) => status === 'exists' && occupied.has(piece.y * map.width + piece.x));
+  const result: CommandResult = blocked
+    ? { ok: false, reason: 'trainInWay' }
+    : count > 0
+      ? { ok: true }
+      : { ok: false, reason: 'nothingToRemove' };
   return { pieces: out, cost: -count * refund(), result };
 }
 

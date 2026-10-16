@@ -22,12 +22,14 @@ Etapy są ułożone tak, żeby po każdym istniała działająca, testowalna wer
 
 *Zrealizowano:* budowa torów przeciąganiem (proste i ukosy, podgląd z kosztem), buldożer, graf torów z podglądem (G), stacje z zasięgiem i nazwami, zapis: autozapis co 30 s i przy zamknięciu karty, slot ręczny, eksport/import pliku JSON. 50 testów, w tym determinizm gry po wczytaniu.
 
-## Etap 2 – Pociągi
+## Etap 2 – Pociągi ✅ (2026-10-16)
 - Zajezdnia, zakup lokomotywy i wagonów z definicji danych.
 - Ruch po grafie (czoło + wagony), przyspieszanie/hamowanie.
 - A* po grafie, rozkład = lista stacji.
 
 **Gotowe, gdy:** pociąg kursuje między 2+ stacjami po dowolnej sieci, wagony płynnie wchodzą w łuki.
+
+*Zrealizowano:* zajezdnie, 3 lokomotywy i 6 wagonów z pliku danych, okno zajezdni (zakup/sprzedaż), ruch z fizyką i hamowaniem przed celem, zawracanie, okno pociągu z rozkładem, płynna interpolacja ruchu. Zapis v3 z migracją. 85 testów, w tym determinizm gry wczytanej w trakcie jazdy.
 
 ## Etap 3 – Rezerwacje i tryb Amator
 - Silnik rezerwacji ścieżek.

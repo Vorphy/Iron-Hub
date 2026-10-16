@@ -21,7 +21,27 @@ export interface DepotWindowData {
   trains: TrainSummary[];
 }
 
-export type WindowData = DepotWindowData;
+export interface TrainWindowData {
+  kind: 'train';
+  trainId: number;
+  name: string;
+  engine: string;
+  wagons: string[];
+  status: string;
+  speed: number;
+  maxSpeed: number;
+  inDepot: boolean;
+  stopped: boolean;
+  goToDepot: boolean;
+  lost: boolean;
+  orders: { stationId: number; name: string }[];
+  currentOrder: number;
+  resale: number;
+  /** Trwa wskazywanie stacji do rozkładu. */
+  picking: boolean;
+}
+
+export type WindowData = DepotWindowData | TrainWindowData;
 
 export interface HudState {
   date: string;
@@ -79,4 +99,12 @@ export interface HudActions {
   closeWindow(): void;
   buyTrain(depotId: number, engine: string, wagons: string[]): void;
   sellTrain(trainId: number): void;
+  openTrain(trainId: number): void;
+  startTrain(trainId: number): void;
+  stopTrain(trainId: number): void;
+  sendToDepot(trainId: number): void;
+  setOrders(trainId: number, orders: number[]): void;
+  /** Włącza/wyłącza wskazywanie stacji do rozkładu. */
+  pickOrders(trainId: number): void;
+  focusTrain(trainId: number): void;
 }

@@ -7,16 +7,19 @@ import { tileCenter, worldToTileF, type Point } from './render/iso';
 import { MapRenderer } from './render/mapRenderer';
 import { Overlay } from './render/overlay';
 import { StationLabels } from './render/stationLabels';
+import { TrainRenderer } from './render/trains';
 import type { Command } from './sim/commands';
 import { depotAt } from './sim/depot/depot';
 import { stationAt } from './sim/station/station';
-import { resaleValue, trainsInDepot } from './sim/trains/train';
+import { pointBehindHead } from './sim/trains/geometry';
+import { trainById } from './sim/trains/train';
 import { Simulation } from './sim/simulation';
 import type { GameState } from './sim/state';
 import { tickToDate } from './sim/time';
 import { getTerrain, inBounds } from './sim/world/map';
 import { FAIL_MESSAGES, Tools, type Tool } from './tools';
-import { hudStore, showMessage, type WindowData, type WindowRef } from './ui/hudStore';
+import { hudStore, showMessage, type WindowRef } from './ui/hudStore';
+import { buildWindowData } from './ui/windowData';
 
 const KEY_SPEEDS: Record<string, Speed> = { Digit1: 1, Digit2: 2, Digit3: 4, Digit4: 8 };
 const KEY_TOOLS: Record<string, Tool> = {
@@ -37,6 +40,7 @@ export class Game {
   private readonly overlay = new Overlay();
   private readonly graphDebug = new GraphDebug();
   private readonly stationLabels = new StationLabels();
+  private readonly trains = new TrainRenderer();
   private readonly tools: Tools;
   private readonly input: Input;
   private pointer: Point | null = null;
@@ -56,7 +60,14 @@ export class Game {
 
     const world = this.world;
     this.mapRenderer = new MapRenderer(state.map, () => this.sim.state.depots);
-    world.addChild(this.mapRenderer.container, this.graphDebug.gfx, this.overlay.container, this.stationLabels.container);
+    world.addChild(
+      this.mapRenderer.container,
+      this.graphDebug.gfx,
+      this.overlay.container,
+      this.trains.gfx,
+      this.stationLabels.container,
+    );
+    this.loop.onBeforeStep = () => this.trains.capture(this.sim.state);
     this.stationLabels.rebuild(state.stations, state.map.width);
     app.stage.addChild(world);
 
@@ -113,19 +124,36 @@ export class Game {
   closeWindow(): void {
     hudStore.set({ window: null, windowData: null });
     this.windowJson = '';
+    if (this.tools.tool === 'orders') this.tools.setTool('cursor');
   }
 
-  /** Klik kursorem (bez przeciągania): otwiera okno obiektu pod kursorem. */
+  /** Włącza/wyłącza wskazywanie stacji do rozkładu pociągu. */
+  pickOrders(trainId: number): void {
+    const active = this.tools.tool === 'orders' && this.tools.ordersTrain === trainId;
+    this.setTool(active ? 'cursor' : 'orders', trainId);
+  }
+
+  /** Centruje kamerę na pociągu (na torze). */
+  focusTrain(trainId: number): void {
+    const t = trainById(this.sim.state, trainId);
+    const p = t && t.trail.length ? pointBehindHead(t, 0) : null;
+    if (p) this.camera.centerOn(tileCenter(p.x - 0.5, p.y - 0.5));
+  }
+
+  /** Klik kursorem (bez przeciągania): otwiera okno pociągu albo zajezdni pod kursorem. */
   private onClick(sx: number, sy: number): void {
     if (this.tools.tool !== 'cursor') return;
+    const w = this.camera.screenToWorld(sx, sy);
+    const trainId = this.trains.hitTest(w.x, w.y, this.camera.zoom);
+    if (trainId !== null) return this.openWindow({ kind: 'train', trainId });
     const f = this.tileF(sx, sy);
     const depot = depotAt(this.sim.state, Math.floor(f.x), Math.floor(f.y));
     if (depot) this.openWindow({ kind: 'depot', depotId: depot.id });
   }
 
-  setTool(tool: Tool): void {
+  setTool(tool: Tool, ordersTrain: number | null = null): void {
     this.input.cancelToolDrag();
-    this.tools.setTool(tool);
+    this.tools.setTool(tool, ordersTrain);
   }
 
   private onKey(code: string): void {
@@ -134,6 +162,10 @@ export class Game {
     if (speed !== undefined && SPEEDS.includes(speed)) this.setSpeed(speed);
     if (code === 'Escape' && this.tools.cancel()) {
       this.input.cancelToolDrag();
+      return;
+    }
+    if (code === 'Escape' && this.tools.tool === 'orders') {
+      this.setTool('cursor');
       return;
     }
     if (code === 'Escape' && hudStore.get().window) {
@@ -174,6 +206,8 @@ export class Game {
       this.tools.pointerMoved(this.tileF(this.pointer.x, this.pointer.y));
     }
     this.mapRenderer.cull(this.camera.viewRect());
+    const win = hudStore.get().window;
+    this.trains.draw(this.sim.state, this.loop.alpha, win?.kind === 'train' ? win.trainId : null);
     this.tools.update();
     this.updateWindow();
     this.updateHud();
@@ -182,22 +216,9 @@ export class Game {
   /** Dane otwartego okna; do UI trafiają tylko przy zmianie. */
   private updateWindow(): void {
     const ref = hudStore.get().window;
-    let data: WindowData | null = null;
-    if (ref?.kind === 'depot') {
-      if (!this.sim.state.depots.some((d) => d.id === ref.depotId)) return this.closeWindow();
-      data = {
-        kind: 'depot',
-        depotId: ref.depotId,
-        trains: trainsInDepot(this.sim.state, ref.depotId).map((t) => ({
-          id: t.id,
-          name: t.name,
-          engine: t.engine,
-          wagons: t.wagons,
-          status: t.status,
-          resale: resaleValue(t),
-        })),
-      };
-    }
+    if (!ref) return;
+    const data = buildWindowData(this.sim, ref, this.tools.tool === 'orders' ? this.tools.ordersTrain : null);
+    if (!data) return this.closeWindow();
     const json = JSON.stringify(data);
     if (json !== this.windowJson) {
       this.windowJson = json;

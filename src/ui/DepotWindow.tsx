@@ -31,8 +31,14 @@ export function DepotWindow({ data, money, actions }: { data: DepotWindowData; m
               {engineDef(t.engine)?.name} + {t.wagons.length} wag.
             </div>
           </div>
-          <button onClick={() => actions.sellTrain(t.id)} title="Sprzedaj pociąg">
-            Sprzedaj <small>+{formatMoney(t.resale)}</small>
+          <button class="primary" onClick={() => actions.startTrain(t.id)} title="Wyjedź z zajezdni">
+            ▶
+          </button>
+          <button onClick={() => actions.openTrain(t.id)} title="Okno pociągu (rozkład jazdy)">
+            Rozkład
+          </button>
+          <button onClick={() => actions.sellTrain(t.id)} title={`Sprzedaj (+${formatMoney(t.resale)})`}>
+            Sprzedaj
           </button>
         </div>
       ))}

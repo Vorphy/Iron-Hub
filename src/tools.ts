@@ -17,7 +17,8 @@ import type { Simulation } from './sim/simulation';
 import { getTerrain, inBounds, Terrain } from './sim/world/map';
 import type { Point } from './render/iso';
 
-export type Tool = 'cursor' | 'track' | 'station' | 'depot' | 'bulldozer';
+/** 'orders' – wskazywanie stacji do rozkładu pociągu `ordersTrain` (z okna pociągu). */
+export type Tool = 'cursor' | 'track' | 'station' | 'depot' | 'bulldozer' | 'orders';
 
 export const FAIL_MESSAGES: Record<FailReason, string> = {
   outOfBounds: 'Poza mapą',
@@ -28,6 +29,8 @@ export const FAIL_MESSAGES: Record<FailReason, string> = {
   tooBig: 'Za duże (stacja max 12 × 6, pociąg max 10 wagonów)',
   depotNotEmpty: 'W zajezdni stoją pociągi',
   notInDepot: 'Pociąg musi stać w zajezdni',
+  depotNotConnected: 'Zajezdnia nie ma toru przy wjeździe',
+  trainInWay: 'Na drodze stoi pociąg',
 };
 
 export interface CursorLabel {
@@ -45,6 +48,8 @@ export class Tools {
   stationAxis: StationAxis = 'x';
   /** Preferowany wjazd zajezdni (R); gdy obok jest tor, wjazd ustawia się sam. */
   depotSide: Side = Side.SE;
+  /** Pociąg, któremu dopisujemy stacje (narzędzie 'orders'). */
+  ordersTrain: number | null = null;
   private dragStart: Point | null = null;
   private pointer: Point | null = null;
   private dirty = true;
@@ -55,8 +60,9 @@ export class Tools {
     private readonly overlay: Overlay,
   ) {}
 
-  setTool(tool: Tool): void {
+  setTool(tool: Tool, ordersTrain: number | null = null): void {
     this.tool = tool;
+    this.ordersTrain = tool === 'orders' ? ordersTrain : null;
     this.dragStart = null;
     this.dirty = true;
   }
@@ -131,6 +137,14 @@ export class Tools {
       return;
     }
 
+    if (this.tool === 'orders') {
+      const station = tile && stationAt(this.sim.state, tile.x, tile.y);
+      this.overlay.setHover(tile, station ? 0x4cc9f0 : 0x9aa0a8);
+      if (station) this.overlay.setCatchment(catchment(map, station.tiles), map.width);
+      this.label = station ? { text: `Dodaj: ${station.name}`, ok: true } : { text: 'Wskaż stację', ok: false };
+      return;
+    }
+
     if (this.tool === 'depot') {
       this.overlay.setHover(null);
       if (!tile) return;
@@ -186,6 +200,12 @@ export class Tools {
   private commandFor(start: Point, end: Point): Command | null {
     if (this.tool === 'track') {
       return { type: 'buildTrack', pieces: planTrackLine(start.x, start.y, end.x, end.y) };
+    }
+    if (this.tool === 'orders') {
+      const station = stationAt(this.sim.state, Math.floor(end.x), Math.floor(end.y));
+      const train = this.sim.state.trains.find((t) => t.id === this.ordersTrain);
+      if (!station || !train) return null;
+      return { type: 'setOrders', trainId: train.id, orders: [...train.orders, station.id] };
     }
     if (this.tool === 'depot') {
       const x = Math.floor(end.x);

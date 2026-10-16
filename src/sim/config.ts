@@ -23,3 +23,25 @@ export const TRAIN_RESALE_RATE = 0.75;
 
 /** Jaka część kosztu wraca przy rozbiórce toru lub stacji. */
 export const TRACK_REFUND_RATE = 0.25;
+
+// --- Ruch pociągów (wartości startowe do strojenia) ---
+
+/** Czas fizyki na jeden tick (s) – przyspiesza rozpędzanie względem czasu rzeczywistego. */
+export const PHYS_DT = 0.25;
+/** Jednostki toru na tick przy 1 km/h (100 km/h ≈ kafelek na sekundę przy prędkości 1×). */
+export const UNITS_PER_KMH_TICK = 0.008;
+/** Hamowanie: km/h na tick. */
+export const BRAKE_KMH_PER_TICK = 1.0;
+/** Przyczepność: część ciężaru lokomotywy dostępna jako siła pociągowa. */
+export const ADHESION = 0.25;
+/** Maksymalna prędkość na łuku 45°. */
+export const BEND_SPEED = 80;
+/** Prędkość dojazdu do celu na ostatnich metrach. */
+export const CREEP_SPEED = 6;
+/** Postój na stacji (ticki; 80 = 2 dni gry). */
+export const STATION_WAIT_TICKS = 80;
+/** Odstęp między pojazdami w składzie (jednostki toru). */
+export const VEHICLE_GAP = 1;
+/** Kary w wyszukiwaniu trasy (jednostki toru). */
+export const REVERSE_PENALTY = 64;
+export const BEND_PENALTY = 2;

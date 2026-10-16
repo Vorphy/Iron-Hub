@@ -18,6 +18,7 @@
 | 12 | 2026-10-16 | Zapis lokalny (IndexedDB) od etapu 1; backend na końcu | Backend nie jest potrzebny do sprawdzenia gry |
 | 13 | 2026-10-16 | **OpenGFX tylko jako placeholder** w prototypie; przed wydaniem zamiana na darmową grafikę z licencją pozwalającą na zamknięty kod (np. CC0) lub własną | Zachowuje możliwość płatnych dodatków |
 | 14 | 2026-10-16 | Graf torów **pochodny i niezapisywany**; pozycja pociągu w układzie kafelków (nie krawędź+offset) | Przebudowa grafu nie psuje pozycji pociągów; prostszy zapis gry |
+| 15 | 2026-10-16 | Trasy pociągów: **Dijkstra po skierowanych elementach toru**, nie po węzłach grafu | Prostsze i odporne na zawracanie; przy obecnej skali szybkie. Graf węzłów zostaje do sygnalizacji (etap 3) |
 
 ## Otwarte pytania
 

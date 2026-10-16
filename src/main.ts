@@ -87,6 +87,13 @@ const actions: HudActions = {
   closeWindow: () => game?.closeWindow(),
   buyTrain: (depotId, engine, wagons) => game?.command({ type: 'buyTrain', depotId, engine, wagons }),
   sellTrain: (trainId) => game?.command({ type: 'sellTrain', trainId }),
+  openTrain: (trainId) => game?.openWindow({ kind: 'train', trainId }),
+  startTrain: (trainId) => game?.command({ type: 'startTrain', trainId }),
+  stopTrain: (trainId) => game?.command({ type: 'stopTrain', trainId }),
+  sendToDepot: (trainId) => game?.command({ type: 'sendToDepot', trainId }),
+  setOrders: (trainId, orders) => game?.command({ type: 'setOrders', trainId, orders }),
+  pickOrders: (trainId) => game?.pickOrders(trainId),
+  focusTrain: (trainId) => game?.focusTrain(trainId),
   newGame: () => {
     if (!confirm('Rozpocząć nową grę? Niezapisany postęp przepadnie (autozapis zostanie nadpisany).')) return;
     newGame(Math.floor(Math.random() * 1_000_000) + 1);

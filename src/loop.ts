@@ -13,6 +13,8 @@ const MAX_TICKS_PER_FRAME = 64;
 export class GameLoop {
   speed: Speed = 1;
   private acc = 0;
+  /** Wywoływane przed każdym tickiem – renderer zapamiętuje pozycje do interpolacji. */
+  onBeforeStep: (() => void) | null = null;
 
   constructor(private readonly sim: Simulation) {}
 
@@ -26,6 +28,7 @@ export class GameLoop {
     this.acc += Math.min(deltaMs, MAX_FRAME_MS) * this.speed;
     let ticks = 0;
     while (this.acc >= TICK_MS && ticks < MAX_TICKS_PER_FRAME) {
+      this.onBeforeStep?.();
       this.sim.step();
       this.acc -= TICK_MS;
       ticks++;

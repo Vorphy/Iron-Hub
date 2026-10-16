@@ -3,6 +3,7 @@ import { SPEEDS, type Speed } from '../loop';
 import { Terrain } from '../sim/world/map';
 import { formatMoney, type Tool } from '../tools';
 import { DepotWindow } from './DepotWindow';
+import { TrainWindow } from './TrainWindow';
 import { hudStore, type HudActions, type HudState } from './hudStore';
 import { useStore } from './store';
 
@@ -21,13 +22,14 @@ const TOOLS: { tool: Tool; icon: string; name: string; key: string }[] = [
 ];
 
 const TOOL_HELP: Record<Tool, string> = {
-  cursor: 'Klik na zajezdnię – okno zajezdni · przeciąganie / strzałki / WASD – przesuwanie · kółko – zoom · spacja – pauza · 1–4 – prędkość · G – podgląd grafu torów',
+  cursor: 'Klik na pociąg lub zajezdnię – okno · przeciąganie / strzałki / WASD – przesuwanie · kółko – zoom · spacja – pauza · 1–4 – prędkość · G – podgląd grafu torów',
   track:
     'Przeciągnij, aby położyć tor: wzdłuż osi lub ukośnie. Pozycja kursora w kafelku wybiera łuk. Prawy przycisk – przesuwanie mapy · Esc – anuluj',
   station:
     'Przeciągnij prostokąt: dłuższy bok to długość peronu, krótszy – liczba torów. R – obrót przy kwadracie. Niebieskie pole to zasięg stacji',
   depot:
     'Klik stawia zajezdnię (1000 zł). Wjazd ustawia się w stronę sąsiedniego toru; R – obrót. W zajezdni kupuje się pociągi',
+  orders: 'Klikaj stacje, aby dopisać je do rozkładu pociągu · Esc – koniec',
   bulldozer: 'Klik – usuń zajezdnię, kafelek stacji, tory z kafelka lub oczyść nieużytek · przeciągnięcie – rozbierz odcinek toru (zwrot 25%)',
 };
 
@@ -71,6 +73,7 @@ export function Hud({ actions }: { actions: HudActions }) {
 
       {s.menuOpen && <Menu actions={actions} saves={s.saves} />}
       {s.windowData?.kind === 'depot' && <DepotWindow data={s.windowData} money={s.money} actions={actions} />}
+      {s.windowData?.kind === 'train' && <TrainWindow data={s.windowData} actions={actions} />}
 
       <div class="panel toolbar">
         {TOOLS.map((t) => (
