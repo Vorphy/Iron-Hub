@@ -4,20 +4,37 @@ const DRAG_THRESHOLD_PX = 4;
 const KEY_PAN_PX_PER_S = 900;
 
 export interface InputHandlers {
-  /** Kliknięcie lewym przyciskiem (bez przeciągania) w punkt ekranu. */
+  /**
+   * Wciśnięcie lewego przycisku. Zwraca true, jeśli aktywne narzędzie przejmuje gest
+   * (np. budowa toru) – wtedy przeciąganie nie przesuwa mapy.
+   */
+  onPrimaryDown(sx: number, sy: number): boolean;
+  onPrimaryDrag(sx: number, sy: number): void;
+  onPrimaryUp(sx: number, sy: number): void;
+  /** Kliknięcie lewym przyciskiem, gdy narzędzie nie przejęło gestu. */
   onClick(sx: number, sy: number): void;
   onPointerMove(sx: number, sy: number): void;
   onPointerLeave(): void;
   onKey(code: string): void;
 }
 
+interface Drag {
+  id: number;
+  lastX: number;
+  lastY: number;
+  moved: number;
+  button: number;
+  /** Gest przejęty przez narzędzie (nie przesuwa mapy). */
+  tool: boolean;
+}
+
 /**
- * Mysz i klawiatura -> kamera / akcje.
- * Przeciąganie dowolnym przyciskiem przesuwa mapę (lewy – dopóki nie ma narzędzi budowy).
+ * Mysz i klawiatura -> kamera / narzędzia.
+ * Prawy/środkowy przycisk zawsze przesuwa mapę; lewy – gdy narzędzie nie przejmie gestu.
  */
 export class Input {
   private readonly held = new Set<string>();
-  private drag: { id: number; lastX: number; lastY: number; moved: number; button: number } | null = null;
+  private drag: Drag | null = null;
 
   constructor(
     private readonly el: HTMLElement,
@@ -48,30 +65,41 @@ export class Input {
     if (dx || dy) this.camera.panBy(dx, dy);
   }
 
+  /** Przerywa gest narzędzia (np. Escape w trakcie przeciągania). */
+  cancelToolDrag(): void {
+    if (this.drag?.tool) this.drag = null;
+  }
+
   private onDown = (e: PointerEvent): void => {
     if (this.drag) return;
     this.el.setPointerCapture(e.pointerId);
-    this.drag = { id: e.pointerId, lastX: e.offsetX, lastY: e.offsetY, moved: 0, button: e.button };
+    const tool = e.button === 0 && this.handlers.onPrimaryDown(e.offsetX, e.offsetY);
+    this.drag = { id: e.pointerId, lastX: e.offsetX, lastY: e.offsetY, moved: 0, button: e.button, tool };
   };
 
   private onMove = (e: PointerEvent): void => {
     this.handlers.onPointerMove(e.offsetX, e.offsetY);
-    if (!this.drag || this.drag.id !== e.pointerId) return;
-    const dx = e.offsetX - this.drag.lastX;
-    const dy = e.offsetY - this.drag.lastY;
-    this.drag.moved += Math.abs(dx) + Math.abs(dy);
-    this.drag.lastX = e.offsetX;
-    this.drag.lastY = e.offsetY;
-    if (this.drag.moved > DRAG_THRESHOLD_PX) this.camera.panBy(dx, dy);
+    const drag = this.drag;
+    if (!drag || drag.id !== e.pointerId) return;
+    if (drag.tool) {
+      this.handlers.onPrimaryDrag(e.offsetX, e.offsetY);
+      return;
+    }
+    const dx = e.offsetX - drag.lastX;
+    const dy = e.offsetY - drag.lastY;
+    drag.moved += Math.abs(dx) + Math.abs(dy);
+    drag.lastX = e.offsetX;
+    drag.lastY = e.offsetY;
+    if (drag.moved > DRAG_THRESHOLD_PX) this.camera.panBy(dx, dy);
   };
 
   private onUp = (e: PointerEvent): void => {
-    if (!this.drag || this.drag.id !== e.pointerId) return;
-    const { moved, button } = this.drag;
+    const drag = this.drag;
+    if (!drag || drag.id !== e.pointerId) return;
     this.drag = null;
-    if (e.type === 'pointerup' && button === 0 && moved <= DRAG_THRESHOLD_PX) {
-      this.handlers.onClick(e.offsetX, e.offsetY);
-    }
+    if (e.type !== 'pointerup') return;
+    if (drag.tool) this.handlers.onPrimaryUp(e.offsetX, e.offsetY);
+    else if (drag.button === 0 && drag.moved <= DRAG_THRESHOLD_PX) this.handlers.onClick(e.offsetX, e.offsetY);
   };
 
   private onWheel = (e: WheelEvent): void => {

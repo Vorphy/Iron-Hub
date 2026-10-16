@@ -75,7 +75,7 @@ describe('Simulation', () => {
     sim.enqueue({ type: 'clearTile', x: 99, y: 0 });
     sim.step();
     expect(sim.state.money).toBe(START_MONEY);
-    expect(sim.drainEvents().map((e) => e.type === 'commandFailed' && e.reason)).toEqual(['notRough', 'outOfBounds']);
+    expect(sim.drainEvents().map((e) => e.type === 'commandFailed' && e.reason)).toEqual(['nothingToClear', 'outOfBounds']);
   });
 
   it('odrzuca komendę przy braku pieniędzy', () => {

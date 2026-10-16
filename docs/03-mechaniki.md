@@ -5,6 +5,11 @@ Wartości liczbowe w tym dokumencie są **startowe** – do strojenia w trakcie 
 ## Tory i stacje
 
 - Budowa torów przeciąganiem myszą (prosta / łuk / ukos), z podglądem i kosztem przed zatwierdzeniem.
+  - Kierunek przeciągnięcia wybiera typ linii: wzdłuż osi X lub Y albo ukos (poziomy lub pionowy na ekranie). Pozycja kursora w pierwszym kafelku wybiera łuk.
+  - Linia budowana jest **w całości albo wcale** – jeśli którykolwiek kafelek jest zablokowany (woda, krawędź mapy), podgląd świeci na czerwono i nic nie powstaje.
+  - Koszt: 100 zł za element toru, +50 zł za oczyszczenie nieużytku pod torem. Istniejące elementy są pomijane bez opłaty.
+  - Jak w TTD nie ma skrętów o 90° – skręca się łukami (ukosami).
+- Rozbiórka (buldożer): klik usuwa wszystkie tory z kafelka (lub oczyszcza nieużytek), przeciągnięcie rozbiera odcinek. Zwrot: 25% kosztu toru.
 - Stacja: prostokąt peronów (długość × liczba torów). Każda stacja ma **zasięg** (np. 4 kafelki od krawędzi) – z niego zbiera pasażerów i ładunek oraz do niego dostarcza.
 - MVP: płaski teren (bez zboczy, mostów, tuneli). Model danych przewiduje wysokości na później.
 

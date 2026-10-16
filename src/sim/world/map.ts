@@ -13,6 +13,8 @@ export interface WorldMap {
   height: number;
   /** terrain[y * width + x] */
   terrain: Uint8Array;
+  /** Bitmaska elementów toru na kafelku (patrz track/track.ts), indeks jak terrain. */
+  track: Uint8Array;
 }
 
 export function inBounds(map: WorldMap, x: number, y: number): boolean {
@@ -42,7 +44,7 @@ export function generateMap(width: number, height: number, seed: number): WorldM
     else if (rough[i]! > ROUGH_LEVEL) terrain[i] = Terrain.Rough;
     else terrain[i] = Terrain.Grass;
   }
-  return { width, height, terrain };
+  return { width, height, terrain, track: new Uint8Array(width * height) };
 }
 
 function noiseField(rng: Rng, width: number, height: number): Float32Array {

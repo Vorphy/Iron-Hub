@@ -20,7 +20,7 @@ async function start(): Promise<void> {
   const seed = Number(new URLSearchParams(location.search).get('seed')) || 1;
   const game = new Game(app, createGame({ width: MAP_SIZE, height: MAP_SIZE, seed }));
 
-  render(h(Hud, { actions: { setSpeed: (s) => game.setSpeed(s) } }), document.getElementById('ui')!);
+  render(h(Hud, { actions: { setSpeed: (s) => game.setSpeed(s), setTool: (t) => game.setTool(t) } }), document.getElementById('ui')!);
 }
 
 void start();
