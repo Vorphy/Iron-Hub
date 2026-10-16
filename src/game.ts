@@ -7,13 +7,16 @@ import { tileCenter, worldToTileF, type Point } from './render/iso';
 import { MapRenderer } from './render/mapRenderer';
 import { Overlay } from './render/overlay';
 import { StationLabels } from './render/stationLabels';
+import type { Command } from './sim/commands';
+import { depotAt } from './sim/depot/depot';
 import { stationAt } from './sim/station/station';
+import { resaleValue, trainsInDepot } from './sim/trains/train';
 import { Simulation } from './sim/simulation';
 import type { GameState } from './sim/state';
 import { tickToDate } from './sim/time';
 import { getTerrain, inBounds } from './sim/world/map';
 import { FAIL_MESSAGES, Tools, type Tool } from './tools';
-import { hudStore, showMessage } from './ui/hudStore';
+import { hudStore, showMessage, type WindowData, type WindowRef } from './ui/hudStore';
 
 const KEY_SPEEDS: Record<string, Speed> = { Digit1: 1, Digit2: 2, Digit3: 4, Digit4: 8 };
 const KEY_TOOLS: Record<string, Tool> = {
@@ -38,6 +41,7 @@ export class Game {
   private readonly input: Input;
   private pointer: Point | null = null;
   private lastSpeed: Speed = 1;
+  private windowJson = '';
   private readonly world = new Container();
   private readonly onResize = (w: number, h: number) => this.camera.resize(w, h);
   private readonly onTick = (ticker: { deltaMS: number }) => this.frame(ticker.deltaMS);
@@ -64,7 +68,7 @@ export class Game {
       onPrimaryDown: (sx, sy) => this.tools.primaryDown(this.tileF(sx, sy)),
       onPrimaryDrag: (sx, sy) => this.tools.pointerMoved(this.tileF(sx, sy)),
       onPrimaryUp: (sx, sy) => this.tools.primaryUp(this.tileF(sx, sy)),
-      onClick: () => {},
+      onClick: (sx, sy) => this.onClick(sx, sy),
       onPointerMove: (sx, sy) => {
         this.pointer = { x: sx, y: sy };
         this.tools.pointerMoved(this.tileF(sx, sy));
@@ -98,6 +102,27 @@ export class Game {
     this.loop.speed = speed;
   }
 
+  command(cmd: Command): void {
+    this.sim.enqueue(cmd);
+  }
+
+  openWindow(ref: WindowRef): void {
+    hudStore.set({ window: ref, menuOpen: false });
+  }
+
+  closeWindow(): void {
+    hudStore.set({ window: null, windowData: null });
+    this.windowJson = '';
+  }
+
+  /** Klik kursorem (bez przeciągania): otwiera okno obiektu pod kursorem. */
+  private onClick(sx: number, sy: number): void {
+    if (this.tools.tool !== 'cursor') return;
+    const f = this.tileF(sx, sy);
+    const depot = depotAt(this.sim.state, Math.floor(f.x), Math.floor(f.y));
+    if (depot) this.openWindow({ kind: 'depot', depotId: depot.id });
+  }
+
   setTool(tool: Tool): void {
     this.input.cancelToolDrag();
     this.tools.setTool(tool);
@@ -109,6 +134,10 @@ export class Game {
     if (speed !== undefined && SPEEDS.includes(speed)) this.setSpeed(speed);
     if (code === 'Escape' && this.tools.cancel()) {
       this.input.cancelToolDrag();
+      return;
+    }
+    if (code === 'Escape' && hudStore.get().window) {
+      this.closeWindow();
       return;
     }
     const tool = KEY_TOOLS[code];
@@ -146,7 +175,34 @@ export class Game {
     }
     this.mapRenderer.cull(this.camera.viewRect());
     this.tools.update();
+    this.updateWindow();
     this.updateHud();
+  }
+
+  /** Dane otwartego okna; do UI trafiają tylko przy zmianie. */
+  private updateWindow(): void {
+    const ref = hudStore.get().window;
+    let data: WindowData | null = null;
+    if (ref?.kind === 'depot') {
+      if (!this.sim.state.depots.some((d) => d.id === ref.depotId)) return this.closeWindow();
+      data = {
+        kind: 'depot',
+        depotId: ref.depotId,
+        trains: trainsInDepot(this.sim.state, ref.depotId).map((t) => ({
+          id: t.id,
+          name: t.name,
+          engine: t.engine,
+          wagons: t.wagons,
+          status: t.status,
+          resale: resaleValue(t),
+        })),
+      };
+    }
+    const json = JSON.stringify(data);
+    if (json !== this.windowJson) {
+      this.windowJson = json;
+      hudStore.set({ windowData: data });
+    }
   }
 
   /** Punkt ekranu -> ułamkowe współrzędne kafelka. */

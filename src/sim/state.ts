@@ -1,6 +1,7 @@
 import { START_MONEY } from './config';
 import type { Depot } from './depot/depot';
 import type { Station } from './station/station';
+import type { Train } from './trains/train';
 import { generateMap, type WorldMap } from './world/map';
 
 /** Pełny stan gry. Wszystko, co tu jest, trafi do zapisu. */
@@ -16,6 +17,8 @@ export interface GameState {
   nextStationId: number;
   depots: Depot[];
   nextDepotId: number;
+  trains: Train[];
+  nextTrainId: number;
 }
 
 export interface NewGameOptions {
@@ -35,5 +38,7 @@ export function createGame({ width, height, seed }: NewGameOptions): GameState {
     nextStationId: 1,
     depots: [],
     nextDepotId: 1,
+    trains: [],
+    nextTrainId: 1,
   };
 }

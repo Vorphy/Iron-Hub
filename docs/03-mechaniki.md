@@ -27,7 +27,9 @@ Wartości liczbowe w tym dokumencie są **startowe** – do strojenia w trakcie 
 
 ## Pociągi i rozkłady
 
-- Gracz kupuje pociąg w zajezdni, składa skład (lokomotywa + wagony), ustawia **rozkład = lista stacji** z opcjami (ładuj / rozładuj / czekaj na pełny załadunek).
+- Gracz kupuje pociąg w zajezdni (klik kursorem na zajezdnię): lokomotywa + do 10 wagonów. Sprzedaż tylko w zajezdni, zwrot 75% ceny.
+- Pojazdy definiuje plik danych `src/data/vehicles.json` (moc kW, prędkość km/h, masa t, długość w jednostkach toru, cena). Start: 3 parowozy z 1950 r. i 6 typów wagonów.
+- Gracz ustawia **rozkład = lista stacji** z opcjami (ładuj / rozładuj / czekaj na pełny załadunek – opcje od etapu 4).
 - Trasa liczona A* po grafie torów; przeliczana, gdy sieć się zmieni lub trasa jest zablokowana.
 - Ruch: przyspieszanie / hamowanie wg mocy i masy (uproszczone), limit prędkości na łukach.
 

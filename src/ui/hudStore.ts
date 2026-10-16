@@ -3,6 +3,26 @@ import type { Terrain } from '../sim/world/map';
 import type { Tool } from '../tools';
 import { Store } from './store';
 
+export type WindowRef = { kind: 'depot'; depotId: number } | { kind: 'train'; trainId: number };
+
+/** Skrót pociągu do list w oknach. */
+export interface TrainSummary {
+  id: number;
+  name: string;
+  engine: string;
+  wagons: string[];
+  status: string;
+  resale: number;
+}
+
+export interface DepotWindowData {
+  kind: 'depot';
+  depotId: number;
+  trains: TrainSummary[];
+}
+
+export type WindowData = DepotWindowData;
+
 export interface HudState {
   date: string;
   money: number;
@@ -19,6 +39,9 @@ export interface HudState {
   /** Daty zapisów w przeglądarce (ISO) – do menu. */
   saves: { quick: string | null; auto: string | null };
   menuOpen: boolean;
+  window: WindowRef | null;
+  /** Dane otwartego okna, odświeżane przez grę. */
+  windowData: WindowData | null;
 }
 
 export const hudStore = new Store<HudState>({
@@ -34,6 +57,8 @@ export const hudStore = new Store<HudState>({
   message: null,
   saves: { quick: null, auto: null },
   menuOpen: false,
+  window: null,
+  windowData: null,
 });
 
 let messageId = 0;
@@ -51,4 +76,7 @@ export interface HudActions {
   exportFile(): void;
   importFile(): void;
   newGame(): void;
+  closeWindow(): void;
+  buyTrain(depotId: number, engine: string, wagons: string[]): void;
+  sellTrain(trainId: number): void;
 }

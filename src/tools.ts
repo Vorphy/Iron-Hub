@@ -25,7 +25,9 @@ export const FAIL_MESSAGES: Record<FailReason, string> = {
   noMoney: 'Brak pieniędzy',
   blocked: 'Nie można tu budować',
   nothingToRemove: 'Brak torów do rozebrania',
-  tooBig: 'Stacja za duża (max 12 × 6)',
+  tooBig: 'Za duże (stacja max 12 × 6, pociąg max 10 wagonów)',
+  depotNotEmpty: 'W zajezdni stoją pociągi',
+  notInDepot: 'Pociąg musi stać w zajezdni',
 };
 
 export interface CursorLabel {

@@ -26,6 +26,7 @@ let autosavedTick = -1;
 function startGame(state: GameState): void {
   game?.destroy();
   game = new Game(app, state);
+  game.closeWindow();
   autosavedTick = state.tick;
   hudStore.set({ menuOpen: false });
 }
@@ -83,6 +84,9 @@ const actions: HudActions = {
       }
     });
   },
+  closeWindow: () => game?.closeWindow(),
+  buyTrain: (depotId, engine, wagons) => game?.command({ type: 'buyTrain', depotId, engine, wagons }),
+  sellTrain: (trainId) => game?.command({ type: 'sellTrain', trainId }),
   newGame: () => {
     if (!confirm('Rozpocząć nową grę? Niezapisany postęp przepadnie (autozapis zostanie nadpisany).')) return;
     newGame(Math.floor(Math.random() * 1_000_000) + 1);

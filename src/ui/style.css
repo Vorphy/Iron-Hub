@@ -189,6 +189,121 @@ body {
   font-size: 11px;
 }
 
+.window {
+  top: 56px;
+  right: 8px;
+  width: 360px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  white-space: normal;
+}
+
+.window-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.window-title {
+  color: var(--accent);
+  font-weight: bold;
+}
+
+.window .close {
+  padding: 0 6px;
+}
+
+.section-title {
+  color: var(--accent);
+  margin-top: 6px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 11px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.choices button,
+.wagon-grid button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-align: left;
+  padding: 4px 8px;
+}
+
+.choices small {
+  color: var(--muted);
+}
+
+.choices button.active small {
+  color: #1b1f24;
+}
+
+.wagon-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+}
+
+.swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  flex: none;
+}
+
+.consist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.chip {
+  padding: 1px 6px;
+  font-size: 11px;
+  color: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
+
+.chip.engine {
+  cursor: default;
+  font-weight: bold;
+}
+
+.panel button.primary {
+  padding: 6px 10px;
+  border-color: var(--accent);
+}
+
 .statusbar {
   bottom: 8px;
   left: 8px;
