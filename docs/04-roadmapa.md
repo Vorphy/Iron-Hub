@@ -2,12 +2,14 @@
 
 Etapy są ułożone tak, żeby po każdym istniała działająca, testowalna wersja. Czas trwania celowo nie jest podany sztywno – projekt rozwijany po godzinach; realnie liczyć 2–3× więcej niż w pierwotnych szacunkach.
 
-## Etap 0 – Fundament
-- Vite + TypeScript (strict) + PixiJS + Preact + Vitest, lint/format.
+## Etap 0 – Fundament ✅ (2026-10-16)
+- Vite + TypeScript (strict) + PixiJS + Preact + Vitest (lint/format – do dodania później).
 - Szkielet `sim/` (stan, tick, komendy, seedowany RNG) oddzielony od `render/`.
 - Pętla z fixed timestep i akumulatorem; pauza / przyspieszanie.
 
 **Gotowe, gdy:** pusta mapa izometryczna, kamera (przesuwanie, zoom), picking kafelka pod kursorem, test symulacji przechodzi w Node.
+
+*Zrealizowano:* mapa 128×128 generowana z ziarna (trawa, woda, nieużytki), rysowanie w kawałkach 16×16 z cullingiem, kamera (przeciąganie, WASD/strzałki, zoom 0.25–4× wokół kursora), podświetlenie kafelka, HUD (data, pieniądze, prędkości 0/1/2/4/8×, FPS), pierwsza komenda `clearTile` (oczyszczenie nieużytku) jako test ścieżki wejście → komenda → symulacja → render, 16 testów, automatyczna publikacja na GitHub Pages.
 
 ## Etap 1 – Mapa i tory
 - Generowanie płaskiej mapy (teren, woda).

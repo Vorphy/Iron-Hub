@@ -2,6 +2,32 @@
 
 Przeglądarkowa gra kolejowa w stylu klasycznego *Transport Tycoon Deluxe / OpenTTD* – izometryczna, retro, bez mikrozarządzania. Gracz buduje wyłącznie kolej, a miasta, przemysł i transport lokalny żyją własnym życiem.
 
+**Zagraj:** https://vorphy.github.io/Iron-Hub/ (publikowane automatycznie po każdym pushu na `main`)
+
+## Uruchomienie lokalne
+
+Wymagany Node.js 22+.
+
+```bash
+npm install
+npm run dev        # serwer deweloperski: http://localhost:5173
+npm test           # testy symulacji (Vitest)
+npm run build      # typecheck + build produkcyjny do dist/
+```
+
+Parametr `?seed=123` w adresie generuje inną mapę.
+
+## Struktura kodu
+
+```
+src/sim/      logika gry – deterministyczna, bez DOM/Pixi (patrz docs/02-architektura.md)
+src/render/   PixiJS: rzut izometryczny, kamera, teren
+src/input/    mysz i klawiatura
+src/ui/       interfejs w Preact
+src/loop.ts   stały krok symulacji (20 ticków/s) i prędkości gry
+tests/        testy jednostkowe
+```
+
 ## Dokumentacja
 
 | Dokument | Zawartość |
