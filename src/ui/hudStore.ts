@@ -4,7 +4,7 @@ import type { Cargo } from '../sim/economy/cargo';
 import type { StationAxis } from '../sim/station/station';
 import type { Side } from '../sim/track/track';
 import type { SignalMode } from '../sim/signals/signals';
-import type { SignalKind, Tool } from '../tools';
+import type { SignalKind, Tool, TrackMode } from '../tools';
 import { Store } from './store';
 
 export type WindowRef =
@@ -117,7 +117,7 @@ export interface HudState {
   speed: Speed;
   tool: Tool;
   /** Ustawienia narzędzi budowy (panel opcji). */
-  toolOptions: { depotSide: Side; depotAuto: boolean; stationAxis: StationAxis; signalKind: SignalKind };
+  toolOptions: { depotSide: Side; depotAuto: boolean; stationAxis: StationAxis; signalKind: SignalKind; trackMode: TrackMode };
   signalMode: SignalMode;
   fps: number;
   zoom: number;
@@ -140,7 +140,7 @@ export const hudStore = new Store<HudState>({
   money: 0,
   speed: 1,
   tool: 'cursor',
-  toolOptions: { depotSide: 1, depotAuto: true, stationAxis: 'x', signalKind: 'path' },
+  toolOptions: { depotSide: 1, depotAuto: true, stationAxis: 'x', signalKind: 'path', trackMode: 'build' },
   signalMode: 'auto',
   fps: 0,
   zoom: 1,
@@ -166,6 +166,7 @@ export interface HudActions {
   setDepotSide(side: Side | 'auto'): void;
   setStationAxis(axis: StationAxis): void;
   setSignalKind(kind: SignalKind): void;
+  setTrackMode(mode: TrackMode): void;
   setSignalMode(mode: SignalMode): void;
   toggleMenu(): void;
   openFinance(): void;

@@ -77,8 +77,8 @@ Etapy są ułożone tak, żeby po każdym istniała działająca, testowalna wer
 - Poziomy pociągów, rodzaje kolei (np. parowa → spalinowa → elektryczna) i przechodzenie między nimi; prosty system ulepszeń.
 - Mapa nierówna: góry, kaniony; generator map i edytor.
 - Budowa mostów i tuneli.
-- przycisk testowy + 100000 zł
-- przy torach tak jak przy semaforach budowanie i usuwanie torów, żeby nie trzeba niszczyć całości tylko wybrany w danym kierunku.
-- mapa niech pamięta ostatnie ustawienie, zoom i pozycje kamery
+- ~~przycisk testowy + 100000 zł~~ ✅ (Menu → Testy)
+- ~~przy torach tak jak przy semaforach budowanie i usuwanie torów, żeby nie trzeba niszczyć całości tylko wybrany w danym kierunku.~~ ✅ (Tory → Usuń, buldożer)
+- ~~mapa niech pamięta ostatnie ustawienie, zoom i pozycje kamery~~ ✅ (zapisywane razem z grą)
 - rozmiar mapy zobaczymy jak duża żeby zasobów komputera wystarczyło :)
 - zawracanie pociągu jak się zakleszczą!!! WAŻNE!!!

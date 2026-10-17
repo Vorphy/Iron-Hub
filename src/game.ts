@@ -287,9 +287,16 @@ export class Game {
     return prev.depotSide === t.depotSide &&
       prev.depotAuto === t.depotAuto &&
       prev.stationAxis === t.stationAxis &&
-      prev.signalKind === t.signalKind
+      prev.signalKind === t.signalKind &&
+      prev.trackMode === t.trackMode
       ? prev
-      : { depotSide: t.depotSide, depotAuto: t.depotAuto, stationAxis: t.stationAxis, signalKind: t.signalKind };
+      : {
+          depotSide: t.depotSide,
+          depotAuto: t.depotAuto,
+          stationAxis: t.stationAxis,
+          signalKind: t.signalKind,
+          trackMode: t.trackMode,
+        };
   }
 
   private updateHud(): void {

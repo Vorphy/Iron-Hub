@@ -15,13 +15,16 @@ import {
 import { planTrackLine } from './sim/track/autorail';
 import { planBuildTrack, planRemoveTrack, type TrackPlan } from './sim/track/build';
 import { nextSignalState } from './sim/signals/signals';
-import { getTrackBits, Side, Track, TRACK_SIDES, tracksOn } from './sim/track/track';
+import { getTrackBits, Side, Track, TRACK_SIDES, tracksOn, type TrackPiece } from './sim/track/track';
 import type { Simulation } from './sim/simulation';
 import { getTerrain, inBounds, Terrain } from './sim/world/map';
 import type { Point } from './render/iso';
 
 /** 'orders' – wskazywanie stacji do rozkładu pociągu `ordersTrain` (z okna pociągu). */
 export type Tool = 'cursor' | 'track' | 'station' | 'depot' | 'signal' | 'bulldozer' | 'orders';
+
+/** Narzędzie Tory: budowa albo rozbiórka (jak przy semaforach). */
+export type TrackMode = 'build' | 'remove';
 
 /** Rodzaj semafora stawianego narzędziem (albo usuwanie). */
 export type SignalKind = 'path' | 'oneway' | 'remove';
@@ -58,6 +61,7 @@ export class Tools {
   /** Auto: wjazd sam obraca się w stronę sąsiedniego toru. */
   depotAuto = true;
   signalKind: SignalKind = 'path';
+  trackMode: TrackMode = 'build';
   /** Pociąg, któremu dopisujemy stacje (narzędzie 'orders'). */
   ordersTrain: number | null = null;
   private dragStart: Point | null = null;
@@ -116,6 +120,11 @@ export class Tools {
     this.dirty = true;
   }
 
+  setTrackMode(mode: TrackMode): void {
+    this.trackMode = mode;
+    this.dirty = true;
+  }
+
   setSignalKind(kind: SignalKind): void {
     this.signalKind = kind;
     this.dirty = true;
@@ -158,6 +167,11 @@ export class Tools {
     }
 
     const start = this.dragStart ?? p;
+    if (this.tool === 'track' && this.trackMode === 'remove') {
+      this.previewRemoval(start, p, false);
+      return;
+    }
+
     if (this.tool === 'track') {
       this.overlay.setHover(null);
       const plan = planBuildTrack(this.sim.state, planTrackLine(start.x, start.y, p.x, p.y));
@@ -228,9 +242,7 @@ export class Tools {
       } else if (depotAt(this.sim.state, tile.x, tile.y)) {
         this.label = { text: `Zwrot: ${formatMoney(depotRefund())}`, ok: true };
       } else if (bits) {
-        const plan = planRemoveTrack(this.sim.state, tracksOn(bits).map((track) => ({ ...tile, track })));
-        this.overlay.setTrackPreview(plan, true);
-        this.label = planLabel(plan);
+        this.previewRemoval(start, p, true);
       } else if (getTerrain(map, tile.x, tile.y) === Terrain.Rough) {
         this.label = { text: `Koszt: ${formatMoney(CLEAR_ROUGH_COST)}`, ok: this.sim.state.money >= CLEAR_ROUGH_COST };
       }
@@ -240,6 +252,29 @@ export class Tools {
     const plan = planRemoveTrack(this.sim.state, planTrackLine(start.x, start.y, p.x, p.y));
     this.overlay.setTrackPreview(plan, true);
     this.label = planLabel(plan);
+  }
+
+  /**
+   * Podgląd rozbiórki toru: klik – jeden element najbliższy kursorowi, przeciągnięcie – odcinek.
+   * `keepHover` – zostaw podświetlenie kafelka (buldożer).
+   */
+  private previewRemoval(start: Point, p: Point, keepHover: boolean): void {
+    if (!keepHover) this.overlay.setHover(null);
+    const pieces = this.removalPieces(start, p);
+    if (pieces.length === 0) {
+      this.label = sameTile(start, p) ? { text: 'Wskaż tor', ok: false } : null;
+      return;
+    }
+    const plan = planRemoveTrack(this.sim.state, pieces);
+    this.overlay.setTrackPreview(plan, true);
+    this.label = planLabel(plan);
+  }
+
+  /** Elementy do rozbiórki: jeden pod kursorem (klik) albo linia (przeciągnięcie). */
+  private removalPieces(start: Point, end: Point): TrackPiece[] {
+    if (!sameTile(start, end)) return planTrackLine(start.x, start.y, end.x, end.y);
+    const piece = nearestPiece(this.sim, end);
+    return piece ? [piece] : [];
   }
 
   private depotSideAt(x: number, y: number): Side {
@@ -259,6 +294,10 @@ export class Tools {
       return { type: 'placeSignal', ...piece, oneWay: this.signalKind === 'oneway' };
     }
     if (this.tool === 'track') {
+      if (this.trackMode === 'remove') {
+        const pieces = this.removalPieces(start, end);
+        return pieces.length ? { type: 'removeTrack', pieces } : null;
+      }
       return { type: 'buildTrack', pieces: planTrackLine(start.x, start.y, end.x, end.y) };
     }
     if (this.tool === 'orders') {
@@ -286,8 +325,15 @@ export class Tools {
       };
     }
     if (this.tool === 'bulldozer') {
-      if (sameTile(start, end)) return { type: 'clearTile', x: Math.floor(end.x), y: Math.floor(end.y) };
-      return { type: 'removeTrack', pieces: planTrackLine(start.x, start.y, end.x, end.y) };
+      const x = Math.floor(end.x);
+      const y = Math.floor(end.y);
+      const { map } = this.sim.state;
+      const i = y * map.width + x;
+      // Zwykły tor: tylko wskazany element; stacja, zajezdnia, dom, nieużytek – cały kafelek.
+      const plainTrack = inBounds(map, x, y) && map.track[i] && !map.station[i] && !map.depot[i];
+      if (sameTile(start, end) && !plainTrack) return { type: 'clearTile', x, y };
+      const pieces = this.removalPieces(start, end);
+      return pieces.length ? { type: 'removeTrack', pieces } : null;
     }
     return null;
   }

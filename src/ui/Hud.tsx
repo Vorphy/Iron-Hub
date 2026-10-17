@@ -27,7 +27,7 @@ const TOOLS: { tool: Tool; icon: string; name: string; key: string }[] = [
 const TOOL_HELP: Record<Tool, string> = {
   cursor: 'Klik na pociąg, stację, zajezdnię, miasto lub zakład – okno · przeciąganie / strzałki / WASD – przesuwanie · kółko – zoom · spacja – pauza · 1–4 – prędkość · G – graf torów · V – rezerwacje torów',
   track:
-    'Przeciągnij, aby położyć tor: wzdłuż osi lub ukośnie. Pozycja kursora w kafelku wybiera łuk. Prawy przycisk – przesuwanie mapy · Esc – anuluj',
+    'Buduj: przeciągnij wzdłuż osi lub ukośnie; pozycja kursora w kafelku wybiera łuk. Usuń: klik – jeden element pod kursorem, przeciągnięcie – odcinek. Prawy przycisk – przesuwanie mapy · Esc – anuluj',
   station:
     'Przeciągnij prostokąt: dłuższy bok to długość peronu, krótszy – liczba torów. R – obrót przy kwadracie. Niebieskie pole to zasięg stacji',
   depot:
@@ -35,7 +35,7 @@ const TOOL_HELP: Record<Tool, string> = {
   signal:
     'Klik na tor stawia semafor ścieżkowy (200 zł); kolejne kliknięcia zmieniają kierunek. Pociąg może stanąć tylko przed semaforem, na końcu peronu lub toru · V – podgląd rezerwacji',
   orders: 'Klikaj stacje, aby dopisać je do rozkładu pociągu · Esc – koniec',
-  bulldozer: 'Klik – usuń zajezdnię, kafelek stacji, tory z kafelka lub oczyść nieużytek · przeciągnięcie – rozbierz odcinek toru (zwrot 25%)',
+  bulldozer: 'Klik – usuń element toru pod kursorem, zajezdnię, kafelek stacji, dom lub oczyść nieużytek · przeciągnięcie – rozbierz odcinek toru (zwrot 25%)',
 };
 
 const MESSAGE_MS = 2500;
@@ -161,6 +161,23 @@ function ToolOptions({ tool, options, actions }: { tool: Tool; options: HudState
           onClick={() => actions.setDepotSide('auto')}
         >
           Auto
+        </button>
+      </div>
+    );
+  }
+  if (tool === 'track') {
+    return (
+      <div class="panel tool-options">
+        <div class="section-title">Tory</div>
+        <button class={options.trackMode === 'build' ? 'active' : ''} onClick={() => actions.setTrackMode('build')}>
+          Buduj
+        </button>
+        <button
+          class={options.trackMode === 'remove' ? 'active' : ''}
+          title="Klik – usuwa jeden element toru pod kursorem; przeciągnięcie – odcinek"
+          onClick={() => actions.setTrackMode('remove')}
+        >
+          Usuń
         </button>
       </div>
     );

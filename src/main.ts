@@ -79,6 +79,7 @@ const actions: HudActions = {
   setDepotSide: (s) => game?.toolController.setDepotSide(s),
   setStationAxis: (a) => game?.toolController.setStationAxis(a),
   setSignalKind: (k) => game?.toolController.setSignalKind(k),
+  setTrackMode: (m) => game?.toolController.setTrackMode(m),
   setSignalMode: (mode) => game?.command({ type: 'setSignalMode', mode }),
   toggleMenu: () => hudStore.set({ menuOpen: !hudStore.get().menuOpen }),
   openFinance: () => game?.openWindow({ kind: 'finance' }),

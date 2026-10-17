@@ -9,7 +9,7 @@ Wartości liczbowe w tym dokumencie są **startowe** – do strojenia w trakcie 
   - Linia budowana jest **w całości albo wcale** – jeśli którykolwiek kafelek jest zablokowany (woda, krawędź mapy), podgląd świeci na czerwono i nic nie powstaje.
   - Koszt: 100 zł za element toru, +50 zł za oczyszczenie nieużytku pod torem. Istniejące elementy są pomijane bez opłaty.
   - Jak w TTD nie ma skrętów o 90° – skręca się łukami (ukosami).
-- Rozbiórka (buldożer): klik usuwa wszystkie tory z kafelka (lub oczyszcza nieużytek), przeciągnięcie rozbiera odcinek. Zwrot: 25% kosztu toru.
+- Rozbiórka: narzędzie Tory w trybie **Usuń** (panel obok paska narzędzi) albo buldożer. Klik usuwa **jeden element toru najbliższy kursorowi** (podświetlony na czerwono), przeciągnięcie rozbiera odcinek. Buldożer na stacji, zajezdni, domu lub nieużytku działa na cały kafelek. Zwrot: 25% kosztu toru.
 - Stacja: prostokąt peronów (długość × liczba torów, max 12 × 6). Każda stacja ma **zasięg** (4 kafelki od peronów) – z niego zbiera pasażerów i ładunek oraz do niego dostarcza.
   - Narzędzie Stacja (P): przeciągnięcie prostokąta; dłuższy bok = długość peronu, przy kwadracie oś wybiera panel obok paska narzędzi lub klawisz R.
   - Stację można postawić na pustym terenie albo na istniejącej prostej w osi peronu (wpięcie w linię). Nie na łuku, torze w innej osi, wodzie ani innej stacji.
