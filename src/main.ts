@@ -10,6 +10,7 @@ import {
   slotDate,
   writeSlot,
   type Slot,
+  type ViewState,
 } from './persistence/saves';
 import { createGame, type GameState } from './sim/state';
 import { Hud } from './ui/Hud';
@@ -20,16 +21,22 @@ const AUTOSAVE_MS = 30_000;
 
 let app: Application;
 let game: Game | null = null;
-/** Tick ostatniego autozapisu – nie zapisujemy, gdy gra stoi (pauza). */
-let autosavedTick = -1;
+/** Stan przy ostatnim autozapisie – nie zapisujemy, gdy nic się nie zmieniło (pauza, kamera w miejscu). */
+let autosavedKey = '';
 
-function startGame(state: GameState): void {
+function autosaveKey(g: Game): string {
+  const v = g.view;
+  return `${g.state.tick}:${Math.round(v.cx)}:${Math.round(v.cy)}:${v.zoom}`;
+}
+
+function startGame(state: GameState, view: ViewState | null = null): void {
   game?.destroy();
   game = new Game(app, state);
+  if (view) game.view = view;
   game.closeWindow();
   // Dostęp z konsoli przeglądarki przy pracy lokalnej (testy, debugowanie).
   if (import.meta.env.DEV) Object.assign(window, { game, iron: { startGame, createGame } });
-  autosavedTick = state.tick;
+  autosavedKey = autosaveKey(game);
   hudStore.set({ menuOpen: false });
 }
 
@@ -45,8 +52,8 @@ async function refreshSaveInfo(): Promise<void> {
 async function saveTo(slot: Slot, silent = false): Promise<void> {
   if (!game) return;
   try {
-    await writeSlot(slot, game.state);
-    if (slot === 'auto') autosavedTick = game.state.tick;
+    await writeSlot(slot, game.state, game.view);
+    if (slot === 'auto') autosavedKey = autosaveKey(game);
     if (!silent) showMessage('Gra zapisana');
     void refreshSaveInfo();
   } catch (e) {
@@ -58,7 +65,7 @@ async function loadFrom(slot: Slot): Promise<boolean> {
   try {
     const save = await readSlot(slot);
     if (!save) return false;
-    startGame(save.state);
+    startGame(save.state, save.view);
     return true;
   } catch (e) {
     showMessage(describeError(e));
@@ -80,12 +87,13 @@ const actions: HudActions = {
   quickLoad: () => {
     void loadFrom('quick').then((ok) => ok && showMessage('Wczytano zapis'));
   },
-  exportFile: () => game && downloadSave(game.state),
+  exportFile: () => game && downloadSave(game.state, game.view),
   importFile: () => {
     void pickSaveFile().then((text) => {
       if (text === null) return;
       try {
-        startGame(parseSaveFile(text).state);
+        const save = parseSaveFile(text);
+        startGame(save.state, save.view);
         showMessage('Wczytano grę z pliku');
       } catch (e) {
         showMessage(describeError(e));
@@ -129,7 +137,7 @@ async function start(): Promise<void> {
   void refreshSaveInfo();
 
   setInterval(() => {
-    if (game && game.state.tick !== autosavedTick) void saveTo('auto', true);
+    if (game && autosaveKey(game) !== autosavedKey) void saveTo('auto', true);
   }, AUTOSAVE_MS);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') void saveTo('auto', true);

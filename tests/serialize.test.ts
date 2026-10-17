@@ -61,3 +61,15 @@ describe('zapis gry', () => {
     for (const data of bad) expect(() => deserializeState(data)).toThrow(SaveError);
   });
 });
+
+describe('plik zapisu z widokiem kamery', () => {
+  it('kamera wraca po wczytaniu; stary plik bez kamery też się wczytuje', async () => {
+    const { parseSaveFile, toSaveFile } = await import('../src/persistence/saves');
+    const sim = playedSim();
+    const view = { cx: 120.5, cy: -40, zoom: 2 };
+    const loaded = parseSaveFile(JSON.stringify(toSaveFile(sim.state, view)));
+    expect(loaded.view).toEqual(view);
+    expect(loaded.state).toEqual(sim.state);
+    expect(parseSaveFile(JSON.stringify(toSaveFile(sim.state))).view).toBeNull();
+  });
+});

@@ -1,11 +1,30 @@
 import { deserializeState, SaveError, serializeState, type SerializedState } from '../sim/serialize';
 import type { GameState } from '../sim/state';
 
+/** Widok gracza (kamera) – zapisywany obok stanu gry, ale poza symulacją. */
+export interface ViewState {
+  cx: number;
+  cy: number;
+  zoom: number;
+}
+
 /** Plik zapisu: to samo trafia do IndexedDB i do eksportowanego pliku. */
 export interface SaveFile {
   format: 'iron-hub-save';
   savedAt: string;
   state: SerializedState;
+  view?: ViewState;
+}
+
+export interface LoadedSave {
+  state: GameState;
+  savedAt: string;
+  view: ViewState | null;
+}
+
+function isView(v: unknown): v is ViewState {
+  const o = v as ViewState;
+  return !!o && [o.cx, o.cy, o.zoom].every((n) => typeof n === 'number' && Number.isFinite(n));
 }
 
 export type Slot = 'auto' | 'quick';
@@ -13,11 +32,11 @@ export type Slot = 'auto' | 'quick';
 const DB_NAME = 'iron-hub';
 const STORE = 'saves';
 
-export function toSaveFile(state: GameState): SaveFile {
-  return { format: 'iron-hub-save', savedAt: new Date().toISOString(), state: serializeState(state) };
+export function toSaveFile(state: GameState, view?: ViewState): SaveFile {
+  return { format: 'iron-hub-save', savedAt: new Date().toISOString(), state: serializeState(state), view };
 }
 
-export function parseSaveFile(text: string): { state: GameState; savedAt: string } {
+export function parseSaveFile(text: string): LoadedSave {
   let data: Partial<SaveFile>;
   try {
     data = JSON.parse(text) as Partial<SaveFile>;
@@ -25,7 +44,11 @@ export function parseSaveFile(text: string): { state: GameState; savedAt: string
     throw new SaveError('To nie jest plik JSON');
   }
   if (data?.format !== 'iron-hub-save') throw new SaveError('To nie jest zapis Iron Hub');
-  return { state: deserializeState(data.state), savedAt: String(data.savedAt ?? '') };
+  return {
+    state: deserializeState(data.state),
+    savedAt: String(data.savedAt ?? ''),
+    view: isView(data.view) ? data.view : null,
+  };
 }
 
 // --- IndexedDB (zapis lokalny, osobny dla każdej domeny i przeglądarki) ---
@@ -54,13 +77,13 @@ async function withStore<T>(mode: IDBTransactionMode, fn: (store: IDBObjectStore
   }
 }
 
-export async function writeSlot(slot: Slot, state: GameState): Promise<SaveFile> {
-  const file = toSaveFile(state);
+export async function writeSlot(slot: Slot, state: GameState, view?: ViewState): Promise<SaveFile> {
+  const file = toSaveFile(state, view);
   await withStore('readwrite', (s) => s.put(JSON.stringify(file), slot));
   return file;
 }
 
-export async function readSlot(slot: Slot): Promise<{ state: GameState; savedAt: string } | null> {
+export async function readSlot(slot: Slot): Promise<LoadedSave | null> {
   const text = await withStore<unknown>('readonly', (s) => s.get(slot));
   return typeof text === 'string' ? parseSaveFile(text) : null;
 }
@@ -78,8 +101,8 @@ export async function slotDate(slot: Slot): Promise<string | null> {
 
 // --- Pliki ---
 
-export function downloadSave(state: GameState): void {
-  const file = toSaveFile(state);
+export function downloadSave(state: GameState, view?: ViewState): void {
+  const file = toSaveFile(state, view);
   const blob = new Blob([JSON.stringify(file)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

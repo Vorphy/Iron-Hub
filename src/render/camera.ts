@@ -30,6 +30,16 @@ export class Camera {
     return ZOOM_LEVELS[this.zoomIndex]!;
   }
 
+  /** Ustawia najbliższy dostępny poziom zoomu. */
+  setZoom(zoom: number): void {
+    let best = 0;
+    ZOOM_LEVELS.forEach((z, i) => {
+      if (Math.abs(z - zoom) < Math.abs(ZOOM_LEVELS[best]! - zoom)) best = i;
+    });
+    this.zoomIndex = best;
+    this.clamp();
+  }
+
   resize(w: number, h: number): void {
     this.viewW = w;
     this.viewH = h;

@@ -11,6 +11,7 @@ import { FloatingTexts } from './render/floatingText';
 import { MapLabels } from './render/mapLabels';
 import { SignalRenderer } from './render/signals';
 import { TrainRenderer } from './render/trains';
+import type { ViewState } from './persistence/saves';
 import type { Command } from './sim/commands';
 import { depotAt } from './sim/depot/depot';
 import { industryAt } from './sim/economy/industry';
@@ -146,6 +147,16 @@ export class Game {
   pickOrders(trainId: number): void {
     const active = this.tools.tool === 'orders' && this.tools.ordersTrain === trainId;
     this.setTool(active ? 'cursor' : 'orders', trainId);
+  }
+
+  /** Kamera do zapisu gry. */
+  get view(): ViewState {
+    return { cx: this.camera.cx, cy: this.camera.cy, zoom: this.camera.zoom };
+  }
+
+  set view(v: ViewState) {
+    this.camera.setZoom(v.zoom);
+    this.camera.centerOn({ x: v.cx, y: v.cy });
   }
 
   /** Centruje kamerę na kafelku. */
