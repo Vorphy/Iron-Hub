@@ -154,7 +154,7 @@ function placeIndustry(state: GameState, rng: Rng, def: IndustryDef): void {
       name: near ? `${def.name} ${near}` : def.name,
       x,
       y,
-      level: 1,
+      level: nextInt(rng, 1, 3),
       growth: 0,
       month: emptyIndustryMonth(),
       history: [],

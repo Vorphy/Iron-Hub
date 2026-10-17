@@ -1,4 +1,5 @@
 import { CLEAR_ROUGH_COST, DEPOT_COST, TRACK_REFUND_RATE } from '../config';
+import { spend } from '../economy/finance';
 import type { CommandResult, SimEvent } from '../commands';
 import type { GameState } from '../state';
 import { oppositeSide, Side, SIDE_DELTA, TRACK_SIDES, tracksOn } from '../track/track';
@@ -59,7 +60,7 @@ export function buildDepot(state: GameState, x: number, y: number, side: Side, e
   state.map.depot[y * state.map.width + x] = id;
   if (getTerrain(state.map, x, y) === Terrain.Rough) setTerrain(state.map, x, y, Terrain.Grass);
   state.depots.push({ id, x, y, side });
-  state.money -= plan.cost;
+  spend(state, 'construction', plan.cost);
   events.push({ type: 'tileChanged', x, y });
   return { ok: true };
 }
@@ -67,7 +68,7 @@ export function buildDepot(state: GameState, x: number, y: number, side: Side, e
 export function removeDepot(state: GameState, depot: Depot, events: SimEvent[]): CommandResult {
   state.map.depot[depot.y * state.map.width + depot.x] = 0;
   state.depots = state.depots.filter((d) => d !== depot);
-  state.money += depotRefund();
+  spend(state, 'construction', -depotRefund());
   events.push({ type: 'tileChanged', x: depot.x, y: depot.y });
   return { ok: true };
 }

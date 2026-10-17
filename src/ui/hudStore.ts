@@ -12,7 +12,8 @@ export type WindowRef =
   | { kind: 'train'; trainId: number }
   | { kind: 'town'; townId: number }
   | { kind: 'industry'; industryId: number }
-  | { kind: 'station'; stationId: number };
+  | { kind: 'station'; stationId: number }
+  | { kind: 'finance' };
 
 /** Skrót pociągu do list w oknach. */
 export interface TrainSummary {
@@ -93,7 +94,22 @@ export interface StationWindowData {
   accepts: Cargo[];
 }
 
-export type WindowData = DepotWindowData | TrainWindowData | TownWindowData | IndustryWindowData | StationWindowData;
+export interface FinanceWindowData {
+  kind: 'finance';
+  /** Miesiące od bieżącego wstecz. */
+  months: { label: string; income: number; trains: number; infrastructure: number; construction: number }[];
+  /** Szacunek miesięcznych kosztów stałych. */
+  infrastructurePerMonth: number;
+  trainsPerMonth: number;
+}
+
+export type WindowData =
+  | DepotWindowData
+  | TrainWindowData
+  | TownWindowData
+  | IndustryWindowData
+  | StationWindowData
+  | FinanceWindowData;
 
 export interface HudState {
   date: string;
@@ -152,6 +168,7 @@ export interface HudActions {
   setSignalKind(kind: SignalKind): void;
   setSignalMode(mode: SignalMode): void;
   toggleMenu(): void;
+  openFinance(): void;
   quickSave(): void;
   quickLoad(): void;
   exportFile(): void;

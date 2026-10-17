@@ -1,4 +1,5 @@
 import { MAX_WAGONS, TRAIN_RESALE_RATE } from '../config';
+import { spend } from '../economy/finance';
 import type { CommandResult, SimEvent } from '../commands';
 import type { GameState } from '../state';
 import type { Side } from '../track/track';
@@ -115,7 +116,7 @@ export function buyTrain(
     value: plan.cost,
     loads: wagons.map(() => ({ amount: 0, source: 0, loadedTick: 0 })),
   });
-  state.money -= plan.cost;
+  spend(state, 'construction', plan.cost);
   events.push({ type: 'trainsChanged' });
   return { ok: true };
 }
@@ -125,7 +126,7 @@ export function sellTrain(state: GameState, trainId: number, events: SimEvent[])
   if (!train) return { ok: false, reason: 'blocked' };
   if (train.status !== 'depot') return { ok: false, reason: 'notInDepot' };
   state.trains = state.trains.filter((t) => t !== train);
-  state.money += resaleValue(train);
+  spend(state, 'construction', -resaleValue(train));
   events.push({ type: 'trainsChanged' });
   return { ok: true };
 }

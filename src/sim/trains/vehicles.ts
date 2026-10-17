@@ -16,6 +16,8 @@ export interface EngineDef {
   weight: number;
   length: number;
   cost: number;
+  /** Koszt eksploatacji na rok (zł), naliczany co miesiąc, gdy pociąg jest poza zajezdnią. */
+  runningCost: number;
   color: string;
 }
 
@@ -27,6 +29,7 @@ export interface WagonDef {
   weight: number;
   length: number;
   cost: number;
+  runningCost: number;
   color: string;
 }
 
@@ -55,5 +58,6 @@ export function consistStats(engine: string, wagons: readonly string[]) {
     length: e.length + ws.reduce((s, w) => s + w.length, 0),
     maxSpeed: e.maxSpeed,
     power: e.power,
+    runningCost: e.runningCost + ws.reduce((s, w) => s + w.runningCost, 0),
   };
 }

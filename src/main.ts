@@ -74,6 +74,7 @@ const actions: HudActions = {
   setSignalKind: (k) => game?.toolController.setSignalKind(k),
   setSignalMode: (mode) => game?.command({ type: 'setSignalMode', mode }),
   toggleMenu: () => hudStore.set({ menuOpen: !hudStore.get().menuOpen }),
+  openFinance: () => game?.openWindow({ kind: 'finance' }),
   quickSave: () => void saveTo('quick'),
   quickLoad: () => {
     void loadFrom('quick').then((ok) => ok && showMessage('Wczytano zapis'));

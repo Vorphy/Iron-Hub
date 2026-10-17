@@ -1,3 +1,4 @@
+import { spend } from '../economy/finance';
 import { CLEAR_ROUGH_COST, TRACK_COST, TRACK_REFUND_RATE } from '../config';
 import type { CommandResult, SimEvent } from '../commands';
 import type { GameState } from '../state';
@@ -55,7 +56,7 @@ export function buildTrack(state: GameState, pieces: readonly TrackPiece[], even
     if (getTerrain(map, piece.x, piece.y) === Terrain.Rough) setTerrain(map, piece.x, piece.y, Terrain.Grass);
     events.push({ type: 'tileChanged', x: piece.x, y: piece.y });
   }
-  state.money -= plan.cost;
+  spend(state, 'construction', plan.cost);
   return { ok: true };
 }
 
@@ -92,7 +93,7 @@ export function removeTrack(state: GameState, pieces: readonly TrackPiece[], eve
     map.track[piece.y * map.width + piece.x]! &= ~piece.track;
     events.push({ type: 'tileChanged', x: piece.x, y: piece.y });
   }
-  state.money -= plan.cost;
+  spend(state, 'construction', plan.cost);
   return { ok: true };
 }
 

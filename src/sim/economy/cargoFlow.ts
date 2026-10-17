@@ -48,20 +48,31 @@ export function stationCenter(state: GameState, st: Station): { x: number; y: nu
 
 /** Ładunki przyjmowane przez stację: surowce zakładów w zasięgu i potrzeby mieszkańców. */
 export function stationAccepts(state: GameState, st: Station): Set<Cargo> {
+  return catchmentCargo(state, st.tiles).accepts;
+}
+
+/** Co stacja na tych peronach przyjmie i co będzie zbierać (zakłady i domy w zasięgu). */
+export function catchmentCargo(state: GameState, tiles: readonly number[]): { accepts: Set<Cargo>; supplies: Set<Cargo> } {
   const { map } = state;
-  const out = new Set<Cargo>();
+  const accepts = new Set<Cargo>();
+  const supplies = new Set<Cargo>();
   let population = 0;
   const industries = new Set<number>();
-  for (const i of catchment(map, st.tiles)) {
+  for (const i of catchment(map, tiles)) {
     population += HOUSE_POPULATION[map.house[i]!]!;
     if (map.industry[i]) industries.add(map.industry[i]!);
   }
   for (const id of industries) {
     const ind = state.industries.find((x) => x.id === id);
-    if (ind) for (const c of industryDef(ind.type)!.accepts) out.add(c);
+    if (!ind) continue;
+    const def = industryDef(ind.type)!;
+    for (const c of def.accepts) accepts.add(c);
+    if (def.produces) supplies.add(def.produces);
   }
-  for (const [c, need] of Object.entries(TOWN_ACCEPTANCE) as [Cargo, number][]) if (population >= need) out.add(c);
-  return out;
+  for (const [c, need] of Object.entries(TOWN_ACCEPTANCE) as [Cargo, number][]) if (population >= need) accepts.add(c);
+  if (population > 0) supplies.add('passengers');
+  if (population >= 100) supplies.add('mail');
+  return { accepts, supplies };
 }
 
 /** Zapłata za dostawę: ilość × stawka × odległość × współczynnik czasu. */

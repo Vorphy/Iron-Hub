@@ -6,6 +6,7 @@ import {
   STATION_TILE_COST,
   TRACK_REFUND_RATE,
 } from '../config';
+import { spend } from '../economy/finance';
 import type { CommandResult, SimEvent } from '../commands';
 import type { Cargo } from '../economy/cargo';
 import type { GameState } from '../state';
@@ -161,7 +162,7 @@ export function buildStation(
   }
   tiles.sort((a, b) => a - b);
   state.stations.push({ id, name: stationNameFor(state, tiles), axis, tiles, cargo: {} });
-  state.money -= plan.cost;
+  spend(state, 'construction', plan.cost);
   events.push({ type: 'stationsChanged' });
   return { ok: true };
 }
@@ -179,7 +180,7 @@ export function removeStationTile(state: GameState, x: number, y: number, events
     state.stations = state.stations.filter((s) => s !== station);
     dropStationFromOrders(state, station.id);
   }
-  state.money += stationTileRefund();
+  spend(state, 'construction', -stationTileRefund());
   events.push({ type: 'tileChanged', x, y }, { type: 'stationsChanged' });
   return { ok: true };
 }

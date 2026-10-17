@@ -10,7 +10,8 @@
       "weight": 55,
       "length": 10,
       "cost": 6000,
-      "color": "#2f6b3a"
+      "color": "#2f6b3a",
+      "runningCost": 1200
     },
     {
       "id": "grom",
@@ -22,7 +23,8 @@
       "weight": 90,
       "length": 12,
       "cost": 9500,
-      "color": "#34363b"
+      "color": "#34363b",
+      "runningCost": 1800
     },
     {
       "id": "strzala",
@@ -34,15 +36,16 @@
       "weight": 95,
       "length": 12,
       "cost": 15000,
-      "color": "#1f4f8f"
+      "color": "#1f4f8f",
+      "runningCost": 2600
     }
   ],
   "wagons": [
-    { "id": "osobowy", "name": "Wagon osobowy", "cargo": "passengers", "capacity": 40, "weight": 18, "length": 8, "cost": 1500, "color": "#7a2e2e" },
-    { "id": "pocztowy", "name": "Wagon pocztowy", "cargo": "mail", "capacity": 20, "weight": 16, "length": 8, "cost": 1200, "color": "#b08a2e" },
-    { "id": "weglarka", "name": "Węglarka", "cargo": "coal", "capacity": 30, "weight": 12, "length": 8, "cost": 1000, "color": "#3a3a3a" },
-    { "id": "rudowy", "name": "Wagon na rudę", "cargo": "ore", "capacity": 30, "weight": 12, "length": 8, "cost": 1000, "color": "#8a5a3c" },
-    { "id": "kryty", "name": "Wagon kryty", "cargo": "goods", "capacity": 20, "weight": 14, "length": 8, "cost": 1300, "color": "#6b4f2e" },
-    { "id": "platforma", "name": "Platforma na drewno", "cargo": "wood", "capacity": 30, "weight": 10, "length": 8, "cost": 900, "color": "#8c7a5a" }
+    {"id": "osobowy", "name": "Wagon osobowy", "cargo": "passengers", "capacity": 40, "weight": 18, "length": 8, "cost": 1500, "color": "#7a2e2e", "runningCost": 120},
+    {"id": "pocztowy", "name": "Wagon pocztowy", "cargo": "mail", "capacity": 20, "weight": 16, "length": 8, "cost": 1200, "color": "#b08a2e", "runningCost": 120},
+    {"id": "weglarka", "name": "Węglarka", "cargo": "coal", "capacity": 30, "weight": 12, "length": 8, "cost": 1000, "color": "#3a3a3a", "runningCost": 120},
+    {"id": "rudowy", "name": "Wagon na rudę", "cargo": "ore", "capacity": 30, "weight": 12, "length": 8, "cost": 1000, "color": "#8a5a3c", "runningCost": 120},
+    {"id": "kryty", "name": "Wagon kryty", "cargo": "goods", "capacity": 20, "weight": 14, "length": 8, "cost": 1300, "color": "#6b4f2e", "runningCost": 120},
+    {"id": "platforma", "name": "Platforma na drewno", "cargo": "wood", "capacity": 30, "weight": 10, "length": 8, "cost": 900, "color": "#8c7a5a", "runningCost": 120}
   ]
 }

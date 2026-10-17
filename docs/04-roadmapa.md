@@ -40,13 +40,16 @@ Etapy są ułożone tak, żeby po każdym istniała działająca, testowalna wer
 
 *Zrealizowano:* rezerwacja torów porcjami, tryb Amator jako ruchomy odstęp blokowy (bez stawiania semaforów), omijanie zajętych peronów, kolejka wyjazdu z zajezdni, podgląd rezerwacji (V). Zakleszczenia na jednym torze są sygnalizowane statusem „Czeka na wolny tor” (bez automatycznego rozwiązywania).
 
-## Etap 4 – Ekonomia
+## Etap 4 – Ekonomia ✅ (2026-10-18)
 - Miasta (populacja, budynki, generowanie pasażerów, wzrost wzdłuż korytarzy).
 - Fabryki (typy, poziomy, wskaźnik zaopatrzenia, progi 75% / 50%).
 - Załadunek / rozładunek, płatności, koszty, kredyt.
 - Ruch lokalny AI jako dekoracja.
 
 **Gotowe, gdy:** da się zarabiać, fabryki i miasta zmieniają się w czasie zgodnie z regułami.
+
+*Zrealizowano:* generator świata (8 miast, 12 zakładów w 3 łańcuchach), domy i zakłady w izometrii, okna miasta, zakładu, stacji i finansów, zbieranie ładunku z oceną stacji, załadunek/rozładunek z zapłatą, miesięczny rozwój fabryk (progi 75%/50%, ±12 pkt) i miast (w stronę stacji), koszty eksploatacji i utrzymania. Zapis v5. 107 testów.
+*Przeniesione:* ruch lokalny AI (dekoracja) – wymaga dróg w miastach; kredyt i bankructwo.
 
 ## Etap 5 – Test „czy to jest fajne”
 - Grywalny wycinek na placeholderowej grafice, rozegrany przez kilka osób.
@@ -74,3 +77,8 @@ Etapy są ułożone tak, żeby po każdym istniała działająca, testowalna wer
 - Poziomy pociągów, rodzaje kolei (np. parowa → spalinowa → elektryczna) i przechodzenie między nimi; prosty system ulepszeń.
 - Mapa nierówna: góry, kaniony; generator map i edytor.
 - Budowa mostów i tuneli.
+- przycisk testowy + 100000 zł
+- przy torach tak jak przy semaforach budowanie i usuwanie torów, żeby nie trzeba niszczyć całości tylko wybrany w danym kierunku.
+- mapa niech pamięta ostatnie ustawienie, zoom i pozycje kamery
+- rozmiar mapy zobaczymy jak duża żeby zasobów komputera wystarczyło :)
+- zawracanie pociągu jak się zakleszczą!!! WAŻNE!!!

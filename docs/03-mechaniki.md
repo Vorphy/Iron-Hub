@@ -66,24 +66,30 @@ Tryb przełącza się w Menu w dowolnym momencie (semafory zostają, w trybie Am
 
 ## Miasta
 
-- Stan miasta: populacja, lista budynków, „ocena” transportu.
-- **Generowanie pasażerów** zależy od populacji budynków w zasięgu stacji.
-- **Wzrost**: tempo zależy od jakości obsługi (procent przewiezionych pasażerów, częstotliwość pociągów). Nowe budynki pojawiają się **preferencyjnie wzdłuż korytarzy kolejowych** i wokół stacji – miasto rośnie w stronę sieci gracza.
+- Na nowej mapie 128×128 powstaje **8 miast** (fikcyjne nazwy) z 8–30 domami. Zabudowa w kwartałach – co czwarty rząd i kolumna od rynku to ulica (wolny kafelek). Przy rynku wyższe budynki (poziom domu 1–4: 20 / 45 / 80 / 140 mieszkańców).
+- **Pasażerowie**: mieszkańcy / 4 na miesiąc, **poczta**: mieszkańcy / 16 na miesiąc – liczone z domów w zasięgu stacji.
+- Stacja przyjmuje: pasażerów, gdy w zasięgu jest jakikolwiek dom; pocztę od 100 mieszkańców w zasięgu; towary od 200.
+- **Wzrost (co miesiąc)**: miasto, z którego przewieziono pasażerów, dostaje `1 + round(3 × odsetek przewiezionych)` nowych domów i ma 40% szans na rozbudowę jednego domu. Nieobsługiwane – 10% szans na jeden dom. Nowe domy powstają obok istniejącej zabudowy, **6× chętniej w zasięgu stacji** – miasto rośnie w stronę kolei.
+- Dom można wyburzyć buldożerem (500 zł). Stacja bierze nazwę od miasta w promieniu 16 kafelków (kolejne: „Główna”, „Wschód”…).
 
 ## Fabryki
 
-### Typy
-- **Pierwotne** (kopalnia węgla, kopalnia rudy, las, farma) – produkują surowiec.
-- **Przetwórcze** (huta, tartak, zakład spożywczy…) – przyjmują surowce i siłę roboczą (pasażerów), produkują towar.
-- **Odbiorcy końcowi** (elektrownia, miasto dla towarów) – tylko przyjmują.
+### Typy (plik danych `src/data/industries.json`)
+| Zakład | Produkuje | Przyjmuje | Produkcja / zapotrzebowanie na miesiąc (poziom 1) | Na mapie 128×128 |
+|---|---|---|---|---|
+| Kopalnia węgla | węgiel | – | 60 t | 4 |
+| Kopalnia rudy | ruda | – | 50 t | 2 |
+| Las | drewno | – | 50 t | 2 |
+| Elektrownia | – | węgiel | 80 t | 2 |
+| Huta | towary (40) | ruda, węgiel | 50 t każdego | 1 |
+| Tartak | towary (35) | drewno | 50 t | 1 |
 
-Każda fabryka ma **poziom** (1…N). Poziom określa produkcję i zapotrzebowanie.
+Produkcja i zapotrzebowanie rosną liniowo z poziomem (1–5). Zakłady startują na poziomie 1–2; nie da się ich zburzyć.
 
 ### Wskaźnik zaopatrzenia
-Liczony jako średnia krocząca z ostatnich **3 miesięcy gry**:
-
-- fabryka przetwórcza: `dostarczone / zapotrzebowanie` dla każdego wymaganego wejścia; wynik = minimum (lub ważona średnia – do strojenia),
-- fabryka pierwotna: `wywiezione / wyprodukowane` (jak w TTD – rośnie ta, którą gracz obsługuje).
+Średnia z ostatnich **3 miesięcy gry**:
+- zakład pierwotny: `wywiezione / wyprodukowane`,
+- przetwórnia: średnia z `min(1, dostarczone / zapotrzebowanie)` po wszystkich surowcach.
 
 ### Wzrost i spadek – progi z histerezą
 
@@ -93,10 +99,16 @@ Liczony jako średnia krocząca z ostatnich **3 miesięcy gry**:
 | **50% – 75%** | stabilnie (bez zmian) |
 | **≤ 50%** | −1 punkt rozwoju |
 
-- Zmiana poziomu następuje po zebraniu **np. 12 punktów** (≈ rok gry przy stałej sytuacji) – zarówno w górę, jak i w dół. Rozwój i upadek są **bardzo powolne**.
-- Pas 50–75% to celowa strefa neutralna – fabryka nie „mruga” poziomem przy wahaniach dostaw.
-- Spadek nie schodzi poniżej poziomu 1 (czy fabryka może zostać zamknięta – do decyzji).
-- Produkcja w ramach poziomu skaluje się płynnie z zaopatrzeniem (np. 30% bazowej produkcji przy zerowych dostawach, 100% przy pełnych) – nie ma twardej blokady.
+- **12 punktów** = poziom w górę, **−12** = poziom w dół (≈ rok gry przy stałej sytuacji). Pas 50–75% to strefa neutralna.
+- Poziom nie spada poniżej 1 ani nie rośnie ponad 5. Zamykania zakładów nie ma.
+- Przetwórnia bez dostaw pracuje na **30% mocy**, przy pełnym zaopatrzeniu na 100% (liniowo).
+
+## Ładunki i stacje
+
+- Stacja zbiera ładunek z zakładów i domów w zasięgu **dopiero, gdy zatrzyma się na niej pociąg z pasującym wagonem**; obsługa wygasa po 60 dniach bez takiego pociągu.
+- **Ocena stacji** (ile produkcji trafia na stację): 95% przy kursach co ≤ 7 dni, spada do 40% przy 60 dniach; −15%, gdy czeka ponad 500 jednostek. Kilka stacji przy jednym zakładzie dzieli się produkcją proporcjonalnie do ocen. Na stacji czeka maksymalnie 4000 jednostek.
+- Na stacji pociąg **rozładowuje** to, co stacja przyjmuje (i co nie zostało załadowane tutaj), potem **ładuje** czekający ładunek; przed odjazdem dobiera to, co przybyło w czasie postoju. W jednym wagonie nie miesza się ładunku z różnych stacji.
+- Okno stacji (klik): co czeka, ocena, co stacja przyjmuje. Przy stawianiu stacji podpowiedź: „Zbiera: … · Przyjmuje: …”.
 
 ## Ruch lokalny AI
 
@@ -107,6 +119,17 @@ Liczony jako średnia krocząca z ostatnich **3 miesięcy gry**:
 
 ## Ekonomia gracza
 
-- Przychód za dostawę: `ilość × stawka ładunku × f(dystans) × g(czas przewozu)` – szybciej i dalej = więcej.
-- Koszty: budowa (tory, stacje, pojazdy), utrzymanie torów i stacji (miesięczne), eksploatacja pojazdów (roczna, rośnie z wiekiem).
-- Kredyt w banku z oprocentowaniem; bankructwo przy długotrwałym ujemnym saldzie.
+- **Przychód za dostawę** = `ilość × stawka × odległość między stacjami (kafelki) × współczynnik czasu`. Pełna stawka do „szybkiego” czasu przewozu, potem spada liniowo przez 60 dni do 30%.
+
+  | Ładunek | Stawka (zł / jedn. / kafelek) | Pełna stawka do (dni) |
+  |---|---|---|
+  | pasażerowie | 3,0 | 10 |
+  | poczta | 4,5 | 8 |
+  | węgiel | 1,8 | 30 |
+  | ruda | 1,9 | 30 |
+  | towary | 3,2 | 15 |
+  | drewno | 1,7 | 30 |
+
+- **Koszty miesięczne**: eksploatacja pociągów poza zajezdnią (1/12 kosztu rocznego: Iskra 1200, Grom 1800, Strzała 2600, wagon 120 zł/rok); utrzymanie: 2 zł za element toru, 10 zł za kafelek peronu, 30 zł za zajezdnię, 1 zł za semafor.
+- **Okno finansów** (klik na pieniądze): przewozy, pociągi, utrzymanie, budowa i zakupy (po zwrotach) – bieżący miesiąc i poprzednie.
+- Kredytu i bankructwa na razie nie ma – przy braku pieniędzy nie da się budować ani kupować.

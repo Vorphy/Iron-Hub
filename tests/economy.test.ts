@@ -80,7 +80,7 @@ describe('stacje i ładunki', () => {
   it('bez obsługi stacja nie zbiera ładunku', () => {
     const { sim, state } = coalLine();
     sim.enqueue({ type: 'stopTrain', trainId: 1 });
-    for (let i = 0; i < 30 * TICKS_PER_DAY; i++) sim.step();
+    for (let i = 0; i < 25 * TICKS_PER_DAY; i++) sim.step();
     expect(state.stations[0]!.cargo.coal).toBeUndefined();
     expect(state.industries[0]!.month.produced).toBeGreaterThan(0);
     expect(state.industries[0]!.month.transported).toBe(0);
@@ -110,8 +110,9 @@ describe('łańcuch kopalnia → pociąg → elektrownia', () => {
     expect(incomes.length).toBeGreaterThan(1);
     expect(state.finances.month.income + state.finances.history.reduce((s, l) => s + l.income, 0)).toBeGreaterThan(0);
     expect(state.money).toBeGreaterThan(money);
-    expect(state.industries[0]!.month.transported).toBeGreaterThan(0);
-    expect(state.industries[1]!.month.delivered.coal ?? 0).toBeGreaterThan(0);
+    // Statystyki zamykają się co miesiąc – sprawdzamy historię wskaźników.
+    expect(state.industries[0]!.history.some((r) => r > 0)).toBe(true);
+    expect(state.industries[1]!.history.some((r) => r > 0)).toBe(true);
   });
 
   it('gra z ładunkami po wczytaniu toczy się identycznie', () => {
@@ -158,6 +159,6 @@ describe('pasażerowie', () => {
       for (const e of sim.drainEvents()) if (e.type === 'income') income += e.amount;
     }
     expect(income).toBeGreaterThan(0);
-    expect(state.towns[0]!.month.passengersTransported + state.towns[1]!.month.passengersTransported).toBeGreaterThan(0);
+    expect(state.towns.some((t) => t.lastTransported > 0)).toBe(true);
   });
 });

@@ -2,7 +2,8 @@ import { applyCommand, type Command, type SimEvent } from './commands';
 import type { GameState } from './state';
 import { buildTrackGraph, type TrackGraph } from './track/graph';
 import { dailyCargo } from './economy/cargoFlow';
-import { TICKS_PER_DAY } from './time';
+import { monthlyEconomy } from './economy/monthly';
+import { DAYS_PER_MONTH, TICKS_PER_DAY } from './time';
 import { Planner, tickTrains } from './trains/movement';
 
 export class Simulation {
@@ -39,6 +40,7 @@ export class Simulation {
     tickTrains(this.state, this.planner, this.events);
     this.state.tick++;
     if (this.state.tick % TICKS_PER_DAY === 0) dailyCargo(this.state);
+    if (this.state.tick % (TICKS_PER_DAY * DAYS_PER_MONTH) === 0) monthlyEconomy(this.state, this.events);
   }
 
   /** Graf torów – stan pochodny, przebudowywany leniwie po zmianie torów. */

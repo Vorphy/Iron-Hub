@@ -1,6 +1,8 @@
 import type { Overlay } from './render/overlay';
 import type { Command, FailReason } from './sim/commands';
 import { CLEAR_ROUGH_COST, SIGNAL_COST } from './sim/config';
+import { CARGO_DEFS, type Cargo } from './sim/economy/cargo';
+import { catchmentCargo } from './sim/economy/cargoFlow';
 import { autoDepotSide, depotAt, depotRefund, planDepot } from './sim/depot/depot';
 import {
   catchment,
@@ -209,7 +211,10 @@ export class Tools {
       this.overlay.setStationPreview(plan);
       const ok = plan.tiles.filter((t) => t.ok).map((t) => t.y * map.width + t.x);
       if (ok.length) this.overlay.setCatchment(catchment(map, ok), map.width);
-      if (this.dragStart) this.label = planLabel(plan);
+      const info = ok.length ? catchmentCargo(this.sim.state, ok) : null;
+      const cargoInfo = info ? describeCatchment(info.supplies, info.accepts) : '';
+      const base = this.dragStart ? planLabel(plan) : null;
+      this.label = base || cargoInfo ? { text: [base?.text, cargoInfo].filter(Boolean).join(' · '), ok: base?.ok ?? true } : null;
       return;
     }
 
@@ -322,6 +327,11 @@ function distToSegment(px: number, py: number, a: readonly [number, number], b: 
   const dy = b[1] - ay;
   const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)));
   return Math.hypot(px - (ax + dx * t), py - (ay + dy * t));
+}
+
+function describeCatchment(supplies: Set<Cargo>, accepts: Set<Cargo>): string {
+  const names = (s: Set<Cargo>) => [...s].map((c) => CARGO_DEFS[c].name).join(', ') || '—';
+  return `Zbiera: ${names(supplies)} · Przyjmuje: ${names(accepts)}`;
 }
 
 function sameTile(a: Point, b: Point): boolean {

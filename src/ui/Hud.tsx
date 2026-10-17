@@ -4,7 +4,7 @@ import { Side } from '../sim/track/track';
 import { Terrain } from '../sim/world/map';
 import { formatMoney, type SignalKind, type Tool } from '../tools';
 import { DepotWindow } from './DepotWindow';
-import { IndustryWindow, StationWindow, TownWindow } from './InfoWindows';
+import { FinanceWindow, IndustryWindow, StationWindow, TownWindow } from './InfoWindows';
 import { TrainWindow } from './TrainWindow';
 import { hudStore, type HudActions, type HudState } from './hudStore';
 import { useStore } from './store';
@@ -54,7 +54,9 @@ export function Hud({ actions }: { actions: HudActions }) {
         <span class="sep" />
         <span>{s.date}</span>
         <span class="sep" />
-        <span class="money">{formatMoney(s.money)}</span>
+        <button class="money link" title="Finanse" onClick={actions.openFinance}>
+          {formatMoney(s.money)}
+        </button>
         <span class="sep" />
         <span class="buttons">
           {SPEEDS.map((sp) => (
@@ -81,6 +83,7 @@ export function Hud({ actions }: { actions: HudActions }) {
       {s.windowData?.kind === 'train' && <TrainWindow data={s.windowData} actions={actions} />}
       {s.windowData?.kind === 'town' && <TownWindow data={s.windowData} actions={actions} />}
       {s.windowData?.kind === 'station' && <StationWindow data={s.windowData} actions={actions} />}
+      {s.windowData?.kind === 'finance' && <FinanceWindow data={s.windowData} actions={actions} />}
       {s.windowData?.kind === 'industry' && <IndustryWindow data={s.windowData} actions={actions} />}
 
       <div class="panel toolbar">

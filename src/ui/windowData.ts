@@ -1,6 +1,10 @@
 import type { Simulation } from '../sim/simulation';
 import { resaleValue, trainById, trainsInDepot, type Train } from '../sim/trains/train';
-import { engineDef } from '../sim/trains/vehicles';
+import { consistStats, engineDef } from '../sim/trains/vehicles';
+import { infrastructureCost } from '../sim/economy/monthly';
+import { tickToDate } from '../sim/time';
+
+const MONTH_NAMES = ['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'];
 import {
   averageSupply,
   industryDef,
@@ -62,6 +66,27 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
   if (ref.kind === 'depot') {
     if (!state.depots.some((d) => d.id === ref.depotId)) return null;
     return { kind: 'depot', depotId: ref.depotId, trains: trainsInDepot(state, ref.depotId).map((t) => summary(sim, t)) };
+  }
+  if (ref.kind === 'finance') {
+    const now = tickToDate(state.tick);
+    const ledgers = [state.finances.month, ...[...state.finances.history].reverse()];
+    return {
+      kind: 'finance',
+      months: ledgers.map((l, k) => {
+        const total = now.year * 12 + (now.month - 1) - k;
+        return {
+          label: `${MONTH_NAMES[total % 12]} ${Math.floor(total / 12)}`,
+          income: Math.round(l.income),
+          trains: Math.round(l.trains),
+          infrastructure: Math.round(l.infrastructure),
+          construction: Math.round(l.construction),
+        };
+      }),
+      infrastructurePerMonth: infrastructureCost(state),
+      trainsPerMonth: Math.round(
+        state.trains.filter((t) => t.status !== 'depot').reduce((s, t) => s + consistStats(t.engine, t.wagons).runningCost, 0) / 12,
+      ),
+    };
   }
   if (ref.kind === 'station') {
     const st = state.stations.find((s) => s.id === ref.stationId);

@@ -1,0 +1,139 @@
+import type { SimEvent } from '../commands';
+import { catchment } from '../station/station';
+import type { GameState } from '../state';
+import { nextFloat, nextInt } from '../rng';
+import { consistStats } from '../trains/vehicles';
+import { growTown } from '../world/generate';
+import { closeMonth, spend } from './finance';
+import {
+  averageSupply,
+  emptyIndustryMonth,
+  industryDef,
+  isPrimary,
+  MAX_INDUSTRY_LEVEL,
+  monthlyDemand,
+  type Industry,
+} from './industry';
+import { emptyTownMonth, MAX_HOUSE_LEVEL, type Town } from './town';
+
+/** Progi rozwoju fabryk (docs/03-mechaniki.md). */
+export const GROW_THRESHOLD = 0.75;
+export const DECLINE_THRESHOLD = 0.5;
+export const LEVEL_POINTS = 12;
+const HISTORY_MONTHS = 3;
+
+/** Utrzymanie infrastruktury na miesiąc (zł). */
+export const MAINTENANCE = { trackPiece: 2, stationTile: 10, depot: 30, signal: 1 } as const;
+
+/** Nowe domy w obsługiwanym mieście: 1 + do 3 zależnie od odsetka przewiezionych pasażerów. */
+const TOWN_GROWTH_MAX_EXTRA = 3;
+/** Szansa na dom w mieście bez kolei. */
+const UNSERVED_GROWTH_CHANCE = 0.1;
+/** Szansa na podniesienie poziomu domu w obsługiwanym mieście. */
+const UPGRADE_CHANCE = 0.4;
+/** Kafelki w zasięgu stacji są tyle razy bardziej prawdopodobne pod nowy dom. */
+const STATION_PULL = 6;
+
+/** Zamknięcie miesiąca: rozwój fabryk i miast, koszty, bilans. Wywoływane na początku nowego miesiąca. */
+export function monthlyEconomy(state: GameState, events: SimEvent[]): void {
+  for (const ind of state.industries) closeIndustryMonth(ind);
+  const nearStations = stationCatchmentMask(state);
+  for (const town of state.towns) closeTownMonth(state, town, nearStations, events);
+  chargeRunningCosts(state);
+  closeMonth(state);
+}
+
+/** Wskaźnik miesiąca: kopalnie – odsetek wywiezionej produkcji, przetwórnie – średnie zaopatrzenie. */
+export function monthRatio(ind: Industry): number {
+  const def = industryDef(ind.type)!;
+  if (isPrimary(def)) return ind.month.produced > 0 ? Math.min(1, ind.month.transported / ind.month.produced) : 0;
+  const demand = monthlyDemand(ind);
+  const ratios = def.accepts.map((c) => Math.min(1, (ind.month.delivered[c] ?? 0) / demand));
+  return ratios.reduce((s, r) => s + r, 0) / ratios.length;
+}
+
+function closeIndustryMonth(ind: Industry): void {
+  ind.history.push(monthRatio(ind));
+  if (ind.history.length > HISTORY_MONTHS) ind.history.shift();
+  const supply = averageSupply(ind) ?? 0;
+  if (supply >= GROW_THRESHOLD) ind.growth++;
+  else if (supply <= DECLINE_THRESHOLD) ind.growth--;
+  if (ind.growth >= LEVEL_POINTS) {
+    ind.growth = 0;
+    if (ind.level < MAX_INDUSTRY_LEVEL) ind.level++;
+    else ind.growth = LEVEL_POINTS; // na maksimum nie zbieramy dalej
+  } else if (ind.growth <= -LEVEL_POINTS) {
+    ind.growth = 0;
+    if (ind.level > 1) ind.level--;
+    else ind.growth = -LEVEL_POINTS;
+  }
+  ind.month = emptyIndustryMonth();
+}
+
+/** Maska kafelków w zasięgu jakiejkolwiek stacji (miasta rosną w ich stronę). */
+function stationCatchmentMask(state: GameState): Uint8Array {
+  const mask = new Uint8Array(state.map.width * state.map.height);
+  for (const st of state.stations) for (const i of catchment(state.map, st.tiles)) mask[i] = 1;
+  return mask;
+}
+
+function closeTownMonth(state: GameState, town: Town, nearStations: Uint8Array, events: SimEvent[]): void {
+  const m = town.month;
+  town.lastTransported = m.passengers > 0 ? Math.min(1, m.passengersTransported / m.passengers) : 0;
+  const served = m.passengersTransported > 0;
+  let houses = 0;
+  if (served) houses = 1 + Math.round(TOWN_GROWTH_MAX_EXTRA * town.lastTransported);
+  else if (nextFloat(state.rng) < UNSERVED_GROWTH_CHANCE) houses = 1;
+
+  const before = new Set<number>();
+  for (let i = 0; i < state.map.town.length; i++) if (state.map.town[i] === town.id) before.add(i);
+  growTown(state, state.rng, town, houses, (i) => (nearStations[i] ? STATION_PULL : 1));
+  for (let i = 0; i < state.map.town.length; i++) {
+    if (state.map.town[i] === town.id && !before.has(i)) events.push(tileEvent(state, i));
+  }
+
+  // W obsługiwanym mieście część domów się rozbudowuje.
+  if (served && nextFloat(state.rng) < UPGRADE_CHANCE && before.size > 0) {
+    const list = [...before];
+    const i = list[nextInt(state.rng, 0, list.length)]!;
+    if (state.map.house[i]! < MAX_HOUSE_LEVEL) {
+      state.map.house[i]!++;
+      events.push(tileEvent(state, i));
+    }
+  }
+  town.month = emptyTownMonth();
+}
+
+function tileEvent(state: GameState, i: number): SimEvent {
+  return { type: 'tileChanged', x: i % state.map.width, y: Math.floor(i / state.map.width) };
+}
+
+/** Koszty miesiąca: pociągi poza zajezdnią i utrzymanie infrastruktury. */
+function chargeRunningCosts(state: GameState): void {
+  let trains = 0;
+  for (const t of state.trains) {
+    if (t.status !== 'depot') trains += consistStats(t.engine, t.wagons).runningCost / 12;
+  }
+  spend(state, 'trains', Math.round(trains));
+  spend(state, 'infrastructure', infrastructureCost(state));
+}
+
+export function infrastructureCost(state: GameState): number {
+  const { map } = state;
+  let pieces = 0;
+  let stationTiles = 0;
+  for (let i = 0; i < map.track.length; i++) {
+    let b = map.track[i]!;
+    while (b) {
+      b &= b - 1;
+      pieces++;
+    }
+    if (map.station[i]) stationTiles++;
+  }
+  return (
+    pieces * MAINTENANCE.trackPiece +
+    stationTiles * MAINTENANCE.stationTile +
+    state.depots.length * MAINTENANCE.depot +
+    state.signals.length * MAINTENANCE.signal
+  );
+}

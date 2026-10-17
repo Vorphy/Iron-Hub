@@ -1,4 +1,5 @@
 import { SIGNAL_COST, TRACK_REFUND_RATE } from '../config';
+import { spend } from '../economy/finance';
 import type { CommandResult, SimEvent } from '../commands';
 import type { GameState } from '../state';
 import { hasTrack, Track, TRACK_SIDES } from '../track/track';
@@ -86,7 +87,7 @@ export function placeSignal(
     Object.assign(existing, nextSignalState(existing, oneWay));
   } else {
     if (state.money < SIGNAL_COST) return { ok: false, reason: 'noMoney' };
-    state.money -= SIGNAL_COST;
+    spend(state, 'construction', SIGNAL_COST);
     state.signals.push({ x, y, track, dirs: 1, oneWay });
   }
   events.push({ type: 'signalsChanged' });
@@ -97,7 +98,7 @@ export function removeSignal(state: GameState, x: number, y: number, track: Trac
   const before = state.signals.length;
   state.signals = state.signals.filter((s) => !(s.x === x && s.y === y && s.track === track));
   if (state.signals.length === before) return { ok: false, reason: 'nothingToRemove' };
-  state.money += Math.round(SIGNAL_COST * TRACK_REFUND_RATE);
+  spend(state, 'construction', -Math.round(SIGNAL_COST * TRACK_REFUND_RATE));
   events.push({ type: 'signalsChanged' });
   return { ok: true };
 }

@@ -1,5 +1,6 @@
 import { CARGO_DEFS } from '../sim/economy/cargo';
-import type { HudActions, IndustryWindowData, StationWindowData, TownWindowData } from './hudStore';
+import { formatMoney } from '../tools';
+import type { FinanceWindowData, HudActions, IndustryWindowData, StationWindowData, TownWindowData } from './hudStore';
 
 function percent(v: number): string {
   return `${Math.round(v * 100)}%`;
@@ -141,6 +142,60 @@ export function StationWindow({ data: d, actions }: { data: StationWindowData; a
       <div class="section-title">Przyjmuje</div>
       <div class="muted small">
         {d.accepts.length ? d.accepts.map((c) => CARGO_DEFS[c].name).join(', ') : 'nic – w zasięgu nie ma odbiorców'}
+      </div>
+    </div>
+  );
+}
+
+export function FinanceWindow({ data: d, actions }: { data: FinanceWindowData; actions: HudActions }) {
+  const rows: { key: keyof FinanceWindowData['months'][number]; label: string; sign: 1 | -1 }[] = [
+    { key: 'income', label: 'Przewozy', sign: 1 },
+    { key: 'trains', label: 'Pociągi', sign: -1 },
+    { key: 'infrastructure', label: 'Utrzymanie', sign: -1 },
+    { key: 'construction', label: 'Budowa i zakupy', sign: -1 },
+  ];
+  const months = d.months.slice(0, 4);
+  const total = (m: FinanceWindowData['months'][number]) => m.income - m.trains - m.infrastructure - m.construction;
+  return (
+    <div class="panel window wide">
+      <Head title="Finanse" actions={actions} />
+      <table class="ledger">
+        <thead>
+          <tr>
+            <th />
+            {months.map((m, i) => (
+              <th key={i}>{i === 0 ? `${m.label} (teraz)` : m.label}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.key}>
+              <td>{r.label}</td>
+              {months.map((m, i) => {
+                const v = m[r.key] as number;
+                return (
+                  <td key={i} class={v === 0 ? 'muted' : r.sign * v > 0 ? 'pos' : 'neg'}>
+                    {v === 0 ? '—' : `${r.sign * v > 0 ? '+' : '−'}${formatMoney(Math.abs(v))}`}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+          <tr class="total">
+            <td>Razem</td>
+            {months.map((m, i) => (
+              <td key={i} class={total(m) >= 0 ? 'pos' : 'neg'}>
+                {total(m) >= 0 ? '+' : '−'}
+                {formatMoney(Math.abs(total(m)))}
+              </td>
+            ))}
+          </tr>
+        </tbody>
+      </table>
+      <div class="muted small">
+        Koszty stałe co miesiąc: utrzymanie {formatMoney(d.infrastructurePerMonth)}, pociągi w trasie{' '}
+        {formatMoney(d.trainsPerMonth)}. Pociągi w zajezdni nie generują kosztów.
       </div>
     </div>
   );

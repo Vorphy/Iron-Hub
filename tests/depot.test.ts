@@ -99,7 +99,8 @@ describe('zapis z zajezdniami', () => {
     const { depot: _m, ...mapV1 } = v2.map;
     const v1 = { ...rest, version: 1, map: mapV1 };
     const loaded = deserializeState(JSON.parse(JSON.stringify(v1)));
-    expect(loaded).toEqual(sim.state);
+    // Finanse pojawiły się w v5 – stary zapis startuje z pustą księgą.
+    expect({ ...loaded, finances: sim.state.finances }).toEqual(sim.state);
     // Migracja nie zmienia obiektu wejściowego.
     expect('depot' in v1.map).toBe(false);
   });

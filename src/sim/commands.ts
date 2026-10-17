@@ -1,4 +1,5 @@
 import { CLEAR_ROUGH_COST, HOUSE_DEMOLISH_COST } from './config';
+import { spend } from './economy/finance';
 import { buildDepot, depotAt, removeDepot } from './depot/depot';
 import { dropOrphanSignals, placeSignal, removeSignal, type SignalMode } from './signals/signals';
 import type { GameState } from './state';
@@ -113,7 +114,7 @@ function clearTile(state: GameState, x: number, y: number, events: SimEvent[]): 
   if (map.industry[i]) return { ok: false, reason: 'industry' };
   if (map.house[i]) {
     if (state.money < HOUSE_DEMOLISH_COST) return { ok: false, reason: 'noMoney' };
-    state.money -= HOUSE_DEMOLISH_COST;
+    spend(state, 'construction', HOUSE_DEMOLISH_COST);
     map.house[i] = 0;
     map.town[i] = 0;
     events.push({ type: 'tileChanged', x, y });
@@ -128,7 +129,7 @@ function clearTile(state: GameState, x: number, y: number, events: SimEvent[]): 
   if (bits) return removeTrack(state, tracksOn(bits).map((track) => ({ x, y, track })), events);
   if (getTerrain(map, x, y) !== Terrain.Rough) return { ok: false, reason: 'nothingToClear' };
   if (state.money < CLEAR_ROUGH_COST) return { ok: false, reason: 'noMoney' };
-  state.money -= CLEAR_ROUGH_COST;
+  spend(state, 'construction', CLEAR_ROUGH_COST);
   setTerrain(map, x, y, Terrain.Grass);
   events.push({ type: 'tileChanged', x, y });
   return { ok: true };
