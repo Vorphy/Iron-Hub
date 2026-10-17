@@ -58,6 +58,8 @@ export function createGame({ width, height, seed, empty = false }: NewGameOption
     industries: [],
     finances: emptyFinances(),
   };
-  if (!empty) generateWorld(state, seed);
+  // Pusty świat (testy) jest płaski.
+  if (empty) state.map.heights.fill(0);
+  else generateWorld(state, seed);
   return state;
 }

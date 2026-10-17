@@ -12,6 +12,7 @@ import type { Cargo } from '../economy/cargo';
 import type { GameState } from '../state';
 import { nearestTown } from '../economy/town';
 import { getTrackBits, Track } from '../track/track';
+import { isFlat, tileBaseHeight } from '../world/height';
 import { dropStationFromOrders } from '../trains/train';
 import { getTerrain, hasBuilding, inBounds, setTerrain, Terrain, type WorldMap } from '../world/map';
 
@@ -109,9 +110,11 @@ export function planStation(
   const tiles: StationPlan['tiles'] = [];
   let cost = 0;
   let blocked = false;
+  // Cała stacja na płaskim terenie, na jednej wysokości.
+  const level = inBounds(map, minX, minY) ? tileBaseHeight(map, minX, minY) : 0;
   for (let y = minY; y <= maxY; y++) {
     for (let x = minX; x <= maxX; x++) {
-      const ok = canPlace(map, x, y, axisTrack);
+      const ok = canPlace(map, x, y, axisTrack) && isFlat(map, x, y) && tileBaseHeight(map, x, y) === level;
       blocked ||= !ok;
       tiles.push({ x, y, ok });
       if (ok) {

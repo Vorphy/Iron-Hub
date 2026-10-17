@@ -2,6 +2,7 @@ import { emptyIndustryMonth, INDUSTRY_DEFS, type IndustryDef } from '../economy/
 import { emptyTownMonth, isStreet, MAX_HOUSE_LEVEL, TOWN_NAMES, type Town } from '../economy/town';
 import { createRng, nextFloat, nextInt, type Rng } from '../rng';
 import type { GameState } from '../state';
+import { isFlat, tileBaseHeight } from './height';
 import { getTerrain, hasBuilding, inBounds, setTerrain, Terrain, type WorldMap } from './map';
 
 /** Powierzchnia mapy, dla której podane są liczby miast i zakładów (128×128). */
@@ -27,8 +28,9 @@ function isLand(map: WorldMap, x: number, y: number): boolean {
   return inBounds(map, x, y) && getTerrain(map, x, y) !== Terrain.Water;
 }
 
+/** Wolny, płaski kafelek lądu – tylko na takich stawiamy domy i zakłady. */
 function isFree(map: WorldMap, x: number, y: number): boolean {
-  if (!isLand(map, x, y)) return false;
+  if (!isLand(map, x, y) || !isFlat(map, x, y)) return false;
   const i = y * map.width + x;
   return !hasBuilding(map, i) && !map.track[i] && !map.station[i] && !map.depot[i];
 }
@@ -51,17 +53,17 @@ function placeTowns(state: GameState, rng: Rng, count: number): void {
   }
 }
 
-/** Czy w promieniu r wokół (x, y) jest prawie sam ląd. */
+/** Czy w promieniu r wokół (x, y) jest prawie sam płaski ląd (miejsce na miasto). */
 function landAround(map: WorldMap, x: number, y: number, r: number): boolean {
-  let land = 0;
+  let flat = 0;
   let total = 0;
   for (let dy = -r; dy <= r; dy++) {
     for (let dx = -r; dx <= r; dx++) {
       total++;
-      if (isLand(map, x + dx, y + dy)) land++;
+      if (isLand(map, x + dx, y + dy) && isFlat(map, x + dx, y + dy)) flat++;
     }
   }
-  return land >= total * 0.85;
+  return flat >= total * 0.75;
 }
 
 const NEIGHBORS = [
@@ -140,7 +142,15 @@ function placeIndustry(state: GameState, rng: Rng, def: IndustryDef): void {
     const x = nextInt(rng, EDGE_MARGIN, map.width - EDGE_MARGIN - w);
     const y = nextInt(rng, EDGE_MARGIN, map.height - EDGE_MARGIN - h);
     let ok = true;
-    for (let dy = -1; dy <= h && ok; dy++) for (let dx = -1; dx <= w && ok; dx++) ok = isFree(map, x + dx, y + dy);
+    // Teren pod zakładem płaski i na jednym poziomie; wokół – margines wolnego terenu.
+    const level = tileBaseHeight(map, x, y);
+    for (let dy = 0; dy < h && ok; dy++) for (let dx = 0; dx < w && ok; dx++) ok = tileBaseHeight(map, x + dx, y + dy) === level;
+    for (let dy = -1; dy <= h && ok; dy++) {
+      for (let dx = -1; dx <= w && ok; dx++) {
+        const inside = dx >= 0 && dy >= 0 && dx < w && dy < h;
+        ok = inside ? isFree(map, x + dx, y + dy) : isLand(map, x + dx, y + dy);
+      }
+    }
     if (!ok) continue;
     const cx = x + w / 2;
     const cy = y + h / 2;

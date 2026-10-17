@@ -9,9 +9,10 @@ import type { GameState } from './state';
 import { ALL_TRACKS, Side } from './track/track';
 import type { Step, Train, WagonLoad } from './trains/train';
 import { engineDef, wagonDef } from './trains/vehicles';
+import { MAX_HEIGHT } from './world/height';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -30,7 +31,8 @@ export interface SerializedState {
   tick: number;
   rng: number;
   money: number;
-  map: { width: number; height: number } & Record<LayerName, string>;
+  /** `heights` – siatka narożników (width+1)×(height+1), pozostałe warstwy – po jednej wartości na kafelek. */
+  map: { width: number; height: number; heights: string } & Record<LayerName, string>;
   stations: Station[];
   nextStationId: number;
   depots: Depot[];
@@ -57,7 +59,7 @@ export function serializeState(state: GameState): SerializedState {
     tick: state.tick,
     rng: state.rng.state,
     money: state.money,
-    map: { width: map.width, height: map.height, ...layers },
+    map: { width: map.width, height: map.height, heights: layerToBase64(map.heights), ...layers },
     stations: structuredClone(state.stations),
     nextStationId: state.nextStationId,
     depots: structuredClone(state.depots),
@@ -116,6 +118,13 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     }));
     d.version = 5;
   }
+  if (d.version === 5) {
+    // v6: wysokości terenu (stare mapy są płaskie)
+    if (d.map && isInt(d.map.width) && isInt(d.map.height)) {
+      d.map.heights = toBase64(new Uint8Array((d.map.width + 1) * (d.map.height + 1)));
+    }
+    d.version = 6;
+  }
   return d as Partial<SerializedState>;
 }
 
@@ -138,7 +147,9 @@ export function deserializeState(data: unknown): GameState {
     house: bytes('house'),
     town: new Uint16Array(bytes('town').buffer),
     industry: new Uint32Array(bytes('industry').buffer),
+    heights: fromBase64(m.heights, (m.width + 1) * (m.height + 1)),
   };
+  if (map.heights.some((h) => h > MAX_HEIGHT)) throw new SaveError('Uszkodzone wysokości terenu');
   const ints = [d.tick, d.rng, d.nextStationId, d.nextDepotId, d.nextTrainId];
   if (!ints.every(isInt) || typeof d.money !== 'number') throw new SaveError('Uszkodzone dane gry');
   check(d.stations, isStation, 'stacje');

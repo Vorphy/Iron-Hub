@@ -116,9 +116,9 @@ Pojazdy, typy przemysłu, ładunki i ich parametry są w `data/*.json` (wersjono
 
 ## Rendering izometryczny
 
-- Rzut 2:1 (kafelek np. 64×32 px), jak w TTD.
+- Rzut 2:1 (kafelek 64×32 px), jak w TTD; poziom wysokości = 8 px. `tileToWorld` podnosi każdy punkt o wysokość terenu (interpolacja w kafelku), więc tory, budynki i pociągi same „siadają” na zboczach. Kafelek terenu to dwa trójkąty z cieniowaniem; kawałki mapy rysowane od tyłu do przodu.
 - Warstwy: teren → tory → obiekty i pojazdy (sortowane po głębokości `x + y`, potem po wysokości) → nakładki (zasięg stacji, podgląd budowy) → UI.
-- **Picking** (który kafelek pod kursorem): odwrotna projekcja ekran → logiczne (x, y); przy wprowadzeniu wysokości – korekta po wysokości kafelka.
+- **Picking** (który kafelek pod kursorem): odwrotny rzut płaski sprawdzany od najwyższego poziomu w dół – pierwszy punkt leżący na terenie jest widoczny (`pickTile`).
 - Culling: rysujemy tylko kafelki w widoku kamery; statyczny teren w buforowanych chunkach.
 - Kierunki pojazdów: 8 sprite'ów (co 45°), wybierane wg kierunku krawędzi.
 

@@ -6,6 +6,7 @@ import { deserializeState, serializeState } from '../src/sim/serialize';
 import { Simulation } from '../src/sim/simulation';
 import { createGame } from '../src/sim/state';
 import { Track } from '../src/sim/track/track';
+import { isFlat } from '../src/sim/world/height';
 import { Terrain } from '../src/sim/world/map';
 
 const world = (seed = 1) => createGame({ width: 128, height: 128, seed });
@@ -84,11 +85,13 @@ describe('budowanie w mieście', () => {
     const s = world();
     const sim = new Simulation(s);
     const town = s.towns[0]!;
-    // Ulica przy rynku jest wolna (x = town.x).
-    for (const dy of [2, -2]) {
-      const y = town.y + dy;
-      sim.enqueue({ type: 'buildStation', x0: town.x, y0: y, x1: town.x, y1: y, axis: 'x' });
-    }
+    // Wolne, płaskie kafelki ulicy przy rynku (x = town.x).
+    const spots = [2, -2, 3, -3, 5, -5, 6, -6]
+      .map((dy) => town.y + dy)
+      .filter((y) => isFlat(s.map, town.x, y) && !s.map.house[y * 128 + town.x] && !s.map.industry[y * 128 + town.x])
+      .slice(0, 2);
+    expect(spots).toHaveLength(2);
+    for (const y of spots) sim.enqueue({ type: 'buildStation', x0: town.x, y0: y, x1: town.x, y1: y, axis: 'x' });
     sim.step();
     const names = s.stations.map((st) => st.name);
     expect(names[0]).toBe(town.name);

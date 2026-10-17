@@ -17,7 +17,10 @@ Wartości liczbowe w tym dokumencie są **startowe** – do strojenia w trakcie 
   - Na peronie nie da się dołożyć łuku ani rozebrać toru osobno.
   - Nazwy na razie z listy fikcyjnych nazw; po dodaniu miast – od najbliższego miasta.
   - Sąsiednie stacje się nie łączą (do rozważenia później).
-- MVP: płaski teren (bez zboczy, mostów, tuneli). Model danych przewiduje wysokości na później.
+- **Teren z wysokościami** (jak w TTD): wysokość w narożnikach kafelków, poziomy 0–8, sąsiednie narożniki różnią się najwyżej o 1. Woda zawsze na poziomie 0.
+  - Tor na zboczu: tylko **prosty biegnący w górę zbocza** (zbocze „w osi X” → tor X, „w osi Y” → tor Y). Łuki tylko na płaskim. Na zboczach narożnikowych i stromych nie da się nic zbudować.
+  - Stacje (cała stacja na jednej wysokości), zajezdnie, domy i zakłady – tylko na płaskim terenie.
+  - Pociąg pod górę traci przyspieszenie (4% nachylenia na poziom na kafelek), z górki je zyskuje; ciężki skład nie staje, wlecze się z minimalną prędkością.
 
 ## Zajezdnie
 

@@ -37,6 +37,8 @@ export const UNITS_PER_KMH_TICK = 0.008;
 export const BRAKE_KMH_PER_TICK = 1.0;
 /** Przyczepność: część ciężaru lokomotywy dostępna jako siła pociągowa. */
 export const ADHESION = 0.25;
+/** Nachylenie toru wznoszącego się o 1 poziom na długości kafelka (0,04 = 4%). */
+export const GRADE_PER_LEVEL = 0.04;
 /** Maksymalna prędkość na łuku 45°. */
 export const BEND_SPEED = 80;
 /** Prędkość dojazdu do celu na ostatnich metrach. */

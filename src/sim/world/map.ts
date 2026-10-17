@@ -1,4 +1,5 @@
 import { createRng, nextFloat, type Rng } from '../rng';
+import { MAX_HEIGHT, relaxHeights } from './height';
 
 export const Terrain = {
   Grass: 0,
@@ -25,6 +26,8 @@ export interface WorldMap {
   town: Uint16Array;
   /** Id zakładu przemysłowego na kafelku (0 – brak). */
   industry: Uint32Array;
+  /** Wysokości narożników kafelków, siatka (width+1)×(height+1) – patrz height.ts. */
+  heights: Uint8Array;
 }
 
 /** Na kafelku stoi budynek (dom lub zakład) – nie da się tu nic zbudować. */
@@ -45,10 +48,13 @@ export function setTerrain(map: WorldMap, x: number, y: number, t: Terrain): voi
 }
 
 const NOISE_CELL = 8;
+const HILL_CELL = 20;
 const WATER_LEVEL = 0.3;
 const ROUGH_LEVEL = 0.72;
+/** Teren niżej niż ten próg szumu zostaje na poziomie 0 (niziny wokół wody). */
+const LOWLAND = 0.35;
 
-/** Płaska mapa z jeziorami i nieużytkami (szum wartości, interpolacja dwuliniowa). */
+/** Mapa z jeziorami, nieużytkami i wzgórzami (szum wartości, interpolacja dwuliniowa). */
 export function generateMap(width: number, height: number, seed: number): WorldMap {
   const rng = createRng(seed);
   const water = noiseField(rng, width, height);
@@ -63,6 +69,7 @@ export function generateMap(width: number, height: number, seed: number): WorldM
   return {
     width,
     height,
+    heights: generateHeights(rng, width, height, terrain),
     terrain,
     track: new Uint8Array(n),
     station: new Uint32Array(n),
@@ -73,17 +80,43 @@ export function generateMap(width: number, height: number, seed: number): WorldM
   };
 }
 
-function noiseField(rng: Rng, width: number, height: number): Float32Array {
-  const gw = Math.ceil(width / NOISE_CELL) + 1;
-  const gh = Math.ceil(height / NOISE_CELL) + 1;
+/**
+ * Wysokości narożników: szerokie wzgórza (dwie skale szumu), kwantyzowane na poziomy – stąd
+ * płaskie tarasy, na których da się budować. Woda zawsze na poziomie 0, brzegi łagodne.
+ */
+function generateHeights(rng: Rng, width: number, height: number, terrain: Uint8Array): Uint8Array {
+  const vw = width + 1;
+  const vh = height + 1;
+  const broad = noiseField(rng, vw, vh, HILL_CELL);
+  const detail = noiseField(rng, vw, vh, NOISE_CELL);
+  const heights = new Uint8Array(vw * vh);
+  for (let i = 0; i < heights.length; i++) {
+    const e = broad[i]! * 0.7 + detail[i]! * 0.3;
+    const level = Math.floor((Math.max(0, e - LOWLAND) / (1 - LOWLAND)) * (MAX_HEIGHT + 2));
+    heights[i] = Math.min(MAX_HEIGHT, level);
+  }
+  // Narożniki kafelków wody na poziomie 0.
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (terrain[y * width + x] !== Terrain.Water) continue;
+      for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]] as const) heights[(y + dy) * vw + x + dx] = 0;
+    }
+  }
+  relaxHeights(heights, vw, vh);
+  return heights;
+}
+
+function noiseField(rng: Rng, width: number, height: number, cell = NOISE_CELL): Float32Array {
+  const gw = Math.ceil(width / cell) + 1;
+  const gh = Math.ceil(height / cell) + 1;
   const grid = new Float32Array(gw * gh);
   for (let i = 0; i < grid.length; i++) grid[i] = nextFloat(rng);
 
   const out = new Float32Array(width * height);
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      const gx = x / NOISE_CELL;
-      const gy = y / NOISE_CELL;
+      const gx = x / cell;
+      const gy = y / cell;
       const x0 = Math.floor(gx);
       const y0 = Math.floor(gy);
       const tx = smooth(gx - x0);

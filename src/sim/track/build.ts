@@ -4,6 +4,7 @@ import type { CommandResult, SimEvent } from '../commands';
 import type { GameState } from '../state';
 import { getTerrain, hasBuilding, inBounds, setTerrain, Terrain, type WorldMap } from '../world/map';
 import { occupiedTiles } from '../trains/train';
+import { tileSlope, type Slope } from '../world/height';
 import { hasTrack, Track, type TrackPiece } from './track';
 
 export type PieceStatus = 'new' | 'exists' | 'blocked';
@@ -106,7 +107,15 @@ function buildable(map: WorldMap, { x, y, track }: TrackPiece): boolean {
   if (map.depot[y * map.width + x] || hasBuilding(map, y * map.width + x)) return false;
   // Na peronie wolno mieć tylko prosty tor w osi stacji (już istnieje).
   if (map.station[y * map.width + x]) return (track === Track.X || track === Track.Y) && hasTrack(map, x, y, track);
-  return true;
+  return trackFitsSlope(tileSlope(map, x, y), track);
+}
+
+/** Tor na zboczu: tylko prosty, biegnący w górę zbocza (jak w TTD); łuki tylko na płaskim. */
+export function trackFitsSlope(slope: Slope, track: number): boolean {
+  if (slope === 'flat') return true;
+  if (slope === 'x') return track === Track.X;
+  if (slope === 'y') return track === Track.Y;
+  return false;
 }
 
 function unique(pieces: readonly TrackPiece[]): TrackPiece[] {

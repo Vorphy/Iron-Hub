@@ -1,5 +1,6 @@
 import {
   ADHESION,
+  GRADE_PER_LEVEL,
   BEND_SPEED,
   BRAKE_KMH_PER_TICK,
   CREEP_SPEED,
@@ -15,7 +16,9 @@ import type { GameState } from '../state';
 import { trainLength } from './geometry';
 import { planRoute, type Plan } from './path';
 import { addTaken, buildTaken, isFree, isSafeStop, type Taken } from './reservation';
-import { flipStep, isBend, stepLength } from './steps';
+import { flipStep, isBend, pointOnStep, stepLength } from './steps';
+import { STRAIGHT_LENGTH } from '../track/graph';
+import { heightAt } from '../world/height';
 import { depotExit, leaveDepot, type Step, type Train } from './train';
 import { consistStats, engineDef } from './vehicles';
 
@@ -97,14 +100,23 @@ function departStation(train: Train): void {
   train.resTerminal = null;
 }
 
-/** Przyspieszenie (km/h na tick) z mocy, przyczepności i oporów. */
-function acceleration(train: Train): number {
+/** Nachylenie odcinka czoła (dodatnie – pod górę). */
+function headGrade(state: GameState, train: Train): number {
+  const head = train.trail[0]!;
+  const a = pointOnStep(head, 0);
+  const b = pointOnStep(head, stepLength(head));
+  const rise = heightAt(state.map, b.x, b.y) - heightAt(state.map, a.x, a.y);
+  return (rise * GRADE_PER_LEVEL * STRAIGHT_LENGTH) / stepLength(head);
+}
+
+/** Przyspieszenie (km/h na tick) z mocy, przyczepności, oporów i nachylenia toru. */
+function acceleration(train: Train, grade: number): number {
   const e = engineDef(train.engine)!;
   const { weight } = consistStats(train.engine, train.wagons);
   const mass = weight * 1000;
   const v = train.speed / 3.6;
   const force = Math.min((e.power * 1000) / Math.max(v, 1.5), ADHESION * e.weight * 1000 * 9.81);
-  const resist = mass * 9.81 * (0.002 + 0.00002 * train.speed);
+  const resist = mass * 9.81 * (0.002 + 0.00002 * train.speed + grade);
   return ((force - resist) / mass) * 3.6 * PHYS_DT;
 }
 
@@ -147,8 +159,14 @@ function moveTrain(ctx: TickContext, train: Train): void {
   // Zawsze musimy zdążyć stanąć na końcu rezerwacji.
   target = Math.min(target, brakingCap(dist, 0));
 
-  if (train.speed < target) train.speed = Math.min(target, train.speed + acceleration(train));
-  else train.speed = Math.max(target, train.speed - BRAKE_KMH_PER_TICK);
+  if (train.speed > target) {
+    train.speed = Math.max(target, train.speed - BRAKE_KMH_PER_TICK);
+  } else {
+    // Siły działają zawsze – pod górę skład zwalnia nawet przy prędkości maksymalnej.
+    const accel = acceleration(train, headGrade(state, train));
+    // Ciężki skład pod stromą górę nie staje całkiem – wlecze się z minimalną prędkością.
+    train.speed = Math.min(target, Math.max(Math.min(target, CREEP_SPEED), train.speed + accel));
+  }
   // Dojazd do celu (peron, zajezdnia, koniec toru) na ostatnich metrach „pełzając”.
   if (!train.stopped && train.resTerminal && train.speed < CREEP_SPEED && dist > 0) train.speed = CREEP_SPEED;
   if (train.speed > 0) train.mayReverse = false;
