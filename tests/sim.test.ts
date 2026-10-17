@@ -123,3 +123,13 @@ describe('GameLoop', () => {
     expect(getTerrain(sim.state.map, 1, 1)).toBe(Terrain.Grass);
   });
 });
+
+describe('komenda testowa', () => {
+  it('addMoney dopisuje pieniądze bez wpisu w księdze', () => {
+    const sim = new Simulation(createGame({ width: 8, height: 8, seed: 1, empty: true }));
+    sim.enqueue({ type: 'addMoney', amount: 100_000 });
+    sim.step();
+    expect(sim.state.money).toBe(START_MONEY + 100_000);
+    expect(sim.state.finances.month.income).toBe(0);
+  });
+});

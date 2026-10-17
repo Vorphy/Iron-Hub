@@ -33,7 +33,9 @@ export type Command =
   | { type: 'setOrders'; trainId: number; orders: number[] }
   | { type: 'placeSignal'; x: number; y: number; track: Track; oneWay: boolean }
   | { type: 'removeSignal'; x: number; y: number; track: Track }
-  | { type: 'setSignalMode'; mode: SignalMode };
+  | { type: 'setSignalMode'; mode: SignalMode }
+  /** Testy: dopisanie pieniędzy (poza księgą finansów). */
+  | { type: 'addMoney'; amount: number };
 
 export type FailReason =
   | 'outOfBounds'
@@ -97,6 +99,9 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
       return placeSignal(state, cmd.x, cmd.y, cmd.track, cmd.oneWay, events);
     case 'removeSignal':
       return removeSignal(state, cmd.x, cmd.y, cmd.track, events);
+    case 'addMoney':
+      state.money += cmd.amount;
+      return { ok: true };
     case 'setSignalMode':
       state.signalMode = cmd.mode;
       events.push({ type: 'signalsChanged' });

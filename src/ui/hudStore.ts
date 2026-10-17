@@ -169,6 +169,7 @@ export interface HudActions {
   setSignalMode(mode: SignalMode): void;
   toggleMenu(): void;
   openFinance(): void;
+  addTestMoney(): void;
   quickSave(): void;
   quickLoad(): void;
   exportFile(): void;

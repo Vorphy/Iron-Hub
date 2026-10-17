@@ -248,6 +248,10 @@ function Menu({
       <button onClick={actions.importFile}>Importuj z pliku</button>
       <div class="menu-title" />
       <button onClick={actions.newGame}>Nowa gra (losowa mapa)</button>
+      <div class="menu-title">Testy</div>
+      <button onClick={actions.addTestMoney} title="Do testowania – dopisuje pieniądze bez wpisu w finansach">
+        +100 000 zł
+      </button>
       <div class="menu-note">Zapisy w przeglądarce są widoczne tylko na tym urządzeniu i tej stronie.</div>
     </div>
   );
