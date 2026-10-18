@@ -20,6 +20,7 @@ Wartości liczbowe w tym dokumencie są **startowe** – do strojenia w trakcie 
 - **Teren z wysokościami** (jak w TTD): wysokość w narożnikach kafelków, poziomy 0–8, sąsiednie narożniki różnią się najwyżej o 1. Woda zawsze na poziomie 0.
   - Tor na zboczu: tylko **prosty biegnący w górę zbocza** (zbocze „w osi X” → tor X, „w osi Y” → tor Y). Łuki tylko na płaskim. Na zboczach narożnikowych i stromych nie da się nic zbudować.
   - Stacje (cała stacja na jednej wysokości), zajezdnie, domy i zakłady – tylko na płaskim terenie.
+  - **Kształtowanie terenu** – narzędzie Teren (L): *Podnieś / Obniż* – klik zmienia o poziom narożnik najbliższy kursorowi, sąsiedni teren dopasowuje się sam (różnice ≤ 1); *Wyrównaj* – przeciągnięty prostokąt narożników do wysokości punktu startowego. 30 zł za każdy zmieniony narożnik. Nie wolno zmieniać terenu pod torami, stacjami, zajezdniami, budynkami ani przy wodzie.
   - Pociąg pod górę traci przyspieszenie (4% nachylenia na poziom na kafelek), z górki je zyskuje; ciężki skład nie staje, wlecze się z minimalną prędkością.
 
 ## Zajezdnie

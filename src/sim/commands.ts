@@ -17,6 +17,7 @@ import {
   trainsInDepot,
 } from './trains/train';
 import { getTerrain, inBounds, setTerrain, Terrain } from './world/map';
+import { applyTerraform, levelTargets, planTerraform, terraformTargets } from './world/terraform';
 
 /** Jedyny sposób zmiany stanu gry z zewnątrz. */
 export type Command =
@@ -34,6 +35,8 @@ export type Command =
   | { type: 'placeSignal'; x: number; y: number; track: Track; oneWay: boolean }
   | { type: 'removeSignal'; x: number; y: number; track: Track }
   | { type: 'setSignalMode'; mode: SignalMode }
+  | { type: 'terraform'; vx: number; vy: number; delta: 1 | -1 }
+  | { type: 'levelLand'; vx0: number; vy0: number; vx1: number; vy1: number; level: number }
   /** Testy: dopisanie pieniędzy (poza księgą finansów). */
   | { type: 'addMoney'; amount: number };
 
@@ -48,7 +51,8 @@ export type FailReason =
   | 'notInDepot'
   | 'depotNotConnected'
   | 'trainInWay'
-  | 'industry';
+  | 'industry'
+  | 'tooHigh';
 
 export type CommandResult = { ok: true } | { ok: false; reason: FailReason };
 
@@ -99,6 +103,14 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
       return placeSignal(state, cmd.x, cmd.y, cmd.track, cmd.oneWay, events);
     case 'removeSignal':
       return removeSignal(state, cmd.x, cmd.y, cmd.track, events);
+    case 'terraform':
+      return applyTerraform(state, planTerraform(state, terraformTargets(state, cmd.vx, cmd.vy, cmd.delta)), events);
+    case 'levelLand':
+      return applyTerraform(
+        state,
+        planTerraform(state, levelTargets(state, cmd.vx0, cmd.vy0, cmd.vx1, cmd.vy1, cmd.level)),
+        events,
+      );
     case 'addMoney':
       state.money += cmd.amount;
       return { ok: true };

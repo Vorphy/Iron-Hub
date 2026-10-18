@@ -18,10 +18,14 @@ import { nextSignalState } from './sim/signals/signals';
 import { getTrackBits, Side, Track, TRACK_SIDES, tracksOn, type TrackPiece } from './sim/track/track';
 import type { Simulation } from './sim/simulation';
 import { getTerrain, inBounds, Terrain } from './sim/world/map';
+import { levelTargets, planTerraform, terraformTargets } from './sim/world/terraform';
 import type { Point } from './render/iso';
 
 /** 'orders' – wskazywanie stacji do rozkładu pociągu `ordersTrain` (z okna pociągu). */
-export type Tool = 'cursor' | 'track' | 'station' | 'depot' | 'signal' | 'bulldozer' | 'orders';
+export type Tool = 'cursor' | 'track' | 'station' | 'depot' | 'signal' | 'terrain' | 'bulldozer' | 'orders';
+
+/** Narzędzie Teren: podnieś / obniż narożnik albo wyrównaj obszar. */
+export type TerrainMode = 'raise' | 'lower' | 'level';
 
 /** Narzędzie Tory: budowa albo rozbiórka (jak przy semaforach). */
 export type TrackMode = 'build' | 'remove';
@@ -41,6 +45,7 @@ export const FAIL_MESSAGES: Record<FailReason, string> = {
   depotNotConnected: 'Zajezdnia nie ma toru przy wjeździe',
   trainInWay: 'Na drodze stoi pociąg',
   industry: 'Zakładów przemysłowych nie można burzyć',
+  tooHigh: 'Teren poza zakresem wysokości (0–8)',
 };
 
 export interface CursorLabel {
@@ -62,6 +67,7 @@ export class Tools {
   depotAuto = true;
   signalKind: SignalKind = 'path';
   trackMode: TrackMode = 'build';
+  terrainMode: TerrainMode = 'raise';
   /** Pociąg, któremu dopisujemy stacje (narzędzie 'orders'). */
   ordersTrain: number | null = null;
   private dragStart: Point | null = null;
@@ -120,6 +126,11 @@ export class Tools {
     this.dirty = true;
   }
 
+  setTerrainMode(mode: TerrainMode): void {
+    this.terrainMode = mode;
+    this.dirty = true;
+  }
+
   setTrackMode(mode: TrackMode): void {
     this.trackMode = mode;
     this.dirty = true;
@@ -167,6 +178,17 @@ export class Tools {
     }
 
     const start = this.dragStart ?? p;
+    if (this.tool === 'terrain') {
+      this.overlay.setHover(null);
+      const v = nearestVertex(start);
+      const end = this.terrainMode === 'level' ? nearestVertex(p) : v;
+      const plan = planTerraform(this.sim.state, this.terrainTargets(v, end));
+      this.overlay.setTerrainPreview(plan.tiles, map.width, plan.result.ok, end);
+      const level = this.terrainMode === 'level' ? ` · do poziomu ${vertexHeightSafe(this.sim, v)}` : '';
+      this.label = plan.changes.size || this.dragStart ? { ...planLabel(plan), text: planLabel(plan).text + level } : null;
+      return;
+    }
+
     if (this.tool === 'track' && this.trackMode === 'remove') {
       this.previewRemoval(start, p, false);
       return;
@@ -277,6 +299,12 @@ export class Tools {
     return piece ? [piece] : [];
   }
 
+  private terrainTargets(v: Point, end: Point): Map<number, number> {
+    const s = this.sim.state;
+    if (this.terrainMode === 'level') return levelTargets(s, v.x, v.y, end.x, end.y, vertexHeightSafe(this.sim, v));
+    return terraformTargets(s, v.x, v.y, this.terrainMode === 'raise' ? 1 : -1);
+  }
+
   private depotSideAt(x: number, y: number): Side {
     return this.depotAuto ? autoDepotSide(this.sim.state.map, x, y, this.depotSide) : this.depotSide;
   }
@@ -287,6 +315,14 @@ export class Tools {
   }
 
   private commandFor(start: Point, end: Point): Command | null {
+    if (this.tool === 'terrain') {
+      const v = nearestVertex(start);
+      if (this.terrainMode === 'level') {
+        const e = nearestVertex(end);
+        return { type: 'levelLand', vx0: v.x, vy0: v.y, vx1: e.x, vy1: e.y, level: vertexHeightSafe(this.sim, v) };
+      }
+      return { type: 'terraform', vx: v.x, vy: v.y, delta: this.terrainMode === 'raise' ? 1 : -1 };
+    }
     if (this.tool === 'signal') {
       const piece = nearestPiece(this.sim, end);
       if (!piece) return null;
@@ -378,6 +414,18 @@ function distToSegment(px: number, py: number, a: readonly [number, number], b: 
 function describeCatchment(supplies: Set<Cargo>, accepts: Set<Cargo>): string {
   const names = (s: Set<Cargo>) => [...s].map((c) => CARGO_DEFS[c].name).join(', ') || '—';
   return `Zbiera: ${names(supplies)} · Przyjmuje: ${names(accepts)}`;
+}
+
+/** Narożnik kafelka najbliższy punktowi. */
+function nearestVertex(p: Point): Point {
+  return { x: Math.round(p.x), y: Math.round(p.y) };
+}
+
+function vertexHeightSafe(sim: Simulation, v: Point): number {
+  const { map } = sim.state;
+  const x = Math.max(0, Math.min(map.width, v.x));
+  const y = Math.max(0, Math.min(map.height, v.y));
+  return map.heights[y * (map.width + 1) + x]!;
 }
 
 function sameTile(a: Point, b: Point): boolean {

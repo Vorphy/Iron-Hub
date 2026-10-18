@@ -21,6 +21,7 @@ const TOOLS: { tool: Tool; icon: string; name: string; key: string }[] = [
   { tool: 'station', icon: '▤', name: 'Stacja', key: 'P' },
   { tool: 'depot', icon: '⌂', name: 'Zajezdnia', key: 'Z' },
   { tool: 'signal', icon: '⊙', name: 'Semafor', key: 'B' },
+  { tool: 'terrain', icon: '⛰', name: 'Teren', key: 'L' },
   { tool: 'bulldozer', icon: '✖', name: 'Rozbiórka', key: 'X' },
 ];
 
@@ -34,6 +35,8 @@ const TOOL_HELP: Record<Tool, string> = {
     'Klik stawia zajezdnię (1000 zł). Kierunek wjazdu wybierz w panelu obok (lub R); Auto – w stronę sąsiedniego toru',
   signal:
     'Klik na tor stawia semafor ścieżkowy (200 zł); kolejne kliknięcia zmieniają kierunek. Pociąg może stanąć tylko przed semaforem, na końcu peronu lub toru · V – podgląd rezerwacji',
+  terrain:
+    'Podnieś / Obniż: klik zmienia o poziom narożnik najbliższy kursorowi (sąsiedni teren dopasuje się sam). Wyrównaj: przeciągnij prostokąt – teren do wysokości punktu startowego. 30 zł za narożnik',
   orders: 'Klikaj stacje, aby dopisać je do rozkładu pociągu · Esc – koniec',
   bulldozer: 'Klik – usuń element toru pod kursorem, zajezdnię, kafelek stacji, dom lub oczyść nieużytek · przeciągnięcie – rozbierz odcinek toru (zwrot 25%)',
 };
@@ -162,6 +165,23 @@ function ToolOptions({ tool, options, actions }: { tool: Tool; options: HudState
         >
           Auto
         </button>
+      </div>
+    );
+  }
+  if (tool === 'terrain') {
+    const modes: { mode: 'raise' | 'lower' | 'level'; label: string }[] = [
+      { mode: 'raise', label: '▲ Podnieś' },
+      { mode: 'lower', label: '▼ Obniż' },
+      { mode: 'level', label: '▬ Wyrównaj' },
+    ];
+    return (
+      <div class="panel tool-options">
+        <div class="section-title">Teren</div>
+        {modes.map((m) => (
+          <button key={m.mode} class={options.terrainMode === m.mode ? 'active' : ''} onClick={() => actions.setTerrainMode(m.mode)}>
+            {m.label}
+          </button>
+        ))}
       </div>
     );
   }

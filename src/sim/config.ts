@@ -16,6 +16,9 @@ export const CATCHMENT_RADIUS = 4;
 /** Koszt wyburzenia domu. */
 export const HOUSE_DEMOLISH_COST = 500;
 
+/** Koszt zmiany wysokości jednego narożnika terenu. */
+export const TERRAFORM_COST = 30;
+
 /** Koszt zajezdni. */
 export const DEPOT_COST = 1000;
 

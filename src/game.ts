@@ -35,6 +35,7 @@ const KEY_TOOLS: Record<string, Tool> = {
   KeyP: 'station',
   KeyZ: 'depot',
   KeyB: 'signal',
+  KeyL: 'terrain',
   KeyX: 'bulldozer',
   Delete: 'bulldozer',
 };
@@ -291,7 +292,8 @@ export class Game {
       prev.depotAuto === t.depotAuto &&
       prev.stationAxis === t.stationAxis &&
       prev.signalKind === t.signalKind &&
-      prev.trackMode === t.trackMode
+      prev.trackMode === t.trackMode &&
+      prev.terrainMode === t.terrainMode
       ? prev
       : {
           depotSide: t.depotSide,
@@ -299,6 +301,7 @@ export class Game {
           stationAxis: t.stationAxis,
           signalKind: t.signalKind,
           trackMode: t.trackMode,
+          terrainMode: t.terrainMode,
         };
   }
 

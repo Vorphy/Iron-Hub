@@ -5,7 +5,7 @@ import type { Side, Track } from '../sim/track/track';
 import type { Signal } from '../sim/signals/signals';
 import { drawDepot } from './depotDraw';
 import { drawSignal } from './signals';
-import { tileDiamond } from './iso';
+import { tileDiamond, tileToWorld } from './iso';
 import { drawTrackPiece, type TrackStyle } from './trackDraw';
 
 const PREVIEW_OK: TrackStyle = { ballast: 0xffffff, sleeper: 0xffe066, rail: 0xffffff, alpha: 0.55 };
@@ -63,6 +63,18 @@ export class Overlay {
     drawTrackPiece(this.preview, x, y, track as Track, PREVIEW_OK);
     if (!signal) return;
     for (const bit of [1, 2] as const) if (signal.dirs & bit) drawSignal(this.preview, signal, bit, 0xffe066, 0.85);
+  }
+
+  /** Kafelki zmieniane przez kształtowanie terenu i wskazany narożnik. */
+  setTerrainPreview(tiles: readonly number[], mapWidth: number, ok: boolean, vertex: { x: number; y: number } | null): void {
+    this.preview.clear();
+    const color = ok ? 0xffe066 : 0xe0503a;
+    for (const t of tiles) this.preview.poly(tileDiamond(t % mapWidth, Math.floor(t / mapWidth)));
+    if (tiles.length) this.preview.fill({ color, alpha: 0.22 }).stroke({ width: 1, color, alpha: 0.8 });
+    if (vertex) {
+      const p = tileToWorld(vertex.x, vertex.y);
+      this.preview.circle(p.x, p.y, 4).fill(color).stroke({ width: 1, color: 0x000000 });
+    }
   }
 
   setHover(tile: { x: number; y: number } | null, color = 0xffe066): void {
