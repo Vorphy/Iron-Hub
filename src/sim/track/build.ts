@@ -121,11 +121,15 @@ export function trackFitsSlope(slope: Slope, track: number): boolean {
   return false;
 }
 
-/** Przyczółek mostu: kafelek mostu, który nie ma kafelków tego mostu po obu stronach w żadnej osi. */
+/** Przyczółek mostu albo portal tunelu: koniec takiej budowli (tor w osi, nie do ruszania osobno). */
 function isBridgeHead(map: WorldMap, x: number, y: number): boolean {
-  const id = map.bridge[y * map.width + x];
+  return isStructureEnd(map, map.bridge, x, y) || isStructureEnd(map, map.tunnel, x, y);
+}
+
+function isStructureEnd(map: WorldMap, layer: Uint16Array, x: number, y: number): boolean {
+  const id = layer[y * map.width + x];
   if (!id) return false;
-  const same = (dx: number, dy: number) => inBounds(map, x + dx, y + dy) && map.bridge[(y + dy) * map.width + x + dx] === id;
+  const same = (dx: number, dy: number) => inBounds(map, x + dx, y + dy) && layer[(y + dy) * map.width + x + dx] === id;
   return !((same(1, 0) && same(-1, 0)) || (same(0, 1) && same(0, -1)));
 }
 

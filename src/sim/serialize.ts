@@ -6,6 +6,7 @@ import type { Town } from './economy/town';
 import type { Signal, SignalMode } from './signals/signals';
 import type { Station } from './station/station';
 import type { Bridge } from './track/bridge';
+import type { Tunnel } from './track/tunnel';
 import type { GameState } from './state';
 import { ALL_TRACKS, Side } from './track/track';
 import type { Step, Train, WagonLoad } from './trains/train';
@@ -13,7 +14,7 @@ import { engineDef, wagonDef } from './trains/vehicles';
 import { MAX_HEIGHT } from './world/height';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 8;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -25,6 +26,7 @@ const LAYERS = {
   town: 2,
   industry: 4,
   bridge: 2,
+  tunnel: 2,
 } as const;
 type LayerName = keyof typeof LAYERS;
 
@@ -48,6 +50,8 @@ export interface SerializedState {
   finances: Finances;
   bridges: Bridge[];
   nextBridgeId: number;
+  tunnels: Tunnel[];
+  nextTunnelId: number;
 }
 
 export class SaveError extends Error {}
@@ -77,6 +81,8 @@ export function serializeState(state: GameState): SerializedState {
     finances: structuredClone(state.finances),
     bridges: structuredClone(state.bridges),
     nextBridgeId: state.nextBridgeId,
+    tunnels: structuredClone(state.tunnels),
+    nextTunnelId: state.nextTunnelId,
   };
 }
 
@@ -138,6 +144,13 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     d.nextBridgeId = 1;
     d.version = 7;
   }
+  if (d.version === 7) {
+    // v8: tunele
+    if (d.map) d.map.tunnel = emptyLayer('tunnel');
+    d.tunnels = [];
+    d.nextTunnelId = 1;
+    d.version = 8;
+  }
   return d as Partial<SerializedState>;
 }
 
@@ -162,9 +175,10 @@ export function deserializeState(data: unknown): GameState {
     industry: new Uint32Array(bytes('industry').buffer),
     heights: fromBase64(m.heights, (m.width + 1) * (m.height + 1)),
     bridge: new Uint16Array(bytes('bridge').buffer),
+    tunnel: new Uint16Array(bytes('tunnel').buffer),
   };
   if (map.heights.some((h) => h > MAX_HEIGHT)) throw new SaveError('Uszkodzone wysokości terenu');
-  const ints = [d.tick, d.rng, d.nextStationId, d.nextDepotId, d.nextTrainId, d.nextBridgeId];
+  const ints = [d.tick, d.rng, d.nextStationId, d.nextDepotId, d.nextTrainId, d.nextBridgeId, d.nextTunnelId];
   if (!ints.every(isInt) || typeof d.money !== 'number') throw new SaveError('Uszkodzone dane gry');
   check(d.stations, isStation, 'stacje');
   check(d.depots, isDepot, 'zajezdnie');
@@ -173,6 +187,7 @@ export function deserializeState(data: unknown): GameState {
   check(d.towns, isTown, 'miasta');
   check(d.industries, isIndustry, 'zakłady');
   check(d.bridges, isBridge, 'mosty');
+  check(d.tunnels, isTunnel, 'tunele');
   if (d.signalMode !== 'auto' && d.signalMode !== 'manual') throw new SaveError('Uszkodzony tryb sygnalizacji');
   if (!isFinances(d.finances)) throw new SaveError('Uszkodzone finanse');
   return {
@@ -194,7 +209,14 @@ export function deserializeState(data: unknown): GameState {
     finances: d.finances,
     bridges: d.bridges!,
     nextBridgeId: d.nextBridgeId!,
+    tunnels: d.tunnels!,
+    nextTunnelId: d.nextTunnelId!,
   };
+}
+
+function isTunnel(v: unknown): v is Tunnel {
+  const t = v as Tunnel;
+  return isObj(t) && isInt(t.id) && isInt(t.x) && isInt(t.y) && (t.axis === 'x' || t.axis === 'y') && isInt(t.length) && t.length >= 2 && isInt(t.level);
 }
 
 function isBridge(v: unknown): v is Bridge {

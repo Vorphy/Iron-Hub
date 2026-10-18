@@ -8,6 +8,7 @@ import { heightAt, MAX_HEIGHT } from './sim/world/height';
 import { MapRenderer } from './render/mapRenderer';
 import { Overlay } from './render/overlay';
 import { BridgeRenderer } from './render/bridges';
+import { TunnelRenderer } from './render/tunnels';
 import { IndustryRenderer } from './render/buildings';
 import { FloatingTexts } from './render/floatingText';
 import { MapLabels } from './render/mapLabels';
@@ -38,6 +39,7 @@ const KEY_TOOLS: Record<string, Tool> = {
   KeyB: 'signal',
   KeyL: 'terrain',
   KeyM: 'bridge',
+  KeyN: 'tunnel',
   KeyX: 'bulldozer',
   Delete: 'bulldozer',
 };
@@ -53,6 +55,7 @@ export class Game {
   private readonly labels = new MapLabels();
   private readonly industries = new IndustryRenderer();
   private readonly bridges = new BridgeRenderer();
+  private readonly tunnels = new TunnelRenderer();
   private readonly floaters = new FloatingTexts();
   private readonly trains = new TrainRenderer();
   private readonly signals = new SignalRenderer();
@@ -80,11 +83,13 @@ export class Game {
       state.map,
       () => this.sim.state.depots,
       () => this.sim.state.bridges,
+      () => this.sim.state.tunnels,
     );
     world.addChild(
       this.mapRenderer.container,
       this.industries.gfx,
       this.bridges.gfx,
+      this.tunnels.gfx,
       this.graphDebug.gfx,
       this.overlay.container,
       this.signals.gfx,
@@ -96,6 +101,7 @@ export class Game {
     this.labels.rebuild(state);
     this.industries.draw(state.industries);
     this.bridges.draw(state);
+    this.tunnels.draw(state);
     app.stage.addChild(world);
 
     this.camera = new Camera(world, state.map.width, state.map.height);
@@ -249,6 +255,7 @@ export class Game {
       if (ev.type === 'tileChanged') this.mapRenderer.markTileDirty(ev.x, ev.y);
       else if (ev.type === 'stationsChanged') this.labels.rebuild(this.sim.state);
       else if (ev.type === 'bridgesChanged') this.bridges.draw(this.sim.state);
+      else if (ev.type === 'tunnelsChanged') this.tunnels.draw(this.sim.state);
       else if (ev.type === 'income') this.floaters.spawn(`+${formatMoney(ev.amount)}`, ev.x, ev.y);
       else if (ev.type === 'commandFailed') {
         showMessage(FAIL_MESSAGES[ev.reason]);

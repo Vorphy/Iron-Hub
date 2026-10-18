@@ -97,6 +97,7 @@ function drawReservations(g: Graphics, state: GameState): void {
       [t.reservedAhead, 0.8],
     ] as const) {
       for (const s of steps) {
+        if (s.track > 128) continue; // wnętrze tunelu
         const pa = pointOnStep(s, 0);
         const pb = pointOnStep(s, stepLength(s));
         const a = toWorld(pa.x, pa.y, stepHeight(state, s, 0));

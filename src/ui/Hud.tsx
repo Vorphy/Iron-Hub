@@ -23,6 +23,7 @@ const TOOLS: { tool: Tool; icon: string; name: string; key: string }[] = [
   { tool: 'signal', icon: '⊙', name: 'Semafor', key: 'B' },
   { tool: 'terrain', icon: '⛰', name: 'Teren', key: 'L' },
   { tool: 'bridge', icon: '⌒', name: 'Most', key: 'M' },
+  { tool: 'tunnel', icon: '◠', name: 'Tunel', key: 'N' },
   { tool: 'bulldozer', icon: '✖', name: 'Rozbiórka', key: 'X' },
 ];
 
@@ -40,8 +41,10 @@ const TOOL_HELP: Record<Tool, string> = {
     'Podnieś / Obniż: klik zmienia o poziom narożnik najbliższy kursorowi (sąsiedni teren dopasuje się sam). Wyrównaj: przeciągnij prostokąt – teren do wysokości punktu startowego. 30 zł za narożnik',
   bridge:
     'Przeciągnij od przyczółka do przyczółka (wzdłuż osi, max 14 kafelków). Przyczółki płaskie lub wznoszące się w stronę mostu, na tej samej wysokości; pod mostem teren co najmniej poziom niżej. 400 zł za kafelek',
+  tunnel:
+    'Klik na zbocze (w osi X lub Y) – tunel w głąb wzniesienia do zbocza po drugiej stronie na tej samej wysokości. Nad tunelem teren co najmniej poziom wyżej, max 20 kafelków, 600 zł za kafelek',
   orders: 'Klikaj stacje, aby dopisać je do rozkładu pociągu · Esc – koniec',
-  bulldozer: 'Klik – usuń element toru pod kursorem, most (przyczółek), zajezdnię, kafelek stacji, dom lub oczyść nieużytek · przeciągnięcie – rozbierz odcinek toru (zwrot 25%)',
+  bulldozer: 'Klik – usuń element toru pod kursorem, most (przyczółek), tunel (wejście), zajezdnię, kafelek stacji, dom lub oczyść nieużytek · przeciągnięcie – rozbierz odcinek toru (zwrot 25%)',
 };
 
 const MESSAGE_MS = 2500;

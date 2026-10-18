@@ -97,7 +97,9 @@ function fail(reason: 'blocked' | 'tooBig' | 'bridgeHeads' | 'bridgeLow' | 'noMo
 function headDeck(map: WorldMap, x: number, y: number, axis: 'x' | 'y', spanSide: Side): number | null {
   if (!inBounds(map, x, y)) return null;
   const i = y * map.width + x;
-  if (map.terrain[i] === Terrain.Water || map.station[i] || map.depot[i] || hasBuilding(map, i) || map.bridge[i]) return null;
+  if (map.terrain[i] === Terrain.Water || map.station[i] || map.depot[i] || hasBuilding(map, i) || map.bridge[i] || map.tunnel[i]) {
+    return null;
+  }
   const bits = map.track[i]!;
   if (bits !== 0 && bits !== axisTrack(axis)) return null;
   const slope = tileSlope(map, x, y);

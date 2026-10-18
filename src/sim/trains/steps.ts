@@ -9,6 +9,7 @@ import {
   sideHeight,
 } from '../track/bridge';
 import { pieceLength, STRAIGHT_LENGTH } from '../track/graph';
+import { isTunnelTrack, portalInnerSide, tunnelAt, tunnelRole, tunnelTrack } from '../track/tunnel';
 import { heightAt } from '../world/height';
 import { oppositeSide, Side, SIDE_DELTA, TRACK_SIDES, tracksOn, type Track } from '../track/track';
 import { inBounds } from '../world/map';
@@ -28,7 +29,7 @@ const MID: Record<number, readonly [number, number]> = {
 
 export function stepLength(s: Step): number {
   if (s.track === 0) return DEPOT_STUB_LENGTH;
-  if (isBridgeTrack(s.track)) return STRAIGHT_LENGTH;
+  if (isBridgeTrack(s.track) || isTunnelTrack(s.track)) return STRAIGHT_LENGTH;
   return pieceLength(s.track as Track);
 }
 
@@ -36,11 +37,11 @@ export function flipStep(s: Step): Step {
   return { x: s.x, y: s.y, track: s.track, entry: s.exit, exit: s.entry };
 }
 
-const TRACK_INDEX: Record<number, number> = { 0: 0, 1: 1, 2: 2, 4: 3, 8: 4, 16: 5, 32: 6, 64: 7, 128: 8 };
+const TRACK_INDEX: Record<number, number> = { 0: 0, 1: 1, 2: 2, 4: 3, 8: 4, 16: 5, 32: 6, 64: 7, 128: 8, 256: 9, 512: 10 };
 
 /** Jednoznaczny klucz skierowanego odcinka (do słowników w wyszukiwaniu trasy). */
 export function stepKey(s: Step, mapWidth: number): number {
-  return ((s.y * mapWidth + s.x) * 9 + TRACK_INDEX[s.track]!) * 5 + (s.entry + 1);
+  return ((s.y * mapWidth + s.x) * 11 + TRACK_INDEX[s.track]!) * 5 + (s.entry + 1);
 }
 
 /**
@@ -67,6 +68,22 @@ export function successors(state: GameState, s: Step): Step[] {
   if (here && next === here && s.track === axisTrack(here.axis)) {
     const role = bridgeRole(here, s.x, s.y);
     if (role !== 'span' && s.exit === headSpanSide(here, role)) return [straight(bridgeTrack(here.axis))];
+  }
+  // Tunele: z portalu do wnętrza, wnętrzem, z wnętrza na drugi portal.
+  const tHere = tunnelAt(state, s.x, s.y);
+  const tNext = tunnelAt(state, x, y);
+  if (isTunnelTrack(s.track)) {
+    if (!tNext || tNext !== tHere) return [];
+    return [straight(tunnelRole(tNext, x, y) === 'inside' ? s.track : axisTrack(tNext.axis))];
+  }
+  if (tHere && tNext === tHere && s.track === axisTrack(tHere.axis)) {
+    const role = tunnelRole(tHere, s.x, s.y);
+    if (role !== 'inside' && s.exit === portalInnerSide(tHere, role)) return [straight(tunnelTrack(tHere.axis))];
+  }
+  // Do portalu od strony wnętrza da się wjechać tylko z tunelu (nie torem po powierzchni).
+  if (tNext) {
+    const role = tunnelRole(tNext, x, y);
+    if (role !== 'inside' && entry === portalInnerSide(tNext, role)) return [];
   }
   // Na przyczółek od strony pomostu da się wjechać tylko z pomostu (nie torem pod mostem).
   if (next) {
@@ -102,6 +119,11 @@ export function pointOnStep(s: Step, d: number): { x: number; y: number } {
 export function stepHeight(state: GameState, s: Step, d: number): number {
   const p = pointOnStep(s, d);
   if (s.track === 0) return heightAt(state.map, p.x, p.y);
+  // Tunel: wnętrze i tor portalu na poziomie dolnej krawędzi wejścia.
+  const tunnel = tunnelAt(state, s.x, s.y);
+  if (tunnel && (isTunnelTrack(s.track) || (tunnelRole(tunnel, s.x, s.y) !== 'inside' && s.track === axisTrack(tunnel.axis)))) {
+    return tunnel.level;
+  }
   const bridge = bridgeAt(state, s.x, s.y);
   if (!bridge) return heightAt(state.map, p.x, p.y);
   if (isBridgeTrack(s.track)) return bridge.deck;

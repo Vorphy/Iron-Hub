@@ -17,6 +17,7 @@ import {
   trainsInDepot,
 } from './trains/train';
 import { bridgeAt, bridgeRole, bridgeTileCoords, buildBridge, removeBridge } from './track/bridge';
+import { buildTunnel, removeTunnel, tunnelAt, tunnelRole, tunnelTileCoords } from './track/tunnel';
 import { getTerrain, inBounds, setTerrain, Terrain } from './world/map';
 import { applyTerraform, levelTargets, planTerraform, terraformTargets } from './world/terraform';
 
@@ -37,6 +38,7 @@ export type Command =
   | { type: 'removeSignal'; x: number; y: number; track: Track }
   | { type: 'setSignalMode'; mode: SignalMode }
   | { type: 'buildBridge'; x0: number; y0: number; x1: number; y1: number }
+  | { type: 'buildTunnel'; x: number; y: number }
   | { type: 'terraform'; vx: number; vy: number; delta: 1 | -1 }
   | { type: 'levelLand'; vx0: number; vy0: number; vx1: number; vy1: number; level: number }
   /** Testy: dopisanie pieniędzy (poza księgą finansów). */
@@ -56,7 +58,8 @@ export type FailReason =
   | 'industry'
   | 'tooHigh'
   | 'bridgeHeads'
-  | 'bridgeLow';
+  | 'bridgeLow'
+  | 'tunnelNoExit';
 
 export type CommandResult = { ok: true } | { ok: false; reason: FailReason };
 
@@ -67,6 +70,7 @@ export type SimEvent =
   | { type: 'trainsChanged' }
   | { type: 'signalsChanged' }
   | { type: 'bridgesChanged' }
+  | { type: 'tunnelsChanged' }
   /** Zapłata za dostawę – (x, y) w układzie logicznym, do napisu nad pociągiem. */
   | { type: 'income'; amount: number; x: number; y: number }
   | { type: 'commandFailed'; command: Command; reason: FailReason };
@@ -110,6 +114,8 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
       return removeSignal(state, cmd.x, cmd.y, cmd.track, events);
     case 'buildBridge':
       return buildBridge(state, cmd.x0, cmd.y0, cmd.x1, cmd.y1, events);
+    case 'buildTunnel':
+      return buildTunnel(state, cmd.x, cmd.y, events);
     case 'terraform':
       return applyTerraform(state, planTerraform(state, terraformTargets(state, cmd.vx, cmd.vy, cmd.delta)), events);
     case 'levelLand':
@@ -136,6 +142,13 @@ function clearTile(state: GameState, x: number, y: number, events: SimEvent[]): 
   if (map.station[y * map.width + x]) return removeStationTile(state, x, y, events);
   const i = y * map.width + x;
   if (map.industry[i]) return { ok: false, reason: 'industry' };
+  // Portal tunelu – rozbiórka całego tunelu.
+  const tunnel = tunnelAt(state, x, y);
+  if (tunnel && tunnelRole(tunnel, x, y) !== 'inside') {
+    const occupied = occupiedTiles(state);
+    if (tunnelTileCoords(tunnel).some((t) => occupied.has(t.y * map.width + t.x))) return { ok: false, reason: 'trainInWay' };
+    return removeTunnel(state, tunnel, events);
+  }
   // Most: przyczółek albo pomost bez toru pod spodem – rozbiórka całego mostu.
   const bridge = bridgeAt(state, x, y);
   if (bridge && (bridgeRole(bridge, x, y) !== 'span' || !map.track[i])) {

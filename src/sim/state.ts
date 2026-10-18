@@ -6,6 +6,7 @@ import type { Town } from './economy/town';
 import type { Signal, SignalMode } from './signals/signals';
 import type { Station } from './station/station';
 import type { Bridge } from './track/bridge';
+import type { Tunnel } from './track/tunnel';
 import type { Train } from './trains/train';
 import { generateWorld } from './world/generate';
 import { generateMap, type WorldMap } from './world/map';
@@ -32,6 +33,8 @@ export interface GameState {
   finances: Finances;
   bridges: Bridge[];
   nextBridgeId: number;
+  tunnels: Tunnel[];
+  nextTunnelId: number;
 }
 
 export interface NewGameOptions {
@@ -62,6 +65,8 @@ export function createGame({ width, height, seed, empty = false }: NewGameOption
     finances: emptyFinances(),
     bridges: [],
     nextBridgeId: 1,
+    tunnels: [],
+    nextTunnelId: 1,
   };
   // Pusty świat (testy) jest płaski.
   if (empty) state.map.heights.fill(0);

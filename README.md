@@ -24,6 +24,7 @@ Gra wczytuje autozapis z przeglądarki; parametr `?seed=123` w adresie wymusza n
 | Przeciąganie myszą, strzałki, WASD | przesuwanie mapy (prawy przycisk – zawsze) |
 | Kółko myszy | zoom |
 | T / P / Z / X / Esc | narzędzia: tory / stacja / zajezdnia / rozbiórka / kursor |
+| L / M / N | teren (podnieś, obniż, wyrównaj) / most / tunel |
 | R | obrót stacji (przy kwadracie) lub wjazdu zajezdni |
 | Klik na zajezdnię / pociąg | okno zajezdni (zakup) / okno pociągu (rozkład, start/stop) |
 | Spacja, 1–4 | pauza, prędkość gry |

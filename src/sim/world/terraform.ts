@@ -29,6 +29,7 @@ function locked(map: WorldMap, x: number, y: number): boolean {
     map.station[i] ||
     map.depot[i] ||
     map.bridge[i] ||
+    map.tunnel[i] ||
     hasBuilding(map, i) ||
     map.terrain[i] === Terrain.Water
   );

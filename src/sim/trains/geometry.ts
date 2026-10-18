@@ -1,5 +1,6 @@
 import { VEHICLE_GAP } from '../config';
 import type { GameState } from '../state';
+import { isTunnelTrack } from '../track/tunnel';
 import { pointOnStep, stepHeight, stepLength } from './steps';
 import type { Step, Train } from './train';
 import { engineDef, wagonDef } from './vehicles';
@@ -39,7 +40,8 @@ export function pointBehindHead(train: Train, d: number): { x: number; y: number
 /** Punkt za czołem razem z wysokością toru (mosty, rampy, teren). */
 export function pointBehindHeadZ(state: GameState, train: Train, d: number): Point3 | null {
   const at = locateBehindHead(train, d);
-  if (!at) return null;
+  // We wnętrzu tunelu pojazdu nie widać.
+  if (!at || isTunnelTrack(at.step.track)) return null;
   return { ...pointOnStep(at.step, at.pos), z: stepHeight(state, at.step, at.pos) };
 }
 

@@ -24,6 +24,10 @@ export const BRIDGE_TILE_COST = 400;
 /** Najdłuższy most (z przyczółkami). */
 export const MAX_BRIDGE_LENGTH = 14;
 
+/** Koszt jednego kafelka tunelu (z portalami) i najdłuższy tunel. */
+export const TUNNEL_TILE_COST = 600;
+export const MAX_TUNNEL_LENGTH = 20;
+
 /** Koszt zajezdni. */
 export const DEPOT_COST = 1000;
 

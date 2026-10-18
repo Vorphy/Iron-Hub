@@ -20,10 +20,21 @@ import type { Simulation } from './sim/simulation';
 import { getTerrain, inBounds, Terrain } from './sim/world/map';
 import { levelTargets, planTerraform, terraformTargets } from './sim/world/terraform';
 import { bridgeTileCoords, planBridge } from './sim/track/bridge';
+import { planTunnel, tunnelTileCoords } from './sim/track/tunnel';
 import type { Point } from './render/iso';
 
 /** 'orders' – wskazywanie stacji do rozkładu pociągu `ordersTrain` (z okna pociągu). */
-export type Tool = 'cursor' | 'track' | 'station' | 'depot' | 'signal' | 'terrain' | 'bridge' | 'bulldozer' | 'orders';
+export type Tool =
+  | 'cursor'
+  | 'track'
+  | 'station'
+  | 'depot'
+  | 'signal'
+  | 'terrain'
+  | 'bridge'
+  | 'tunnel'
+  | 'bulldozer'
+  | 'orders';
 
 /** Narzędzie Teren: podnieś / obniż narożnik albo wyrównaj obszar. */
 export type TerrainMode = 'raise' | 'lower' | 'level';
@@ -49,6 +60,7 @@ export const FAIL_MESSAGES: Record<FailReason, string> = {
   tooHigh: 'Teren poza zakresem wysokości (0–8)',
   bridgeHeads: 'Przyczółki mostu muszą być na tej samej wysokości',
   bridgeLow: 'Teren pod mostem jest za wysoko',
+  tunnelNoExit: 'Tunel nie trafia na zbocze po drugiej stronie (albo nad nim jest za nisko)',
 };
 
 export interface CursorLabel {
@@ -181,6 +193,18 @@ export class Tools {
     }
 
     const start = this.dragStart ?? p;
+    if (this.tool === 'tunnel') {
+      this.overlay.setHover(tile);
+      if (!tile) return;
+      const plan = planTunnel(this.sim.state, tile.x, tile.y);
+      if (plan.tunnel) {
+        const tiles = tunnelTileCoords(plan.tunnel).map((t) => t.y * map.width + t.x);
+        this.overlay.setTerrainPreview(tiles, map.width, plan.result.ok, null);
+      }
+      this.label = planLabel(plan);
+      return;
+    }
+
     if (this.tool === 'bridge') {
       this.overlay.setHover(tile);
       if (!this.dragStart || !tile) return;
@@ -331,6 +355,7 @@ export class Tools {
   }
 
   private commandFor(start: Point, end: Point): Command | null {
+    if (this.tool === 'tunnel') return { type: 'buildTunnel', x: Math.floor(end.x), y: Math.floor(end.y) };
     if (this.tool === 'bridge') {
       if (sameTile(start, end)) return null;
       const [x0, y0, x1, y1] = bridgeEnds(start, end);

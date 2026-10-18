@@ -30,6 +30,8 @@ export interface WorldMap {
   heights: Uint8Array;
   /** Id mostu przechodzącego przez kafelek (przyczółki i pomost; 0 – brak). */
   bridge: Uint16Array;
+  /** Id tunelu pod kafelkiem (portale i wnętrze; 0 – brak). */
+  tunnel: Uint16Array;
 }
 
 /** Na kafelku stoi budynek (dom lub zakład) – nie da się tu nic zbudować. */
@@ -80,6 +82,7 @@ export function generateMap(width: number, height: number, seed: number): WorldM
     town: new Uint16Array(n),
     industry: new Uint32Array(n),
     bridge: new Uint16Array(n),
+    tunnel: new Uint16Array(n),
   };
 }
 

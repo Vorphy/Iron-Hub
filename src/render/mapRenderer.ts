@@ -1,6 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Depot } from '../sim/depot/depot';
-import { bridgeRole, type Bridge } from '../sim/track/bridge';
+import { axisTrack, bridgeRole, type Bridge } from '../sim/track/bridge';
+import { tunnelRole, type Tunnel } from '../sim/track/tunnel';
 import { isHeadAxisTrack } from './bridges';
 import { getTrackBits, tracksOn } from '../sim/track/track';
 import { getTerrain, Terrain, type WorldMap } from '../sim/world/map';
@@ -46,6 +47,7 @@ export class MapRenderer {
     /** Zajezdnie czytane przy rysowaniu kafelka (tablica stanu może być podmieniana). */
     private readonly getDepots: () => readonly Depot[],
     private readonly getBridges: () => readonly Bridge[],
+    private readonly getTunnels: () => readonly Tunnel[],
   ) {
     this.container.addChild(this.terrainLayer, this.trackLayer);
     this.chunksX = Math.ceil(map.width / CHUNK);
@@ -109,8 +111,12 @@ export class MapRenderer {
         }
         const bridge = this.map.bridge[y * this.map.width + x] ? this.getBridges().find((b) => b.id === this.map.bridge[y * this.map.width + x]) : undefined;
         const head = bridge && bridgeRole(bridge, x, y) !== 'span' ? bridge : undefined;
+        const tunnelId = this.map.tunnel[y * this.map.width + x];
+        const tunnel = tunnelId ? this.getTunnels().find((t) => t.id === tunnelId) : undefined;
+        const portal = tunnel && tunnelRole(tunnel, x, y) !== 'inside' ? tunnel : undefined;
         for (const track of tracksOn(getTrackBits(this.map, x, y))) {
           if (head && isHeadAxisTrack(head, track)) continue; // rampę rysuje most
+          if (portal && track === axisTrack(portal.axis)) continue; // tor wjazdu rysuje tunel
           drawTrackPiece(chunk.tracks, x, y, track, TRACK_STYLE);
         }
         const house = this.map.house[y * this.map.width + x]!;
