@@ -1,5 +1,15 @@
 import type { GameState } from '../state';
-import { pieceLength } from '../track/graph';
+import {
+  axisTrack,
+  bridgeAt,
+  bridgeRole,
+  bridgeTrack,
+  headSpanSide,
+  isBridgeTrack,
+  sideHeight,
+} from '../track/bridge';
+import { pieceLength, STRAIGHT_LENGTH } from '../track/graph';
+import { heightAt } from '../world/height';
 import { oppositeSide, Side, SIDE_DELTA, TRACK_SIDES, tracksOn, type Track } from '../track/track';
 import { inBounds } from '../world/map';
 import type { Step } from './train';
@@ -17,18 +27,20 @@ const MID: Record<number, readonly [number, number]> = {
 };
 
 export function stepLength(s: Step): number {
-  return s.track === 0 ? DEPOT_STUB_LENGTH : pieceLength(s.track as Track);
+  if (s.track === 0) return DEPOT_STUB_LENGTH;
+  if (isBridgeTrack(s.track)) return STRAIGHT_LENGTH;
+  return pieceLength(s.track as Track);
 }
 
 export function flipStep(s: Step): Step {
   return { x: s.x, y: s.y, track: s.track, entry: s.exit, exit: s.entry };
 }
 
-const TRACK_INDEX: Record<number, number> = { 0: 0, 1: 1, 2: 2, 4: 3, 8: 4, 16: 5, 32: 6 };
+const TRACK_INDEX: Record<number, number> = { 0: 0, 1: 1, 2: 2, 4: 3, 8: 4, 16: 5, 32: 6, 64: 7, 128: 8 };
 
 /** Jednoznaczny klucz skierowanego odcinka (do słowników w wyszukiwaniu trasy). */
 export function stepKey(s: Step, mapWidth: number): number {
-  return ((s.y * mapWidth + s.x) * 7 + TRACK_INDEX[s.track]!) * 5 + (s.entry + 1);
+  return ((s.y * mapWidth + s.x) * 9 + TRACK_INDEX[s.track]!) * 5 + (s.entry + 1);
 }
 
 /**
@@ -43,6 +55,25 @@ export function successors(state: GameState, s: Step): Step[] {
   const y = s.y + dy;
   if (!inBounds(map, x, y)) return [];
   const entry = oppositeSide(s.exit);
+  const straight = (track: number): Step => ({ x, y, track, entry, exit: oppositeSide(entry) });
+
+  // Mosty: z rampy na pomost, po pomoście, z pomostu na drugi przyczółek.
+  const here = bridgeAt(state, s.x, s.y);
+  const next = bridgeAt(state, x, y);
+  if (isBridgeTrack(s.track)) {
+    if (!next || next !== here) return [];
+    return [straight(bridgeRole(next, x, y) === 'span' ? s.track : axisTrack(next.axis))];
+  }
+  if (here && next === here && s.track === axisTrack(here.axis)) {
+    const role = bridgeRole(here, s.x, s.y);
+    if (role !== 'span' && s.exit === headSpanSide(here, role)) return [straight(bridgeTrack(here.axis))];
+  }
+  // Na przyczółek od strony pomostu da się wjechać tylko z pomostu (nie torem pod mostem).
+  if (next) {
+    const role = bridgeRole(next, x, y);
+    if (role !== 'span' && entry === headSpanSide(next, role)) return [];
+  }
+
   const out: Step[] = [];
   for (const track of tracksOn(map.track[y * map.width + x]!)) {
     const [a, b] = TRACK_SIDES[track];
@@ -62,6 +93,24 @@ export function pointOnStep(s: Step, d: number): { x: number; y: number } {
   const [xx, xy] = MID[s.exit]!;
   const t = d / stepLength(s);
   return { x: s.x + ex + (xx - ex) * t, y: s.y + ey + (xy - ey) * t };
+}
+
+/**
+ * Wysokość toru w punkcie odcinka (poziomy terenu): na pomoście – wysokość pomostu, na przyczółku –
+ * rampa od zewnętrznej krawędzi do pomostu, poza mostami – teren.
+ */
+export function stepHeight(state: GameState, s: Step, d: number): number {
+  const p = pointOnStep(s, d);
+  if (s.track === 0) return heightAt(state.map, p.x, p.y);
+  const bridge = bridgeAt(state, s.x, s.y);
+  if (!bridge) return heightAt(state.map, p.x, p.y);
+  if (isBridgeTrack(s.track)) return bridge.deck;
+  const role = bridgeRole(bridge, s.x, s.y);
+  if (role === 'span' || s.track !== axisTrack(bridge.axis)) return heightAt(state.map, p.x, p.y);
+  const spanSide = headSpanSide(bridge, role);
+  const edge = (side: number) => (side === spanSide ? bridge.deck : sideHeight(state.map, s.x, s.y, side as Side));
+  const t = d / stepLength(s);
+  return edge(s.entry) * (1 - t) + edge(s.exit) * t;
 }
 
 /** Kierunek jazdy po odcinku jako para znaków – zmiana oznacza łuk 45°. */

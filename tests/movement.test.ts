@@ -186,9 +186,9 @@ describe('zawracanie', () => {
     sim.enqueue({ type: 'setOrders', trainId: train.id, orders: [2] });
     sim.enqueue({ type: 'startTrain', trainId: train.id });
     for (let i = 0; i < 700; i++) sim.step();
-    const before = vehiclePoses(train);
+    const before = vehiclePoses(sim.state, train);
     reverseTrain(train);
-    const after = vehiclePoses(train);
+    const after = vehiclePoses(sim.state, train);
     expect(after).toHaveLength(before.length);
     for (const b of before) {
       const a = after.find((p) => p.index === b.index)!;

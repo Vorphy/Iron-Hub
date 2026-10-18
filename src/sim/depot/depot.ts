@@ -53,6 +53,7 @@ export function planDepot(state: GameState, x: number, y: number): { cost: numbe
     map.station[i] ||
     map.depot[i] ||
     hasBuilding(map, i) ||
+    map.bridge[i] ||
     !isFlat(map, x, y)
   ) {
     return { cost, result: { ok: false, reason: 'blocked' } };

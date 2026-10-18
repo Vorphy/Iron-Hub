@@ -14,7 +14,8 @@ export type Taken = Map<number, { track: number; train: number }[]>;
 
 /** Czy dwa elementy na tym samym kafelku przeszkadzają sobie (wspólny bok albo krzyżowanie X/Y). */
 export function piecesConflict(a: number, b: number): boolean {
-  if (a === 0 || b === 0) return a === b;
+  // Zajezdnia i pomost mostu to osobne „poziomy” – kolidują tylko z tym samym elementem.
+  if (a === 0 || b === 0 || a > Track.Right || b > Track.Right) return a === b;
   if (a === b) return true;
   if ((a | b) === (Track.X | Track.Y)) return true;
   const [a0, a1] = TRACK_SIDES[a as Track];
@@ -51,8 +52,8 @@ export function isFree(state: GameState, taken: Taken, s: Step, trainId: number)
  * Ekspert: tylko przed semaforem skierowanym w stronę jazdy.
  */
 export function isSafeStop(state: GameState, s: Step, signals: SignalIndex): boolean {
+  if (s.track === 0 || s.track > Track.Right) return false; // nie stajemy w zajezdni ani na moście
   if (state.signalMode === 'manual') return !!signals.facing(s);
-  if (s.track === 0) return false;
   const bits = state.map.track[s.y * state.map.width + s.x]!;
   return (bits & (bits - 1)) === 0;
 }

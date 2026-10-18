@@ -28,6 +28,8 @@ export interface WorldMap {
   industry: Uint32Array;
   /** Wysokości narożników kafelków, siatka (width+1)×(height+1) – patrz height.ts. */
   heights: Uint8Array;
+  /** Id mostu przechodzącego przez kafelek (przyczółki i pomost; 0 – brak). */
+  bridge: Uint16Array;
 }
 
 /** Na kafelku stoi budynek (dom lub zakład) – nie da się tu nic zbudować. */
@@ -77,6 +79,7 @@ export function generateMap(width: number, height: number, seed: number): WorldM
     house: new Uint8Array(n),
     town: new Uint16Array(n),
     industry: new Uint32Array(n),
+    bridge: new Uint16Array(n),
   };
 }
 

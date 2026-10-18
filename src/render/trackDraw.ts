@@ -1,6 +1,6 @@
 import type { Graphics } from 'pixi.js';
 import { Side, TRACK_SIDES, type Track } from '../sim/track/track';
-import { tileToWorld } from './iso';
+import { tileToWorld, toWorld } from './iso';
 
 export interface TrackStyle {
   ballast: number;
@@ -35,12 +35,26 @@ export function drawTrackPiece(g: Graphics, x: number, y: number, track: Track, 
 }
 
 /** Odcinek toru między dwoma punktami w układzie logicznym. */
-export function drawTrackSegment(g: Graphics, x0: number, y0: number, x1: number, y1: number, style: TrackStyle): void {
+export function drawTrackSegment(
+  g: Graphics,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  style: TrackStyle,
+  /** Wysokość toru wzdłuż odcinka (0–1 od początku); domyślnie – teren. */
+  zAlong?: (t: number) => number,
+): void {
   const len = Math.hypot(x1 - x0, y1 - y0);
   const px = -(y1 - y0) / len;
   const py = (x1 - x0) / len;
 
-  const p = (lx: number, ly: number) => tileToWorld(lx, ly);
+  // Rzut punktu: na terenie albo na zadanej wysokości (rampa mostu).
+  const along = (lx: number, ly: number) => {
+    const t = Math.abs(x1 - x0) > Math.abs(y1 - y0) ? (lx - x0) / (x1 - x0) : (ly - y0) / (y1 - y0);
+    return Math.min(1, Math.max(0, t));
+  };
+  const p = (lx: number, ly: number) => (zAlong ? toWorld(lx, ly, zAlong(along(lx, ly))) : tileToWorld(lx, ly));
   const off = (lx: number, ly: number, k: number) => p(lx + px * k, ly + py * k);
 
   const q = [off(x0, y0, BALLAST_HALF), off(x1, y1, BALLAST_HALF), off(x1, y1, -BALLAST_HALF), off(x0, y0, -BALLAST_HALF)];

@@ -19,10 +19,11 @@ import { getTrackBits, Side, Track, TRACK_SIDES, tracksOn, type TrackPiece } fro
 import type { Simulation } from './sim/simulation';
 import { getTerrain, inBounds, Terrain } from './sim/world/map';
 import { levelTargets, planTerraform, terraformTargets } from './sim/world/terraform';
+import { bridgeTileCoords, planBridge } from './sim/track/bridge';
 import type { Point } from './render/iso';
 
 /** 'orders' – wskazywanie stacji do rozkładu pociągu `ordersTrain` (z okna pociągu). */
-export type Tool = 'cursor' | 'track' | 'station' | 'depot' | 'signal' | 'terrain' | 'bulldozer' | 'orders';
+export type Tool = 'cursor' | 'track' | 'station' | 'depot' | 'signal' | 'terrain' | 'bridge' | 'bulldozer' | 'orders';
 
 /** Narzędzie Teren: podnieś / obniż narożnik albo wyrównaj obszar. */
 export type TerrainMode = 'raise' | 'lower' | 'level';
@@ -46,6 +47,8 @@ export const FAIL_MESSAGES: Record<FailReason, string> = {
   trainInWay: 'Na drodze stoi pociąg',
   industry: 'Zakładów przemysłowych nie można burzyć',
   tooHigh: 'Teren poza zakresem wysokości (0–8)',
+  bridgeHeads: 'Przyczółki mostu muszą być na tej samej wysokości',
+  bridgeLow: 'Teren pod mostem jest za wysoko',
 };
 
 export interface CursorLabel {
@@ -178,6 +181,19 @@ export class Tools {
     }
 
     const start = this.dragStart ?? p;
+    if (this.tool === 'bridge') {
+      this.overlay.setHover(tile);
+      if (!this.dragStart || !tile) return;
+      const [x0, y0, x1, y1] = bridgeEnds(start, p);
+      const plan = planBridge(this.sim.state, x0, y0, x1, y1);
+      const tiles = bridgeTileCoords({ x: Math.min(x0, x1), y: Math.min(y0, y1), axis: x0 !== x1 ? 'x' : 'y', length: Math.abs(x1 - x0) + Math.abs(y1 - y0) + 1 })
+        .filter((t) => inBounds(map, t.x, t.y))
+        .map((t) => t.y * map.width + t.x);
+      this.overlay.setTerrainPreview(tiles, map.width, plan.result.ok, null);
+      this.label = planLabel(plan);
+      return;
+    }
+
     if (this.tool === 'terrain') {
       this.overlay.setHover(null);
       const v = nearestVertex(start);
@@ -315,6 +331,11 @@ export class Tools {
   }
 
   private commandFor(start: Point, end: Point): Command | null {
+    if (this.tool === 'bridge') {
+      if (sameTile(start, end)) return null;
+      const [x0, y0, x1, y1] = bridgeEnds(start, end);
+      return { type: 'buildBridge', x0, y0, x1, y1 };
+    }
     if (this.tool === 'terrain') {
       const v = nearestVertex(start);
       if (this.terrainMode === 'level') {
@@ -414,6 +435,15 @@ function distToSegment(px: number, py: number, a: readonly [number, number], b: 
 function describeCatchment(supplies: Set<Cargo>, accepts: Set<Cargo>): string {
   const names = (s: Set<Cargo>) => [...s].map((c) => CARGO_DEFS[c].name).join(', ') || '—';
   return `Zbiera: ${names(supplies)} · Przyjmuje: ${names(accepts)}`;
+}
+
+/** Końce mostu z przeciągnięcia: prosta wzdłuż dominującej osi od kafelka startowego. */
+function bridgeEnds(start: Point, end: Point): [number, number, number, number] {
+  const x0 = Math.floor(start.x);
+  const y0 = Math.floor(start.y);
+  const x1 = Math.floor(end.x);
+  const y1 = Math.floor(end.y);
+  return Math.abs(x1 - x0) >= Math.abs(y1 - y0) ? [x0, y0, x1, y0] : [x0, y0, x0, y1];
 }
 
 /** Narożnik kafelka najbliższy punktowi. */

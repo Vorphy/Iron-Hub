@@ -75,8 +75,8 @@ Etapy są ułożone tak, żeby po każdym istniała działająca, testowalna wer
 ## Pomysły (lista otwarta – dopisuj na dole)
 
 - Poziomy pociągów, rodzaje kolei (np. parowa → spalinowa → elektryczna) i przechodzenie między nimi; prosty system ulepszeń.
-- Mapa nierówna: góry, kaniony; generator map i edytor. *(w toku: wysokości terenu ✅ 2026-10-18; dalej kształtowanie terenu, mosty, tunele)*
-- Budowa mostów i tuneli.
+- Mapa nierówna: góry, kaniony; generator map i edytor. *(w toku: wysokości terenu ✅, kształtowanie terenu ✅, mosty ✅ – 2026-10-18; dalej tunele)*
+- Budowa mostów ✅ i tuneli.
 - ~~przycisk testowy + 100000 zł~~ ✅ (Menu → Testy)
 - ~~przy torach tak jak przy semaforach budowanie i usuwanie torów, żeby nie trzeba niszczyć całości tylko wybrany w danym kierunku.~~ ✅ (Tory → Usuń, buldożer)
 - ~~mapa niech pamięta ostatnie ustawienie, zoom i pozycje kamery~~ ✅ (zapisywane razem z grą)

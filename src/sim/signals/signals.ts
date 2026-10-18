@@ -45,14 +45,14 @@ export class SignalIndex {
 
   /** Semafor stojący przed pociągiem jadącym po `s` (pociąg może przed nim stanąć). */
   facing(s: Step): Signal | undefined {
-    if (s.track === 0) return undefined;
+    if (s.track === 0 || s.track > Track.Right) return undefined;
     const sig = this.at(s.x, s.y, s.track);
     return sig && sig.dirs & dirBit(s) ? sig : undefined;
   }
 
   /** Czy jazda po `s` jest zabroniona przez semafor jednokierunkowy. */
   forbids(s: Step): boolean {
-    if (s.track === 0) return false;
+    if (s.track === 0 || s.track > Track.Right) return false;
     const sig = this.at(s.x, s.y, s.track);
     return !!sig && sig.oneWay && !(sig.dirs & dirBit(s));
   }

@@ -1,7 +1,7 @@
 import { Graphics } from 'pixi.js';
 import type { GameState } from '../sim/state';
-import { vehiclePoses, type VehiclePose } from '../sim/trains/geometry';
-import { tileToWorld, type Point } from './iso';
+import { vehiclePoses, type Point3, type VehiclePose } from '../sim/trains/geometry';
+import { toWorld, type Point } from './iso';
 
 const HALF_WIDTH = 0.13;
 const BODY_H = 7;
@@ -28,7 +28,7 @@ export class TrainRenderer {
   /** Zapamiętuje pozycje przed tickiem symulacji. */
   capture(state: GameState): void {
     this.prev.clear();
-    for (const t of state.trains) for (const p of vehiclePoses(t)) this.prev.set(`${t.id}:${p.index}`, p);
+    for (const t of state.trains) for (const p of vehiclePoses(state, t)) this.prev.set(`${t.id}:${p.index}`, p);
   }
 
   draw(state: GameState, alpha: number, selectedId: number | null): void {
@@ -36,7 +36,7 @@ export class TrainRenderer {
     g.clear();
     const items: Drawn[] = [];
     for (const t of state.trains) {
-      for (const cur of vehiclePoses(t)) {
+      for (const cur of vehiclePoses(state, t)) {
         const prev = this.prev.get(`${t.id}:${cur.index}`);
         const pose = prev ? { ...cur, front: lerp(prev.front, cur.front, alpha), back: lerp(prev.back, cur.back, alpha) } : cur;
         const depth = (pose.front.x + pose.front.y + pose.back.x + pose.back.y) / 2;
@@ -66,8 +66,8 @@ export class TrainRenderer {
   }
 }
 
-function lerp(a: Point, b: Point, t: number): Point {
-  return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+function lerp(a: Point3, b: Point3, t: number): Point3 {
+  return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, z: a.z + (b.z - a.z) * t };
 }
 
 /** Pojazd jako prostopadłościan: obrys (ciemny) + dach (kolor pojazdu). Zwraca środek w px. */
@@ -79,10 +79,10 @@ function drawVehicle(g: Graphics, pose: VehiclePose, selected: boolean): Point {
   const px = -uy * HALF_WIDTH;
   const py = ux * HALF_WIDTH;
   const ground = [
-    tileToWorld(f.x + px, f.y + py),
-    tileToWorld(f.x - px, f.y - py),
-    tileToWorld(b.x - px, b.y - py),
-    tileToWorld(b.x + px, b.y + py),
+    toWorld(f.x + px, f.y + py, f.z),
+    toWorld(f.x - px, f.y - py, f.z),
+    toWorld(b.x - px, b.y - py, b.z),
+    toWorld(b.x + px, b.y + py, b.z),
   ];
   const top = ground.map((p) => ({ x: p.x, y: p.y - BODY_H }));
   const color = parseInt(pose.color.slice(1), 16);
@@ -93,10 +93,10 @@ function drawVehicle(g: Graphics, pose: VehiclePose, selected: boolean): Point {
 
   if (pose.engine) {
     // Komin bliżej przodu parowozu.
-    const c = tileToWorld(f.x - ux * 0.12, f.y - uy * 0.12);
+    const c = toWorld(f.x - ux * 0.12, f.y - uy * 0.12, f.z);
     g.circle(c.x, c.y - BODY_H - 1, 2).fill(0x1b1b1b);
   }
-  const mid = tileToWorld((f.x + b.x) / 2, (f.y + b.y) / 2);
+  const mid = toWorld((f.x + b.x) / 2, (f.y + b.y) / 2, (f.z + b.z) / 2);
   return { x: mid.x, y: mid.y - BODY_H / 2 };
 }
 

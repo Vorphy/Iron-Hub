@@ -2,9 +2,9 @@ import { Graphics } from 'pixi.js';
 import { dirBit, type Signal } from '../sim/signals/signals';
 import type { GameState } from '../sim/state';
 import { TRACK_SIDES } from '../sim/track/track';
-import { pointOnStep, stepLength } from '../sim/trains/steps';
+import { pointOnStep, stepHeight, stepLength } from '../sim/trains/steps';
 import type { Step } from '../sim/trains/train';
-import { tileToWorld } from './iso';
+import { tileToWorld, toWorld } from './iso';
 
 const POST_H = 12;
 /** Strzałka kierunku na torze (ułamki kafelka). */
@@ -35,7 +35,7 @@ export class SignalRenderer {
       const path = [...t.trail].reverse().concat(t.reservedAhead);
       for (let i = 0; i + 1 < path.length; i++) {
         const s = path[i]!;
-        if (s.track) passing.add(`${s.y * W + s.x}:${s.track}:${dirBit(s)}`);
+        if (s.track && s.track <= 32) passing.add(`${s.y * W + s.x}:${s.track}:${dirBit(s)}`);
       }
     }
     for (const sig of state.signals) {
@@ -97,8 +97,10 @@ function drawReservations(g: Graphics, state: GameState): void {
       [t.reservedAhead, 0.8],
     ] as const) {
       for (const s of steps) {
-        const a = tileToWorld(...xy(pointOnStep(s, 0)));
-        const b = tileToWorld(...xy(pointOnStep(s, stepLength(s))));
+        const pa = pointOnStep(s, 0);
+        const pb = pointOnStep(s, stepLength(s));
+        const a = toWorld(pa.x, pa.y, stepHeight(state, s, 0));
+        const b = toWorld(pb.x, pb.y, stepHeight(state, s, stepLength(s)));
         g.moveTo(a.x, a.y).lineTo(b.x, b.y);
       }
       g.stroke({ width: 5, color, alpha });
@@ -106,7 +108,4 @@ function drawReservations(g: Graphics, state: GameState): void {
   }
 }
 
-function xy(p: { x: number; y: number }): [number, number] {
-  return [p.x, p.y];
-}
 

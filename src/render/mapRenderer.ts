@@ -1,5 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Depot } from '../sim/depot/depot';
+import { bridgeRole, type Bridge } from '../sim/track/bridge';
+import { isHeadAxisTrack } from './bridges';
 import { getTrackBits, tracksOn } from '../sim/track/track';
 import { getTerrain, Terrain, type WorldMap } from '../sim/world/map';
 import type { Rect } from './camera';
@@ -43,6 +45,7 @@ export class MapRenderer {
     private readonly map: WorldMap,
     /** Zajezdnie czytane przy rysowaniu kafelka (tablica stanu może być podmieniana). */
     private readonly getDepots: () => readonly Depot[],
+    private readonly getBridges: () => readonly Bridge[],
   ) {
     this.container.addChild(this.terrainLayer, this.trackLayer);
     this.chunksX = Math.ceil(map.width / CHUNK);
@@ -104,7 +107,12 @@ export class MapRenderer {
           drawTerrainTile(g, this.map, x, y, COLORS[t][h & 3]!);
           if (t === Terrain.Rough) drawRoughDots(g, x, y, h);
         }
-        for (const track of tracksOn(getTrackBits(this.map, x, y))) drawTrackPiece(chunk.tracks, x, y, track, TRACK_STYLE);
+        const bridge = this.map.bridge[y * this.map.width + x] ? this.getBridges().find((b) => b.id === this.map.bridge[y * this.map.width + x]) : undefined;
+        const head = bridge && bridgeRole(bridge, x, y) !== 'span' ? bridge : undefined;
+        for (const track of tracksOn(getTrackBits(this.map, x, y))) {
+          if (head && isHeadAxisTrack(head, track)) continue; // rampę rysuje most
+          drawTrackPiece(chunk.tracks, x, y, track, TRACK_STYLE);
+        }
         const house = this.map.house[y * this.map.width + x]!;
         if (house) drawHouse(chunk.tracks, x, y, house, h);
         const depotId = this.map.depot[y * this.map.width + x];

@@ -31,6 +31,12 @@ export function tileToWorld(x: number, y: number): Point {
   return { x: p.x, y: p.y - heightProvider(x, y) * HEIGHT_PX };
 }
 
+/** Punkt (x, y) na wysokości `z` (poziomy) – dla obiektów nad terenem (mosty, pociągi na moście). */
+export function toWorld(x: number, y: number, z: number): Point {
+  const p = tileToWorldFlat(x, y);
+  return { x: p.x, y: p.y - z * HEIGHT_PX };
+}
+
 /** Środek kafelka na powierzchni terenu. */
 export function tileCenter(x: number, y: number): Point {
   return tileToWorld(x + 0.5, y + 0.5);

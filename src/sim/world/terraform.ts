@@ -24,7 +24,14 @@ const NEIGHBORS = [
 /** Kafelek, pod którym nie wolno zmieniać terenu (tor, stacja, zajezdnia, budynek, woda). */
 function locked(map: WorldMap, x: number, y: number): boolean {
   const i = y * map.width + x;
-  return !!(map.track[i] || map.station[i] || map.depot[i] || hasBuilding(map, i) || map.terrain[i] === Terrain.Water);
+  return !!(
+    map.track[i] ||
+    map.station[i] ||
+    map.depot[i] ||
+    map.bridge[i] ||
+    hasBuilding(map, i) ||
+    map.terrain[i] === Terrain.Water
+  );
 }
 
 /**

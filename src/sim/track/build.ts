@@ -71,6 +71,7 @@ export function planRemoveTrack(state: GameState, pieces: readonly TrackPiece[])
     const exists =
       inBounds(map, piece.x, piece.y) &&
       !map.station[piece.y * map.width + piece.x] &&
+      !isBridgeHead(map, piece.x, piece.y) &&
       hasTrack(map, piece.x, piece.y, piece.track);
     if (exists) count++;
     out.push({ piece, status: exists ? 'exists' : 'blocked' });
@@ -107,6 +108,8 @@ function buildable(map: WorldMap, { x, y, track }: TrackPiece): boolean {
   if (map.depot[y * map.width + x] || hasBuilding(map, y * map.width + x)) return false;
   // Na peronie wolno mieć tylko prosty tor w osi stacji (już istnieje).
   if (map.station[y * map.width + x]) return (track === Track.X || track === Track.Y) && hasTrack(map, x, y, track);
+  // Przyczółek mostu: tylko istniejący tor w osi mostu.
+  if (isBridgeHead(map, x, y)) return hasTrack(map, x, y, track);
   return trackFitsSlope(tileSlope(map, x, y), track);
 }
 
@@ -116,6 +119,14 @@ export function trackFitsSlope(slope: Slope, track: number): boolean {
   if (slope === 'x') return track === Track.X;
   if (slope === 'y') return track === Track.Y;
   return false;
+}
+
+/** Przyczółek mostu: kafelek mostu, który nie ma kafelków tego mostu po obu stronach w żadnej osi. */
+function isBridgeHead(map: WorldMap, x: number, y: number): boolean {
+  const id = map.bridge[y * map.width + x];
+  if (!id) return false;
+  const same = (dx: number, dy: number) => inBounds(map, x + dx, y + dy) && map.bridge[(y + dy) * map.width + x + dx] === id;
+  return !((same(1, 0) && same(-1, 0)) || (same(0, 1) && same(0, -1)));
 }
 
 function unique(pieces: readonly TrackPiece[]): TrackPiece[] {

@@ -16,9 +16,8 @@ import type { GameState } from '../state';
 import { trainLength } from './geometry';
 import { planRoute, type Plan } from './path';
 import { addTaken, buildTaken, isFree, isSafeStop, type Taken } from './reservation';
-import { flipStep, isBend, pointOnStep, stepLength } from './steps';
+import { flipStep, isBend, stepHeight, stepLength } from './steps';
 import { STRAIGHT_LENGTH } from '../track/graph';
-import { heightAt } from '../world/height';
 import { depotExit, leaveDepot, type Step, type Train } from './train';
 import { consistStats, engineDef } from './vehicles';
 
@@ -103,9 +102,7 @@ function departStation(train: Train): void {
 /** Nachylenie odcinka czoła (dodatnie – pod górę). */
 function headGrade(state: GameState, train: Train): number {
   const head = train.trail[0]!;
-  const a = pointOnStep(head, 0);
-  const b = pointOnStep(head, stepLength(head));
-  const rise = heightAt(state.map, b.x, b.y) - heightAt(state.map, a.x, a.y);
+  const rise = stepHeight(state, head, stepLength(head)) - stepHeight(state, head, 0);
   return (rise * GRADE_PER_LEVEL * STRAIGHT_LENGTH) / stepLength(head);
 }
 

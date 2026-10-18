@@ -21,6 +21,7 @@ Wartości liczbowe w tym dokumencie są **startowe** – do strojenia w trakcie 
   - Tor na zboczu: tylko **prosty biegnący w górę zbocza** (zbocze „w osi X” → tor X, „w osi Y” → tor Y). Łuki tylko na płaskim. Na zboczach narożnikowych i stromych nie da się nic zbudować.
   - Stacje (cała stacja na jednej wysokości), zajezdnie, domy i zakłady – tylko na płaskim terenie.
   - **Kształtowanie terenu** – narzędzie Teren (L): *Podnieś / Obniż* – klik zmienia o poziom narożnik najbliższy kursorowi, sąsiedni teren dopasowuje się sam (różnice ≤ 1); *Wyrównaj* – przeciągnięty prostokąt narożników do wysokości punktu startowego. 30 zł za każdy zmieniony narożnik. Nie wolno zmieniać terenu pod torami, stacjami, zajezdniami, budynkami ani przy wodzie.
+  - **Mosty** – narzędzie Most (M): przeciągnięcie od przyczółka do przyczółka wzdłuż osi, 3–14 kafelków, 400 zł za kafelek. Przyczółki płaskie albo wznoszące się w stronę mostu, na tej samej wysokości; pomost leży poziom nad przyczółkami (na płaskim przyczółku tor wjeżdża rampą). Pod pomostem teren co najmniej poziom niżej; może tam być woda albo inne tory (nie stacje ani budynki). Pociągi wjeżdżają na pomost tylko z rampy i nie zatrzymują się na moście. Buldożer na przyczółku rozbiera cały most (zwrot 25%).
   - Pociąg pod górę traci przyspieszenie (4% nachylenia na poziom na kafelek), z górki je zyskuje; ciężki skład nie staje, wlecze się z minimalną prędkością.
 
 ## Zajezdnie

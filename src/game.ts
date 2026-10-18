@@ -7,6 +7,7 @@ import { pickTile, setHeightProvider, tileCenter, type Point } from './render/is
 import { heightAt, MAX_HEIGHT } from './sim/world/height';
 import { MapRenderer } from './render/mapRenderer';
 import { Overlay } from './render/overlay';
+import { BridgeRenderer } from './render/bridges';
 import { IndustryRenderer } from './render/buildings';
 import { FloatingTexts } from './render/floatingText';
 import { MapLabels } from './render/mapLabels';
@@ -36,6 +37,7 @@ const KEY_TOOLS: Record<string, Tool> = {
   KeyZ: 'depot',
   KeyB: 'signal',
   KeyL: 'terrain',
+  KeyM: 'bridge',
   KeyX: 'bulldozer',
   Delete: 'bulldozer',
 };
@@ -50,6 +52,7 @@ export class Game {
   private readonly graphDebug = new GraphDebug();
   private readonly labels = new MapLabels();
   private readonly industries = new IndustryRenderer();
+  private readonly bridges = new BridgeRenderer();
   private readonly floaters = new FloatingTexts();
   private readonly trains = new TrainRenderer();
   private readonly signals = new SignalRenderer();
@@ -73,10 +76,15 @@ export class Game {
     this.tools = new Tools(this.sim, this.overlay);
 
     const world = this.world;
-    this.mapRenderer = new MapRenderer(state.map, () => this.sim.state.depots);
+    this.mapRenderer = new MapRenderer(
+      state.map,
+      () => this.sim.state.depots,
+      () => this.sim.state.bridges,
+    );
     world.addChild(
       this.mapRenderer.container,
       this.industries.gfx,
+      this.bridges.gfx,
       this.graphDebug.gfx,
       this.overlay.container,
       this.signals.gfx,
@@ -87,6 +95,7 @@ export class Game {
     this.loop.onBeforeStep = () => this.trains.capture(this.sim.state);
     this.labels.rebuild(state);
     this.industries.draw(state.industries);
+    this.bridges.draw(state);
     app.stage.addChild(world);
 
     this.camera = new Camera(world, state.map.width, state.map.height);
@@ -239,6 +248,7 @@ export class Game {
     for (const ev of events) {
       if (ev.type === 'tileChanged') this.mapRenderer.markTileDirty(ev.x, ev.y);
       else if (ev.type === 'stationsChanged') this.labels.rebuild(this.sim.state);
+      else if (ev.type === 'bridgesChanged') this.bridges.draw(this.sim.state);
       else if (ev.type === 'income') this.floaters.spawn(`+${formatMoney(ev.amount)}`, ev.x, ev.y);
       else if (ev.type === 'commandFailed') {
         showMessage(FAIL_MESSAGES[ev.reason]);

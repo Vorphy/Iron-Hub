@@ -22,6 +22,7 @@ const TOOLS: { tool: Tool; icon: string; name: string; key: string }[] = [
   { tool: 'depot', icon: '⌂', name: 'Zajezdnia', key: 'Z' },
   { tool: 'signal', icon: '⊙', name: 'Semafor', key: 'B' },
   { tool: 'terrain', icon: '⛰', name: 'Teren', key: 'L' },
+  { tool: 'bridge', icon: '⌒', name: 'Most', key: 'M' },
   { tool: 'bulldozer', icon: '✖', name: 'Rozbiórka', key: 'X' },
 ];
 
@@ -37,8 +38,10 @@ const TOOL_HELP: Record<Tool, string> = {
     'Klik na tor stawia semafor ścieżkowy (200 zł); kolejne kliknięcia zmieniają kierunek. Pociąg może stanąć tylko przed semaforem, na końcu peronu lub toru · V – podgląd rezerwacji',
   terrain:
     'Podnieś / Obniż: klik zmienia o poziom narożnik najbliższy kursorowi (sąsiedni teren dopasuje się sam). Wyrównaj: przeciągnij prostokąt – teren do wysokości punktu startowego. 30 zł za narożnik',
+  bridge:
+    'Przeciągnij od przyczółka do przyczółka (wzdłuż osi, max 14 kafelków). Przyczółki płaskie lub wznoszące się w stronę mostu, na tej samej wysokości; pod mostem teren co najmniej poziom niżej. 400 zł za kafelek',
   orders: 'Klikaj stacje, aby dopisać je do rozkładu pociągu · Esc – koniec',
-  bulldozer: 'Klik – usuń element toru pod kursorem, zajezdnię, kafelek stacji, dom lub oczyść nieużytek · przeciągnięcie – rozbierz odcinek toru (zwrot 25%)',
+  bulldozer: 'Klik – usuń element toru pod kursorem, most (przyczółek), zajezdnię, kafelek stacji, dom lub oczyść nieużytek · przeciągnięcie – rozbierz odcinek toru (zwrot 25%)',
 };
 
 const MESSAGE_MS = 2500;

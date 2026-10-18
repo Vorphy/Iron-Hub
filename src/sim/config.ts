@@ -19,6 +19,11 @@ export const HOUSE_DEMOLISH_COST = 500;
 /** Koszt zmiany wysokości jednego narożnika terenu. */
 export const TERRAFORM_COST = 30;
 
+/** Koszt jednego kafelka mostu (przyczółki i pomost). */
+export const BRIDGE_TILE_COST = 400;
+/** Najdłuższy most (z przyczółkami). */
+export const MAX_BRIDGE_LENGTH = 14;
+
 /** Koszt zajezdni. */
 export const DEPOT_COST = 1000;
 
