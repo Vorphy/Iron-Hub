@@ -60,6 +60,12 @@ export interface Train {
   waitTicks: number;
   /** Cena zakupu (do sprzedaży). */
   value: number;
+  /** Ile ticków pociąg stoi, czekając na wolny tor (0 – nie czeka). */
+  blockedTicks: number;
+  /** Pociąg, przez który czeka (null – brak). Do wykrywania zakleszczeń. */
+  blockedBy: number | null;
+  /** Gracz kazał zawrócić: pociąg hamuje i zawraca po zatrzymaniu. */
+  reverseRequested: boolean;
   /** Ładunek, po jednym wpisie na wagon (w kolejności `wagons`). */
   loads: WagonLoad[];
 }
@@ -115,6 +121,9 @@ export function buyTrain(
     waitTicks: 0,
     value: plan.cost,
     loads: wagons.map(() => ({ amount: 0, source: 0, loadedTick: 0 })),
+    blockedTicks: 0,
+    blockedBy: null,
+    reverseRequested: false,
   });
   spend(state, 'construction', plan.cost);
   events.push({ type: 'trainsChanged' });
@@ -182,6 +191,14 @@ export function stopTrain(state: GameState, trainId: number): CommandResult {
   const train = trainById(state, trainId);
   if (!train) return { ok: false, reason: 'blocked' };
   train.stopped = true;
+  return { ok: true };
+}
+
+/** Zawróć: pociąg na torze hamuje i zawraca; na stacji zawraca od razu. */
+export function requestReverse(state: GameState, trainId: number): CommandResult {
+  const train = trainById(state, trainId);
+  if (!train || train.status === 'depot') return { ok: false, reason: 'blocked' };
+  train.reverseRequested = true;
   return { ok: true };
 }
 

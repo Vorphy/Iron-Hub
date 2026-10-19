@@ -14,7 +14,7 @@ import { engineDef, wagonDef } from './trains/vehicles';
 import { MAX_HEIGHT } from './world/height';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -150,6 +150,11 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     d.tunnels = [];
     d.nextTunnelId = 1;
     d.version = 8;
+  }
+  if (d.version === 8) {
+    // v9: czekanie i zawracanie pociągów w stanie gry
+    mapTrains((t) => ({ ...t, blockedTicks: 0, blockedBy: null, reverseRequested: false }));
+    d.version = 9;
   }
   return d as Partial<SerializedState>;
 }
@@ -298,7 +303,10 @@ function isTrain(v: unknown): v is Train {
     isNum(t.value) &&
     Array.isArray(t.loads) &&
     t.loads.length === t.wagons.length &&
-    t.loads.every(isLoad)
+    t.loads.every(isLoad) &&
+    isInt(t.blockedTicks) &&
+    (t.blockedBy === null || isInt(t.blockedBy)) &&
+    typeof t.reverseRequested === 'boolean'
   );
 }
 

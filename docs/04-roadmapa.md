@@ -81,4 +81,4 @@ Etapy są ułożone tak, żeby po każdym istniała działająca, testowalna wer
 - ~~przy torach tak jak przy semaforach budowanie i usuwanie torów, żeby nie trzeba niszczyć całości tylko wybrany w danym kierunku.~~ ✅ (Tory → Usuń, buldożer)
 - ~~mapa niech pamięta ostatnie ustawienie, zoom i pozycje kamery~~ ✅ (zapisywane razem z grą)
 - rozmiar mapy zobaczymy jak duża żeby zasobów komputera wystarczyło :)
-- zawracanie pociągu jak się zakleszczą!!! WAŻNE!!!
+- ~~zawracanie pociągu jak się zakleszczą!!! WAŻNE!!!~~ ✅ (automatycznie po 3 dniach zakleszczenia + przycisk Zawróć)

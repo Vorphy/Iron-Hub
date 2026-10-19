@@ -55,7 +55,8 @@ Wartości liczbowe w tym dokumencie są **startowe** – do strojenia w trakcie 
 - Rezerwacja jest dokładana **porcjami** – każda porcja kończy się w bezpiecznym miejscu zatrzymania i jest brana tylko w całości. Pociąg stara się mieć zarezerwowaną drogę hamowania z prędkości maksymalnej; jeśli następna porcja jest zajęta, hamuje i czeka (status „Czeka na wolny tor”).
 - Trasa omija tory zajęte przez inne pociągi (kara w wyszukiwaniu) – np. na stacji z kilkoma peronami pociąg wybiera wolny.
 - Wyjazd z zajezdni następuje dopiero, gdy wyjazd jest wolny („Czeka na wyjazd z zajezdni”).
-- Pociągi jadące naprzeciw siebie po jednym torze zatrzymują się i blokują (jak w OpenTTD) – na liniach z ruchem w obie strony potrzebne są mijanki lub dwa tory.
+- **Zakleszczenie** (pociągi czekają na siebie w koło, np. naprzeciw siebie na jednym torze): po **3 dniach** postoju zawraca pociąg o najniższym numerze w zakleszczeniu i szuka innej drogi. Zwykła kolejka za pociągiem stojącym na stacji nie jest zakleszczeniem – nikt nie zawraca. Na liniach z ruchem w obie strony nadal warto budować mijanki lub dwa tory.
+- **Zawróć** (okno pociągu): pociąg hamuje i zawraca; na stacji zawraca od razu.
 - Podgląd rezerwacji: klawisz **V** (kolory pociągów; jaśniej – tor pod pociągiem, mocniej – rezerwacja przed nim).
 
 ### Tryb Amator (domyślny)

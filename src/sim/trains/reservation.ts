@@ -46,6 +46,13 @@ export function isFree(state: GameState, taken: Taken, s: Step, trainId: number)
   return !list || list.every((e) => e.train === trainId || !piecesConflict(e.track, s.track));
 }
 
+/** Pociąg zajmujący lub rezerwujący element kolidujący z `s` (null – wolne). */
+export function blockerOf(state: GameState, taken: Taken, s: Step, trainId: number): number | null {
+  const list = taken.get(s.y * state.map.width + s.x);
+  const hit = list?.find((e) => e.train !== trainId && piecesConflict(e.track, s.track));
+  return hit ? hit.train : null;
+}
+
 /**
  * Czy pociąg może bezpiecznie stanąć czołem na końcu odcinka `s` (tam kończy się porcja rezerwacji).
  * Amator: każdy zwykły kafelek z jednym elementem toru (nie zwrotnica, nie skrzyżowanie).

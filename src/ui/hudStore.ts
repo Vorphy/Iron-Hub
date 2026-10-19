@@ -191,6 +191,7 @@ export interface HudActions {
   startTrain(trainId: number): void;
   stopTrain(trainId: number): void;
   sendToDepot(trainId: number): void;
+  reverseTrain(trainId: number): void;
   setOrders(trainId: number, orders: number[]): void;
   /** Włącza/wyłącza wskazywanie stacji do rozkładu. */
   pickOrders(trainId: number): void;

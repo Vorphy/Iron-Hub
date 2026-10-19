@@ -4,6 +4,7 @@ import {
   BEND_SPEED,
   BRAKE_KMH_PER_TICK,
   CREEP_SPEED,
+  DEADLOCK_REVERSE_TICKS,
   PHYS_DT,
   RESERVE_RETRY_TICKS,
   STATION_WAIT_TICKS,
@@ -15,7 +16,7 @@ import { SignalIndex } from '../signals/signals';
 import type { GameState } from '../state';
 import { trainLength } from './geometry';
 import { planRoute, type Plan } from './path';
-import { addTaken, buildTaken, isFree, isSafeStop, type Taken } from './reservation';
+import { addTaken, blockerOf, buildTaken, isFree, isSafeStop, type Taken } from './reservation';
 import { flipStep, isBend, stepHeight, stepLength } from './steps';
 import { STRAIGHT_LENGTH } from '../track/graph';
 import { depotExit, leaveDepot, type Step, type Train } from './train';
@@ -23,11 +24,10 @@ import { consistStats, engineDef } from './vehicles';
 
 /**
  * Informacje o pociągach dla interfejsu (stan pochodny, nie trafia do zapisu i nie wpływa
- * na symulację): czy pociąg nie może dojechać do celu, czy czeka na wolny tor.
+ * na symulację): czy pociąg nie może dojechać do celu. Czekanie na wolny tor jest w stanie pociągu.
  */
 export class Planner {
   private lost = new Set<number>();
-  private waiting = new Set<number>();
 
   /** Zostawione dla zgodności z Simulation – trasy nie są już pamiętane między tickami. */
   invalidate(): void {}
@@ -36,19 +36,11 @@ export class Planner {
     return this.lost.has(trainId);
   }
 
-  isWaiting(trainId: number): boolean {
-    return this.waiting.has(trainId);
-  }
-
   setLost(trainId: number, lost: boolean): void {
     if (lost) this.lost.add(trainId);
     else this.lost.delete(trainId);
   }
 
-  setWaiting(trainId: number, waiting: boolean): void {
-    if (waiting) this.waiting.add(trainId);
-    else this.waiting.delete(trainId);
-  }
 }
 
 interface TickContext {
@@ -67,6 +59,11 @@ export function tickTrains(state: GameState, planner: Planner, events: SimEvent[
       if (!train.stopped) tryLeaveDepot(ctx, train);
       continue;
     }
+    if (train.status === 'loading' && train.reverseRequested) {
+      // Na stacji pociąg stoi – zawraca od razu i ładuje dalej.
+      reverseTrain(train);
+      train.reverseRequested = false;
+    }
     if (train.status === 'loading') {
       if (--train.waitTicks <= 0) {
         // Przed odjazdem dobieramy ładunek, który pojawił się w czasie postoju.
@@ -78,18 +75,48 @@ export function tickTrains(state: GameState, planner: Planner, events: SimEvent[
     }
     moveTrain(ctx, train);
   }
+  resolveDeadlocks(state);
+}
+
+/** Pociąg czeka (stoi przed zajętym torem). */
+export function isWaiting(train: Train): boolean {
+  return train.blockedTicks > 0;
+}
+
+/**
+ * Zakleszczenie: pociągi czekające na siebie w koło (A na B, B na A…). Po DEADLOCK_REVERSE_TICKS
+ * zawraca jeden – o najniższym numerze – i szuka innej drogi. Zwykła kolejka (na końcu łańcucha
+ * pociąg, który nie czeka, np. stoi na stacji) nie jest zakleszczeniem.
+ */
+function resolveDeadlocks(state: GameState): void {
+  const byId = new Map(state.trains.map((t) => [t.id, t]));
+  for (const train of state.trains) {
+    if (train.blockedTicks < DEADLOCK_REVERSE_TICKS || train.speed > 0) continue;
+    const cycle = [train.id];
+    let cur = byId.get(train.blockedBy ?? -1);
+    while (cur && isWaiting(cur) && !cycle.includes(cur.id)) {
+      cycle.push(cur.id);
+      cur = byId.get(cur.blockedBy ?? -1);
+    }
+    // Koło zamyka się na tym pociągu, a on ma najniższy numer w kole – zawraca.
+    if (cur?.id === train.id && Math.min(...cycle) === train.id) {
+      reverseTrain(train);
+      train.mayReverse = false;
+    }
+  }
 }
 
 /** Pociąg czekający na wyjazd wyjeżdża, gdy wyjazd z zajezdni jest wolny. */
 function tryLeaveDepot(ctx: TickContext, train: Train): void {
   const exit = depotExit(ctx.state, train);
   if (!exit || !isFree(ctx.state, ctx.taken, exit, train.id)) {
-    ctx.planner.setWaiting(train.id, true);
+    train.blockedTicks = Math.max(1, train.blockedTicks + 1);
     return;
   }
   leaveDepot(train, exit, ctx.events);
   addTaken(ctx.state, ctx.taken, exit, train.id);
-  ctx.planner.setWaiting(train.id, false);
+  train.blockedTicks = 0;
+  train.blockedBy = null;
 }
 
 function departStation(train: Train): void {
@@ -135,16 +162,24 @@ function reservedDistance(train: Train): number {
 
 function moveTrain(ctx: TickContext, train: Train): void {
   const { state } = ctx;
-  if (!train.stopped && !train.resTerminal && reservedDistance(train) < reserveDistance(train)) {
+  // Zawracanie na polecenie gracza: najpierw hamujemy, po zatrzymaniu zawracamy.
+  if (train.reverseRequested && train.speed === 0) {
+    reverseTrain(train);
+    train.reverseRequested = false;
+    train.mayReverse = false;
+    return;
+  }
+  if (!train.stopped && !train.reverseRequested && !train.resTerminal && reservedDistance(train) < reserveDistance(train)) {
     // Czekający pociąg ponawia próbę co kilka ticków (mniej liczenia tras).
-    const retry = !ctx.planner.isWaiting(train.id) || (state.tick + train.id) % RESERVE_RETRY_TICKS === 0;
+    const retry = !isWaiting(train) || (state.tick + train.id) % RESERVE_RETRY_TICKS === 0;
     if (retry && extendReservation(ctx, train) === 'reversed') return;
   }
+  if (isWaiting(train) && train.speed === 0) train.blockedTicks++;
 
   const maxSpeed = engineDef(train.engine)!.maxSpeed;
   const head = train.trail[0]!;
   const dist = reservedDistance(train);
-  let target = train.stopped ? 0 : maxSpeed;
+  let target = train.stopped || train.reverseRequested ? 0 : maxSpeed;
   // Łuki na zarezerwowanej drodze.
   let d = stepLength(head) - train.progress;
   let prev = head;
@@ -185,6 +220,10 @@ function moveTrain(ctx: TickContext, train: Train): void {
 function extendReservation(ctx: TickContext, train: Train): 'ok' | 'blocked' | 'reversed' {
   const { state, planner } = ctx;
   const from = train.reservedAhead[train.reservedAhead.length - 1] ?? train.trail[0]!;
+  const clearWaiting = () => {
+    train.blockedTicks = 0;
+    train.blockedBy = null;
+  };
   const plan: Plan = planRoute(state, train, {
     from,
     allowReverseStart: train.mayReverse && train.reservedAhead.length === 0,
@@ -196,7 +235,7 @@ function extendReservation(ctx: TickContext, train: Train): 'ok' | 'blocked' | '
   if (plan.terminal === 'reverseNow') {
     reverseTrain(train);
     train.mayReverse = false;
-    planner.setWaiting(train.id, false);
+    clearWaiting();
     return 'reversed';
   }
 
@@ -211,8 +250,10 @@ function extendReservation(ctx: TickContext, train: Train): 'ok' | 'blocked' | '
       chunk.push(s);
       if (isSafeStop(state, s, ctx.signals)) break;
     }
-    if (!chunk.every((s) => isFree(state, ctx.taken, s, train.id))) {
-      planner.setWaiting(train.id, true);
+    const blocked = chunk.find((s) => !isFree(state, ctx.taken, s, train.id));
+    if (blocked) {
+      train.blockedTicks = Math.max(1, train.blockedTicks);
+      train.blockedBy = blockerOf(state, ctx.taken, blocked, train.id);
       return 'blocked';
     }
     for (const s of chunk) {
@@ -221,7 +262,7 @@ function extendReservation(ctx: TickContext, train: Train): 'ok' | 'blocked' | '
       have += stepLength(s);
     }
   }
-  planner.setWaiting(train.id, false);
+  clearWaiting();
   // Cały plan zarezerwowany i kończy się celem – po dojechaniu pociąg wykona akcję końcową.
   if (i >= plan.steps.length && plan.terminal !== 'continue') train.resTerminal = plan.terminal;
   return 'ok';
@@ -316,4 +357,6 @@ export function reverseTrain(train: Train): void {
   train.resTerminal = null;
   train.reversed = !train.reversed;
   train.speed = 0;
+  train.blockedTicks = 0;
+  train.blockedBy = null;
 }

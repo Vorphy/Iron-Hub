@@ -9,6 +9,7 @@ import { getTrackBits, tracksOn, type Side, type Track, type TrackPiece } from '
 import {
   buyTrain,
   occupiedTiles,
+  requestReverse,
   sellTrain,
   sendToDepot,
   setOrders,
@@ -33,6 +34,7 @@ export type Command =
   | { type: 'startTrain'; trainId: number }
   | { type: 'stopTrain'; trainId: number }
   | { type: 'sendToDepot'; trainId: number }
+  | { type: 'reverseTrain'; trainId: number }
   | { type: 'setOrders'; trainId: number; orders: number[] }
   | { type: 'placeSignal'; x: number; y: number; track: Track; oneWay: boolean }
   | { type: 'removeSignal'; x: number; y: number; track: Track }
@@ -106,6 +108,8 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
       return stopTrain(state, cmd.trainId);
     case 'sendToDepot':
       return sendToDepot(state, cmd.trainId);
+    case 'reverseTrain':
+      return requestReverse(state, cmd.trainId);
     case 'setOrders':
       return setOrders(state, cmd.trainId, cmd.orders);
     case 'placeSignal':

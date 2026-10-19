@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { SIGNAL_COST } from '../src/sim/config';
+import { DEADLOCK_REVERSE_TICKS, SIGNAL_COST } from '../src/sim/config';
 import { deserializeState, serializeState } from '../src/sim/serialize';
 import { Simulation } from '../src/sim/simulation';
 import { createGame } from '../src/sim/state';
 import { Side, Track, type TrackPiece } from '../src/sim/track/track';
+import { isWaiting } from '../src/sim/trains/movement';
 import { piecesConflict } from '../src/sim/trains/reservation';
 import type { Train } from '../src/sim/trains/train';
 import { Terrain } from '../src/sim/world/map';
@@ -82,22 +83,49 @@ describe('tryb Amator (automatyczna sygnalizacja)', () => {
     run(sim, 3000);
     expect(a.status).toBe('loading');
     expect(b.status).toBe('running');
-    expect(sim.planner.isWaiting(b.id)).toBe(true);
+    expect(isWaiting(b)).toBe(true);
     // Drugi stoi tuż przed peronem zajętym przez pierwszego.
     expect(b.trail[0]!.x).toBeLessThan(a.trail[a.trail.length - 1]!.x);
     expect(b.trail[0]!.x).toBeGreaterThan(15);
   });
 
-  it('pociągi naprzeciw siebie na jednym torze stają, ale się nie zderzają', () => {
+  it('zakleszczenie naprzeciw siebie: po 3 dniach zawraca pociąg o niższym numerze, bez kolizji', () => {
     const sim = lineSim();
     sim.enqueue({ type: 'buildDepot', x: 31, y: 5, side: Side.NW });
     sim.step();
     const a = addTrain(sim, 1, [2]);
     const b = addTrain(sim, 2, [1]);
-    run(sim, 3000);
-    // Zakleszczenie jak w OpenTTD: oba czekają.
-    expect(sim.planner.isWaiting(a.id) || a.status === 'loading').toBe(true);
-    expect(sim.planner.isWaiting(b.id) || b.status === 'loading').toBe(true);
+    // Oba stają, czekając na siebie nawzajem; po ~3 dniach pierwszy zawraca pociąg nr 1.
+    let deadlockTick = -1;
+    let first: { id: number; tick: number } | null = null;
+    let ra = a.reversed;
+    let rb = b.reversed;
+    run(sim, 3000, () => {
+      if (deadlockTick < 0 && a.blockedBy === b.id && b.blockedBy === a.id) deadlockTick = sim.state.tick;
+      if (deadlockTick > 0 && !first) {
+        if (a.reversed !== ra) first = { id: a.id, tick: sim.state.tick };
+        else if (b.reversed !== rb) first = { id: b.id, tick: sim.state.tick };
+      }
+      ra = a.reversed;
+      rb = b.reversed;
+    });
+    expect(deadlockTick).toBeGreaterThan(0);
+    expect(first).not.toBeNull();
+    expect(first!.id).toBe(a.id);
+    expect(first!.tick - deadlockTick).toBeGreaterThanOrEqual(DEADLOCK_REVERSE_TICKS - 20);
+    // Licznik rusza od zatrzymania (najpierw pociąg hamuje), stąd zapas.
+    expect(first!.tick - deadlockTick).toBeLessThan(DEADLOCK_REVERSE_TICKS + 150);
+  });
+
+  it('kolejka za pociągiem stojącym na stacji to nie zakleszczenie – nikt nie zawraca', () => {
+    const sim = lineSim();
+    const a = addTrain(sim, 1, [2]);
+    const b = addTrain(sim, 1, [2]);
+    run(sim, 6000);
+    expect(isWaiting(b)).toBe(true);
+    expect(b.blockedTicks).toBeGreaterThan(1000);
+    expect(b.reversed).toBe(false);
+    expect(a.status).toBe('loading');
   });
 
   it('na stacji z dwoma peronami drugi pociąg wybiera wolny peron', () => {
@@ -195,5 +223,77 @@ describe('zapis z rezerwacjami i semaforami', () => {
       b.step();
     }
     expect(serializeState(b.state)).toEqual(serializeState(sim.state));
+  });
+});
+
+describe('zawracanie na polecenie', () => {
+  it('jadący pociąg hamuje, zawraca i jedzie w drugą stronę', () => {
+    const sim = lineSim();
+    const a = addTrain(sim, 1, [2]);
+    run(sim, 400);
+    expect(a.speed).toBeGreaterThan(20);
+    const x = a.trail[0]!.x;
+    sim.enqueue({ type: 'reverseTrain', trainId: a.id });
+    let stopped = false;
+    run(sim, 400, () => {
+      if (a.speed === 0 && !stopped) stopped = true;
+    });
+    expect(stopped).toBe(true);
+    expect(a.reversed).toBe(true);
+    expect(a.reverseRequested).toBe(false);
+    // Pojechał z powrotem (na zachód), a potem zawróci do celu na końcu toru.
+    const minX = Math.min(...a.trail.map((s) => s.x));
+    expect(minX).toBeLessThan(x);
+  });
+
+  it('pociąg na stacji zawraca od razu', () => {
+    const sim = lineSim();
+    const a = addTrain(sim, 1, [2]);
+    for (let i = 0; i < 4000 && a.status !== 'loading'; i++) sim.step();
+    expect(a.status).toBe('loading');
+    sim.enqueue({ type: 'reverseTrain', trainId: a.id });
+    sim.step();
+    expect(a.reversed).toBe(true);
+    expect(a.status).toBe('loading');
+  });
+});
+
+describe('ruch w obie strony z mijanką', () => {
+  it('dwa pociągi jeżdżą naprzeciw siebie i regularnie obsługują stacje (bez trwałej blokady)', () => {
+    const state = createGame({ width: 40, height: 12, seed: 1, empty: true });
+    state.map.terrain.fill(Terrain.Grass);
+    const sim = new Simulation(state);
+    sim.enqueue({
+      type: 'buildTrack',
+      pieces: [
+        ...xLine(1, 30, 5),
+        { x: 10, y: 5, track: Track.Left },
+        { x: 10, y: 6, track: Track.Right },
+        ...xLine(11, 19, 6),
+        { x: 20, y: 6, track: Track.Upper },
+        { x: 20, y: 5, track: Track.Lower },
+      ],
+    });
+    sim.enqueue({ type: 'buildDepot', x: 0, y: 5, side: Side.SE });
+    sim.enqueue({ type: 'buildDepot', x: 31, y: 5, side: Side.NW });
+    sim.enqueue({ type: 'buildStation', x0: 2, y0: 5, x1: 4, y1: 5, axis: 'x' });
+    sim.enqueue({ type: 'buildStation', x0: 26, y0: 5, x1: 28, y1: 5, axis: 'x' });
+    sim.step();
+    const a = addTrain(sim, 1, [1, 2]);
+    const b = addTrain(sim, 2, [2, 1]);
+    const stops = new Map<number, number>([
+      [a.id, 0],
+      [b.id, 0],
+    ]);
+    const was = new Map<number, boolean>();
+    run(sim, 20000, () => {
+      for (const t of [a, b]) {
+        const loading = t.status === 'loading';
+        if (loading && !was.get(t.id)) stops.set(t.id, stops.get(t.id)! + 1);
+        was.set(t.id, loading);
+      }
+    });
+    expect(stops.get(a.id)).toBeGreaterThanOrEqual(4);
+    expect(stops.get(b.id)).toBeGreaterThanOrEqual(4);
   });
 });

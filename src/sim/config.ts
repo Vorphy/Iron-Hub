@@ -56,6 +56,11 @@ export const REVERSE_PENALTY = 64;
 export const BEND_PENALTY = 2;
 /** Kara za element toru zajęty przez inny pociąg – trasa omija zajęte perony i tory. */
 export const OCCUPIED_PENALTY = 48;
+/**
+ * Zakleszczenie (pociągi czekają na siebie nawzajem): po tylu tickach czekania zawraca pociąg
+ * o najniższym numerze w zakleszczeniu (120 = 3 dni gry).
+ */
+export const DEADLOCK_REVERSE_TICKS = 120;
 /** Czekający pociąg ponawia próbę rezerwacji co tyle ticków. */
 export const RESERVE_RETRY_TICKS = 10;
 

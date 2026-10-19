@@ -50,6 +50,9 @@ export function TrainWindow({ data: t, actions }: { data: TrainWindowData; actio
         >
           {t.inDepot ? (running ? '■ Anuluj wyjazd' : '▶ Wyjedź') : running ? '■ Stop' : '▶ Start'}
         </button>
+        <button disabled={t.inDepot} title="Zawróć (pociąg najpierw zahamuje)" onClick={() => actions.reverseTrain(id)}>
+          ⟲ Zawróć
+        </button>
         <button disabled={t.inDepot} class={t.goToDepot ? 'active' : ''} onClick={() => actions.sendToDepot(id)}>
           ⌂ Do zajezdni
         </button>

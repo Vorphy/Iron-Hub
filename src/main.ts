@@ -109,6 +109,7 @@ const actions: HudActions = {
   startTrain: (trainId) => game?.command({ type: 'startTrain', trainId }),
   stopTrain: (trainId) => game?.command({ type: 'stopTrain', trainId }),
   sendToDepot: (trainId) => game?.command({ type: 'sendToDepot', trainId }),
+  reverseTrain: (trainId) => game?.command({ type: 'reverseTrain', trainId }),
   setOrders: (trainId, orders) => game?.command({ type: 'setOrders', trainId, orders }),
   pickOrders: (trainId) => game?.pickOrders(trainId),
   focusTrain: (trainId) => game?.focusTrain(trainId),
