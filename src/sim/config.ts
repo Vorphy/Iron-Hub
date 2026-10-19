@@ -1,43 +1,35 @@
-// Parametry gry – wartości startowe, do strojenia.
+// Parametry gry. Kwoty i reguły ekonomii są w src/data/economy.ts – tu tylko je udostępniamy
+// pod dotychczasowymi nazwami; poniżej limity budowy i fizyka ruchu.
+import { ECONOMY } from '../data/economy';
 
-export const START_MONEY = 100_000;
-export const CLEAR_ROUGH_COST = 50;
+const C = ECONOMY.construction;
 
-/** Koszt jednego elementu toru (prosty lub łuk). */
-export const TRACK_COST = 100;
-/** Koszt jednego kafelka peronu (razem z torem). */
-export const STATION_TILE_COST = 300;
+export const START_MONEY = ECONOMY.startMoney;
+export const CLEAR_ROUGH_COST = C.clearRough;
+export const TRACK_COST = C.trackPiece;
+export const STATION_TILE_COST = C.stationTile;
+export const HOUSE_DEMOLISH_COST = C.demolishHouse;
+export const TERRAFORM_COST = C.terraformCorner;
+export const BRIDGE_TILE_COST = C.bridgeTile;
+export const TUNNEL_TILE_COST = C.tunnelTile;
+export const DEPOT_COST = C.depot;
+export const SIGNAL_COST = C.signal;
+export const TRAIN_RESALE_RATE = ECONOMY.refunds.trainResale;
+export const TRACK_REFUND_RATE = ECONOMY.refunds.demolition;
+
+// --- Limity budowy ---
+
 /** Maksymalna długość peronu i liczba torów stacji. */
 export const STATION_MAX_LENGTH = 12;
 export const STATION_MAX_PLATFORMS = 6;
 /** Zasięg stacji w kafelkach od krawędzi peronów. */
 export const CATCHMENT_RADIUS = 4;
 
-/** Koszt wyburzenia domu. */
-export const HOUSE_DEMOLISH_COST = 500;
-
-/** Koszt zmiany wysokości jednego narożnika terenu. */
-export const TERRAFORM_COST = 30;
-
-/** Koszt jednego kafelka mostu (przyczółki i pomost). */
-export const BRIDGE_TILE_COST = 400;
-/** Najdłuższy most (z przyczółkami). */
+/** Najdłuższy most (z przyczółkami) i tunel. */
 export const MAX_BRIDGE_LENGTH = 14;
-
-/** Koszt jednego kafelka tunelu (z portalami) i najdłuższy tunel. */
-export const TUNNEL_TILE_COST = 600;
 export const MAX_TUNNEL_LENGTH = 20;
-
-/** Koszt zajezdni. */
-export const DEPOT_COST = 1000;
-
 /** Maksymalna liczba wagonów w składzie. */
 export const MAX_WAGONS = 10;
-/** Jaka część ceny pociągu wraca przy sprzedaży. */
-export const TRAIN_RESALE_RATE = 0.75;
-
-/** Jaka część kosztu wraca przy rozbiórce toru lub stacji. */
-export const TRACK_REFUND_RATE = 0.25;
 
 // --- Ruch pociągów (wartości startowe do strojenia) ---
 
@@ -66,5 +58,4 @@ export const BEND_PENALTY = 2;
 export const OCCUPIED_PENALTY = 48;
 /** Czekający pociąg ponawia próbę rezerwacji co tyle ticków. */
 export const RESERVE_RETRY_TICKS = 10;
-/** Koszt semafora. */
-export const SIGNAL_COST = 200;
+

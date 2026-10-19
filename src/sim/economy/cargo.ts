@@ -1,3 +1,5 @@
+import { ECONOMY } from '../../data/economy';
+
 export type Cargo = 'passengers' | 'mail' | 'coal' | 'ore' | 'goods' | 'wood';
 
 export const CARGOS: readonly Cargo[] = ['passengers', 'mail', 'coal', 'ore', 'goods', 'wood'];
@@ -13,14 +15,14 @@ export interface CargoDef {
   color: string;
 }
 
-/** Wartości startowe – do strojenia. */
+/** Nazwy i kolory ładunków; stawki i dni – z pliku ekonomii (src/data/economy.ts). */
 export const CARGO_DEFS: Record<Cargo, CargoDef> = {
-  passengers: { name: 'pasażerowie', unit: 'os.', rate: 3.0, fastDays: 10, color: '#e9c46a' },
-  mail: { name: 'poczta', unit: 'worków', rate: 4.5, fastDays: 8, color: '#f4a261' },
-  coal: { name: 'węgiel', unit: 't', rate: 1.8, fastDays: 30, color: '#3a3a3a' },
-  ore: { name: 'ruda', unit: 't', rate: 1.9, fastDays: 30, color: '#8a5a3c' },
-  goods: { name: 'towary', unit: 'skrzyń', rate: 3.2, fastDays: 15, color: '#6b4f2e' },
-  wood: { name: 'drewno', unit: 't', rate: 1.7, fastDays: 30, color: '#8c7a5a' },
+  passengers: { name: 'pasażerowie', unit: 'os.', color: '#e9c46a', ...ECONOMY.cargo.passengers },
+  mail: { name: 'poczta', unit: 'worków', color: '#f4a261', ...ECONOMY.cargo.mail },
+  coal: { name: 'węgiel', unit: 't', color: '#3a3a3a', ...ECONOMY.cargo.coal },
+  ore: { name: 'ruda', unit: 't', color: '#8a5a3c', ...ECONOMY.cargo.ore },
+  goods: { name: 'towary', unit: 'skrzyń', color: '#6b4f2e', ...ECONOMY.cargo.goods },
+  wood: { name: 'drewno', unit: 't', color: '#8c7a5a', ...ECONOMY.cargo.wood },
 };
 
 export function isCargo(v: unknown): v is Cargo {

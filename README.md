@@ -42,6 +42,7 @@ src/persistence/  zapis w IndexedDB i do pliku
 src/tools.ts  narzędzia gracza (podgląd + komendy)
 src/ui/       interfejs w Preact
 src/loop.ts   stały krok symulacji (20 ticków/s) i prędkości gry
+src/data/     dane: economy.ts (cała ekonomia – ceny, stawki, %), vehicles.json, industries.json
 tests/        testy jednostkowe
 ```
 

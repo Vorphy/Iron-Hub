@@ -5,7 +5,8 @@ import { Simulation } from '../src/sim/simulation';
 import { createGame } from '../src/sim/state';
 import { Side } from '../src/sim/track/track';
 import { resaleValue, trainsInDepot } from '../src/sim/trains/train';
-import { consistStats, ENGINES, WAGONS } from '../src/sim/trains/vehicles';
+import { ECONOMY } from '../src/data/economy';
+import { consistStats, engineDef, engineRunningCost, ENGINES, WAGONS } from '../src/sim/trains/vehicles';
 import { Terrain } from '../src/sim/world/map';
 
 function simWithDepot(): Simulation {
@@ -26,6 +27,22 @@ describe('definicje pojazdów', () => {
     expect(new Set(ids).size).toBe(ids.length);
     for (const e of ENGINES) expect(e.power > 0 && e.maxSpeed > 0 && e.weight > 0 && e.length > 0).toBe(true);
     for (const w of WAGONS) expect(w.capacity > 0 && w.length > 0).toBe(true);
+  });
+
+  it('utrzymanie wynika z ceny i trakcji (plik ekonomii)', () => {
+    for (const e of ENGINES) {
+      const pct = ECONOMY.trainRunningCost.traction[e.traction];
+      expect(pct).toBeGreaterThan(0);
+      expect(engineRunningCost(e)).toBe(Math.round(e.cost * pct));
+    }
+    const { traction } = ECONOMY.trainRunningCost;
+    // Parowe najdroższe w utrzymaniu, elektryczne najtańsze.
+    expect(traction.steam).toBeGreaterThan(traction.diesel);
+    expect(traction.diesel).toBeGreaterThan(traction.electric);
+    const w = WAGONS[0]!;
+    expect(consistStats('iskra', [w.id]).runningCost).toBe(
+      engineRunningCost(engineDef('iskra')!) + Math.round(w.cost * ECONOMY.trainRunningCost.wagon),
+    );
   });
 });
 

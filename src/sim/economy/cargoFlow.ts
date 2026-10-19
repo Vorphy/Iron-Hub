@@ -1,7 +1,8 @@
 import type { SimEvent } from '../commands';
 import { catchment, type Station, type StationCargo } from '../station/station';
 import type { GameState } from '../state';
-import { TICKS_PER_DAY } from '../time';
+import { ECONOMY } from '../../data/economy';
+import { DAYS_PER_MONTH, TICKS_PER_DAY } from '../time';
 import type { Train } from '../trains/train';
 import { wagonDef } from '../trains/vehicles';
 import { CARGO_DEFS, type Cargo } from './cargo';
@@ -9,32 +10,23 @@ import { earn } from './finance';
 import { industryDef, industryTiles, monthlyProduction } from './industry';
 import { HOUSE_POPULATION } from './town';
 
-/** Stacja zbiera ładunek, jeśli pociąg z odpowiednim wagonem był na niej w ciągu tylu dni. */
-export const SERVICE_DAYS = 60;
-/** Ocena przy obsłudze co najwyżej co tyle dni – najwyższa. */
-const FREQUENT_DAYS = 7;
-const RATING_MAX = 0.95;
-const RATING_MIN = 0.4;
-/** Ładunek czekający ponad tę ilość obniża ocenę stacji. */
-const CROWDED = 500;
-export const MAX_WAITING = 4000;
-/** Pasażerowie na miesiąc = mieszkańcy / 4, poczta = mieszkańcy / 16 (rozłożone na 30 dni). */
-const PASSENGER_DAY_DIVISOR = 120;
-const MAIL_DAY_DIVISOR = 480;
-/** Mieszkańców w zasięgu potrzebnych, by stacja przyjmowała dany ładunek. */
-const TOWN_ACCEPTANCE: Partial<Record<Cargo, number>> = { passengers: 1, mail: 100, goods: 200 };
-/** Po ilu dniach ponad czas „szybki” zapłata spada do minimum. */
-const LATE_DECAY_DAYS = 60;
-const MIN_TIME_FACTOR = 0.3;
+// Reguły z pliku ekonomii (src/data/economy.ts).
+const S = ECONOMY.station;
+export const SERVICE_DAYS = S.serviceDays;
+export const MAX_WAITING = S.maxWaiting;
+/** Pasażerowie i poczta na dzień (miesięczne wartości rozłożone na 30 dni). */
+const PASSENGER_DAY_DIVISOR = ECONOMY.town.passengerDivisor * DAYS_PER_MONTH;
+const MAIL_DAY_DIVISOR = ECONOMY.town.mailDivisor * DAYS_PER_MONTH;
+const TOWN_ACCEPTANCE: Partial<Record<Cargo, number>> = ECONOMY.town.acceptance;
 
 /** Ocena stacji dla ładunku (0–1); 0 – stacja nie obsługuje tego ładunku. */
 export function stationRating(state: GameState, sc: StationCargo | undefined): number {
   if (!sc || sc.lastPickup < 0) return 0;
   const days = (state.tick - sc.lastPickup) / TICKS_PER_DAY;
   if (days > SERVICE_DAYS) return 0;
-  const t = Math.max(0, (days - FREQUENT_DAYS) / (SERVICE_DAYS - FREQUENT_DAYS));
-  const rating = RATING_MAX - (RATING_MAX - RATING_MIN) * t;
-  return sc.waiting > CROWDED ? rating - 0.15 : rating;
+  const t = Math.max(0, (days - S.frequentDays) / (SERVICE_DAYS - S.frequentDays));
+  const rating = S.ratingMax - (S.ratingMax - S.ratingMin) * t;
+  return sc.waiting > S.crowdedAmount ? rating - S.crowdedPenalty : rating;
 }
 
 export function stationCenter(state: GameState, st: Station): { x: number; y: number } {
@@ -79,7 +71,8 @@ export function catchmentCargo(state: GameState, tiles: readonly number[]): { ac
 export function deliveryPayment(cargo: Cargo, amount: number, distanceTiles: number, days: number): number {
   const def = CARGO_DEFS[cargo];
   const late = Math.max(0, days - def.fastDays);
-  const timeFactor = Math.max(MIN_TIME_FACTOR, 1 - late / LATE_DECAY_DAYS);
+  const { lateDecayDays, minTimeFactor } = ECONOMY.delivery;
+  const timeFactor = Math.max(minTimeFactor, 1 - late / lateDecayDays);
   return Math.round(amount * def.rate * distanceTiles * timeFactor);
 }
 

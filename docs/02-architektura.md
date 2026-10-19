@@ -111,8 +111,9 @@ interface Train {
 ```
 Pozycja jest zapisana w układzie kafelków (jak w TTD), a nie jako krawędź grafu – dzięki temu przebudowa grafu po zmianie torów nie unieważnia pozycji pociągów. Graf służy do wyboru drogi na zwrotnicach. Wagony podążają za czołem w zadanych odstępach wzdłuż historii przebytej ścieżki.
 
-### Definicje danymi
-Pojazdy, typy przemysłu, ładunki i ich parametry są w `data/*.json` (wersjonowane, z ID). Dodatki płatne = dodatkowe pakiety definicji + grafik, ładowane tym samym mechanizmem.
+### Definicje danymi i konfiguracja ekonomii
+- **`src/data/economy.ts`** – jedno miejsce na całą ekonomię: pieniądze na start, ceny budowy, zwroty, utrzymanie infrastruktury, utrzymanie pociągów jako % ceny według trakcji (parowa / spalinowa / elektryczna), stawki ładunków, oceny stacji, wzrost miast, progi rozwoju fabryk. Plik TypeScript (a nie JSON), żeby mieć komentarze przy wartościach i sprawdzanie typów. `sim/config.ts` i moduły `sim/economy/` tylko czytają z niego wartości.
+- **`src/data/vehicles.json`, `src/data/industries.json`** – definicje konkretnych obiektów (cena, moc, trakcja pojazdu; rozmiar i produkcja zakładu), z ID. Dodatki płatne = dodatkowe pakiety definicji + grafik, ładowane tym samym mechanizmem.
 
 ## Rendering izometryczny
 

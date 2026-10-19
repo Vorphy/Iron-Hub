@@ -21,6 +21,7 @@
 | 15 | 2026-10-16 | Trasy pociągów: **Dijkstra po skierowanych elementach toru**, nie po węzłach grafu | Prostsze i odporne na zawracanie; przy obecnej skali szybkie. Graf węzłów zostaje do sygnalizacji (etap 3) |
 | 16 | 2026-10-16 | Tryb Amator = **ruchomy odstęp blokowy** (pociąg może stanąć na każdym zwykłym kafelku), zamiast automatycznego stawiania semaforów | Ten sam silnik co Ekspert, brak przypadków brzegowych z rozmieszczaniem semaforów, większa przepustowość |
 | 17 | 2026-10-16 | Trasa liczona przy dokładaniu rezerwacji (bez pamięci tras między tickami); uwzględnia zajętość torów | Wybór wolnego peronu; zachowany determinizm po wczytaniu |
+| 18 | 2026-10-19 | **Jeden plik konfiguracji ekonomii** `src/data/economy.ts`; utrzymanie pociągów jako % ceny według trakcji | Strojenie balansu w jednym miejscu; nowe rodzaje trakcji bez zmian w kodzie |
 
 ## Otwarte pytania
 

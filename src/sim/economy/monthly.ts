@@ -1,3 +1,4 @@
+import { ECONOMY } from '../../data/economy';
 import type { SimEvent } from '../commands';
 import { catchment } from '../station/station';
 import type { GameState } from '../state';
@@ -16,23 +17,16 @@ import {
 } from './industry';
 import { emptyTownMonth, MAX_HOUSE_LEVEL, type Town } from './town';
 
-/** Progi rozwoju fabryk (docs/03-mechaniki.md). */
-export const GROW_THRESHOLD = 0.75;
-export const DECLINE_THRESHOLD = 0.5;
-export const LEVEL_POINTS = 12;
-const HISTORY_MONTHS = 3;
-
-/** Utrzymanie infrastruktury na miesiąc (zł). */
-export const MAINTENANCE = { trackPiece: 2, stationTile: 10, depot: 30, signal: 1 } as const;
-
-/** Nowe domy w obsługiwanym mieście: 1 + do 3 zależnie od odsetka przewiezionych pasażerów. */
-const TOWN_GROWTH_MAX_EXTRA = 3;
-/** Szansa na dom w mieście bez kolei. */
-const UNSERVED_GROWTH_CHANCE = 0.1;
-/** Szansa na podniesienie poziomu domu w obsługiwanym mieście. */
-const UPGRADE_CHANCE = 0.4;
-/** Kafelki w zasięgu stacji są tyle razy bardziej prawdopodobne pod nowy dom. */
-const STATION_PULL = 6;
+// Reguły z pliku ekonomii (src/data/economy.ts).
+export const GROW_THRESHOLD = ECONOMY.industry.growThreshold;
+export const DECLINE_THRESHOLD = ECONOMY.industry.declineThreshold;
+export const LEVEL_POINTS = ECONOMY.industry.levelPoints;
+const HISTORY_MONTHS = ECONOMY.industry.historyMonths;
+export const MAINTENANCE = ECONOMY.maintenance;
+const TOWN_GROWTH_MAX_EXTRA = ECONOMY.town.growthMaxExtra;
+const UNSERVED_GROWTH_CHANCE = ECONOMY.town.unservedGrowthChance;
+const UPGRADE_CHANCE = ECONOMY.town.upgradeChance;
+const STATION_PULL = ECONOMY.town.stationPull;
 
 /** Zamknięcie miesiąca: rozwój fabryk i miast, koszty, bilans. Wywoływane na początku nowego miesiąca. */
 export function monthlyEconomy(state: GameState, events: SimEvent[]): void {

@@ -1,8 +1,9 @@
+import { ECONOMY } from '../../data/economy';
 import type { GameState } from '../state';
 import { inBounds } from '../world/map';
 
 /** Mieszkańcy domu w zależności od poziomu zabudowy (1–4). */
-export const HOUSE_POPULATION = [0, 20, 45, 80, 140] as const;
+export const HOUSE_POPULATION: readonly number[] = ECONOMY.town.housePopulation;
 export const MAX_HOUSE_LEVEL = 4;
 
 export interface TownMonth {

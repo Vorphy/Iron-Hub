@@ -1,3 +1,4 @@
+import { ECONOMY, type Traction } from '../../data/economy';
 import data from '../../data/vehicles.json';
 import { CARGO_DEFS, type Cargo } from '../economy/cargo';
 
@@ -16,8 +17,8 @@ export interface EngineDef {
   weight: number;
   length: number;
   cost: number;
-  /** Koszt eksploatacji na rok (zł), naliczany co miesiąc, gdy pociąg jest poza zajezdnią. */
-  runningCost: number;
+  /** Rodzaj trakcji – od niego zależy koszt utrzymania (src/data/economy.ts). */
+  traction: Traction;
   color: string;
 }
 
@@ -29,12 +30,22 @@ export interface WagonDef {
   weight: number;
   length: number;
   cost: number;
-  runningCost: number;
   color: string;
 }
 
+export const TRACTION_NAMES: Record<Traction, string> = { steam: 'parowa', diesel: 'spalinowa', electric: 'elektryczna' };
+
+/** Roczny koszt utrzymania lokomotywy: część ceny zależna od trakcji (plik ekonomii). */
+export function engineRunningCost(e: EngineDef): number {
+  return Math.round(e.cost * ECONOMY.trainRunningCost.traction[e.traction]);
+}
+
+export function wagonRunningCost(w: WagonDef): number {
+  return Math.round(w.cost * ECONOMY.trainRunningCost.wagon);
+}
+
 /** Definicje pojazdów pochodzą z pliku danych – dodatki to kolejne pliki tego typu. */
-export const ENGINES: readonly EngineDef[] = data.engines;
+export const ENGINES: readonly EngineDef[] = data.engines as EngineDef[];
 export const WAGONS: readonly WagonDef[] = data.wagons as WagonDef[];
 
 const engineById = new Map(ENGINES.map((e) => [e.id, e]));
@@ -58,6 +69,6 @@ export function consistStats(engine: string, wagons: readonly string[]) {
     length: e.length + ws.reduce((s, w) => s + w.length, 0),
     maxSpeed: e.maxSpeed,
     power: e.power,
-    runningCost: e.runningCost + ws.reduce((s, w) => s + w.runningCost, 0),
+    runningCost: engineRunningCost(e) + ws.reduce((s, w) => s + wagonRunningCost(w), 0),
   };
 }

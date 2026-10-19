@@ -1,5 +1,7 @@
 # 03 – Mechaniki gry
 
+> Wszystkie kwoty, stawki, odsetki i reguły ekonomii są w jednym pliku: **`src/data/economy.ts`** (z komentarzem przy każdej wartości). Liczby w tym dokumencie opisują wartości startowe z tego pliku.
+
 Wartości liczbowe w tym dokumencie są **startowe** – do strojenia w trakcie testów. Wszystkie powinny trafić do pliku konfiguracyjnego / definicji danych, nie do kodu.
 
 ## Tory i stacje
@@ -137,6 +139,6 @@ Produkcja i zapotrzebowanie rosną liniowo z poziomem (1–5). Zakłady startuj�
   | towary | 3,2 | 15 |
   | drewno | 1,7 | 30 |
 
-- **Koszty miesięczne**: eksploatacja pociągów poza zajezdnią (1/12 kosztu rocznego: Iskra 1200, Grom 1800, Strzała 2600, wagon 120 zł/rok); utrzymanie: 2 zł za element toru, 10 zł za kafelek peronu, 30 zł za zajezdnię, 1 zł za semafor.
+- **Koszty miesięczne**: eksploatacja pociągów poza zajezdnią – rocznie część ceny zakupu zależna od **trakcji lokomotywy**: parowa 20%, spalinowa 15%, elektryczna 10%; wagony 10% (naliczane co miesiąc 1/12); utrzymanie: 2 zł za element toru, 10 zł za kafelek peronu, 30 zł za zajezdnię, 1 zł za semafor. Okno zajezdni pokazuje trakcję i roczny koszt utrzymania składu.
 - **Okno finansów** (klik na pieniądze): przewozy, pociągi, utrzymanie, budowa i zakupy (po zwrotach) – bieżący miesiąc i poprzednie.
 - Kredytu i bankructwa na razie nie ma – przy braku pieniędzy nie da się budować ani kupować.

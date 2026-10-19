@@ -1,6 +1,15 @@
 import { useState } from 'preact/hooks';
 import { MAX_WAGONS } from '../sim/config';
-import { CARGO_NAMES, consistStats, ENGINES, engineDef, WAGONS, wagonDef } from '../sim/trains/vehicles';
+import {
+  CARGO_NAMES,
+  consistStats,
+  engineDef,
+  engineRunningCost,
+  ENGINES,
+  TRACTION_NAMES,
+  WAGONS,
+  wagonDef,
+} from '../sim/trains/vehicles';
 import { formatMoney } from '../tools';
 import type { DepotWindowData, HudActions } from './hudStore';
 
@@ -46,7 +55,12 @@ export function DepotWindow({ data, money, actions }: { data: DepotWindowData; m
       <div class="section-title">Kup pociąg</div>
       <div class="choices">
         {ENGINES.map((e) => (
-          <button key={e.id} class={e.id === engine ? 'active' : ''} onClick={() => setEngine(e.id)} title={e.description}>
+          <button
+            key={e.id}
+            class={e.id === engine ? 'active' : ''}
+            onClick={() => setEngine(e.id)}
+            title={`${e.description} · trakcja ${TRACTION_NAMES[e.traction]} · utrzymanie ${formatMoney(engineRunningCost(e))}/rok`}
+          >
             <span class="swatch" style={{ background: e.color }} />
             <span class="grow">{e.name}</span>
             <small>
@@ -87,7 +101,8 @@ export function DepotWindow({ data, money, actions }: { data: DepotWindowData; m
         ))}
       </div>
       <div class="muted small">
-        Długość {(stats.length / TILE_UNITS).toFixed(1)} kaf. · masa {stats.weight} t · max {stats.maxSpeed} km/h
+        Długość {(stats.length / TILE_UNITS).toFixed(1)} kaf. · masa {stats.weight} t · max {stats.maxSpeed} km/h ·
+        utrzymanie {formatMoney(stats.runningCost)}/rok (trakcja {TRACTION_NAMES[engineDef(engine)!.traction]})
       </div>
 
       <button

@@ -1,3 +1,4 @@
+import { ECONOMY } from '../../data/economy';
 import data from '../../data/industries.json';
 import type { GameState } from '../state';
 import { inBounds } from '../world/map';
@@ -25,7 +26,7 @@ export function industryDef(id: string): IndustryDef | undefined {
   return defById.get(id);
 }
 
-export const MAX_INDUSTRY_LEVEL = 5;
+export const MAX_INDUSTRY_LEVEL = ECONOMY.industry.maxLevel;
 
 /** Statystyki bieżącego miesiąca. */
 export interface IndustryMonth {
@@ -83,7 +84,7 @@ export function averageSupply(ind: Industry): number | null {
 }
 
 /** Bez dostaw przetwórnia pracuje na tym ułamku mocy; pełne zaopatrzenie – 100%. */
-export const IDLE_PRODUCTION = 0.3;
+export const IDLE_PRODUCTION = ECONOMY.industry.idleProduction;
 
 /** Produkcja na miesiąc przy obecnym poziomie (przetwórnie – zależnie od zaopatrzenia). */
 export function monthlyProduction(ind: Industry): number {
