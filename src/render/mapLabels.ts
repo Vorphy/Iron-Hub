@@ -17,7 +17,7 @@ export class MapLabels {
   readonly container = new Container();
 
   rebuild(state: GameState): void {
-    for (const child of this.container.removeChildren()) child.destroy({ children: true });
+    for (const child of this.container.removeChildren()) child.destroy({ children: true, context: true });
     const W = state.map.width;
     for (const ind of state.industries) {
       const [w, h] = industryDef(ind.type)!.size;
@@ -56,16 +56,20 @@ export class MapLabels {
     text.position.set(-text.width / 2, -text.height - pad / 2);
     label.addChild(bg, text);
     label.position.set(x, y);
+    label.label = kind;
     this.container.addChild(label);
   }
 
-  /** Odwrotność zoomu kamery (napisy stałej wielkości) i ukrywanie tych poza ekranem. */
+  /**
+   * Odwrotność zoomu kamery (napisy stałej wielkości) i ukrywanie tych poza ekranem.
+   * Przy najdalszym widoku tylko nazwy miast – reszta zasłaniałaby mapę.
+   */
   update(zoom: number, view: Rect): void {
     const margin = 200 / zoom;
     for (const child of this.container.children) {
       child.scale.set(1 / zoom);
       const { x, y } = child.position;
-      child.visible = x > view.x - margin && x < view.x + view.w + margin && y > view.y - margin && y < view.y + view.h + margin;
+      child.visible = (zoom >= 0.25 || child.label === 'town') && x > view.x - margin && x < view.x + view.w + margin && y > view.y - margin && y < view.y + view.h + margin;
     }
   }
 }

@@ -2,8 +2,8 @@ import type { Container } from 'pixi.js';
 import { TILE_H, TILE_W, type Point } from './iso';
 
 /** Skale będące potęgami 2 – pixel art pozostaje ostry. */
-export const ZOOM_LEVELS = [0.25, 0.5, 1, 2, 4] as const;
-const DEFAULT_ZOOM_INDEX = 2;
+export const ZOOM_LEVELS = [0.125, 0.25, 0.5, 1, 2, 4] as const;
+const DEFAULT_ZOOM_INDEX = 3;
 
 export interface Rect {
   x: number;

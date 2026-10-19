@@ -1,4 +1,4 @@
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, Rectangle, Sprite, Texture, type Renderer } from 'pixi.js';
 import type { Depot } from '../sim/depot/depot';
 import { axisTrack, bridgeRole, type Bridge } from '../sim/track/bridge';
 import { tunnelRole, type Tunnel } from '../sim/track/tunnel';
@@ -19,6 +19,13 @@ const CHUNK = 16;
 const NEW_CHUNKS_PER_FRAME = 6;
 /** Najwięcej narysowanych kawałków w pamięci (reszta rysowana ponownie, gdy wróci na ekran). */
 const MAX_DRAWN_CHUNKS = 500;
+/**
+ * Daleki widok (zoom do tego progu): kawałek mapy renderowany raz do małego obrazka, bo setek tysięcy
+ * wielokątów karta graficzna nie narysuje płynnie w każdej klatce.
+ */
+export const FAR_ZOOM = 0.25;
+const NEW_FAR_PER_FRAME = 8;
+const MAX_FAR_CHUNKS = 1500;
 
 // Placeholder – płaskie kolory do czasu podpięcia grafiki (OpenGFX).
 const COLORS: Record<Terrain, number[]> = {
@@ -42,6 +49,10 @@ interface Chunk {
   cx: number;
   cy: number;
   bounds: Rect;
+  /** Obrazek kawałka w dalekim widoku (rozdzielczość = zoom, przy którym powstał). */
+  far: Sprite;
+  farRes: number;
+  farDirty: boolean;
 }
 
 /** Teren i tory rysowane w kawałkach 16×16 kafelków; niewidoczne kawałki są pomijane. */
@@ -49,19 +60,22 @@ export class MapRenderer {
   readonly container = new Container();
   private readonly terrainLayer = new Container();
   private readonly trackLayer = new Container();
+  private readonly farLayer = new Container();
+  private farCount = 0;
   private readonly chunks: Chunk[] = [];
   private readonly chunksX: number;
   private frame = 0;
   private drawnCount = 0;
 
   constructor(
+    private readonly renderer: Renderer,
     private readonly map: WorldMap,
     /** Zajezdnie czytane przy rysowaniu kafelka (tablica stanu może być podmieniana). */
     private readonly getDepots: () => readonly Depot[],
     private readonly getBridges: () => readonly Bridge[],
     private readonly getTunnels: () => readonly Tunnel[],
   ) {
-    this.container.addChild(this.terrainLayer, this.trackLayer);
+    this.container.addChild(this.terrainLayer, this.trackLayer, this.farLayer);
     this.chunksX = Math.ceil(map.width / CHUNK);
     const chunksY = Math.ceil(map.height / CHUNK);
     for (let cy = 0; cy < chunksY; cy++) {
@@ -76,7 +90,12 @@ export class MapRenderer {
           cx,
           cy,
           bounds: this.chunkBounds(cx, cy),
+          far: new Sprite(),
+          farRes: 0,
+          farDirty: false,
         };
+        chunk.far.position.set(chunk.bounds.x, chunk.bounds.y);
+        chunk.far.visible = false;
         this.chunks.push(chunk);
       }
     }
@@ -84,20 +103,26 @@ export class MapRenderer {
     for (const c of [...this.chunks].sort((a, b) => a.cx + a.cy - (b.cx + b.cy) || a.cx - b.cx)) {
       this.terrainLayer.addChild(c.gfx);
       this.trackLayer.addChild(c.tracks);
+      this.farLayer.addChild(c.far);
     }
   }
 
   markTileDirty(x: number, y: number): void {
     const chunk = this.chunks[Math.floor(y / CHUNK) * this.chunksX + Math.floor(x / CHUNK)];
     if (chunk?.drawn) chunk.dirty = true;
+    if (chunk?.farRes) chunk.farDirty = true;
   }
 
   /**
    * Widoczność kawałków; widoczne a nienarysowane rysujemy (najwyżej kilka nowych na klatkę,
    * zmienione – od razu), dawno niewidziane zwalniamy, gdy narysowanych jest za dużo.
    */
-  cull(view: Rect): void {
+  cull(view: Rect, zoom: number): void {
     this.frame++;
+    const far = zoom <= FAR_ZOOM;
+    this.terrainLayer.visible = this.trackLayer.visible = !far;
+    this.farLayer.visible = far;
+    if (far) return this.cullFar(view, zoom);
     const pending: Chunk[] = [];
     for (const c of this.chunks) {
       const b = c.bounds;
@@ -115,6 +140,56 @@ export class MapRenderer {
     pending.sort((a, b) => dist(a) - dist(b));
     for (const c of pending.slice(0, NEW_CHUNKS_PER_FRAME)) this.drawChunk(c);
     if (this.drawnCount > MAX_DRAWN_CHUNKS) this.evict();
+  }
+
+  /** Daleki widok: obrazki kawałków, brakujące (lub zbyt mało ostre) dorabiane po kilka na klatkę. */
+  private cullFar(view: Rect, zoom: number): void {
+    const pending: Chunk[] = [];
+    for (const c of this.chunks) {
+      const b = c.bounds;
+      const visible = b.x < view.x + view.w && b.x + b.w > view.x && b.y < view.y + view.h && b.y + b.h > view.y;
+      c.far.visible = visible && c.farRes > 0;
+      if (!visible) continue;
+      c.lastSeen = this.frame;
+      if (c.farDirty) this.renderFar(c, zoom);
+      else if (c.farRes < zoom) pending.push(c);
+    }
+    const cx = view.x + view.w / 2;
+    const cy = view.y + view.h / 2;
+    const dist = (c: Chunk) => Math.abs(c.bounds.x + c.bounds.w / 2 - cx) + Math.abs(c.bounds.y + c.bounds.h / 2 - cy);
+    pending.sort((a, b) => dist(a) - dist(b));
+    for (const c of pending.slice(0, NEW_FAR_PER_FRAME)) this.renderFar(c, zoom);
+    if (this.farCount > MAX_FAR_CHUNKS) {
+      const old = this.chunks.filter((c) => c.farRes && c.lastSeen < this.frame).sort((a, b) => a.lastSeen - b.lastSeen);
+      for (const c of old.slice(0, this.farCount - MAX_FAR_CHUNKS)) this.dropFar(c);
+    }
+  }
+
+  /** Rysuje kawałek do tymczasowej geometrii i zapisuje jako obrazek (geometria od razu zwalniana). */
+  private renderFar(chunk: Chunk, zoom: number): void {
+    const temp = new Container();
+    const g = new Graphics();
+    const tracks = new Graphics();
+    temp.addChild(g, tracks);
+    this.drawChunkInto(chunk, g, tracks);
+    const b = chunk.bounds;
+    const texture = this.renderer.generateTexture({ target: temp, frame: new Rectangle(b.x, b.y, b.w, b.h), resolution: zoom });
+    temp.destroy({ children: true, context: true });
+    if (chunk.farRes) chunk.far.texture.destroy(true);
+    else this.farCount++;
+    chunk.far.texture = texture;
+    chunk.far.visible = true;
+    chunk.farRes = zoom;
+    chunk.farDirty = false;
+  }
+
+  private dropFar(chunk: Chunk): void {
+    chunk.far.texture.destroy(true);
+    chunk.far.texture = Texture.EMPTY;
+    chunk.far.visible = false;
+    chunk.farRes = 0;
+    chunk.farDirty = false;
+    this.farCount--;
   }
 
   /** Zwalnia geometrię najdawniej widzianych kawałków. */
@@ -144,9 +219,12 @@ export class MapRenderer {
     if (!chunk.drawn) this.drawnCount++;
     chunk.drawn = true;
     chunk.dirty = false;
-    const g = chunk.gfx;
-    g.clear();
+    chunk.gfx.clear();
     chunk.tracks.clear();
+    this.drawChunkInto(chunk, chunk.gfx, chunk.tracks);
+  }
+
+  private drawChunkInto(chunk: Chunk, g: Graphics, tracksG: Graphics): void {
     const x0 = chunk.cx * CHUNK;
     const y0 = chunk.cy * CHUNK;
     const x1 = Math.min(x0 + CHUNK, this.map.width);
@@ -164,7 +242,7 @@ export class MapRenderer {
           if (t === Terrain.Rough) drawRoughDots(g, x, y, h);
         }
         // Droga pod torem (przejazd) – najpierw droga, tor nad nią.
-        if (this.map.road[y * this.map.width + x]) drawRoad(chunk.tracks, this.map, x, y);
+        if (this.map.road[y * this.map.width + x]) drawRoad(tracksG, this.map, x, y);
         const bridge = this.map.bridge[y * this.map.width + x] ? this.getBridges().find((b) => b.id === this.map.bridge[y * this.map.width + x]) : undefined;
         const head = bridge && bridgeRole(bridge, x, y) !== 'span' ? bridge : undefined;
         const tunnelId = this.map.tunnel[y * this.map.width + x];
@@ -173,14 +251,14 @@ export class MapRenderer {
         for (const track of tracksOn(getTrackBits(this.map, x, y))) {
           if (head && isHeadAxisTrack(head, track)) continue; // rampę rysuje most
           if (portal && track === axisTrack(portal.axis)) continue; // tor wjazdu rysuje tunel
-          drawTrackPiece(chunk.tracks, x, y, track, TRACK_STYLE);
+          drawTrackPiece(tracksG, x, y, track, TRACK_STYLE);
         }
         const house = this.map.house[y * this.map.width + x]!;
-        if (house) drawHouse(chunk.tracks, x, y, house, h);
+        if (house) drawHouse(tracksG, x, y, house, h);
         const depotId = this.map.depot[y * this.map.width + x];
         if (depotId) {
           const depot = this.getDepots().find((d) => d.id === depotId);
-          if (depot) drawDepot(chunk.tracks, x, y, depot.side);
+          if (depot) drawDepot(tracksG, x, y, depot.side);
         }
       }
     }

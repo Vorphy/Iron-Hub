@@ -121,6 +121,8 @@ Pozycja jest zapisana w układzie kafelków (jak w TTD), a nie jako krawędź gr
 - Warstwy: teren → tory → obiekty i pojazdy (sortowane po głębokości `x + y`, potem po wysokości) → nakładki (zasięg stacji, podgląd budowy) → UI.
 - **Picking** (który kafelek pod kursorem): odwrotny rzut płaski sprawdzany od najwyższego poziomu w dół – pierwszy punkt leżący na terenie jest widoczny (`pickTile`).
 - Kawałki mapy 16×16 kafelków rysowane **leniwie** – dopiero gdy pojawią się na ekranie (do 6 nowych na klatkę, najbliższe środka najpierw); najdawniej niewidziane są zwalniane, gdy narysowanych jest ponad 500. Zakłady i podpisy poza ekranem są ukrywane. Dzięki temu działa mapa 1024×1024 (milion kafelków).
+- **Daleki widok** (zoom 0,25× i 0,125×): każdy kawałek mapy jest raz renderowany do małego obrazka w rozdzielczości równej zoomowi, a jego geometria od razu zwalniana. Karta rysuje wtedy kilkaset obrazków zamiast setek tysięcy wielokątów. Zmieniony kafelek odświeża obrazek swojego kawałka. Przy 0,125× widać tylko nazwy miast.
+- Uwaga (Pixi 8): `destroy({ children: true })` nie zwalnia geometrii obiektów `Graphics` – trzeba dodać `context: true`.
 - Statystyki miast liczone tylko w okolicy rynku (domy powstają najwyżej 16 kafelków od niego), nie po całej mapie.
 - Kierunki pojazdów: 8 sprite'ów (co 45°), wybierane wg kierunku krawędzi.
 

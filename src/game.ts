@@ -82,6 +82,7 @@ export class Game {
 
     const world = this.world;
     this.mapRenderer = new MapRenderer(
+      app.renderer,
       state.map,
       () => this.sim.state.depots,
       () => this.sim.state.bridges,
@@ -139,7 +140,7 @@ export class Game {
     this.app.renderer.off('resize', this.onResize);
     this.input.destroy();
     this.app.stage.removeChild(this.world);
-    this.world.destroy({ children: true });
+    this.world.destroy({ children: true, context: true });
   }
 
   get state(): GameState {
@@ -284,7 +285,7 @@ export class Game {
     if (this.pointer && cameraBefore !== `${this.camera.cx},${this.camera.cy},${this.camera.zoom}`) {
       this.tools.pointerMoved(this.tileF(this.pointer.x, this.pointer.y));
     }
-    this.mapRenderer.cull(this.camera.viewRect());
+    this.mapRenderer.cull(this.camera.viewRect(), this.camera.zoom);
     this.industries.cull(this.camera.viewRect());
     // Ruch uliczny w tempie gry (stoi w pauzie).
     const gameSeconds = (Math.min(deltaMs, 250) * this.loop.speed) / 1000;
