@@ -418,6 +418,35 @@ body {
   text-decoration: underline;
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 12, 15, 0.55);
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.window.dialog {
+  position: static;
+  width: 420px;
+  max-width: calc(100vw - 16px);
+}
+
+.window.dialog .choices button {
+  padding: 8px 10px;
+}
+
+input.seed {
+  font: inherit;
+  color: var(--text);
+  background: #2c323b;
+  border: 1px solid var(--panel-border);
+  padding: 4px 8px;
+  width: 140px;
+}
+
 .level-bar {
   height: 6px;
   background: #2c323b;

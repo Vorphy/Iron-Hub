@@ -4,6 +4,20 @@
 
 Wartości liczbowe w tym dokumencie są **startowe** – do strojenia w trakcie testów. Wszystkie powinny trafić do pliku konfiguracyjnego / definicji danych, nie do kodu.
 
+## Nowa gra i rozmiar mapy
+
+- **Menu → Nowa gra…** (a przy pierwszym wejściu na stronę – od razu): rozmiar mapy i ziarno. Ta sama liczba i rozmiar dają zawsze tę samą mapę.
+
+  | Rozmiar | Kafelki | Miasta | Zakłady |
+  |---|---|---|---|
+  | Mała | 64×64 | 2 | 6 |
+  | Średnia (zalecana) | 128×128 | 8 | 12 |
+  | Duża | 256×256 | 32 | 48 |
+  | Ogromna (eksperymentalna) | 512×512 | 128 | 192 |
+
+- Liczba miast i zakładów rośnie z powierzchnią. Symulacja jest lekka nawet dla największej mapy (miesiąc gry 512×512 ≈ 0,15 s obliczeń); ograniczeniem jest rysowanie i rozmiar autozapisu.
+- Adres `?seed=N&size=S` uruchamia nową grę na danej mapie (S: 64, 128, 256, 512).
+
 ## Tory i stacje
 
 - Budowa torów przeciąganiem myszą (prosta / łuk / ukos), z podglądem i kosztem przed zatwierdzeniem.

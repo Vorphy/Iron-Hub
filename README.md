@@ -15,7 +15,7 @@ npm test           # testy symulacji (Vitest)
 npm run build      # typecheck + build produkcyjny do dist/
 ```
 
-Gra wczytuje autozapis z przeglądarki; parametr `?seed=123` w adresie wymusza nową grę na danej mapie.
+Gra wczytuje autozapis z przeglądarki; przy pierwszym wejściu pokazuje okno nowej gry (rozmiar mapy, ziarno). Parametr `?seed=123&size=256` w adresie wymusza nową grę na danej mapie.
 
 ## Sterowanie
 

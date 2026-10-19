@@ -117,3 +117,13 @@ describe('zapis świata', () => {
     expect(loaded).toEqual(s);
   });
 });
+
+describe('rozmiary map', () => {
+  it('liczba miast i zakładów rośnie z powierzchnią mapy', () => {
+    const small = createGame({ width: 64, height: 64, seed: 2 });
+    const big = createGame({ width: 256, height: 256, seed: 2 });
+    expect(small.towns.length).toBe(2);
+    expect(big.towns.length).toBe(32);
+    expect(big.industries.length).toBeGreaterThan(small.industries.length * 4);
+  });
+});

@@ -16,7 +16,9 @@ import { createGame, type GameState } from './sim/state';
 import { Hud } from './ui/Hud';
 import { hudStore, showMessage, type HudActions } from './ui/hudStore';
 
-const MAP_SIZE = 128;
+/** Domyślny rozmiar mapy (okno nowej gry pozwala wybrać inny). */
+const DEFAULT_MAP_SIZE = 128;
+const ALLOWED_SIZES = [64, 128, 256, 512];
 const AUTOSAVE_MS = 30_000;
 
 let app: Application;
@@ -40,8 +42,8 @@ function startGame(state: GameState, view: ViewState | null = null): void {
   hudStore.set({ menuOpen: false });
 }
 
-function newGame(seed: number): void {
-  startGame(createGame({ width: MAP_SIZE, height: MAP_SIZE, seed }));
+function newGame(seed: number, size = DEFAULT_MAP_SIZE): void {
+  startGame(createGame({ width: size, height: size, seed }));
 }
 
 async function refreshSaveInfo(): Promise<void> {
@@ -113,9 +115,11 @@ const actions: HudActions = {
   setOrders: (trainId, orders) => game?.command({ type: 'setOrders', trainId, orders }),
   pickOrders: (trainId) => game?.pickOrders(trainId),
   focusTrain: (trainId) => game?.focusTrain(trainId),
-  newGame: () => {
-    if (!confirm('Rozpocząć nową grę? Niezapisany postęp przepadnie (autozapis zostanie nadpisany).')) return;
-    newGame(Math.floor(Math.random() * 1_000_000) + 1);
+  newGame: () => hudStore.set({ newGameOpen: true, menuOpen: false }),
+  closeNewGame: () => hudStore.set({ newGameOpen: false }),
+  startNewGame: (size, seed) => {
+    hudStore.set({ newGameOpen: false });
+    newGame(seed, size);
     void saveTo('auto', true);
   },
 };
@@ -132,11 +136,18 @@ async function start(): Promise<void> {
   document.getElementById('game')!.appendChild(app.canvas);
   render(h(Hud, { actions }), document.getElementById('ui')!);
 
-  // ?seed=N wymusza nową grę na danej mapie; inaczej kontynuujemy autozapis.
-  const seedParam = Number(new URLSearchParams(location.search).get('seed'));
-  if (seedParam) newGame(seedParam);
+  // ?seed=N[&size=S] wymusza nową grę na danej mapie; inaczej kontynuujemy autozapis.
+  // Bez autozapisu (pierwsze wejście) – mapa w tle i okno nowej gry z wyborem rozmiaru.
+  const params = new URLSearchParams(location.search);
+  const seedParam = Number(params.get('seed'));
+  const sizeParam = Number(params.get('size'));
+  const size = ALLOWED_SIZES.includes(sizeParam) ? sizeParam : DEFAULT_MAP_SIZE;
+  if (seedParam) newGame(seedParam, size);
   else if (await loadFrom('auto')) showMessage('Wczytano autozapis');
-  else newGame(1);
+  else {
+    newGame(1);
+    hudStore.set({ newGameOpen: true });
+  }
   void refreshSaveInfo();
 
   setInterval(() => {

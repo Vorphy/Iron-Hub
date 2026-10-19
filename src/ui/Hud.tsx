@@ -4,6 +4,7 @@ import { Side } from '../sim/track/track';
 import { Terrain } from '../sim/world/map';
 import { formatMoney, type SignalKind, type Tool } from '../tools';
 import { DepotWindow } from './DepotWindow';
+import { NewGameDialog } from './NewGameDialog';
 import { FinanceWindow, IndustryWindow, StationWindow, TownWindow } from './InfoWindows';
 import { TrainWindow } from './TrainWindow';
 import { hudStore, type HudActions, type HudState } from './hudStore';
@@ -87,6 +88,7 @@ export function Hud({ actions }: { actions: HudActions }) {
         </span>
       </div>
 
+      {s.newGameOpen && <NewGameDialog actions={actions} canCancel={true} />}
       {s.menuOpen && <Menu actions={actions} saves={s.saves} signalMode={s.signalMode} />}
       {s.windowData?.kind === 'depot' && <DepotWindow data={s.windowData} money={s.money} actions={actions} />}
       {s.windowData?.kind === 'train' && <TrainWindow data={s.windowData} actions={actions} />}
@@ -290,7 +292,7 @@ function Menu({
       <button onClick={actions.exportFile}>Eksportuj do pliku</button>
       <button onClick={actions.importFile}>Importuj z pliku</button>
       <div class="menu-title" />
-      <button onClick={actions.newGame}>Nowa gra (losowa mapa)</button>
+      <button onClick={actions.newGame}>Nowa gra…</button>
       <div class="menu-title">Testy</div>
       <button onClick={actions.addTestMoney} title="Do testowania – dopisuje pieniądze bez wpisu w finansach">
         +100 000 zł

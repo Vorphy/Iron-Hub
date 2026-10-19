@@ -67,7 +67,7 @@ Etapy są ułożone tak, żeby po każdym istniała działająca, testowalna wer
 - Wydanie na itch.io.
 
 ## Etap 8 – Później
-- Wysokości terenu, zbocza, mosty, tunele.
+- ~~Wysokości terenu, zbocza, mosty, tunele.~~ ✅ (zrobione wcześniej – 2026-10-18)
 - Backend: zapis w chmurze, rankingi.
 - Płatne dodatki (pakiety pojazdów) – wymaga backendu i systemu płatności.
 - Symulacja w Web Workerze, ewentualnie multiplayer.
@@ -80,5 +80,5 @@ Etapy są ułożone tak, żeby po każdym istniała działająca, testowalna wer
 - ~~przycisk testowy + 100000 zł~~ ✅ (Menu → Testy)
 - ~~przy torach tak jak przy semaforach budowanie i usuwanie torów, żeby nie trzeba niszczyć całości tylko wybrany w danym kierunku.~~ ✅ (Tory → Usuń, buldożer)
 - ~~mapa niech pamięta ostatnie ustawienie, zoom i pozycje kamery~~ ✅ (zapisywane razem z grą)
-- rozmiar mapy zobaczymy jak duża żeby zasobów komputera wystarczyło :)
+- ~~rozmiar mapy zobaczymy jak duża żeby zasobów komputera wystarczyło :)~~ ✅ (wybór przy nowej grze: 64 / 128 / 256 / 512 eksperymentalna)
 - ~~zawracanie pociągu jak się zakleszczą!!! WAŻNE!!!~~ ✅ (automatycznie po 3 dniach zakleszczenia + przycisk Zawróć)

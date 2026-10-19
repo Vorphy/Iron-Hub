@@ -137,6 +137,8 @@ export interface HudState {
   /** Daty zapisów w przeglądarce (ISO) – do menu. */
   saves: { quick: string | null; auto: string | null };
   menuOpen: boolean;
+  /** Okno nowej gry (rozmiar mapy, ziarno). */
+  newGameOpen: boolean;
   window: WindowRef | null;
   /** Dane otwartego okna, odświeżane przez grę. */
   windowData: WindowData | null;
@@ -157,6 +159,7 @@ export const hudStore = new Store<HudState>({
   message: null,
   saves: { quick: null, auto: null },
   menuOpen: false,
+  newGameOpen: false,
   window: null,
   windowData: null,
 });
@@ -183,7 +186,10 @@ export interface HudActions {
   quickLoad(): void;
   exportFile(): void;
   importFile(): void;
+  /** Otwiera okno nowej gry. */
   newGame(): void;
+  closeNewGame(): void;
+  startNewGame(size: number, seed: number): void;
   closeWindow(): void;
   buyTrain(depotId: number, engine: string, wagons: string[]): void;
   sellTrain(trainId: number): void;
