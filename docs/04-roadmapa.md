@@ -38,7 +38,7 @@ Etapy są ułożone tak, żeby po każdym istniała działająca, testowalna wer
 
 **Gotowe, gdy:** wiele pociągów na wspólnej sieci z rozjazdami jeździ bez kolizji; testy scenariuszy (mijanki, stacje przelotowe, węzły).
 
-*Zrealizowano:* rezerwacja torów porcjami, tryb Amator jako ruchomy odstęp blokowy (bez stawiania semaforów), omijanie zajętych peronów, kolejka wyjazdu z zajezdni, podgląd rezerwacji (V). Zakleszczenia na jednym torze są sygnalizowane statusem „Czeka na wolny tor” (bez automatycznego rozwiązywania).
+*Zrealizowano:* rezerwacja torów porcjami, tryb Amator jako ruchomy odstęp blokowy (bez stawiania semaforów), omijanie zajętych peronów, kolejka wyjazdu z zajezdni, podgląd rezerwacji (V). Zakleszczenia na jednym torze są sygnalizowane statusem „Czeka na wolny tor”; od 2026-10-19 rozwiązywane automatycznie (zawraca pociąg o najniższym numerze) + przycisk Zawróć.
 
 ## Etap 4 – Ekonomia ✅ (2026-10-18)
 - Miasta (populacja, budynki, generowanie pasażerów, wzrost wzdłuż korytarzy).
@@ -73,6 +73,19 @@ Etapy są ułożone tak, żeby po każdym istniała działająca, testowalna wer
 - Płatne dodatki (pakiety pojazdów) – wymaga backendu i systemu płatności.
 - Symulacja w Web Workerze, ewentualnie multiplayer.
 
+## Kolejka – co dalej (stan na 2026-10-19)
+
+Kolejność proponowana; zmieniamy według potrzeb. Punkty 1–4 przygotowują etap 5 (test z ludźmi).
+
+1. **Kredyt i bankructwo** (przeniesione z etapu 4) – pożyczka z odsetkami, ostrzeżenie przy długu, koniec gry przy bankructwie.
+2. **Minimapa** – podgląd całej mapy w rogu ekranu, klik przenosi kamerę (duże mapy).
+3. **Pierwsze kroki dla nowego gracza** – krótkie podpowiedzi „zbuduj tor → stację → zajezdnię → kup pociąg”, przycisk Nowa gra widoczny na starcie.
+4. **Poziomy pociągów i trakcje** (z pomysłów) – lokomotywy dostępne z upływem lat: parowa → spalinowa → elektryczna; elektryczna wymaga sieci trakcyjnej.
+5. **Etap 5 – test „czy to jest fajne”** – granie, strojenie `src/data/economy.ts`.
+6. Drobne: ciężarówki przy zakładach (dekoracja), auta chowające się za domami, lint/format (z etapu 0).
+7. **Etap 7** – grafika, dźwięki, retro UI, wydanie na itch.io.
+8. **Etap 8** – generator/edytor map, chmura, Web Worker, płatne dodatki.
+
 ## Pomysły (lista otwarta – dopisuj na dole)
 
 - Poziomy pociągów, rodzaje kolei (np. parowa → spalinowa → elektryczna) i przechodzenie między nimi; prosty system ulepszeń.
@@ -81,5 +94,5 @@ Etapy są ułożone tak, żeby po każdym istniała działająca, testowalna wer
 - ~~przycisk testowy + 100000 zł~~ ✅ (Menu → Testy)
 - ~~przy torach tak jak przy semaforach budowanie i usuwanie torów, żeby nie trzeba niszczyć całości tylko wybrany w danym kierunku.~~ ✅ (Tory → Usuń, buldożer)
 - ~~mapa niech pamięta ostatnie ustawienie, zoom i pozycje kamery~~ ✅ (zapisywane razem z grą)
-- ~~rozmiar mapy zobaczymy jak duża żeby zasobów komputera wystarczyło :)~~ ✅ (wybór przy nowej grze: 64 / 128 / 256 / 512 eksperymentalna)
+- ~~rozmiar mapy zobaczymy jak duża żeby zasobów komputera wystarczyło :)~~ ✅ (wybór przy nowej grze: 64 / 128 / 256 / 512, 1024 testowa; zoom do 0,125×)
 - ~~zawracanie pociągu jak się zakleszczą!!! WAŻNE!!!~~ ✅ (automatycznie po 3 dniach zakleszczenia + przycisk Zawróć)
