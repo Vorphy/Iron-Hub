@@ -11,6 +11,12 @@ export const MAP_SIZES: { size: number; name: string; note: string; title?: stri
     note: '512×512 – eksperymentalna',
     title: '128 miast; wolniejsze wczytywanie i autozapis – wymaga mocnego komputera',
   },
+  {
+    size: 1024,
+    name: 'Testowa',
+    note: '1024×1024 – test wydajności',
+    title: '512 miast, milion kafelków; autozapis co 2 minuty – tylko do testów',
+  },
 ];
 
 function randomSeed(): number {

@@ -1,6 +1,7 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import { industryDef } from '../sim/economy/industry';
 import type { GameState } from '../sim/state';
+import type { Rect } from './camera';
 import { tileCenter, tileToWorld } from './iso';
 
 type Kind = 'station' | 'town' | 'industry';
@@ -58,8 +59,13 @@ export class MapLabels {
     this.container.addChild(label);
   }
 
-  /** Odwrotność zoomu kamery, żeby napisy nie rosły ani nie znikały. */
-  setZoom(zoom: number): void {
-    for (const child of this.container.children) child.scale.set(1 / zoom);
+  /** Odwrotność zoomu kamery (napisy stałej wielkości) i ukrywanie tych poza ekranem. */
+  update(zoom: number, view: Rect): void {
+    const margin = 200 / zoom;
+    for (const child of this.container.children) {
+      child.scale.set(1 / zoom);
+      const { x, y } = child.position;
+      child.visible = x > view.x - margin && x < view.x + view.w + margin && y > view.y - margin && y < view.y + view.h + margin;
+    }
   }
 }

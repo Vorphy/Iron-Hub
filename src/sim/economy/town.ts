@@ -35,6 +35,17 @@ export const TOWN_NAMES = [
   'Podkładowo', 'Hamulce', 'Przystanki', 'Nastawnia', 'Sieciechów', 'Kółkowo', 'Bocznica', 'Rozjazdy',
 ];
 
+/** Dopiski do nazw, gdy podstawowa lista się skończy (duże mapy). */
+const NAME_SUFFIXES = ['Zdrój', 'Kolonia', 'Osada', 'Wieś', 'Huta', 'Młyn', 'Las', 'Pole', 'Brzeg', 'Port'];
+
+/** Lista nazw dla mapy: najpierw podstawowe, potem z dopiskami, na końcu numerowane. */
+export function townNamePool(count: number): string[] {
+  const out = [...TOWN_NAMES];
+  for (const suffix of NAME_SUFFIXES) for (const base of TOWN_NAMES) out.push(`${base} ${suffix}`);
+  for (let i = 1; out.length < count; i++) out.push(`Osiedle ${i}`);
+  return out;
+}
+
 export function townAt(state: GameState, x: number, y: number): Town | undefined {
   if (!inBounds(state.map, x, y)) return undefined;
   const id = state.map.town[y * state.map.width + x];
@@ -57,17 +68,28 @@ export function isStreet(town: Town, x: number, y: number): boolean {
   return (x - town.x) % 4 === 0 || (y - town.y) % 4 === 0;
 }
 
-export function townPopulation(state: GameState, town: Town): number {
-  let pop = 0;
+/** Dom miasta powstaje najwyżej tyle kafelków od rynku (wzrost szuka miejsc w promieniu 12 + ulica). */
+export const TOWN_EXTENT = 16;
+
+/** Kafelki domów miasta – szukane tylko w okolicy rynku (na dużych mapach to kluczowe dla wydajności). */
+export function townTiles(state: GameState, town: Town): number[] {
   const { map } = state;
-  for (let i = 0; i < map.town.length; i++) if (map.town[i] === town.id) pop += HOUSE_POPULATION[map.house[i]!]!;
-  return pop;
+  const out: number[] = [];
+  for (let y = Math.max(0, town.y - TOWN_EXTENT); y <= Math.min(map.height - 1, town.y + TOWN_EXTENT); y++) {
+    for (let x = Math.max(0, town.x - TOWN_EXTENT); x <= Math.min(map.width - 1, town.x + TOWN_EXTENT); x++) {
+      const i = y * map.width + x;
+      if (map.town[i] === town.id) out.push(i);
+    }
+  }
+  return out;
+}
+
+export function townPopulation(state: GameState, town: Town): number {
+  return townTiles(state, town).reduce((pop, i) => pop + HOUSE_POPULATION[state.map.house[i]!]!, 0);
 }
 
 export function townHouseCount(state: GameState, town: Town): number {
-  let n = 0;
-  for (let i = 0; i < state.map.town.length; i++) if (state.map.town[i] === town.id && state.map.house[i]) n++;
-  return n;
+  return townTiles(state, town).filter((i) => state.map.house[i]).length;
 }
 
 /** Najbliższe miasto w zasięgu `maxDist` kafelków (do nazw stacji i zakładów). */

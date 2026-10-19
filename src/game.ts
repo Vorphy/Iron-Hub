@@ -267,13 +267,14 @@ export class Game {
     }
 
     this.camera.apply();
-    this.labels.setZoom(this.camera.zoom);
+    this.labels.update(this.camera.zoom, this.camera.viewRect());
     this.floaters.update(deltaMs, this.camera.zoom);
     // Kamera ruszyła (klawisze/zoom), a kursor stoi – zmienia się kafelek pod nim.
     if (this.pointer && cameraBefore !== `${this.camera.cx},${this.camera.cy},${this.camera.zoom}`) {
       this.tools.pointerMoved(this.tileF(this.pointer.x, this.pointer.y));
     }
     this.mapRenderer.cull(this.camera.viewRect());
+    this.industries.cull(this.camera.viewRect());
     const win = hudStore.get().window;
     this.signals.draw(this.sim.state);
     this.trains.draw(this.sim.state, this.loop.alpha, win?.kind === 'train' ? win.trainId : null);

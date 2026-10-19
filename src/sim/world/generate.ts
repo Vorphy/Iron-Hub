@@ -1,5 +1,5 @@
 import { emptyIndustryMonth, INDUSTRY_DEFS, type IndustryDef } from '../economy/industry';
-import { emptyTownMonth, isStreet, MAX_HOUSE_LEVEL, TOWN_NAMES, type Town } from '../economy/town';
+import { emptyTownMonth, isStreet, MAX_HOUSE_LEVEL, TOWN_NAMES, townNamePool, type Town } from '../economy/town';
 import { createRng, nextFloat, nextInt, type Rng } from '../rng';
 import type { GameState } from '../state';
 import { isFlat, tileBaseHeight } from './height';
@@ -37,14 +37,16 @@ function isFree(map: WorldMap, x: number, y: number): boolean {
 
 function placeTowns(state: GameState, rng: Rng, count: number): void {
   const { map } = state;
-  const names = [...TOWN_NAMES];
+  // Najpierw losowo spośród podstawowych nazw, potem kolejne z dopiskami.
+  const base = [...TOWN_NAMES];
+  const extra = townNamePool(count).slice(TOWN_NAMES.length);
   for (let n = 0; n < count; n++) {
     for (let attempt = 0; attempt < 300; attempt++) {
       const x = nextInt(rng, EDGE_MARGIN + 2, map.width - EDGE_MARGIN - 2);
       const y = nextInt(rng, EDGE_MARGIN + 2, map.height - EDGE_MARGIN - 2);
       if (!landAround(map, x, y, 3)) continue;
       if (state.towns.some((t) => Math.abs(t.x - x) + Math.abs(t.y - y) < MIN_TOWN_DISTANCE)) continue;
-      const name = names.splice(nextInt(rng, 0, names.length), 1)[0] ?? `Miasto ${n + 1}`;
+      const name = base.length ? base.splice(nextInt(rng, 0, base.length), 1)[0]! : (extra.shift() ?? `Miasto ${n + 1}`);
       const town: Town = { id: state.towns.length + 1, name, x, y, month: emptyTownMonth(), lastTransported: 0 };
       state.towns.push(town);
       growTown(state, rng, town, nextInt(rng, 8, 30));

@@ -14,6 +14,10 @@ import { drawDepot } from './depotDraw';
 import { drawTrackPiece, TRACK_STYLE } from './trackDraw';
 
 const CHUNK = 16;
+/** Ile nowych kawałków mapy rysować na klatkę (płynność przy przewijaniu). */
+const NEW_CHUNKS_PER_FRAME = 6;
+/** Najwięcej narysowanych kawałków w pamięci (reszta rysowana ponownie, gdy wróci na ekran). */
+const MAX_DRAWN_CHUNKS = 500;
 
 // Placeholder – płaskie kolory do czasu podpięcia grafiki (OpenGFX).
 const COLORS: Record<Terrain, number[]> = {
@@ -27,6 +31,11 @@ const PLATFORM_EDGE = 0x6d6860;
 
 interface Chunk {
   gfx: Graphics;
+  /** Narysowany (geometria w pamięci) i czy wymaga odświeżenia. */
+  drawn: boolean;
+  dirty: boolean;
+  /** Numer klatki, w której kawałek był ostatnio widoczny. */
+  lastSeen: number;
   /** Tory w osobnej warstwie nad terenem – podsypka może lekko wychodzić poza kafelek. */
   tracks: Graphics;
   cx: number;
@@ -41,6 +50,8 @@ export class MapRenderer {
   private readonly trackLayer = new Container();
   private readonly chunks: Chunk[] = [];
   private readonly chunksX: number;
+  private frame = 0;
+  private drawnCount = 0;
 
   constructor(
     private readonly map: WorldMap,
@@ -54,8 +65,17 @@ export class MapRenderer {
     const chunksY = Math.ceil(map.height / CHUNK);
     for (let cy = 0; cy < chunksY; cy++) {
       for (let cx = 0; cx < this.chunksX; cx++) {
-        const chunk: Chunk = { gfx: new Graphics(), tracks: new Graphics(), cx, cy, bounds: this.chunkBounds(cx, cy) };
-        this.drawChunk(chunk);
+        // Kawałki rysujemy dopiero, gdy pojawią się na ekranie (duże mapy: milion kafelków).
+        const chunk: Chunk = {
+          gfx: new Graphics(),
+          tracks: new Graphics(),
+          drawn: false,
+          dirty: false,
+          lastSeen: -1,
+          cx,
+          cy,
+          bounds: this.chunkBounds(cx, cy),
+        };
         this.chunks.push(chunk);
       }
     }
@@ -68,13 +88,43 @@ export class MapRenderer {
 
   markTileDirty(x: number, y: number): void {
     const chunk = this.chunks[Math.floor(y / CHUNK) * this.chunksX + Math.floor(x / CHUNK)];
-    if (chunk) this.drawChunk(chunk);
+    if (chunk?.drawn) chunk.dirty = true;
   }
 
+  /**
+   * Widoczność kawałków; widoczne a nienarysowane rysujemy (najwyżej kilka nowych na klatkę,
+   * zmienione – od razu), dawno niewidziane zwalniamy, gdy narysowanych jest za dużo.
+   */
   cull(view: Rect): void {
-    for (const { gfx, tracks, bounds: b } of this.chunks) {
-      gfx.visible = tracks.visible =
-        b.x < view.x + view.w && b.x + b.w > view.x && b.y < view.y + view.h && b.y + b.h > view.y;
+    this.frame++;
+    const pending: Chunk[] = [];
+    for (const c of this.chunks) {
+      const b = c.bounds;
+      const visible = b.x < view.x + view.w && b.x + b.w > view.x && b.y < view.y + view.h && b.y + b.h > view.y;
+      c.gfx.visible = c.tracks.visible = visible;
+      if (!visible) continue;
+      c.lastSeen = this.frame;
+      if (c.dirty) this.drawChunk(c);
+      else if (!c.drawn) pending.push(c);
+    }
+    // Najpierw kawałki bliżej środka ekranu.
+    const cx = view.x + view.w / 2;
+    const cy = view.y + view.h / 2;
+    const dist = (c: Chunk) => Math.abs(c.bounds.x + c.bounds.w / 2 - cx) + Math.abs(c.bounds.y + c.bounds.h / 2 - cy);
+    pending.sort((a, b) => dist(a) - dist(b));
+    for (const c of pending.slice(0, NEW_CHUNKS_PER_FRAME)) this.drawChunk(c);
+    if (this.drawnCount > MAX_DRAWN_CHUNKS) this.evict();
+  }
+
+  /** Zwalnia geometrię najdawniej widzianych kawałków. */
+  private evict(): void {
+    const old = this.chunks.filter((c) => c.drawn && c.lastSeen < this.frame).sort((a, b) => a.lastSeen - b.lastSeen);
+    for (const c of old.slice(0, this.drawnCount - MAX_DRAWN_CHUNKS)) {
+      c.gfx.clear();
+      c.tracks.clear();
+      c.drawn = false;
+      c.dirty = false;
+      this.drawnCount--;
     }
   }
 
@@ -90,6 +140,9 @@ export class MapRenderer {
   }
 
   private drawChunk(chunk: Chunk): void {
+    if (!chunk.drawn) this.drawnCount++;
+    chunk.drawn = true;
+    chunk.dirty = false;
     const g = chunk.gfx;
     g.clear();
     chunk.tracks.clear();

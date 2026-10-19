@@ -14,9 +14,11 @@ Wartości liczbowe w tym dokumencie są **startowe** – do strojenia w trakcie 
   | Średnia (zalecana) | 128×128 | 8 | 12 |
   | Duża | 256×256 | 32 | 48 |
   | Ogromna (eksperymentalna) | 512×512 | 128 | 192 |
+  | Testowa (wydajność) | 1024×1024 | 512 | 768 |
 
 - Liczba miast i zakładów rośnie z powierzchnią. Symulacja jest lekka nawet dla największej mapy (miesiąc gry 512×512 ≈ 0,15 s obliczeń); ograniczeniem jest rysowanie i rozmiar autozapisu.
-- Adres `?seed=N&size=S` uruchamia nową grę na danej mapie (S: 64, 128, 256, 512).
+- Adres `?seed=N&size=S` uruchamia nową grę na danej mapie (S: 64, 128, 256, 512, 1024).
+- Na dużych mapach autozapis jest rzadszy: 512 – co minutę, 1024 – co 2 minuty.
 
 ## Tory i stacje
 

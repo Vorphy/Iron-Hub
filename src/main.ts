@@ -18,7 +18,7 @@ import { hudStore, showMessage, type HudActions } from './ui/hudStore';
 
 /** Domyślny rozmiar mapy (okno nowej gry pozwala wybrać inny). */
 const DEFAULT_MAP_SIZE = 128;
-const ALLOWED_SIZES = [64, 128, 256, 512];
+const ALLOWED_SIZES = [64, 128, 256, 512, 1024];
 const AUTOSAVE_MS = 30_000;
 
 let app: Application;
@@ -150,9 +150,15 @@ async function start(): Promise<void> {
   }
   void refreshSaveInfo();
 
+  // Autozapis co 30 s; na dużych mapach rzadziej (zapis 1024×1024 to kilkadziesiąt MB danych).
+  let lastAutosave = Date.now();
   setInterval(() => {
-    if (game && autosaveKey(game) !== autosavedKey) void saveTo('auto', true);
-  }, AUTOSAVE_MS);
+    if (!game) return;
+    const factor = Math.max(1, game.state.map.width / 256);
+    if (Date.now() - lastAutosave < AUTOSAVE_MS * factor) return;
+    lastAutosave = Date.now();
+    if (autosaveKey(game) !== autosavedKey) void saveTo('auto', true);
+  }, 5000);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') void saveTo('auto', true);
   });

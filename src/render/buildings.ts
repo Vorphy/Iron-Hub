@@ -1,4 +1,7 @@
-import { Graphics } from 'pixi.js';
+import { Container, Graphics } from 'pixi.js';
+import { MAX_HEIGHT } from '../sim/world/height';
+import type { Rect } from './camera';
+import { HEIGHT_PX, tileToWorldFlat } from './iso';
 import { industryDef, type Industry } from '../sim/economy/industry';
 import { darken, drawBox, drawChimney, drawGableRoof, drawPile, drawTree, lighten } from './shapes';
 
@@ -21,13 +24,31 @@ export function drawHouse(g: Graphics, x: number, y: number, level: number, hash
 
 /** Wszystkie zakłady w jednej warstwie (jest ich kilkanaście – rysowane raz, odświeżane po zmianach). */
 export class IndustryRenderer {
-  readonly gfx = new Graphics();
+  /** Kontener do dodania do świata (każdy zakład to osobna grafika – ukrywana poza ekranem). */
+  readonly gfx = new Container();
+  private items: { g: Graphics; bounds: Rect }[] = [];
 
   draw(industries: readonly Industry[]): void {
-    const g = this.gfx;
-    g.clear();
+    for (const child of this.gfx.removeChildren()) child.destroy();
+    this.items = [];
     // Od tyłu do przodu (mniejsze x + y wcześniej).
-    for (const ind of [...industries].sort((a, b) => a.x + a.y - (b.x + b.y))) drawIndustry(g, ind);
+    for (const ind of [...industries].sort((a, b) => a.x + a.y - (b.x + b.y))) {
+      const g = new Graphics();
+      drawIndustry(g, ind);
+      const [w, h] = industryDef(ind.type)!.size;
+      const left = tileToWorldFlat(ind.x, ind.y + h).x;
+      const right = tileToWorldFlat(ind.x + w, ind.y).x;
+      const top = tileToWorldFlat(ind.x, ind.y).y - (MAX_HEIGHT * HEIGHT_PX + 80);
+      const bottom = tileToWorldFlat(ind.x + w, ind.y + h).y;
+      this.items.push({ g, bounds: { x: left, y: top, w: right - left, h: bottom - top } });
+      this.gfx.addChild(g);
+    }
+  }
+
+  cull(view: Rect): void {
+    for (const { g, bounds: b } of this.items) {
+      g.visible = b.x < view.x + view.w && b.x + b.w > view.x && b.y < view.y + view.h && b.y + b.h > view.y;
+    }
   }
 }
 
