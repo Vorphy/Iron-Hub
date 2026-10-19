@@ -100,7 +100,7 @@ function drawVehicle(g: Graphics, pose: VehiclePose, selected: boolean): Point {
   return { x: mid.x, y: mid.y - BODY_H / 2 };
 }
 
-function darken(color: number, k: number): number {
+export function darken(color: number, k: number): number {
   const r = ((color >> 16) & 255) * k;
   const gg = ((color >> 8) & 255) * k;
   const b = (color & 255) * k;
@@ -108,7 +108,7 @@ function darken(color: number, k: number): number {
 }
 
 /** Otoczka wypukła (monotone chain). */
-function hull(points: Point[]): Point[] {
+export function hull(points: Point[]): Point[] {
   const pts = [...points].sort((a, b) => a.x - b.x || a.y - b.y);
   const cross = (o: Point, a: Point, b: Point) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
   const lower: Point[] = [];

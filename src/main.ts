@@ -20,6 +20,16 @@ import { hudStore, showMessage, type HudActions } from './ui/hudStore';
 const DEFAULT_MAP_SIZE = 128;
 const ALLOWED_SIZES = [64, 128, 256, 512, 1024];
 const AUTOSAVE_MS = 30_000;
+const TRAFFIC_KEY = 'ironhub.traffic';
+
+/** Ustawienie ruchu w miastach z pamięci przeglądarki (domyślnie włączony). */
+function storedTraffic(): boolean {
+  try {
+    return localStorage.getItem(TRAFFIC_KEY) !== '0';
+  } catch {
+    return true;
+  }
+}
 
 let app: Application;
 let game: Game | null = null;
@@ -35,6 +45,7 @@ function startGame(state: GameState, view: ViewState | null = null): void {
   game?.destroy();
   game = new Game(app, state);
   if (view) game.view = view;
+  game.trafficEnabled = hudStore.get().traffic;
   game.closeWindow();
   // Dostęp z konsoli przeglądarki przy pracy lokalnej (testy, debugowanie).
   if (import.meta.env.DEV) Object.assign(window, { game, iron: { startGame, createGame } });
@@ -85,6 +96,16 @@ const actions: HudActions = {
   setTerrainMode: (m) => game?.toolController.setTerrainMode(m),
   setSignalMode: (mode) => game?.command({ type: 'setSignalMode', mode }),
   toggleMenu: () => hudStore.set({ menuOpen: !hudStore.get().menuOpen }),
+  toggleTraffic: () => {
+    const traffic = !hudStore.get().traffic;
+    hudStore.set({ traffic });
+    if (game) game.trafficEnabled = traffic;
+    try {
+      localStorage.setItem(TRAFFIC_KEY, traffic ? '1' : '0');
+    } catch {
+      // Bez dostępu do pamięci przeglądarki ustawienie działa do zamknięcia strony.
+    }
+  },
   openFinance: () => game?.openWindow({ kind: 'finance' }),
   addTestMoney: () => game?.command({ type: 'addMoney', amount: 100_000 }),
   quickSave: () => void saveTo('quick'),
@@ -125,6 +146,7 @@ const actions: HudActions = {
 };
 
 async function start(): Promise<void> {
+  hudStore.set({ traffic: storedTraffic() });
   app = new Application();
   await app.init({
     resizeTo: window,

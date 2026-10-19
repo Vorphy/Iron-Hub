@@ -137,6 +137,8 @@ export interface HudState {
   /** Daty zapisów w przeglądarce (ISO) – do menu. */
   saves: { quick: string | null; auto: string | null };
   menuOpen: boolean;
+  /** Ruch aut i autobusów w miastach. */
+  traffic: boolean;
   /** Okno nowej gry (rozmiar mapy, ziarno). */
   newGameOpen: boolean;
   window: WindowRef | null;
@@ -159,6 +161,7 @@ export const hudStore = new Store<HudState>({
   message: null,
   saves: { quick: null, auto: null },
   menuOpen: false,
+  traffic: true,
   newGameOpen: false,
   window: null,
   windowData: null,
@@ -180,6 +183,7 @@ export interface HudActions {
   setTerrainMode(mode: TerrainMode): void;
   setSignalMode(mode: SignalMode): void;
   toggleMenu(): void;
+  toggleTraffic(): void;
   openFinance(): void;
   addTestMoney(): void;
   quickSave(): void;

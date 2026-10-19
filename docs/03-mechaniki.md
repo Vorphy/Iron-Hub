@@ -142,7 +142,8 @@ Produkcja i zapotrzebowanie rosną liniowo z poziomem (1–5). Zakłady startuj�
 - Autobusy, ciężarówki i auta **są wyłącznie dekoracją**. Jeżdżą po drogach miasta i w okolicach stacji, ich liczba luźno zależy od wielkości miasta / aktywności stacji.
 - **Nie mają związku z liczbą pasażerów ani ładunku** – te liczone są abstrakcyjnie przez zasięg stacji.
 - Nie uczestniczą w symulacji (żyją w `render/` lub w osobnym, niedeterministycznym module kosmetycznym), nie trafiają do zapisu gry.
-- Można je wyłączyć w ustawieniach (wydajność).
+- Można je wyłączyć: Menu → „Ruch w miastach” (ustawienie zapamiętane w przeglądarce).
+- Obecnie: auta i autobusy błądzą po drogach miasta prawym pasem, w tempie gry (stoją w pauzie). Aut przybywa z liczbą mieszkańców (1–12), autobusy jeżdżą w miastach, z których kolej wozi pasażerów (2+, w dużych więcej), w pozostałych co najwyżej jeden. Ruch jest tylko w miastach przy widoku i przy przybliżeniu od 0,5×. Ciężarówek jeszcze nie ma.
 
 ## Ekonomia gracza
 

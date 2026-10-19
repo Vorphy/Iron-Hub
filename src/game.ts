@@ -13,6 +13,7 @@ import { IndustryRenderer } from './render/buildings';
 import { FloatingTexts } from './render/floatingText';
 import { MapLabels } from './render/mapLabels';
 import { SignalRenderer } from './render/signals';
+import { TrafficRenderer } from './render/traffic';
 import { TrainRenderer } from './render/trains';
 import type { ViewState } from './persistence/saves';
 import type { Command } from './sim/commands';
@@ -59,6 +60,7 @@ export class Game {
   private readonly floaters = new FloatingTexts();
   private readonly trains = new TrainRenderer();
   private readonly signals = new SignalRenderer();
+  private readonly traffic = new TrafficRenderer();
   private readonly tools: Tools;
   private readonly input: Input;
   private pointer: Point | null = null;
@@ -87,6 +89,7 @@ export class Game {
     );
     world.addChild(
       this.mapRenderer.container,
+      this.traffic.gfx,
       this.industries.gfx,
       this.bridges.gfx,
       this.tunnels.gfx,
@@ -141,6 +144,11 @@ export class Game {
 
   get state(): GameState {
     return this.sim.state;
+  }
+
+  /** Ruch aut i autobusów w miastach (dekoracja, można wyłączyć na słabszym komputerze). */
+  set trafficEnabled(on: boolean) {
+    this.traffic.enabled = on;
   }
 
   setSpeed(speed: Speed): void {
@@ -278,6 +286,9 @@ export class Game {
     }
     this.mapRenderer.cull(this.camera.viewRect());
     this.industries.cull(this.camera.viewRect());
+    // Ruch uliczny w tempie gry (stoi w pauzie).
+    const gameSeconds = (Math.min(deltaMs, 250) * this.loop.speed) / 1000;
+    this.traffic.update(this.sim.state, deltaMs, gameSeconds, this.camera.viewRect(), this.camera.zoom);
     const win = hudStore.get().window;
     this.signals.draw(this.sim.state);
     this.trains.draw(this.sim.state, this.loop.alpha, win?.kind === 'train' ? win.trainId : null);

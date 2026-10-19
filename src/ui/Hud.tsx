@@ -89,7 +89,7 @@ export function Hud({ actions }: { actions: HudActions }) {
       </div>
 
       {s.newGameOpen && <NewGameDialog actions={actions} canCancel={true} />}
-      {s.menuOpen && <Menu actions={actions} saves={s.saves} signalMode={s.signalMode} />}
+      {s.menuOpen && <Menu actions={actions} saves={s.saves} signalMode={s.signalMode} traffic={s.traffic} />}
       {s.windowData?.kind === 'depot' && <DepotWindow data={s.windowData} money={s.money} actions={actions} />}
       {s.windowData?.kind === 'train' && <TrainWindow data={s.windowData} actions={actions} />}
       {s.windowData?.kind === 'town' && <TownWindow data={s.windowData} actions={actions} />}
@@ -261,10 +261,12 @@ function Menu({
   actions,
   saves,
   signalMode,
+  traffic,
 }: {
   actions: HudActions;
   saves: HudState['saves'];
   signalMode: HudState['signalMode'];
+  traffic: boolean;
 }) {
   return (
     <div class="panel menu">
@@ -282,6 +284,10 @@ function Menu({
           ? 'Pociągi same trzymają odstęp i nie wjeżdżają na zajęte rozjazdy.'
           : 'Pociąg staje tylko przed semaforem, na końcu peronu lub toru. Semafory stawiasz sam (B).'}
       </div>
+      <div class="menu-title">Widok</div>
+      <button class={traffic ? 'active' : ''} onClick={actions.toggleTraffic} title="Auta i autobusy w miastach – tylko dekoracja">
+        Ruch w miastach: {traffic ? 'wł.' : 'wył.'}
+      </button>
       <div class="menu-title">Gra</div>
       <button onClick={actions.quickSave}>Zapisz</button>
       <button onClick={actions.quickLoad} disabled={!saves.quick}>
