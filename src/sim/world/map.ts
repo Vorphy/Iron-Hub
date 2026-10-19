@@ -1,5 +1,5 @@
 import { createRng, nextFloat, type Rng } from '../rng';
-import { MAX_HEIGHT, relaxHeights } from './height';
+import { MAX_HEIGHT, relaxHeights, syncWater } from './height';
 
 export const Terrain = {
   Grass: 0,
@@ -70,7 +70,7 @@ export function generateMap(width: number, height: number, seed: number): WorldM
     else terrain[i] = Terrain.Grass;
   }
   const n = width * height;
-  return {
+  const map: WorldMap = {
     width,
     height,
     heights: generateHeights(rng, width, height, terrain),
@@ -84,11 +84,13 @@ export function generateMap(width: number, height: number, seed: number): WorldM
     bridge: new Uint16Array(n),
     tunnel: new Uint16Array(n),
   };
+  matchWaterToHeights(map);
+  return map;
 }
 
 /**
  * Wysokości narożników: szerokie wzgórza (dwie skale szumu), kwantyzowane na poziomy – stąd
- * płaskie tarasy, na których da się budować. Woda zawsze na poziomie 0, brzegi łagodne.
+ * płaskie tarasy, na których da się budować. Ląd od poziomu 1, woda na dnie (0) – poniżej lądu.
  */
 function generateHeights(rng: Rng, width: number, height: number, terrain: Uint8Array): Uint8Array {
   const vw = width + 1;
@@ -98,8 +100,8 @@ function generateHeights(rng: Rng, width: number, height: number, terrain: Uint8
   const heights = new Uint8Array(vw * vh);
   for (let i = 0; i < heights.length; i++) {
     const e = broad[i]! * 0.7 + detail[i]! * 0.3;
-    const level = Math.floor((Math.max(0, e - LOWLAND) / (1 - LOWLAND)) * (MAX_HEIGHT + 2));
-    heights[i] = Math.min(MAX_HEIGHT, level);
+    const level = Math.floor((Math.max(0, e - LOWLAND) / (1 - LOWLAND)) * (MAX_HEIGHT + 1));
+    heights[i] = Math.min(MAX_HEIGHT, level + 1);
   }
   // Narożniki kafelków wody na poziomie 0.
   for (let y = 0; y < height; y++) {
@@ -110,6 +112,11 @@ function generateHeights(rng: Rng, width: number, height: number, terrain: Uint8
   }
   relaxHeights(heights, vw, vh);
   return heights;
+}
+
+/** Po wygenerowaniu wysokości: woda dokładnie tam, gdzie teren leży na dnie. */
+function matchWaterToHeights(map: WorldMap): void {
+  syncWater(map, Array.from({ length: map.width * map.height }, (_, i) => i));
 }
 
 function noiseField(rng: Rng, width: number, height: number, cell = NOISE_CELL): Float32Array {

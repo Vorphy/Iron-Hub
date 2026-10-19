@@ -71,8 +71,10 @@ describe('generator wysokości', () => {
         if (vy > 0) expect(Math.abs(h - map.heights[(vy - 1) * vw + vx]!)).toBeLessThanOrEqual(1);
       }
     }
+    // Woda dokładnie na kafelkach z wszystkimi narożnikami na dnie; ląd zawsze wyżej.
     for (let i = 0; i < map.terrain.length; i++) {
-      if (map.terrain[i] === Terrain.Water) expect(cornerHeights(map, i % 128, Math.floor(i / 128))).toEqual([0, 0, 0, 0]);
+      const bottom = cornerHeights(map, i % 128, Math.floor(i / 128)).every((h) => h === 0);
+      expect(map.terrain[i] === Terrain.Water).toBe(bottom);
     }
     expect(Math.max(...map.heights)).toBeGreaterThanOrEqual(4);
   });

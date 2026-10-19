@@ -2,8 +2,8 @@ import type { CommandResult, SimEvent } from '../commands';
 import { TERRAFORM_COST } from '../config';
 import { spend } from '../economy/finance';
 import type { GameState } from '../state';
-import { MAX_HEIGHT, vertexIndex } from './height';
-import { hasBuilding, inBounds, Terrain, type WorldMap } from './map';
+import { MAX_HEIGHT, syncWater, vertexIndex } from './height';
+import { hasBuilding, inBounds, type WorldMap } from './map';
 
 export interface TerraformPlan {
   /** Zmienione narożniki: indeks wierzchołka -> nowa wysokość. */
@@ -21,7 +21,7 @@ const NEIGHBORS = [
   [0, -1],
 ] as const;
 
-/** Kafelek, pod którym nie wolno zmieniać terenu (tor, stacja, zajezdnia, budynek, woda). */
+/** Kafelek, pod którym nie wolno zmieniać terenu (tor, stacja, zajezdnia, most, tunel, budynek). */
 function locked(map: WorldMap, x: number, y: number): boolean {
   const i = y * map.width + x;
   return !!(
@@ -30,8 +30,7 @@ function locked(map: WorldMap, x: number, y: number): boolean {
     map.depot[i] ||
     map.bridge[i] ||
     map.tunnel[i] ||
-    hasBuilding(map, i) ||
-    map.terrain[i] === Terrain.Water
+    hasBuilding(map, i)
   );
 }
 
@@ -102,6 +101,8 @@ export function planTerraform(state: GameState, targets: ReadonlyMap<number, num
 export function applyTerraform(state: GameState, plan: TerraformPlan, events: SimEvent[]): CommandResult {
   if (!plan.result.ok) return plan.result;
   for (const [i, v] of plan.changes) state.map.heights[i] = v;
+  // Podniesiona woda staje się lądem, ląd obniżony na dno – wodą.
+  syncWater(state.map, plan.tiles);
   spend(state, 'construction', plan.cost);
   for (const t of plan.tiles) events.push({ type: 'tileChanged', x: t % state.map.width, y: Math.floor(t / state.map.width) });
   return { ok: true };

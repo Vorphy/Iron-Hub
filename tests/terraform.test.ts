@@ -47,18 +47,35 @@ describe('kształtowanie terenu', () => {
     expectSmooth(s);
   });
 
-  it('nie wolno zmieniać terenu pod torem, przy wodzie ani poniżej poziomu 0', () => {
+  it('nie wolno zmieniać terenu pod torem ani poniżej dna', () => {
     const { sim, s } = flat();
     sim.enqueue({ type: 'buildTrack', pieces: [{ x: 5, y: 5, track: Track.X }] });
-    s.map.terrain[15 * 20 + 15] = Terrain.Water;
     sim.step();
     sim.drainEvents();
     sim.enqueue({ type: 'terraform', vx: 5, vy: 5, delta: 1 });
-    sim.enqueue({ type: 'terraform', vx: 16, vy: 16, delta: 1 });
     sim.enqueue({ type: 'terraform', vx: 2, vy: 2, delta: -1 });
     sim.step();
-    expect(fails(sim)).toEqual(['blocked', 'blocked', 'tooHigh']);
+    expect(fails(sim)).toEqual(['blocked', 'tooHigh']);
     expect(vertexHeight(s.map, 5, 5)).toBe(0);
+  });
+
+  it('poziom morza: podniesiona woda staje się lądem, ląd obniżony na dno – wodą', () => {
+    const { sim, s } = flat();
+    // Ląd na poziomie 1, jezioro (narożniki na dnie) w środku.
+    s.map.heights.fill(1);
+    for (let vy = 8; vy <= 12; vy++) for (let vx = 8; vx <= 12; vx++) s.map.heights[vy * 21 + vx] = 0;
+    for (let y = 8; y < 12; y++) for (let x = 8; x < 12; x++) s.map.terrain[y * 20 + x] = Terrain.Water;
+    // Podnieś narożnik w środku jeziora – cztery kafelki wokół wynurzają się.
+    sim.enqueue({ type: 'terraform', vx: 10, vy: 10, delta: 1 });
+    // Obniż narożnik lądu – kafelek, którego wszystkie narożniki są na dnie, zalewa woda.
+    sim.enqueue({ type: 'terraform', vx: 13, vy: 9, delta: -1 });
+    sim.enqueue({ type: 'terraform', vx: 13, vy: 10, delta: -1 });
+    sim.step();
+    expect(fails(sim)).toEqual([]);
+    for (const [x, y] of [[9, 9], [10, 9], [9, 10], [10, 10]] as const) expect(s.map.terrain[y * 20 + x]).toBe(Terrain.Grass);
+    expect(s.map.terrain[8 * 20 + 8]).toBe(Terrain.Water);
+    expect(s.map.terrain[9 * 20 + 12]).toBe(Terrain.Water);
+    expect(s.map.terrain[9 * 20 + 13]).toBe(Terrain.Grass);
   });
 
   it('wyrównanie obszaru daje płaski teren, na którym da się postawić stację', () => {

@@ -1,4 +1,4 @@
-import type { WorldMap } from './map';
+import { Terrain, type WorldMap } from './map';
 
 /**
  * Wysokości terenu w narożnikach kafelków (jak w TTD): siatka (W+1)×(H+1).
@@ -45,6 +45,27 @@ export function tileSlope(map: WorldMap, x: number, y: number): Slope {
   // Oś Y biegnie od boku NE (t–r) do SW (b–l).
   if (t === r && b === l && Math.abs(t - b) === 1) return 'y';
   return 'other';
+}
+
+/** Dno – poniżej poziomu zerowego lądu. Kafelek z wszystkimi narożnikami na dnie jest wodą. */
+export const SEA_LEVEL = 0;
+
+/** Kafelek leży poniżej poziomu lądu (wszystkie narożniki na dnie) – jest wodą. */
+export function isBelowSea(map: WorldMap, x: number, y: number): boolean {
+  return cornerHeights(map, x, y).every((h) => h === SEA_LEVEL);
+}
+
+/**
+ * Uzgadnia wodę z wysokościami (jak w OpenTTD): kafelek na dnie staje się wodą,
+ * kafelek wody podniesiony choć jednym narożnikiem – zwykłym lądem.
+ */
+export function syncWater(map: WorldMap, tiles: Iterable<number>): void {
+  for (const i of tiles) {
+    const x = i % map.width;
+    const y = Math.floor(i / map.width);
+    if (isBelowSea(map, x, y)) map.terrain[i] = Terrain.Water;
+    else if (map.terrain[i] === Terrain.Water) map.terrain[i] = Terrain.Grass;
+  }
 }
 
 export function isFlat(map: WorldMap, x: number, y: number): boolean {
