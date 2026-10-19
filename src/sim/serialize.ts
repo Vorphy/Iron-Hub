@@ -14,7 +14,7 @@ import { engineDef, wagonDef } from './trains/vehicles';
 import { MAX_HEIGHT } from './world/height';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 10;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -27,6 +27,7 @@ const LAYERS = {
   industry: 4,
   bridge: 2,
   tunnel: 2,
+  road: 1,
 } as const;
 type LayerName = keyof typeof LAYERS;
 
@@ -156,6 +157,11 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     mapTrains((t) => ({ ...t, blockedTicks: 0, blockedBy: null, reverseRequested: false }));
     d.version = 9;
   }
+  if (d.version === 9) {
+    // v10: drogi w miastach (stare mapy bez dróg – miasta zbudują je przy wzroście)
+    if (d.map) d.map.road = emptyLayer('road');
+    d.version = 10;
+  }
   return d as Partial<SerializedState>;
 }
 
@@ -181,6 +187,7 @@ export function deserializeState(data: unknown): GameState {
     heights: fromBase64(m.heights, (m.width + 1) * (m.height + 1)),
     bridge: new Uint16Array(bytes('bridge').buffer),
     tunnel: new Uint16Array(bytes('tunnel').buffer),
+    road: bytes('road'),
   };
   if (map.heights.some((h) => h > MAX_HEIGHT)) throw new SaveError('Uszkodzone wysokości terenu');
   const ints = [d.tick, d.rng, d.nextStationId, d.nextDepotId, d.nextTrainId, d.nextBridgeId, d.nextTunnelId];

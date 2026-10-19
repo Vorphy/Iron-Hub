@@ -3,6 +3,7 @@ import { emptyTownMonth, isStreet, MAX_HOUSE_LEVEL, TOWN_NAMES, townNamePool, ty
 import { createRng, nextFloat, nextInt, type Rng } from '../rng';
 import type { GameState } from '../state';
 import { isFlat, tileBaseHeight } from './height';
+import { updateTownRoads } from './roads';
 import { getTerrain, hasBuilding, inBounds, setTerrain, Terrain, type WorldMap } from './map';
 
 /** Powierzchnia mapy, dla której podane są liczby miast i zakładów (128×128). */
@@ -22,6 +23,7 @@ export function generateWorld(state: GameState, seed: number): void {
     const count = Math.max(def.perMap > 0 ? 1 : 0, Math.round(def.perMap * scale));
     for (let i = 0; i < count; i++) placeIndustry(state, rng, def);
   }
+  for (const town of state.towns) updateTownRoads(state, town);
 }
 
 function isLand(map: WorldMap, x: number, y: number): boolean {
@@ -32,7 +34,7 @@ function isLand(map: WorldMap, x: number, y: number): boolean {
 function isFree(map: WorldMap, x: number, y: number): boolean {
   if (!isLand(map, x, y) || !isFlat(map, x, y)) return false;
   const i = y * map.width + x;
-  return !hasBuilding(map, i) && !map.track[i] && !map.station[i] && !map.depot[i];
+  return !hasBuilding(map, i) && !map.track[i] && !map.station[i] && !map.depot[i] && !map.road[i];
 }
 
 function placeTowns(state: GameState, rng: Rng, count: number): void {

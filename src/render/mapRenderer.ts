@@ -10,6 +10,7 @@ import { cornerHeights, MAX_HEIGHT } from '../sim/world/height';
 import { HEIGHT_PX, TILE_H, TILE_W, tileDiamond, tileToWorld, tileToWorldFlat } from './iso';
 import { darken, lighten } from './shapes';
 import { drawHouse } from './buildings';
+import { drawRoad } from './roadDraw';
 import { drawDepot } from './depotDraw';
 import { drawTrackPiece, TRACK_STYLE } from './trackDraw';
 
@@ -162,6 +163,8 @@ export class MapRenderer {
           drawTerrainTile(g, this.map, x, y, COLORS[t][h & 3]!);
           if (t === Terrain.Rough) drawRoughDots(g, x, y, h);
         }
+        // Droga pod torem (przejazd) – najpierw droga, tor nad nią.
+        if (this.map.road[y * this.map.width + x]) drawRoad(chunk.tracks, this.map, x, y);
         const bridge = this.map.bridge[y * this.map.width + x] ? this.getBridges().find((b) => b.id === this.map.bridge[y * this.map.width + x]) : undefined;
         const head = bridge && bridgeRole(bridge, x, y) !== 'span' ? bridge : undefined;
         const tunnelId = this.map.tunnel[y * this.map.width + x];

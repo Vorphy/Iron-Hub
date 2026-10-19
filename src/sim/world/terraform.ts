@@ -30,6 +30,7 @@ function locked(map: WorldMap, x: number, y: number): boolean {
     map.depot[i] ||
     map.bridge[i] ||
     map.tunnel[i] ||
+    map.road[i] ||
     hasBuilding(map, i)
   );
 }

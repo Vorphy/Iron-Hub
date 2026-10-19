@@ -9,6 +9,7 @@ export const CLEAR_ROUGH_COST = C.clearRough;
 export const TRACK_COST = C.trackPiece;
 export const STATION_TILE_COST = C.stationTile;
 export const HOUSE_DEMOLISH_COST = C.demolishHouse;
+export const ROAD_REMOVE_COST = C.removeRoad;
 export const TERRAFORM_COST = C.terraformCorner;
 export const BRIDGE_TILE_COST = C.bridgeTile;
 export const TUNNEL_TILE_COST = C.tunnelTile;

@@ -96,6 +96,7 @@ Tryb przełącza się w Menu w dowolnym momencie (semafory zostają, w trybie Am
 - **Pasażerowie**: mieszkańcy / 4 na miesiąc, **poczta**: mieszkańcy / 16 na miesiąc – liczone z domów w zasięgu stacji.
 - Stacja przyjmuje: pasażerów, gdy w zasięgu jest jakikolwiek dom; pocztę od 100 mieszkańców w zasięgu; towary od 200.
 - **Wzrost (co miesiąc)**: miasto, z którego przewieziono pasażerów, dostaje `1 + round(3 × odsetek przewiezionych)` nowych domów i ma 40% szans na rozbudowę jednego domu. Nieobsługiwane – 10% szans na jeden dom. Nowe domy powstają obok istniejącej zabudowy, **6× chętniej w zasięgu stacji** – miasto rośnie w stronę kolei.
+- **Drogi**: miasto buduje drogi na ulicach obok swoich domów (przy generowaniu mapy i co miesiąc przy wzroście), tylko na płaskim lądzie, nie przez tory. Tor można położyć na drodze (przejazd kolejowy); stacja lub zajezdnia postawiona na drodze ją zastępuje. Buldożer usuwa drogę za 20 zł – miasto może ją odbudować. Terenu pod drogą nie da się zmieniać. Drogi są tłem dla ruchu aut (dekoracja) i nie wpływają na przewozy.
 - Dom można wyburzyć buldożerem (500 zł). Stacja bierze nazwę od miasta w promieniu 16 kafelków (kolejne: „Główna”, „Wschód”…).
 
 ## Fabryki

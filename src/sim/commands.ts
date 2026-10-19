@@ -1,4 +1,4 @@
-import { CLEAR_ROUGH_COST, HOUSE_DEMOLISH_COST } from './config';
+import { CLEAR_ROUGH_COST, HOUSE_DEMOLISH_COST, ROAD_REMOVE_COST } from './config';
 import { spend } from './economy/finance';
 import { buildDepot, depotAt, removeDepot } from './depot/depot';
 import { dropOrphanSignals, placeSignal, removeSignal, type SignalMode } from './signals/signals';
@@ -175,6 +175,13 @@ function clearTile(state: GameState, x: number, y: number, events: SimEvent[]): 
   }
   const bits = getTrackBits(map, x, y);
   if (bits) return removeTrack(state, tracksOn(bits).map((track) => ({ x, y, track })), events);
+  if (map.road[i]) {
+    if (state.money < ROAD_REMOVE_COST) return { ok: false, reason: 'noMoney' };
+    spend(state, 'construction', ROAD_REMOVE_COST);
+    map.road[i] = 0;
+    events.push({ type: 'tileChanged', x, y });
+    return { ok: true };
+  }
   if (getTerrain(map, x, y) !== Terrain.Rough) return { ok: false, reason: 'nothingToClear' };
   if (state.money < CLEAR_ROUGH_COST) return { ok: false, reason: 'noMoney' };
   spend(state, 'construction', CLEAR_ROUGH_COST);

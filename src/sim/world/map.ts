@@ -32,6 +32,8 @@ export interface WorldMap {
   bridge: Uint16Array;
   /** Id tunelu pod kafelkiem (portale i wnętrze; 0 – brak). */
   tunnel: Uint16Array;
+  /** Droga w mieście na kafelku (1 – jest). */
+  road: Uint8Array;
 }
 
 /** Na kafelku stoi budynek (dom lub zakład) – nie da się tu nic zbudować. */
@@ -83,6 +85,7 @@ export function generateMap(width: number, height: number, seed: number): WorldM
     industry: new Uint32Array(n),
     bridge: new Uint16Array(n),
     tunnel: new Uint16Array(n),
+    road: new Uint8Array(n),
   };
   matchWaterToHeights(map);
   return map;

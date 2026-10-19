@@ -34,6 +34,8 @@ export const ECONOMY = {
     clearRough: 50,
     /** Wyburzenie domu. */
     demolishHouse: 500,
+    /** Rozbiórka drogi w mieście (miasto może ją z czasem odbudować). */
+    removeRoad: 20,
   },
 
   /** Zwroty. */

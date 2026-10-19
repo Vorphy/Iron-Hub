@@ -67,6 +67,7 @@ export function buildDepot(state: GameState, x: number, y: number, side: Side, e
   if (!plan.result.ok) return plan.result;
   const id = state.nextDepotId++;
   state.map.depot[y * state.map.width + x] = id;
+  state.map.road[y * state.map.width + x] = 0;
   if (getTerrain(state.map, x, y) === Terrain.Rough) setTerrain(state.map, x, y, Terrain.Grass);
   state.depots.push({ id, x, y, side });
   spend(state, 'construction', plan.cost);

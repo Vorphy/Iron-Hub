@@ -159,6 +159,7 @@ export function buildStation(
     const i = y * map.width + x;
     map.station[i] = id;
     map.track[i] = axisTrack;
+    map.road[i] = 0;
     if (getTerrain(map, x, y) === Terrain.Rough) setTerrain(map, x, y, Terrain.Grass);
     tiles.push(i);
     events.push({ type: 'tileChanged', x, y });

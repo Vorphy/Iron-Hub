@@ -252,7 +252,10 @@ export class Game {
 
     const events = this.sim.drainEvents();
     for (const ev of events) {
-      if (ev.type === 'tileChanged') this.mapRenderer.markTileDirty(ev.x, ev.y);
+      if (ev.type === 'tileChanged') {
+        // Drogi łączą się z sąsiadami – odświeżamy też sąsiednie kafelki (mogą być w innym kawałku).
+        for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]] as const) this.mapRenderer.markTileDirty(ev.x + dx, ev.y + dy);
+      }
       else if (ev.type === 'stationsChanged') this.labels.rebuild(this.sim.state);
       else if (ev.type === 'bridgesChanged') this.bridges.draw(this.sim.state);
       else if (ev.type === 'tunnelsChanged') this.tunnels.draw(this.sim.state);

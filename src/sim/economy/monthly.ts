@@ -5,6 +5,7 @@ import type { GameState } from '../state';
 import { nextFloat, nextInt } from '../rng';
 import { consistStats } from '../trains/vehicles';
 import { growTown } from '../world/generate';
+import { updateTownRoads } from '../world/roads';
 import { closeMonth, spend } from './finance';
 import {
   averageSupply,
@@ -82,6 +83,7 @@ function closeTownMonth(state: GameState, town: Town, nearStations: Uint8Array, 
   const before = new Set(townTiles(state, town));
   growTown(state, state.rng, town, houses, (i) => (nearStations[i] ? STATION_PULL : 1));
   for (const i of townTiles(state, town)) if (!before.has(i)) events.push(tileEvent(state, i));
+  updateTownRoads(state, town, events);
 
   // W obsługiwanym mieście część domów się rozbudowuje.
   if (served && nextFloat(state.rng) < UPGRADE_CHANCE && before.size > 0) {
