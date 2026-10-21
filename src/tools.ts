@@ -1,7 +1,7 @@
 import { planCatenary } from './sim/track/catenary';
 import type { Overlay } from './render/overlay';
 import type { Command, FailReason } from './sim/commands';
-import { CLEAR_ROUGH_COST, SIGNAL_COST } from './sim/config';
+import { BRIDGE_TILE_COST, CLEAR_ROUGH_COST, SIGNAL_COST, TRACK_REFUND_RATE, TUNNEL_TILE_COST } from './sim/config';
 import { CARGO_DEFS, type Cargo } from './sim/economy/cargo';
 import { catchmentCargo } from './sim/economy/cargoFlow';
 import { autoDepotSide, depotAt, depotRefund, planDepot } from './sim/depot/depot';
@@ -13,8 +13,8 @@ import { getTrackBits, Side, type Track, TRACK_SIDES, tracksOn, type TrackPiece 
 import type { Simulation } from './sim/simulation';
 import { getTerrain, inBounds, Terrain } from './sim/world/map';
 import { levelTargets, planTerraform, terraformTargets } from './sim/world/terraform';
-import { bridgeTileCoords, planBridge } from './sim/track/bridge';
-import { planTunnel, tunnelTileCoords } from './sim/track/tunnel';
+import { bridgeAt, bridgeRole, bridgeTileCoords, planBridge } from './sim/track/bridge';
+import { planTunnel, tunnelAt, tunnelRole, tunnelTileCoords } from './sim/track/tunnel';
 import type { Point } from './render/iso';
 
 /** 'orders' – wskazywanie stacji do rozkładu pociągu `ordersTrain` (z okna pociągu). */
@@ -331,6 +331,9 @@ export class Tools {
         this.label = { text: `Zwrot: ${formatMoney(stationTileRefund())}`, ok: true };
       } else if (depotAt(this.sim.state, tile.x, tile.y)) {
         this.label = { text: `Zwrot: ${formatMoney(depotRefund())}`, ok: true };
+      } else if (structureAt(this.sim, tile.x, tile.y)) {
+        const s = structureAt(this.sim, tile.x, tile.y)!;
+        this.label = { text: `Rozbierz ${s.name} · zwrot: ${formatMoney(s.refund)}`, ok: true };
       } else if (bits) {
         this.previewRemoval(start, p, true);
       } else if (getTerrain(map, tile.x, tile.y) === Terrain.Rough) {
@@ -460,8 +463,9 @@ export class Tools {
       const y = Math.floor(end.y);
       const { map } = this.sim.state;
       const i = y * map.width + x;
-      // Zwykły tor: tylko wskazany element; stacja, zajezdnia, dom, nieużytek – cały kafelek.
-      const plainTrack = inBounds(map, x, y) && map.track[i] && !map.station[i] && !map.depot[i];
+      // Zwykły tor: tylko wskazany element; stacja, zajezdnia, most (przyczółek), tunel (wejście),
+      // dom, nieużytek – cały obiekt (rampa mostu i tor wjazdu do tunelu to nie „zwykły tor”).
+      const plainTrack = inBounds(map, x, y) && map.track[i] && !map.station[i] && !map.depot[i] && !structureAt(this.sim, x, y);
       if (sameTile(start, end) && !plainTrack) return { type: 'clearTile', x, y };
       const pieces = this.removalPieces(start, end);
       return pieces.length ? { type: 'removeTrack', pieces } : null;
@@ -509,6 +513,23 @@ function distToSegment(px: number, py: number, a: readonly [number, number], b: 
 function describeCatchment(supplies: Set<Cargo>, accepts: Set<Cargo>): string {
   const names = (s: Set<Cargo>) => [...s].map((c) => CARGO_DEFS[c].name).join(', ') || '—';
   return `Zbiera: ${names(supplies)} · Przyjmuje: ${names(accepts)}`;
+}
+
+/** Most (przyczółek albo pomost bez toru pod spodem) lub tunel (wejście) na kafelku – buldożer rozbiera całość. */
+function structureAt(sim: Simulation, x: number, y: number): { name: string; refund: number } | null {
+  const state = sim.state;
+  const { map } = state;
+  if (!inBounds(map, x, y)) return null;
+  const i = y * map.width + x;
+  const bridge = map.bridge[i] ? bridgeAt(state, x, y) : undefined;
+  if (bridge && (bridgeRole(bridge, x, y) !== 'span' || !map.track[i])) {
+    return { name: 'most', refund: Math.round(bridge.length * BRIDGE_TILE_COST * TRACK_REFUND_RATE) };
+  }
+  const tunnel = map.tunnel[i] ? tunnelAt(state, x, y) : undefined;
+  if (tunnel && tunnelRole(tunnel, x, y) !== 'inside') {
+    return { name: 'tunel', refund: Math.round(tunnel.length * TUNNEL_TILE_COST * TRACK_REFUND_RATE) };
+  }
+  return null;
 }
 
 /** Kafelki pod linią przeciągnięcia (jak przy budowie toru, także po skosie); klik – kafelek pod kursorem. */

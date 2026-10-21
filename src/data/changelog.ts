@@ -12,6 +12,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-21',
+    title: 'Poprawka: rozbiórka mostów i tuneli',
+    items: [
+      'Buldożer na przyczółku mostu (albo wejściu do tunelu) znowu rozbiera cały most / tunel – wcześniej próbował rozebrać sam tor rampy. Podgląd pokazuje „Rozbierz most · zwrot”.',
+    ],
+  },
+  {
+    date: '2026-10-21',
     title: 'Lepsza minimapa',
     items: [
       'Minimapę przeniesiesz w dowolne miejsce, łapiąc za nagłówek; zoom − / + (do 8×) pokazuje okolicę kamery.',
