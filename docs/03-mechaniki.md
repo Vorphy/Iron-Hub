@@ -6,7 +6,8 @@ Wartości liczbowe w tym dokumencie są **startowe** – do strojenia w trakcie 
 
 ## Nowa gra i rozmiar mapy
 
-- **Menu → Nowa gra…** (a przy pierwszym wejściu na stronę – od razu): rozmiar mapy i ziarno. Ta sama liczba i rozmiar dają zawsze tę samą mapę.
+- **Menu → Nowa gra…** (a przy pierwszym wejściu na stronę – od razu): rozmiar mapy, rok startu i ziarno. Ta sama liczba i rozmiar dają zawsze tę samą mapę.
+- **Rok startu**: 1900, 1925, 1950 (domyślny), 1975 albo 2000 – od niego zależą lokomotywy w sprzedaży (patrz „Pociągi i rozkłady”). Adres: `?seed=N&size=S&year=R`.
 
   | Rozmiar | Kafelki | Miasta | Zakłady |
   |---|---|---|---|
@@ -53,7 +54,26 @@ Wartości liczbowe w tym dokumencie są **startowe** – do strojenia w trakcie 
 ## Pociągi i rozkłady
 
 - Gracz kupuje pociąg w zajezdni (klik kursorem na zajezdnię): lokomotywa + do 10 wagonów. Sprzedaż tylko w zajezdni, zwrot 75% ceny.
-- Pojazdy definiuje plik danych `src/data/vehicles.json` (moc kW, prędkość km/h, masa t, długość w jednostkach toru, cena). Start: 3 parowozy z 1950 r. i 6 typów wagonów.
+- Pojazdy definiuje plik danych `src/data/vehicles.json` (moc kW, prędkość km/h, masa t, długość w jednostkach toru, cena, rok wejścia i wycofania). 13 lokomotyw i 6 typów wagonów.
+- **Lokomotywy z biegiem lat** (jak w OpenTTD, bez maglevów): każda wchodzi do sprzedaży w swoim roku i część z nich jest po latach wycofywana – jeżdżące pociągi zostają, nowych nie kupisz. Na początku roku komunikat o nowościach; w zajezdni znaczki „nowość” i „wkrótce wycofana”.
+
+  | Lokomotywa | Trakcja | Lata sprzedaży | km/h | kW | Cena |
+  |---|---|---|---|---|---|
+  | Iskra | parowa | 1900–1954 | 64 | 500 | 5 000 |
+  | Grom | parowa (towarowa) | 1910–1964 | 72 | 1050 | 9 000 |
+  | Strzała | parowa | 1925–1969 | 112 | 1400 | 15 000 |
+  | Orzeł | parowa | 1938–1974 | 130 | 1800 | 20 000 |
+  | Bizon | spalinowa (towarowa) | 1948–2004 | 100 | 1300 | 18 000 |
+  | Elektra | elektryczna | 1955–2009 | 125 | 2000 | 28 000 |
+  | Sokół | spalinowa | 1960–2019 | 140 | 2000 | 26 000 |
+  | Wolt | elektryczna | 1970–2029 | 160 | 3200 | 38 000 |
+  | Tur | spalinowa (towarowa) | od 1978 | 120 | 2900 | 32 000 |
+  | Piorun | elektryczna | od 1988 | 200 | 4500 | 52 000 |
+  | Jastrząb | spalinowa | od 1992 | 160 | 2400 | 36 000 |
+  | Mamut | elektryczna (towarowa) | od 1995 | 140 | 6000 | 55 000 |
+  | Błyskawica | elektryczna | od 2005 | 250 | 6400 | 70 000 |
+
+- **Sieć trakcyjna** (narzędzie Trakcja, E): lokomotywy elektryczne jeżdżą tylko pod siecią – planując trasę omijają tory bez niej, a z zajezdni bez sieci nie wyjadą. Sieć buduje się przeciągnięciem wzdłuż toru (jak tory, także po skosie) albo kliknięciem kafelka; obejmuje cały kafelek (wszystkie tory, peron, zajezdnię), most i tunel w całości. 150 zł za kafelek, utrzymanie 1 zł/mies., zdjęcie – zwrot 25% (nie pod pociągiem elektrycznym). Rozbiórka toru zabiera sieć. Parowe i spalinowe jeżdżą po wszystkich torach.
 - Gracz ustawia **rozkład = lista stacji** z opcjami (ładuj / rozładuj / czekaj na pełny załadunek – opcje od etapu 4).
 - Okno pociągu (klik na pociąg albo „Rozkład” w zajezdni): start/stop, „Do zajezdni”, „Pokaż”, rozkład – „+ Dodaj stacje” i klikanie stacji na mapie.
 - Trasa liczona algorytmem Dijkstry po skierowanych elementach toru (stan pochodny, liczony od nowa przy zmianie odcinka czoła, celu lub torów). Pociąg zatrzymuje się czołem na końcu peronu w kierunku jazdy.
@@ -158,7 +178,7 @@ Produkcja i zapotrzebowanie rosną liniowo z poziomem (1–5). Zakłady startuj�
   | towary | 3,2 | 15 |
   | drewno | 1,7 | 30 |
 
-- **Koszty miesięczne**: eksploatacja pociągów poza zajezdnią – rocznie część ceny zakupu zależna od **trakcji lokomotywy**: parowa 20%, spalinowa 15%, elektryczna 10%; wagony 10% (naliczane co miesiąc 1/12); utrzymanie: 2 zł za element toru, 10 zł za kafelek peronu, 30 zł za zajezdnię, 1 zł za semafor. Okno zajezdni pokazuje trakcję i roczny koszt utrzymania składu.
+- **Koszty miesięczne**: eksploatacja pociągów poza zajezdnią – rocznie część ceny zakupu zależna od **trakcji lokomotywy**: parowa 20%, spalinowa 15%, elektryczna 10%; wagony 10% (naliczane co miesiąc 1/12); utrzymanie: 2 zł za element toru, 10 zł za kafelek peronu, 30 zł za zajezdnię, 1 zł za semafor, 1 zł za kafelek sieci trakcyjnej. Okno zajezdni pokazuje trakcję i roczny koszt utrzymania składu.
 - **Okno finansów** (klik na pieniądze): przewozy, pociągi, utrzymanie, budowa i zakupy (po zwrotach) – bieżący miesiąc i poprzednie.
 - Przy braku pieniędzy nie da się budować ani kupować; saldo może spaść poniżej zera tylko przez koszty miesięczne.
 - **Kredyt** (okno Finanse – klik na kwotę na górnym pasku): do 300 000 zł, pożyczany i spłacany po 10 000 zł, odsetki 5% rocznie naliczane co miesiąc (osobny wiersz w bilansie). Spłata wymaga gotówki.

@@ -11,7 +11,10 @@ export interface EngineDef {
   id: string;
   name: string;
   description: string;
+  /** Rok wejścia do sprzedaży. */
   year: number;
+  /** Rok wycofania ze sprzedaży (jeżdżące pociągi zostają); brak – bez końca. */
+  retire?: number;
   power: number;
   maxSpeed: number;
   weight: number;
@@ -71,4 +74,14 @@ export function consistStats(engine: string, wagons: readonly string[]) {
     power: e.power,
     runningCost: engineRunningCost(e) + ws.reduce((s, w) => s + wagonRunningCost(w), 0),
   };
+}
+
+/** Czy lokomotywę można kupić w danym roku. */
+export function engineAvailable(e: EngineDef, year: number): boolean {
+  return year >= e.year && (e.retire === undefined || year < e.retire);
+}
+
+/** Lokomotywy w sprzedaży w danym roku. */
+export function availableEngines(year: number): EngineDef[] {
+  return ENGINES.filter((e) => engineAvailable(e, year));
 }

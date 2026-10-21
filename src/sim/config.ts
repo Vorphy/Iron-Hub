@@ -10,6 +10,7 @@ export const TRACK_COST = C.trackPiece;
 export const STATION_TILE_COST = C.stationTile;
 export const HOUSE_DEMOLISH_COST = C.demolishHouse;
 export const ROAD_REMOVE_COST = C.removeRoad;
+export const CATENARY_COST = C.catenaryTile;
 export const TERRAFORM_COST = C.terraformCorner;
 export const BRIDGE_TILE_COST = C.bridgeTile;
 export const TUNNEL_TILE_COST = C.tunnelTile;
@@ -17,6 +18,7 @@ export const DEPOT_COST = C.depot;
 export const SIGNAL_COST = C.signal;
 export const TRAIN_RESALE_RATE = ECONOMY.refunds.trainResale;
 export const TRACK_REFUND_RATE = ECONOMY.refunds.demolition;
+export const CATENARY_REFUND = Math.round(C.catenaryTile * ECONOMY.refunds.demolition);
 
 // --- Limity budowy ---
 

@@ -36,6 +36,8 @@ export const ECONOMY = {
     demolishHouse: 500,
     /** Rozbiórka drogi w mieście (miasto może ją z czasem odbudować). */
     removeRoad: 20,
+    /** Sieć trakcyjna nad jednym kafelkiem toru (dla lokomotyw elektrycznych). */
+    catenaryTile: 150,
   },
 
   /** Kredyt i bankructwo. */
@@ -64,6 +66,7 @@ export const ECONOMY = {
     stationTile: 10,
     depot: 30,
     signal: 1,
+    catenaryTile: 1,
   },
 
   /**

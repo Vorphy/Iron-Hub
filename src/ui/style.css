@@ -581,3 +581,14 @@ input.seed {
   border-left: 3px solid #c0634a;
   padding-left: 6px;
 }
+
+.badge {
+  margin-left: 6px;
+  padding: 0 4px;
+  font-size: 10px;
+  color: #1b1f24;
+  background: var(--accent);
+}
+.badge.old {
+  background: var(--muted);
+}

@@ -1,4 +1,5 @@
 import { START_MONEY } from './config';
+import { START_YEAR } from './time';
 import type { Depot } from './depot/depot';
 import { emptyFinances, type Finances } from './economy/finance';
 import type { Industry } from './economy/industry';
@@ -15,6 +16,8 @@ import { generateMap, type WorldMap } from './world/map';
 export interface GameState {
   version: 1;
   tick: number;
+  /** Rok, od którego liczy się kalendarz (data = startYear + tick). */
+  startYear: number;
   /** Stan PRNG symulacji (patrz rng.ts). */
   rng: { state: number };
   money: number;
@@ -43,12 +46,15 @@ export interface NewGameOptions {
   seed: number;
   /** Bez miast i przemysłu (testy, w przyszłości edytor map). */
   empty?: boolean;
+  /** Rok startu (domyślnie 1950) – od niego zależą dostępne lokomotywy. */
+  startYear?: number;
 }
 
-export function createGame({ width, height, seed, empty = false }: NewGameOptions): GameState {
+export function createGame({ width, height, seed, empty = false, startYear = START_YEAR }: NewGameOptions): GameState {
   const state: GameState = {
     version: 1,
     tick: 0,
+    startYear,
     rng: { state: seed >>> 0 },
     money: START_MONEY,
     map: generateMap(width, height, seed),

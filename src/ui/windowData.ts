@@ -4,7 +4,8 @@ import { isWaiting } from '../sim/trains/movement';
 import { consistStats, engineDef } from '../sim/trains/vehicles';
 import { infrastructureCost } from '../sim/economy/monthly';
 import { BANKRUPTCY_MONTHS, LOAN_INTEREST, LOAN_MAX, LOAN_STEP, monthlyInterest } from '../sim/economy/finance';
-import { tickToDate } from '../sim/time';
+import { gameDate } from '../sim/time';
+import { isElectrified } from '../sim/track/catenary';
 
 const MONTH_NAMES = ['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'];
 import { averageSupply, industryDef, MAX_INDUSTRY_LEVEL, monthlyDemand, monthlyProduction } from '../sim/economy/industry';
@@ -62,10 +63,17 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
   const { state } = sim;
   if (ref.kind === 'depot') {
     if (!state.depots.some((d) => d.id === ref.depotId)) return null;
-    return { kind: 'depot', depotId: ref.depotId, trains: trainsInDepot(state, ref.depotId).map((t) => summary(sim, t)) };
+    const depot = state.depots.find((d) => d.id === ref.depotId)!;
+    return {
+      kind: 'depot',
+      depotId: ref.depotId,
+      trains: trainsInDepot(state, ref.depotId).map((t) => summary(sim, t)),
+      year: gameDate(state).year,
+      electrified: isElectrified(state.map, depot.x, depot.y),
+    };
   }
   if (ref.kind === 'finance') {
-    const now = tickToDate(state.tick);
+    const now = gameDate(state);
     const ledgers = [state.finances.month, ...[...state.finances.history].reverse()];
     return {
       kind: 'finance',

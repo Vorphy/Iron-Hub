@@ -11,6 +11,7 @@ import { HEIGHT_PX, TILE_H, TILE_W, tileDiamond, tileToWorld, tileToWorldFlat } 
 import { darken, lighten, tileHash } from './shapes';
 import { drawHouse } from './buildings';
 import { drawRoad } from './roadDraw';
+import { drawCatenary } from './catenaryDraw';
 import { drawDepot } from './depotDraw';
 import { drawTrackPiece, TRACK_STYLE } from './trackDraw';
 
@@ -252,11 +253,13 @@ export class MapRenderer {
         const tunnelId = this.map.tunnel[y * this.map.width + x];
         const tunnel = tunnelId ? this.getTunnels().find((t) => t.id === tunnelId) : undefined;
         const portal = tunnel && tunnelRole(tunnel, x, y) !== 'inside' ? tunnel : undefined;
-        for (const track of tracksOn(getTrackBits(this.map, x, y))) {
+        const tileTracks = tracksOn(getTrackBits(this.map, x, y));
+        for (const track of tileTracks) {
           if (head && isHeadAxisTrack(head, track)) continue; // rampę rysuje most
           if (portal && track === axisTrack(portal.axis)) continue; // tor wjazdu rysuje tunel
           drawTrackPiece(tracksG, x, y, track, TRACK_STYLE);
         }
+        if (this.map.electric[y * this.map.width + x]) drawCatenary(tracksG, x, y, tileTracks);
         const house = this.map.house[y * this.map.width + x]!;
         if (house) drawHouse(tracksG, x, y, house, h);
         const depotId = this.map.depot[y * this.map.width + x];

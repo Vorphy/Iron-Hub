@@ -14,7 +14,7 @@ import { engineDef, wagonDef } from './trains/vehicles';
 import { MAX_HEIGHT } from './world/height';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 11;
+export const SAVE_VERSION = 12;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -28,12 +28,14 @@ const LAYERS = {
   bridge: 2,
   tunnel: 2,
   road: 1,
+  electric: 1,
 } as const;
 type LayerName = keyof typeof LAYERS;
 
 export interface SerializedState {
   version: number;
   tick: number;
+  startYear: number;
   rng: number;
   money: number;
   /** `heights` – siatka narożników (width+1)×(height+1), pozostałe warstwy – po jednej wartości na kafelek. */
@@ -66,6 +68,7 @@ export function serializeState(state: GameState): SerializedState {
   return {
     version: SAVE_VERSION,
     tick: state.tick,
+    startYear: state.startYear,
     rng: state.rng.state,
     money: state.money,
     map: { width: map.width, height: map.height, heights: layerToBase64(map.heights), ...layers },
@@ -173,6 +176,12 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     }
     d.version = 11;
   }
+  if (d.version === 11) {
+    // v12: rok startu (dotąd zawsze 1950) i sieć trakcyjna
+    d.startYear = 1950;
+    if (d.map) d.map.electric = emptyLayer('electric');
+    d.version = 12;
+  }
   return d as Partial<SerializedState>;
 }
 
@@ -199,6 +208,7 @@ export function deserializeState(data: unknown): GameState {
     bridge: new Uint16Array(bytes('bridge').buffer),
     tunnel: new Uint16Array(bytes('tunnel').buffer),
     road: bytes('road'),
+    electric: bytes('electric'),
   };
   if (map.heights.some((h) => h > MAX_HEIGHT)) throw new SaveError('Uszkodzone wysokości terenu');
   const ints = [d.tick, d.rng, d.nextStationId, d.nextDepotId, d.nextTrainId, d.nextBridgeId, d.nextTunnelId];
@@ -216,6 +226,7 @@ export function deserializeState(data: unknown): GameState {
   return {
     version: 1,
     tick: d.tick!,
+    startYear: d.startYear!,
     rng: { state: d.rng! >>> 0 },
     money: d.money,
     map,

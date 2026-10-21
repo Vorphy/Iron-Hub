@@ -5,6 +5,7 @@ import { dropOrphanSignals, placeSignal, removeSignal, type SignalMode } from '.
 import type { GameState } from './state';
 import { buildStation, removeStationTile, type StationAxis } from './station/station';
 import { buildTrack, removeTrack } from './track/build';
+import { buildCatenary, dropOrphanCatenary } from './track/catenary';
 import { getTrackBits, tracksOn, type Side, type Track, type TrackPiece } from './track/track';
 import {
   buyTrain,
@@ -43,6 +44,9 @@ export type Command =
   | { type: 'buildTunnel'; x: number; y: number }
   | { type: 'terraform'; vx: number; vy: number; delta: 1 | -1 }
   | { type: 'levelLand'; vx0: number; vy0: number; vx1: number; vy1: number; level: number }
+  /** Sieć trakcyjna nad torami na wskazanych kafelkach (most / tunel – w całości). */
+  | { type: 'buildCatenary'; tiles: { x: number; y: number }[] }
+  | { type: 'removeCatenary'; tiles: { x: number; y: number }[] }
   /** Kredyt: pożyczka / spłata (kwota zaokrąglana do kroku kredytu, przycinana do możliwej). */
   | { type: 'borrow'; amount: number }
   | { type: 'repay'; amount: number }
@@ -65,6 +69,10 @@ export type FailReason =
   | 'bridgeHeads'
   | 'bridgeLow'
   | 'tunnelNoExit'
+  | 'noTrack'
+  | 'alreadyBuilt'
+  | 'notAvailable'
+  | 'noCatenary'
   | 'loanLimit'
   | 'noLoan'
   | 'bankrupt';
@@ -84,6 +92,8 @@ export type SimEvent =
   /** Zamknięcie miesiąca z ujemnym saldem: tyle miesięcy do bankructwa. */
   | { type: 'debtWarning'; monthsLeft: number }
   | { type: 'bankrupt' }
+  /** Nowy rok: lokomotywy, które właśnie weszły do sprzedaży. */
+  | { type: 'newEngines'; engines: string[] }
   | { type: 'commandFailed'; command: Command; reason: FailReason };
 
 export function applyCommand(state: GameState, cmd: Command, events: SimEvent[]): CommandResult {
@@ -93,6 +103,7 @@ export function applyCommand(state: GameState, cmd: Command, events: SimEvent[])
   // Rozbiórka toru lub stacji mogła zostawić semafory bez toru.
   if (result.ok && (cmd.type === 'removeTrack' || cmd.type === 'clearTile' || cmd.type === 'buildStation')) {
     dropOrphanSignals(state, events);
+    dropOrphanCatenary(state, events);
   }
   return result;
 }
@@ -142,6 +153,10 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
     case 'addMoney':
       state.money += cmd.amount;
       return { ok: true };
+    case 'buildCatenary':
+      return buildCatenary(state, cmd.tiles, false, events);
+    case 'removeCatenary':
+      return buildCatenary(state, cmd.tiles, true, events);
     case 'borrow':
       return borrow(state, cmd.amount);
     case 'repay':

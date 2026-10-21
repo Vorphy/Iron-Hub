@@ -3,7 +3,9 @@ import type { SimEvent } from '../commands';
 import { catchment } from '../station/station';
 import type { GameState } from '../state';
 import { nextFloat, nextInt } from '../rng';
-import { consistStats } from '../trains/vehicles';
+import { consistStats, ENGINES } from '../trains/vehicles';
+import { catenaryTiles } from '../track/catenary';
+import { gameDate } from '../time';
 import { growTown } from '../world/generate';
 import { updateTownRoads } from '../world/roads';
 import { checkDebt, closeMonth, monthlyInterest, spend } from './finance';
@@ -31,6 +33,12 @@ const STATION_PULL = ECONOMY.town.stationPull;
 
 /** Zamknięcie miesiąca: rozwój fabryk i miast, koszty, bilans. Wywoływane na początku nowego miesiąca. */
 export function monthlyEconomy(state: GameState, events: SimEvent[]): void {
+  // Nowy rok: lokomotywy, które właśnie weszły do sprzedaży.
+  const date = gameDate(state);
+  if (date.month === 1) {
+    const engines = ENGINES.filter((e) => e.year === date.year).map((e) => e.id);
+    if (engines.length) events.push({ type: 'newEngines', engines });
+  }
   for (const ind of state.industries) closeIndustryMonth(ind);
   const nearStations = stationCatchmentMask(state);
   for (const town of state.towns) closeTownMonth(state, town, nearStations, events);
@@ -131,6 +139,7 @@ export function infrastructureCost(state: GameState): number {
     pieces * MAINTENANCE.trackPiece +
     stationTiles * MAINTENANCE.stationTile +
     state.depots.length * MAINTENANCE.depot +
-    state.signals.length * MAINTENANCE.signal
+    state.signals.length * MAINTENANCE.signal +
+    catenaryTiles(map) * MAINTENANCE.catenaryTile
   );
 }

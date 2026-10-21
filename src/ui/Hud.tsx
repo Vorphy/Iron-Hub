@@ -23,6 +23,7 @@ const TOOLS: { tool: Tool; icon: string; name: string; key: string }[] = [
   { tool: 'station', icon: '▤', name: 'Stacja', key: 'P' },
   { tool: 'depot', icon: '⌂', name: 'Zajezdnia', key: 'Z' },
   { tool: 'signal', icon: '⊙', name: 'Semafor', key: 'B' },
+  { tool: 'catenary', icon: 'ϟ', name: 'Trakcja', key: 'E' },
   { tool: 'terrain', icon: '⛰', name: 'Teren', key: 'L' },
   { tool: 'bridge', icon: '⌒', name: 'Most', key: 'M' },
   { tool: 'tunnel', icon: '◠', name: 'Tunel', key: 'N' },
@@ -39,6 +40,8 @@ const TOOL_HELP: Record<Tool, string> = {
   depot: 'Klik stawia zajezdnię (1000 zł). Kierunek wjazdu wybierz w panelu obok (lub R); Auto – w stronę sąsiedniego toru',
   signal:
     'Klik na tor stawia semafor ścieżkowy (200 zł); kolejne kliknięcia zmieniają kierunek. Pociąg może stanąć tylko przed semaforem, na końcu peronu lub toru · V – podgląd rezerwacji',
+  catenary:
+    'Sieć trakcyjna dla lokomotyw elektrycznych: przeciągnij wzdłuż toru (jak przy budowie, także po skosie) albo kliknij kafelek. Most i tunel – w całości. Zajezdnia też musi mieć sieć. 150 zł za kafelek',
   terrain:
     'Podnieś / Obniż: klik zmienia o poziom narożnik najbliższy kursorowi (sąsiedni teren dopasuje się sam). Wyrównaj: przeciągnij prostokąt – teren do wysokości punktu startowego. 30 zł za narożnik',
   bridge:
@@ -212,6 +215,23 @@ function ToolOptions({ tool, options, actions }: { tool: Tool; options: HudState
           class={options.trackMode === 'remove' ? 'active' : ''}
           title="Klik – usuwa jeden element toru pod kursorem; przeciągnięcie – odcinek"
           onClick={() => actions.setTrackMode('remove')}
+        >
+          Usuń
+        </button>
+      </div>
+    );
+  }
+  if (tool === 'catenary') {
+    return (
+      <div class="panel tool-options">
+        <div class="section-title">Trakcja</div>
+        <button class={options.catenaryMode === 'build' ? 'active' : ''} onClick={() => actions.setCatenaryMode('build')}>
+          Buduj
+        </button>
+        <button
+          class={options.catenaryMode === 'remove' ? 'active' : ''}
+          title="Zdejmuje sieć (zwrot 25%); nie tam, gdzie stoi lub jedzie pociąg elektryczny"
+          onClick={() => actions.setCatenaryMode('remove')}
         >
           Usuń
         </button>

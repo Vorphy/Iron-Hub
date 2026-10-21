@@ -1,10 +1,12 @@
+import { isElectrified, needsCatenary } from '../track/catenary';
+import { gameDate } from '../time';
 import { MAX_WAGONS, TRAIN_RESALE_RATE } from '../config';
 import { spend } from '../economy/finance';
 import type { CommandResult, SimEvent } from '../commands';
 import type { GameState } from '../state';
 import type { Side } from '../track/track';
 import { successors } from './steps';
-import { consistStats, engineDef, wagonDef } from './vehicles';
+import { consistStats, engineAvailable, engineDef, wagonDef } from './vehicles';
 
 /** Odcinek drogi pociągu: element toru przejeżdżany od boku `entry` do `exit`. */
 export interface Step {
@@ -85,6 +87,8 @@ export function planBuyTrain(
 ): { cost: number; result: CommandResult } {
   if (!engineDef(engine) || wagons.some((w) => !wagonDef(w))) return { cost: 0, result: { ok: false, reason: 'blocked' } };
   if (wagons.length > MAX_WAGONS) return { cost: 0, result: { ok: false, reason: 'tooBig' } };
+  if (!engineAvailable(engineDef(engine)!, gameDate(state).year))
+    return { cost: 0, result: { ok: false, reason: 'notAvailable' } };
   const { cost } = consistStats(engine, wagons);
   return { cost, result: cost > state.money ? { ok: false, reason: 'noMoney' } : { ok: true } };
 }
@@ -162,6 +166,7 @@ export function startTrain(state: GameState, trainId: number): CommandResult {
     const exit = depotExit(state, train);
     if (!exit) return { ok: false, reason: 'blocked' };
     if (successors(state, exit).length === 0) return { ok: false, reason: 'depotNotConnected' };
+    if (needsCatenary(train.engine) && !isElectrified(state.map, exit.x, exit.y)) return { ok: false, reason: 'noCatenary' };
   }
   train.stopped = false;
   return { ok: true };

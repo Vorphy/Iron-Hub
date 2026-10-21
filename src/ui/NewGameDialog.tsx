@@ -1,4 +1,5 @@
 import { useState } from 'preact/hooks';
+import { START_YEAR, START_YEARS } from '../sim/time';
 import type { HudActions } from './hudStore';
 
 export const MAP_SIZES: { size: number; name: string; note: string; title?: string }[] = [
@@ -19,6 +20,15 @@ export const MAP_SIZES: { size: number; name: string; note: string; title?: stri
   },
 ];
 
+/** Co jest w zajezdniach na starcie (lokomotywy z src/data/vehicles.json). */
+const YEAR_NOTES: Record<number, string> = {
+  1900: 'Tylko parowozy – wolno, tanio, początek kolei.',
+  1925: 'Parowozy, w tym szybka Strzała.',
+  1950: 'Parowozy i pierwsza spalinowa; elektryczne od 1955.',
+  1975: 'Spalinowe i elektryczne do 160 km/h.',
+  2000: 'Nowoczesne lokomotywy do 200 km/h, wkrótce 250 km/h.',
+};
+
 function randomSeed(): number {
   return Math.floor(Math.random() * 1_000_000) + 1;
 }
@@ -27,6 +37,7 @@ function randomSeed(): number {
 export function NewGameDialog({ actions, canCancel }: { actions: HudActions; canCancel: boolean }) {
   const [size, setSize] = useState(128);
   const [seed, setSeed] = useState(randomSeed);
+  const [year, setYear] = useState<number>(START_YEAR);
 
   return (
     <div class="modal-backdrop">
@@ -50,6 +61,16 @@ export function NewGameDialog({ actions, canCancel }: { actions: HudActions; can
           ))}
         </div>
 
+        <div class="section-title">Rok startu</div>
+        <div class="buttons wrap">
+          {START_YEARS.map((y) => (
+            <button key={y} class={y === year ? 'active' : ''} onClick={() => setYear(y)}>
+              {y}
+            </button>
+          ))}
+        </div>
+        <div class="muted small">{YEAR_NOTES[year]}</div>
+
         <div class="section-title">Ziarno mapy</div>
         <div class="row">
           <input
@@ -65,7 +86,7 @@ export function NewGameDialog({ actions, canCancel }: { actions: HudActions; can
         </div>
         <div class="muted small">Ta sama liczba i rozmiar dają zawsze tę samą mapę.</div>
 
-        <button class="primary" onClick={() => actions.startNewGame(size, seed)}>
+        <button class="primary" onClick={() => actions.startNewGame(size, seed, year)}>
           Rozpocznij
         </button>
         {canCancel && <div class="muted small">Bieżąca gra zostanie zastąpiona (autozapis też).</div>}

@@ -34,6 +34,8 @@ export interface WorldMap {
   tunnel: Uint16Array;
   /** Droga w mieście na kafelku (1 – jest). */
   road: Uint8Array;
+  /** Sieć trakcyjna nad torem na kafelku (1 – jest). */
+  electric: Uint8Array;
 }
 
 /** Na kafelku stoi budynek (dom lub zakład) – nie da się tu nic zbudować. */
@@ -86,6 +88,7 @@ export function generateMap(width: number, height: number, seed: number): WorldM
     bridge: new Uint16Array(n),
     tunnel: new Uint16Array(n),
     road: new Uint8Array(n),
+    electric: new Uint8Array(n),
   };
   matchWaterToHeights(map);
   return map;

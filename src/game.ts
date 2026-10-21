@@ -27,7 +27,8 @@ import { pointBehindHead } from './sim/trains/geometry';
 import { trainById } from './sim/trains/train';
 import { Simulation } from './sim/simulation';
 import type { GameState } from './sim/state';
-import { tickToDate } from './sim/time';
+import { gameDate } from './sim/time';
+import { engineDef, TRACTION_NAMES } from './sim/trains/vehicles';
 import { getTerrain, inBounds } from './sim/world/map';
 import { FAIL_MESSAGES, formatMoney, Tools, type Tool } from './tools';
 import { hudStore, showMessage, type HudState, type WindowRef } from './ui/hudStore';
@@ -40,6 +41,7 @@ const KEY_TOOLS: Record<string, Tool> = {
   KeyP: 'station',
   KeyZ: 'depot',
   KeyB: 'signal',
+  KeyE: 'catenary',
   KeyL: 'terrain',
   KeyM: 'bridge',
   KeyN: 'tunnel',
@@ -294,7 +296,13 @@ export class Game {
       else if (ev.type === 'bridgesChanged') this.bridges.draw(this.sim.state);
       else if (ev.type === 'tunnelsChanged') this.tunnels.draw(this.sim.state);
       else if (ev.type === 'income') this.floaters.spawn(`+${formatMoney(ev.amount)}`, ev.x, ev.y);
-      else if (ev.type === 'debtWarning') {
+      else if (ev.type === 'newEngines') {
+        const names = ev.engines.map((id) => {
+          const e = engineDef(id)!;
+          return `${e.name} (${TRACTION_NAMES[e.traction]}, ${e.maxSpeed} km/h)`;
+        });
+        showMessage(`Nowa lokomotywa w zajezdniach: ${names.join(', ')}`);
+      } else if (ev.type === 'debtWarning') {
         showMessage(
           ev.monthsLeft === 1
             ? 'Ujemne saldo! Za miesiąc bankructwo – weź kredyt (Finanse) lub sprzedaj pociągi'
@@ -383,6 +391,7 @@ export class Game {
       prev.stationAxis === t.stationAxis &&
       prev.signalKind === t.signalKind &&
       prev.trackMode === t.trackMode &&
+      prev.catenaryMode === t.catenaryMode &&
       prev.terrainMode === t.terrainMode
       ? prev
       : {
@@ -391,13 +400,14 @@ export class Game {
           stationAxis: t.stationAxis,
           signalKind: t.signalKind,
           trackMode: t.trackMode,
+          catenaryMode: t.catenaryMode,
           terrainMode: t.terrainMode,
         };
   }
 
   private updateHud(): void {
     const { state } = this.sim;
-    const d = tickToDate(state.tick);
+    const d = gameDate(state);
     const f = this.pointer ? this.tileF(this.pointer.x, this.pointer.y) : null;
     const tile = f && inBounds(state.map, Math.floor(f.x), Math.floor(f.y)) ? { x: Math.floor(f.x), y: Math.floor(f.y) } : null;
     // Nowy obiekt tylko przy zmianie – inaczej UI przerysowywałoby się co klatkę.

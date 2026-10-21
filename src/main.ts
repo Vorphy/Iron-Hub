@@ -1,3 +1,4 @@
+import { START_YEAR, START_YEARS } from './sim/time';
 import { Application } from 'pixi.js';
 import { h, render } from 'preact';
 import { Game } from './game';
@@ -67,8 +68,8 @@ function startGame(state: GameState, view: ViewState | null = null): void {
   hudStore.set({ menuOpen: false });
 }
 
-function newGame(seed: number, size = DEFAULT_MAP_SIZE): void {
-  startGame(createGame({ width: size, height: size, seed }));
+function newGame(seed: number, size = DEFAULT_MAP_SIZE, startYear = START_YEAR): void {
+  startGame(createGame({ width: size, height: size, seed, startYear }));
 }
 
 async function refreshSaveInfo(): Promise<void> {
@@ -107,6 +108,7 @@ const actions: HudActions = {
   setStationAxis: (a) => game?.toolController.setStationAxis(a),
   setSignalKind: (k) => game?.toolController.setSignalKind(k),
   setTrackMode: (m) => game?.toolController.setTrackMode(m),
+  setCatenaryMode: (m) => game?.toolController.setCatenaryMode(m),
   setTerrainMode: (m) => game?.toolController.setTerrainMode(m),
   setSignalMode: (mode) => game?.command({ type: 'setSignalMode', mode }),
   toggleMenu: () => hudStore.set({ menuOpen: !hudStore.get().menuOpen }),
@@ -165,9 +167,9 @@ const actions: HudActions = {
   focusTrain: (trainId) => game?.focusTrain(trainId),
   newGame: () => hudStore.set({ newGameOpen: true, menuOpen: false }),
   closeNewGame: () => hudStore.set({ newGameOpen: false }),
-  startNewGame: (size, seed) => {
+  startNewGame: (size, seed, startYear) => {
     hudStore.set({ newGameOpen: false });
-    newGame(seed, size);
+    newGame(seed, size, startYear);
     void saveTo('auto', true);
   },
 };
@@ -195,7 +197,9 @@ async function start(): Promise<void> {
   const seedParam = Number(params.get('seed'));
   const sizeParam = Number(params.get('size'));
   const size = ALLOWED_SIZES.includes(sizeParam) ? sizeParam : DEFAULT_MAP_SIZE;
-  if (seedParam) newGame(seedParam, size);
+  const yearParam = Number(params.get('year'));
+  const year = (START_YEARS as readonly number[]).includes(yearParam) ? yearParam : START_YEAR;
+  if (seedParam) newGame(seedParam, size, year);
   else if (await loadFrom('auto')) showMessage('Wczytano autozapis');
   else {
     newGame(1);

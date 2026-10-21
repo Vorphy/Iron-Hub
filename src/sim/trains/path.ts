@@ -3,6 +3,7 @@ import type { SignalIndex } from '../signals/signals';
 import type { GameState } from '../state';
 import { SIDE_DELTA, Track } from '../track/track';
 import { inBounds } from '../world/map';
+import { isElectrified, needsCatenary } from '../track/catenary';
 import { isFree, type Taken } from './reservation';
 import { flipStep, isBend, stepKey, stepLength, successors } from './steps';
 import type { Step, Train } from './train';
@@ -81,9 +82,13 @@ export function planRoute(state: GameState, train: Train, ctx: RouteContext): Pl
   const head = ctx.from;
   const goal = trainGoal(train);
   const manual = state.signalMode === 'manual';
+  // Lokomotywa elektryczna nie wjedzie tam, gdzie nie ma sieci trakcyjnej.
+  const electric = needsCatenary(train.engine);
   const next = (s: Step) => {
-    const out = successors(state, s);
-    return manual ? out.filter((n) => !ctx.signals.forbids(n)) : out;
+    let out = successors(state, s);
+    if (manual) out = out.filter((n) => !ctx.signals.forbids(n));
+    if (electric) out = out.filter((n) => isElectrified(state.map, n.x, n.y));
+    return out;
   };
   if (!goal) return wander(head, next);
 

@@ -1,44 +1,18 @@
 {
   "engines": [
-    {
-      "id": "iskra",
-      "name": "Iskra",
-      "description": "Lekki parowóz uniwersalny",
-      "year": 1950,
-      "power": 600,
-      "maxSpeed": 80,
-      "weight": 55,
-      "length": 10,
-      "cost": 6000,
-      "color": "#2f6b3a",
-      "traction": "steam"
-    },
-    {
-      "id": "grom",
-      "name": "Grom",
-      "description": "Ciężki parowóz towarowy",
-      "year": 1950,
-      "power": 1050,
-      "maxSpeed": 64,
-      "weight": 90,
-      "length": 12,
-      "cost": 9500,
-      "color": "#34363b",
-      "traction": "steam"
-    },
-    {
-      "id": "strzala",
-      "name": "Strzała",
-      "description": "Szybki parowóz pospieszny",
-      "year": 1950,
-      "power": 1400,
-      "maxSpeed": 112,
-      "weight": 95,
-      "length": 12,
-      "cost": 15000,
-      "color": "#1f4f8f",
-      "traction": "steam"
-    }
+    {"id": "iskra", "name": "Iskra", "description": "Lekki parowóz uniwersalny", "year": 1900, "retire": 1955, "power": 500, "maxSpeed": 64, "weight": 50, "length": 10, "cost": 5000, "color": "#2f6b3a", "traction": "steam"},
+    {"id": "grom", "name": "Grom", "description": "Ciężki parowóz towarowy", "year": 1910, "retire": 1965, "power": 1050, "maxSpeed": 72, "weight": 90, "length": 12, "cost": 9000, "color": "#34363b", "traction": "steam"},
+    {"id": "strzala", "name": "Strzała", "description": "Szybki parowóz pospieszny", "year": 1925, "retire": 1970, "power": 1400, "maxSpeed": 112, "weight": 95, "length": 12, "cost": 15000, "color": "#1f4f8f", "traction": "steam"},
+    {"id": "orzel", "name": "Orzeł", "description": "Ostatni wielki parowóz – pospieszny i mocny", "year": 1938, "retire": 1975, "power": 1800, "maxSpeed": 130, "weight": 110, "length": 13, "cost": 20000, "color": "#6b1f1f", "traction": "steam"},
+    {"id": "bizon", "name": "Bizon", "description": "Pierwsza lokomotywa spalinowa, towarowa", "year": 1948, "retire": 2005, "power": 1300, "maxSpeed": 100, "weight": 80, "length": 11, "cost": 18000, "color": "#c26a1d", "traction": "diesel"},
+    {"id": "sokol", "name": "Sokół", "description": "Spalinowa pasażerska", "year": 1960, "retire": 2020, "power": 2000, "maxSpeed": 140, "weight": 85, "length": 12, "cost": 26000, "color": "#d4a02a", "traction": "diesel"},
+    {"id": "tur", "name": "Tur", "description": "Ciężka spalinowa towarowa", "year": 1978, "power": 2900, "maxSpeed": 120, "weight": 115, "length": 13, "cost": 32000, "color": "#7a4a1f", "traction": "diesel"},
+    {"id": "jastrzab", "name": "Jastrząb", "description": "Szybka spalinowa pasażerska", "year": 1992, "power": 2400, "maxSpeed": 160, "weight": 90, "length": 12, "cost": 36000, "color": "#b8322a", "traction": "diesel"},
+    {"id": "elektra", "name": "Elektra", "description": "Pierwsza lokomotywa elektryczna", "year": 1955, "retire": 2010, "power": 2000, "maxSpeed": 125, "weight": 80, "length": 11, "cost": 28000, "color": "#2a7f9e", "traction": "electric"},
+    {"id": "wolt", "name": "Wolt", "description": "Uniwersalna elektryczna", "year": 1970, "retire": 2030, "power": 3200, "maxSpeed": 160, "weight": 85, "length": 12, "cost": 38000, "color": "#2c5aa0", "traction": "electric"},
+    {"id": "piorun", "name": "Piorun", "description": "Szybka elektryczna pasażerska", "year": 1988, "power": 4500, "maxSpeed": 200, "weight": 90, "length": 12, "cost": 52000, "color": "#5a3fa0", "traction": "electric"},
+    {"id": "mamut", "name": "Mamut", "description": "Ciężka elektryczna towarowa", "year": 1995, "power": 6000, "maxSpeed": 140, "weight": 120, "length": 14, "cost": 55000, "color": "#3a5f3a", "traction": "electric"},
+    {"id": "blyskawica", "name": "Błyskawica", "description": "Pociąg dużych prędkości", "year": 2005, "power": 6400, "maxSpeed": 250, "weight": 95, "length": 13, "cost": 70000, "color": "#e0e0e0", "traction": "electric"}
   ],
   "wagons": [
     {"id": "osobowy", "name": "Wagon osobowy", "cargo": "passengers", "capacity": 40, "weight": 18, "length": 8, "cost": 1500, "color": "#7a2e2e"},

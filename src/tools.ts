@@ -1,3 +1,4 @@
+import { planCatenary } from './sim/track/catenary';
 import type { Overlay } from './render/overlay';
 import type { Command, FailReason } from './sim/commands';
 import { CLEAR_ROUGH_COST, SIGNAL_COST } from './sim/config';
@@ -17,7 +18,18 @@ import { planTunnel, tunnelTileCoords } from './sim/track/tunnel';
 import type { Point } from './render/iso';
 
 /** 'orders' – wskazywanie stacji do rozkładu pociągu `ordersTrain` (z okna pociągu). */
-export type Tool = 'cursor' | 'track' | 'station' | 'depot' | 'signal' | 'terrain' | 'bridge' | 'tunnel' | 'bulldozer' | 'orders';
+export type Tool =
+  | 'cursor'
+  | 'track'
+  | 'station'
+  | 'depot'
+  | 'signal'
+  | 'catenary'
+  | 'terrain'
+  | 'bridge'
+  | 'tunnel'
+  | 'bulldozer'
+  | 'orders';
 
 /** Narzędzie Teren: podnieś / obniż narożnik albo wyrównaj obszar. */
 export type TerrainMode = 'raise' | 'lower' | 'level';
@@ -44,6 +56,10 @@ export const FAIL_MESSAGES: Record<FailReason, string> = {
   bridgeHeads: 'Przyczółki mostu muszą być na tej samej wysokości',
   bridgeLow: 'Teren pod mostem jest za wysoko',
   tunnelNoExit: 'Tunel nie trafia na zbocze po drugiej stronie (albo nad nim jest za nisko)',
+  noTrack: 'Tu nie ma toru',
+  alreadyBuilt: 'Sieć trakcyjna już tu jest',
+  notAvailable: 'Ta lokomotywa nie jest dostępna w tym roku',
+  noCatenary: 'Lokomotywa elektryczna – zajezdnia nie ma sieci trakcyjnej (narzędzie Trakcja, E)',
   loanLimit: 'Osiągnięto limit kredytu',
   noLoan: 'Nie masz kredytu do spłaty',
   bankrupt: 'Firma zbankrutowała',
@@ -68,6 +84,8 @@ export class Tools {
   depotAuto = true;
   signalKind: SignalKind = 'path';
   trackMode: TrackMode = 'build';
+  /** Narzędzie Trakcja: budowa albo zdjęcie sieci. */
+  catenaryMode: TrackMode = 'build';
   terrainMode: TerrainMode = 'raise';
   /** Pociąg, któremu dopisujemy stacje (narzędzie 'orders'). */
   ordersTrain: number | null = null;
@@ -134,6 +152,11 @@ export class Tools {
 
   setTrackMode(mode: TrackMode): void {
     this.trackMode = mode;
+    this.dirty = true;
+  }
+
+  setCatenaryMode(mode: TrackMode): void {
+    this.catenaryMode = mode;
     this.dirty = true;
   }
 
@@ -222,6 +245,14 @@ export class Tools {
 
     if (this.tool === 'track' && this.trackMode === 'remove') {
       this.previewRemoval(start, p, false);
+      return;
+    }
+
+    if (this.tool === 'catenary') {
+      this.overlay.setHover(null);
+      const plan = planCatenary(this.sim.state, catenaryTiles(start, p), this.catenaryMode === 'remove');
+      this.overlay.setTerrainPreview(plan.tiles, map.width, plan.result.ok, null);
+      this.label = planLabel(plan);
       return;
     }
 
@@ -366,6 +397,10 @@ export class Tools {
       if (this.signalKind === 'remove') return { type: 'removeSignal', ...piece };
       return { type: 'placeSignal', ...piece, oneWay: this.signalKind === 'oneway' };
     }
+    if (this.tool === 'catenary') {
+      const tiles = catenaryTiles(start, end);
+      return { type: this.catenaryMode === 'remove' ? 'removeCatenary' : 'buildCatenary', tiles };
+    }
     if (this.tool === 'track') {
       if (this.trackMode === 'remove') {
         const pieces = this.removalPieces(start, end);
@@ -451,6 +486,21 @@ function distToSegment(px: number, py: number, a: readonly [number, number], b: 
 function describeCatchment(supplies: Set<Cargo>, accepts: Set<Cargo>): string {
   const names = (s: Set<Cargo>) => [...s].map((c) => CARGO_DEFS[c].name).join(', ') || '—';
   return `Zbiera: ${names(supplies)} · Przyjmuje: ${names(accepts)}`;
+}
+
+/** Kafelki pod linią przeciągnięcia (jak przy budowie toru, także po skosie); klik – kafelek pod kursorem. */
+function catenaryTiles(start: Point, end: Point): { x: number; y: number }[] {
+  const tile = { x: Math.floor(end.x), y: Math.floor(end.y) };
+  if (sameTile(start, end)) return [tile];
+  const seen = new Set<string>();
+  const out: { x: number; y: number }[] = [];
+  for (const p of [...planTrackLine(start.x, start.y, end.x, end.y), tile]) {
+    const key = `${p.x},${p.y}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ x: p.x, y: p.y });
+  }
+  return out;
 }
 
 /** Końce mostu z przeciągnięcia: prosta wzdłuż dominującej osi od kafelka startowego. */

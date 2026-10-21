@@ -29,6 +29,10 @@ export interface DepotWindowData {
   kind: 'depot';
   depotId: number;
   trains: TrainSummary[];
+  /** Bieżący rok – od niego zależą lokomotywy w sprzedaży. */
+  year: number;
+  /** Zajezdnia ma sieć trakcyjną (lokomotywy elektryczne mogą z niej wyjechać). */
+  electrified: boolean;
 }
 
 export interface TrainWindowData {
@@ -132,6 +136,7 @@ export interface HudState {
     stationAxis: StationAxis;
     signalKind: SignalKind;
     trackMode: TrackMode;
+    catenaryMode: TrackMode;
     terrainMode: TerrainMode;
   };
   signalMode: SignalMode;
@@ -166,7 +171,15 @@ export const hudStore = new Store<HudState>({
   money: 0,
   speed: 1,
   tool: 'cursor',
-  toolOptions: { depotSide: 1, depotAuto: true, stationAxis: 'x', signalKind: 'path', trackMode: 'build', terrainMode: 'raise' },
+  toolOptions: {
+    depotSide: 1,
+    depotAuto: true,
+    stationAxis: 'x',
+    signalKind: 'path',
+    trackMode: 'build',
+    catenaryMode: 'build',
+    terrainMode: 'raise',
+  },
   signalMode: 'auto',
   fps: 0,
   zoom: 1,
@@ -199,6 +212,7 @@ export interface HudActions {
   setStationAxis(axis: StationAxis): void;
   setSignalKind(kind: SignalKind): void;
   setTrackMode(mode: TrackMode): void;
+  setCatenaryMode(mode: TrackMode): void;
   setTerrainMode(mode: TerrainMode): void;
   setSignalMode(mode: SignalMode): void;
   toggleMenu(): void;
@@ -219,7 +233,7 @@ export interface HudActions {
   /** Otwiera okno nowej gry. */
   newGame(): void;
   closeNewGame(): void;
-  startNewGame(size: number, seed: number): void;
+  startNewGame(size: number, seed: number, startYear: number): void;
   closeWindow(): void;
   buyTrain(depotId: number, engine: string, wagons: string[]): void;
   sellTrain(trainId: number): void;

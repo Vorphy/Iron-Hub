@@ -80,7 +80,7 @@ Kolejność proponowana; zmieniamy według potrzeb. Punkty 1–4 przygotowują e
 1. ~~**Kredyt i bankructwo**~~ ✅ (2026-10-21) – kredyt do 300 tys. zł, 5% rocznie, ostrzeżenia, bankructwo po 3 miesiącach na minusie.
 2. ~~**Minimapa**~~ ✅ (2026-10-21) – lewy górny róg, klik/przeciąganie przenosi kamerę, widać pociągi i obszar ekranu; można zwinąć.
 3. ~~**Pierwsze kroki dla nowego gracza**~~ ✅ (2026-10-21) – panel z 7 celami (tor → stacje → zajezdnia → pociąg → rozkład → wyjazd → zarobek) zaliczanymi automatycznie, podpowiedź do bieżącego, przycisk Nowa gra; ukrywany, powrót przez Menu.
-4. **Poziomy pociągów i trakcje** (z pomysłów) – lokomotywy dostępne z upływem lat: parowa → spalinowa → elektryczna; elektryczna wymaga sieci trakcyjnej.
+4. ~~**Poziomy pociągów i trakcje**~~ ✅ (2026-10-21) – 13 lokomotyw 1900–2005 (parowe → spalinowe → elektryczne do 250 km/h, bez maglevów), wycofywanie starych modeli, wybór roku startu, sieć trakcyjna dla elektrycznych.
 5. **Etap 5 – test „czy to jest fajne”** – granie, strojenie `src/data/economy.ts`.
 6. ~~Drobne~~ ✅ (2026-10-21): ciężarówki w miastach przy zakładach, pojazdy chowają się za domami, lint/format (Biome, sprawdzany przy każdym pushu).
 7. **Etap 7** – grafika, dźwięki, retro UI, wydanie na itch.io.
@@ -88,7 +88,7 @@ Kolejność proponowana; zmieniamy według potrzeb. Punkty 1–4 przygotowują e
 
 ## Pomysły (lista otwarta – dopisuj na dole)
 
-- Poziomy pociągów, rodzaje kolei (np. parowa → spalinowa → elektryczna) i przechodzenie między nimi; prosty system ulepszeń.
+- Poziomy pociągów, rodzaje kolei (np. parowa → spalinowa → elektryczna) i przechodzenie między nimi; prosty system ulepszeń. ✅ *(lokomotywy z biegiem lat i sieć trakcyjna – 2026-10-21; ulepszenia/wymiana starych pociągów – później)*
 - Mapa nierówna: góry, kaniony; generator map i edytor. ✅ *(wysokości terenu, kształtowanie terenu, mosty, tunele – 2026-10-18; generator i edytor map – później)*
 - ~~Budowa mostów i tuneli.~~ ✅
 - ~~przycisk testowy + 100000 zł~~ ✅ (Menu → Testy)
