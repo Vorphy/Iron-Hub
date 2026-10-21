@@ -1,10 +1,10 @@
-import { BEND_PENALTY, OCCUPIED_PENALTY, REVERSE_PENALTY } from '../config';
+import { BEND_PENALTY, FULL_LOAD_PENALTY, OCCUPIED_PENALTY, REVERSE_PENALTY } from '../config';
 import type { SignalIndex } from '../signals/signals';
 import type { GameState } from '../state';
 import { getTrackBits, SIDE_DELTA, Track } from '../track/track';
 import { inBounds } from '../world/map';
 import { isElectrified, needsCatenary } from '../track/catenary';
-import { isFree, type Taken } from './reservation';
+import { blockerOf, type Taken } from './reservation';
 import { flipStep, isBend, stepKey, stepLength, successors } from './steps';
 import type { Step, Train } from './train';
 
@@ -94,6 +94,7 @@ export function planRoute(state: GameState, train: Train, ctx: RouteContext): Pl
   if (!goal) return wander(head, next);
 
   const isGoal = goalTest(state, goal);
+  const fullLoaders = fullLoadingTrains(state);
   const W = state.map.width;
   const heap = new MinHeap();
   const best = new Map<number, number>();
@@ -123,7 +124,7 @@ export function planRoute(state: GameState, train: Train, ctx: RouteContext): Pl
         node.cost +
         stepLength(s) +
         (isBend(node.step, s) ? BEND_PENALTY : 0) +
-        (isFree(state, ctx.taken, s, train.id) ? 0 : OCCUPIED_PENALTY);
+        occupancyPenalty(state, ctx.taken, s, train.id, fullLoaders);
       push({ step: s, cost, parent: node, viaReverse: false, reversedStart: node.reversedStart });
     }
     if (nexts.length === 0) {
@@ -133,6 +134,20 @@ export function planRoute(state: GameState, train: Train, ctx: RouteContext): Pl
     }
   }
   return { ...wander(head, next), lost: true };
+}
+
+/** Pociągi stojące na stacji z ptaszkiem „pełny ładunek” przy bieżącej pozycji rozkładu. */
+export function fullLoadingTrains(state: GameState): Set<number> {
+  const out = new Set<number>();
+  for (const t of state.trains) if (t.status === 'loading' && t.fullLoad[t.currentOrder]) out.add(t.id);
+  return out;
+}
+
+/** Kara za odcinek zajęty przez inny pociąg; za czekającym na pełny ładunek – bardzo duża. */
+export function occupancyPenalty(state: GameState, taken: Taken, s: Step, trainId: number, fullLoaders: Set<number>): number {
+  const blocker = blockerOf(state, taken, s, trainId);
+  if (blocker === null) return 0;
+  return OCCUPIED_PENALTY + (fullLoaders.has(blocker) ? FULL_LOAD_PENALTY : 0);
 }
 
 function toPlan(goalNode: Node, goal: NonNullable<Goal>): Plan {

@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { SimEvent } from '../src/sim/commands';
+import { FULL_LOAD_PENALTY, OCCUPIED_PENALTY } from '../src/sim/config';
+import { fullLoadingTrains, occupancyPenalty } from '../src/sim/trains/path';
+import { buildTaken } from '../src/sim/trains/reservation';
 import { emptyIndustryMonth } from '../src/sim/economy/industry';
 import { deserializeState, serializeState } from '../src/sim/serialize';
 import { Simulation } from '../src/sim/simulation';
@@ -65,6 +68,24 @@ describe('czekaj na pełny ładunek', () => {
     expect(normal.coal).toBeLessThan(60);
     expect(full.coal).toBe(60); // 2 węglarki × 30 t; wagon pocztowy nie wstrzymuje odjazdu
     expect(full.ticks).toBeGreaterThan(normal.ticks);
+  });
+
+  it('peron z pociągiem czekającym na pełny ładunek inni omijają (bardzo duża kara w planie trasy)', () => {
+    const sim = line(true);
+    const t = sim.state.trains[0]!;
+    for (let i = 0; i < 20_000 && t.status !== 'loading'; i++) sim.step();
+    expect(t.status).toBe('loading');
+    const taken = buildTaken(sim.state);
+    const platform = t.trail[0]!;
+    const other = 99; // inny pociąg pytający o ten odcinek
+    expect(occupancyPenalty(sim.state, taken, platform, other, fullLoadingTrains(sim.state))).toBe(
+      OCCUPIED_PENALTY + FULL_LOAD_PENALTY,
+    );
+    // Bez ptaszka – zwykła kara za zajęty tor.
+    t.fullLoad[t.currentOrder] = false;
+    expect(occupancyPenalty(sim.state, taken, platform, other, fullLoadingTrains(sim.state))).toBe(OCCUPIED_PENALTY);
+    // Własny tor nie kosztuje.
+    expect(occupancyPenalty(sim.state, taken, platform, t.id, fullLoadingTrains(sim.state))).toBe(0);
   });
 
   it('ptaszki idą za pozycjami rozkładu: dopisanie zostawia, usunięcie stacji zabiera', () => {

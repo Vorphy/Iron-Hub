@@ -60,6 +60,11 @@ export const BEND_PENALTY = 2;
 /** Kara za element toru zajęty przez inny pociąg – trasa omija zajęte perony i tory. */
 export const OCCUPIED_PENALTY = 48;
 /**
+ * Tor zajęty przez pociąg czekający na pełny ładunek (może stać bardzo długo): taki peron wybieramy
+ * tylko, gdy nie ma innej drogi – inaczej pociągi ustawiają się za nim w kolejce i zatykają stację.
+ */
+export const FULL_LOAD_PENALTY = 4096;
+/**
  * Zakleszczenie (pociągi czekają na siebie nawzajem): po tylu tickach czekania zawraca pociąg
  * o najniższym numerze w zakleszczeniu (120 = 3 dni gry).
  */

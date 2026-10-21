@@ -41,6 +41,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
     items: [
       'W rozkładzie jazdy ptaszek „pełny ładunek” przy każdej stacji, osobno dla każdego pociągu: pociąg nie odjedzie, dopóki nie napełni wagonów na ładunek tej stacji.',
       'Wagony na ładunek, którego stacja nie zbiera (np. pocztowy przy kopalni), nie wstrzymują odjazdu.',
+      'Inne pociągi omijają peron z pociągiem czekającym na pełny ładunek – wybierają wolny peron, w kolejkę ustawiają się tylko, gdy innej drogi nie ma.',
     ],
   },
   {

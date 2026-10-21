@@ -138,7 +138,8 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     title: 'Rozkład jazdy',
     blocks: [
       'Rozkład to lista stacji, po których pociąg jeździ w kółko: w oknie pociągu „+ Dodaj stacje”, klikaj stacje na mapie, „Gotowe”.',
-      '**Pełny ładunek** (ptaszek przy stacji w rozkładzie): pociąg nie odjedzie, dopóki nie napełni wagonów na ładunek, który ta stacja zbiera (status „Czeka na pełny ładunek”). Dobre przy kopalniach – zamiast wozić pół pustych wagonów. Wagony na inny ładunek nie wstrzymują odjazdu; „■ Stop” albo „Zawróć” przerywa czekanie.',
+      '**Pełny ładunek** (ptaszek przy stacji w rozkładzie): pociąg nie odjedzie, dopóki nie napełni wagonów na ładunek, który ta stacja zbiera (status „Czeka na pełny ładunek”). Dobre przy kopalniach – zamiast wozić pół pustych wagonów. Inne pociągi omijają taki peron, jeśli mają wolny.',
+      'Rada: przy pełnym ładunku daj stacji co najmniej jeden peron więcej niż pociągów czekających na ładunek. Wagony na inny ładunek nie wstrzymują odjazdu; „■ Stop” albo „Zawróć” przerywa czekanie.',
       'Pociąg sam wybiera trasę (najkrótszą, omijając zajęte perony) i zawraca na końcu toru albo na stacji, gdy następny cel jest za nim.',
       'Status „Nie może dojechać” – do celu nie ma toru (albo lokomotywa elektryczna nie ma sieci trakcyjnej).',
       'Bez rozkładu pociąg jeździ przed siebie i zawraca na końcach toru.',
@@ -151,6 +152,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
       'Pociąg wjeżdża tylko na tory, które zarezerwował – nie ma zderzeń. Tryb przełączasz w Menu.',
       '**Amator** (domyślny): nie stawiasz semaforów – pociągi same trzymają odstęp i nie stają na rozjazdach. Wystarczy na początek.',
       `**Ekspert**: pociąg staje tylko przed semaforem, na końcu peronu lub toru. Semafory (B, ${zl(E.construction.signal)}): ścieżkowy – kliknięcia zmieniają kierunek; jednokierunkowy – zakaz jazdy pod prąd. Strzałka na torze pokazuje kierunek, słup stoi po prawej stronie toru.`,
+      'Odstęp od rozjazdu do semafora za nim powinien mieścić cały najdłuższy pociąg – inaczej pociąg staje przed semaforem z ogonem na zwrotnicy i blokuje inne drogi (zwłaszcza w głowicy stacji). Przed stacją postaw semafor kilka kafelków przed rozjazdem.',
       'Na jednym torze z ruchem w obie strony buduj mijanki. Gdy pociągi zablokują się naprzeciw siebie, po 3 dniach jeden sam zawróci; możesz też kliknąć „Zawróć”.',
       'Klawisz V pokazuje rezerwacje – widać, kto na kogo czeka.',
     ],
