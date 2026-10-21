@@ -12,6 +12,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-21',
+    title: 'Długość pociągów i peronów',
+    items: [
+      'Każdy pojazd zajmuje pół kafelka: na kafelku mieści się lokomotywa z wagonem albo dwa wagony.',
+      'Pociąg dłuższy niż peron ładuje się dłużej – proporcjonalnie do tego, ile wystaje (najwyżej 2×). Status: „peron za krótki – dłuższy postój”.',
+    ],
+  },
+  {
+    date: '2026-10-21',
     title: 'Wspólne rozkłady',
     items: [
       '„⧉ Kopiuj” tworzy pociąg ze wspólnym rozkładem: dodanie lub usunięcie stacji albo ptaszek pełnego ładunku w jednym zmienia całą linię. Każdy pociąg jedzie we własnym tempie.',

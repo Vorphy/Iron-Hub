@@ -97,7 +97,8 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
       `**Zasięg** (niebieskie pole, ${CATCHMENT_RADIUS} kafelki od peronów): stacja zbiera pasażerów i pocztę z domów oraz ładunek z zakładów w zasięgu i dostarcza do nich. Przy stawianiu podpowiedź pokazuje „Zbiera: … · Przyjmuje: …”.`,
       `Stacja przyjmuje pasażerów, gdy w zasięgu jest jakikolwiek dom; pocztę od ${E.town.acceptance.mail} mieszkańców, towary od ${E.town.acceptance.goods}. Węgiel, rudę i drewno – gdy w zasięgu jest zakład, który ich potrzebuje.`,
       '**Rozbudowa**: peron postawiony tuż obok stacji (bokiem przylega do jej peronu) staje się jej częścią – ta sama nazwa, czekający ładunek i rozkłady, zasięg rośnie. Tak dokładasz kolejne tory, gdy stacja nie nadąża. Ctrl albo Shift przy budowie (albo „Osobna” w panelu) stawia osobną stację.',
-      'Pociąg staje czołem na końcu peronu. Peron powinien mieścić cały skład (długość pokazuje okno zajezdni).',
+      'Pociąg staje czołem na końcu peronu. Każdy pojazd to pół kafelka (lokomotywa + wagon albo dwa wagony na kafelek) – długość składu pokazuje okno zajezdni.',
+      '**Za krótki peron**: pociąg dłuższy niż peron ładuje się dłużej, proporcjonalnie do tego, ile wystaje – np. 5 kafelków składu na 4-kafelkowym peronie to postój o 25% dłuższy, dwa razy za długi pociąg (i dłuższy) – 2×. Status pociągu podpowiada „peron za krótki”.',
     ],
   },
   {

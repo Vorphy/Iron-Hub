@@ -1,3 +1,5 @@
+import { getTrackBits, SIDE_DELTA } from '../track/track';
+import { inBounds } from '../world/map';
 import { wagonDef } from './vehicles';
 import type { Station } from '../station/station';
 import {
@@ -10,6 +12,7 @@ import {
   PHYS_DT,
   RESERVE_RETRY_TICKS,
   STATION_WAIT_TICKS,
+  VEHICLE_GAP,
   UNITS_PER_KMH_TICK,
 } from '../config';
 import type { SimEvent } from '../commands';
@@ -136,6 +139,37 @@ export function waitsForFullLoad(state: GameState, train: Train, st: Station): b
     // Wagon z ładunkiem z innej stacji tu nie dobierze (nie mieszamy ładunków).
     return supplies.has(def.cargo) && load.amount < def.capacity && (load.amount === 0 || load.source === st.id);
   });
+}
+
+/** Długość peronu (kafelki) pod czołem pociągu – od czoła wstecz, wzdłuż toru tej samej stacji. */
+export function platformTiles(state: GameState, train: Train): number {
+  const { map } = state;
+  const head = train.trail[0];
+  if (!head) return 0;
+  const id = map.station[head.y * map.width + head.x];
+  if (!id || head.entry === -1) return 0;
+  const [dx, dy] = SIDE_DELTA[head.entry];
+  let n = 0;
+  let x = head.x;
+  let y = head.y;
+  while (inBounds(map, x, y) && map.station[y * map.width + x] === id && getTrackBits(map, x, y) === head.track) {
+    n++;
+    x += dx;
+    y += dy;
+  }
+  return n;
+}
+
+/** Długość pociągu w kafelkach (dwa pojazdy na kafelek). */
+export function trainTiles(train: Train): number {
+  return (trainLength(train) + VEHICLE_GAP) / STRAIGHT_LENGTH;
+}
+
+/** Mnożnik czasu postoju: 1 – pociąg mieści się na peronie, do 2 – gdy wystaje (proporcjonalnie). */
+export function platformPenalty(state: GameState, train: Train): number {
+  const platform = platformTiles(state, train);
+  if (platform <= 0) return 1;
+  return Math.min(2, Math.max(1, trainTiles(train) / platform));
 }
 
 function departStation(train: Train): void {
@@ -311,8 +345,9 @@ function arrive(ctx: TickContext, train: Train): void {
   switch (terminal) {
     case 'stop': {
       train.status = 'loading';
-      train.waitTicks = STATION_WAIT_TICKS;
       const st = stationUnderHead(state, train);
+      // Za krótki peron: postój dłuższy proporcjonalnie do tego, ile pociągu wystaje (najwyżej 2×).
+      train.waitTicks = Math.round(STATION_WAIT_TICKS * (st ? platformPenalty(state, train) : 1));
       if (st) serveTrainAtStation(state, train, st, ctx.events, true);
       break;
     }

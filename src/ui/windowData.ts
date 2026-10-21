@@ -1,6 +1,6 @@
 import type { Simulation } from '../sim/simulation';
 import { engineAge, engineTradeIn, replaceCost, resaleValue, trainById, trainsInDepot, type Train } from '../sim/trains/train';
-import { isWaiting, waitsForFullLoad } from '../sim/trains/movement';
+import { isWaiting, platformPenalty, waitsForFullLoad } from '../sim/trains/movement';
 import { availableEngines, consistStats, engineAvailable, engineDef } from '../sim/trains/vehicles';
 import { infrastructureCost } from '../sim/economy/monthly';
 import { BANKRUPTCY_MONTHS, LOAN_INTEREST, LOAN_MAX, LOAN_STEP, monthlyInterest } from '../sim/economy/finance';
@@ -26,7 +26,8 @@ function trainStatus(sim: Simulation, t: Train): string {
     const h = t.trail[0]!;
     const st = sim.state.stations.find((s) => s.id === sim.state.map.station[h.y * sim.state.map.width + h.x]);
     if (st && t.waitTicks > 0 && waitsForFullLoad(sim.state, t, st)) return `Czeka na pełny ładunek: ${st.name}`;
-    return `Postój: ${stationName(sim, st?.id ?? 0)}`;
+    const short = platformPenalty(sim.state, t) > 1 ? ' (peron za krótki – dłuższy postój)' : '';
+    return `Postój: ${stationName(sim, st?.id ?? 0)}${short}`;
   }
   if (t.stopped) return t.speed > 0 ? 'Hamuje' : 'Zatrzymany';
   if (t.reverseRequested) return 'Zawraca';
