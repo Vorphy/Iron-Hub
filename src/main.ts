@@ -119,6 +119,7 @@ const actions: HudActions = {
   setSignalKind: (k) => game?.toolController.setSignalKind(k),
   setTrackMode: (m) => game?.toolController.setTrackMode(m),
   setCatenaryMode: (m) => game?.toolController.setCatenaryMode(m),
+  setStationSeparate: (on) => game?.toolController.setStationSeparate(on),
   setTerrainMode: (m) => game?.toolController.setTerrainMode(m),
   setSignalMode: (mode) => game?.command({ type: 'setSignalMode', mode }),
   toggleMenu: () => hudStore.set({ menuOpen: !hudStore.get().menuOpen }),

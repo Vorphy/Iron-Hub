@@ -98,6 +98,28 @@ export interface StationPlan {
   axis: StationAxis;
   cost: number;
   result: CommandResult;
+  /** Stacja, którą peron rozbudowuje (sąsiaduje z nią), albo null – nowa stacja. */
+  join: Station | null;
+}
+
+/** Stacja przylegająca bokiem do prostokąta (najniższy numer, gdy kilka) – do rozbudowy. */
+function adjacentStation(state: GameState, minX: number, minY: number, maxX: number, maxY: number): Station | null {
+  const { map } = state;
+  let best = 0;
+  const check = (x: number, y: number) => {
+    if (!inBounds(map, x, y)) return;
+    const id = map.station[y * map.width + x]!;
+    if (id && (!best || id < best)) best = id;
+  };
+  for (let x = minX; x <= maxX; x++) {
+    check(x, minY - 1);
+    check(x, maxY + 1);
+  }
+  for (let y = minY; y <= maxY; y++) {
+    check(minX - 1, y);
+    check(maxX + 1, y);
+  }
+  return best ? (state.stations.find((s) => s.id === best) ?? null) : null;
 }
 
 /** Oś peronu: dłuższy bok prostokąta; przy kwadracie – preferencja gracza. */
@@ -107,7 +129,16 @@ export function stationAxis(x0: number, y0: number, x1: number, y1: number, pref
   return w === h ? preferred : w > h ? 'x' : 'y';
 }
 
-export function planStation(state: GameState, x0: number, y0: number, x1: number, y1: number, axis: StationAxis): StationPlan {
+/** `separate` – osobna stacja nawet obok istniejącej (inaczej peron ją rozbudowuje). */
+export function planStation(
+  state: GameState,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  axis: StationAxis,
+  separate = false,
+): StationPlan {
   const { map } = state;
   const minX = Math.min(x0, x1);
   const maxX = Math.max(x0, x1);
@@ -138,7 +169,8 @@ export function planStation(state: GameState, x0: number, y0: number, x1: number
   if (length > STATION_MAX_LENGTH || platforms > STATION_MAX_PLATFORMS) result = { ok: false, reason: 'tooBig' };
   else if (blocked) result = { ok: false, reason: 'blocked' };
   else if (cost > state.money) result = { ok: false, reason: 'noMoney' };
-  return { tiles, axis, cost, result };
+  const join = separate ? null : adjacentStation(state, minX, minY, maxX, maxY);
+  return { tiles, axis, cost, result, join };
 }
 
 /** Kafelek nadaje się na peron: ląd, bez stacji, bez torów albo z samą prostą w osi peronu. */
@@ -158,11 +190,12 @@ export function buildStation(
   y1: number,
   axis: StationAxis,
   events: SimEvent[],
+  separate = false,
 ): CommandResult {
-  const plan = planStation(state, x0, y0, x1, y1, axis);
+  const plan = planStation(state, x0, y0, x1, y1, axis, separate);
   if (!plan.result.ok) return plan.result;
   const { map } = state;
-  const id = state.nextStationId++;
+  const id = plan.join ? plan.join.id : state.nextStationId++;
   const axisTrack = axis === 'x' ? Track.X : Track.Y;
   const tiles: number[] = [];
   for (const { x, y } of plan.tiles) {
@@ -174,8 +207,13 @@ export function buildStation(
     tiles.push(i);
     events.push({ type: 'tileChanged', x, y });
   }
-  tiles.sort((a, b) => a - b);
-  state.stations.push({ id, name: stationNameFor(state, tiles), axis, tiles, cargo: {} });
+  if (plan.join) {
+    // Rozbudowa: ta sama stacja (nazwa, ładunek, rozkłady), więcej peronów.
+    plan.join.tiles = [...plan.join.tiles, ...tiles].sort((a, b) => a - b);
+  } else {
+    tiles.sort((a, b) => a - b);
+    state.stations.push({ id, name: stationNameFor(state, tiles), axis, tiles, cargo: {} });
+  }
   spend(state, 'construction', plan.cost);
   events.push({ type: 'stationsChanged' });
   return { ok: true };

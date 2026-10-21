@@ -154,6 +154,7 @@ export interface HudState {
     trackMode: TrackMode;
     catenaryMode: TrackMode;
     terrainMode: TerrainMode;
+    stationSeparate: boolean;
   };
   signalMode: SignalMode;
   fps: number;
@@ -200,6 +201,7 @@ export const hudStore = new Store<HudState>({
     trackMode: 'build',
     catenaryMode: 'build',
     terrainMode: 'raise',
+    stationSeparate: false,
   },
   signalMode: 'auto',
   fps: 0,
@@ -237,6 +239,7 @@ export interface HudActions {
   setSignalKind(kind: SignalKind): void;
   setTrackMode(mode: TrackMode): void;
   setCatenaryMode(mode: TrackMode): void;
+  setStationSeparate(on: boolean): void;
   setTerrainMode(mode: TerrainMode): void;
   setSignalMode(mode: SignalMode): void;
   toggleMenu(): void;

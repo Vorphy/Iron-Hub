@@ -78,6 +78,8 @@ export class Game {
   private readonly world = new Container();
   private readonly onResize = (w: number, h: number) => this.camera.resize(w, h);
   private readonly onTick = (ticker: { deltaMS: number }) => this.frame(ticker.deltaMS);
+  /** Ctrl / Shift – modyfikator narzędzi (np. osobna stacja zamiast rozbudowy). */
+  private readonly onModifier = (e: KeyboardEvent | PointerEvent) => this.tools.setModifier(e.ctrlKey || e.shiftKey);
 
   constructor(
     private readonly app: Application,
@@ -141,11 +143,17 @@ export class Game {
 
     app.renderer.on('resize', this.onResize);
     app.ticker.add(this.onTick);
+    window.addEventListener('keydown', this.onModifier);
+    window.addEventListener('keyup', this.onModifier);
+    window.addEventListener('pointermove', this.onModifier);
   }
 
   /** Odłącza grę od aplikacji (przed wczytaniem innego stanu). */
   destroy(): void {
     this.app.ticker.remove(this.onTick);
+    window.removeEventListener('keydown', this.onModifier);
+    window.removeEventListener('keyup', this.onModifier);
+    window.removeEventListener('pointermove', this.onModifier);
     this.app.renderer.off('resize', this.onResize);
     this.input.destroy();
     this.app.stage.removeChild(this.world);
@@ -414,6 +422,7 @@ export class Game {
       prev.signalKind === t.signalKind &&
       prev.trackMode === t.trackMode &&
       prev.catenaryMode === t.catenaryMode &&
+      prev.stationSeparate === t.stationSeparate &&
       prev.terrainMode === t.terrainMode
       ? prev
       : {
@@ -423,6 +432,7 @@ export class Game {
           signalKind: t.signalKind,
           trackMode: t.trackMode,
           catenaryMode: t.catenaryMode,
+          stationSeparate: t.stationSeparate,
           terrainMode: t.terrainMode,
         };
   }

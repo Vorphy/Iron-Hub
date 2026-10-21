@@ -32,7 +32,8 @@ export type Command =
   | { type: 'clearTile'; x: number; y: number }
   | { type: 'buildTrack'; pieces: TrackPiece[] }
   | { type: 'removeTrack'; pieces: TrackPiece[] }
-  | { type: 'buildStation'; x0: number; y0: number; x1: number; y1: number; axis: StationAxis }
+  /** Peron obok istniejącej stacji ją rozbudowuje; `separate` – osobna stacja. */
+  | { type: 'buildStation'; x0: number; y0: number; x1: number; y1: number; axis: StationAxis; separate?: boolean }
   | { type: 'buildDepot'; x: number; y: number; side: Side }
   | { type: 'buyTrain'; depotId: number; engine: string; wagons: string[] }
   | { type: 'sellTrain'; trainId: number }
@@ -137,7 +138,7 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
     case 'removeTrack':
       return removeTrack(state, cmd.pieces, events);
     case 'buildStation':
-      return buildStation(state, cmd.x0, cmd.y0, cmd.x1, cmd.y1, cmd.axis, events);
+      return buildStation(state, cmd.x0, cmd.y0, cmd.x1, cmd.y1, cmd.axis, events, cmd.separate === true);
     case 'buildDepot':
       return buildDepot(state, cmd.x, cmd.y, cmd.side, events);
     case 'buyTrain':

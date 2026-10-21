@@ -87,6 +87,9 @@ export class Tools {
   trackMode: TrackMode = 'build';
   /** Narzędzie Trakcja: budowa albo zdjęcie sieci. */
   catenaryMode: TrackMode = 'build';
+  /** Stacja: osobna zamiast rozbudowy sąsiedniej (panel); Ctrl / Shift odwraca na czas trzymania. */
+  stationSeparate = false;
+  private modifierHeld = false;
   terrainMode: TerrainMode = 'raise';
   /** Pociąg, któremu dopisujemy stacje (narzędzie 'orders'). */
   ordersTrain: number | null = null;
@@ -313,7 +316,9 @@ export class Tools {
       const info = ok.length ? catchmentCargo(this.sim.state, ok) : null;
       const cargoInfo = info ? describeCatchment(info.supplies, info.accepts) : '';
       const base = this.dragStart ? planLabel(plan) : null;
-      this.label = base || cargoInfo ? { text: [base?.text, cargoInfo].filter(Boolean).join(' · '), ok: base?.ok ?? true } : null;
+      const kind = plan.join ? `Rozbudowa: ${plan.join.name}` : this.dragStart ? 'Nowa stacja' : '';
+      this.label =
+        base || cargoInfo ? { text: [kind, base?.text, cargoInfo].filter(Boolean).join(' · '), ok: base?.ok ?? true } : null;
       return;
     }
 
@@ -372,9 +377,25 @@ export class Tools {
     return this.depotAuto ? autoDepotSide(this.sim.state.map, x, y, this.depotSide) : this.depotSide;
   }
 
+  /** Osobna stacja zamiast rozbudowy: przełącznik w panelu albo wciśnięty Ctrl / Shift (odwraca). */
+  get separateStation(): boolean {
+    return this.stationSeparate !== this.modifierHeld;
+  }
+
+  setStationSeparate(on: boolean): void {
+    this.stationSeparate = on;
+    this.dirty = true;
+  }
+
+  setModifier(held: boolean): void {
+    if (held === this.modifierHeld) return;
+    this.modifierHeld = held;
+    this.dirty = true;
+  }
+
   private stationPlan(start: Point, end: Point) {
     const [x0, y0, x1, y1] = [start.x, start.y, end.x, end.y].map(Math.floor) as [number, number, number, number];
-    return planStation(this.sim.state, x0, y0, x1, y1, stationAxis(x0, y0, x1, y1, this.stationAxis));
+    return planStation(this.sim.state, x0, y0, x1, y1, stationAxis(x0, y0, x1, y1, this.stationAxis), this.separateStation);
   }
 
   private commandFor(start: Point, end: Point): Command | null {
@@ -431,6 +452,7 @@ export class Tools {
         x1: Math.max(...xs),
         y1: Math.max(...ys),
         axis: plan.axis,
+        separate: this.separateStation,
       };
     }
     if (this.tool === 'bulldozer') {

@@ -12,6 +12,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-21',
+    title: 'Rozbudowa stacji',
+    items: [
+      'Peron dobudowany tuż przy stacji ją rozbudowuje – ta sama nazwa, ładunek i rozkłady, większy zasięg. Podgląd pokazuje „Rozbudowa: …”.',
+      'Ctrl albo Shift przy budowie (albo przełącznik „Osobna” w panelu) – osobna stacja obok.',
+    ],
+  },
+  {
+    date: '2026-10-21',
     title: 'Magazyn wagonów w zajezdni',
     items: [
       'Pociągi w oknie zajezdni pokazują skład. Klik na wagon odpina go do magazynu zajezdni, a klik na wagon w magazynie doczepia go do wybranego pociągu (z ładunkiem).',

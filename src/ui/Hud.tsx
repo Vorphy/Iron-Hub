@@ -37,7 +37,7 @@ const TOOL_HELP: Record<Tool, string> = {
   track:
     'Buduj: przeciągnij wzdłuż osi lub ukośnie; pozycja kursora w kafelku wybiera łuk. Usuń: klik – jeden element pod kursorem, przeciągnięcie – odcinek. Prawy przycisk – przesuwanie mapy · Esc – anuluj',
   station:
-    'Przeciągnij prostokąt: dłuższy bok to długość peronu, krótszy – liczba torów. R – obrót przy kwadracie. Niebieskie pole to zasięg stacji',
+    'Przeciągnij prostokąt: dłuższy bok to długość peronu, krótszy – liczba torów. Peron obok stacji ją rozbudowuje (Ctrl / Shift – osobna stacja). R – obrót przy kwadracie. Niebieskie pole to zasięg stacji',
   depot: 'Klik stawia zajezdnię (1000 zł). Kierunek wjazdu wybierz w panelu obok (lub R); Auto – w stronę sąsiedniego toru',
   signal:
     'Klik na tor stawia semafor ścieżkowy (200 zł); kolejne kliknięcia zmieniają kierunek. Pociąg może stanąć tylko przed semaforem, na końcu peronu lub toru · V – podgląd rezerwacji',
@@ -299,6 +299,22 @@ function ToolOptions({ tool, options, actions }: { tool: Tool; options: HudState
           </button>
         </div>
         <div class="muted small">przy kwadracie</div>
+        <div class="section-title">Obok stacji</div>
+        <button
+          class={!options.stationSeparate ? 'active' : ''}
+          title="Peron przy istniejącej stacji ją rozbudowuje (ta sama nazwa i ładunek)"
+          onClick={() => actions.setStationSeparate(false)}
+        >
+          Rozbuduj
+        </button>
+        <button
+          class={options.stationSeparate ? 'active' : ''}
+          title="Zawsze osobna stacja"
+          onClick={() => actions.setStationSeparate(true)}
+        >
+          Osobna
+        </button>
+        <div class="muted small">Ctrl / Shift – odwrotnie</div>
       </div>
     );
   }

@@ -1,7 +1,7 @@
 import { BEND_PENALTY, OCCUPIED_PENALTY, REVERSE_PENALTY } from '../config';
 import type { SignalIndex } from '../signals/signals';
 import type { GameState } from '../state';
-import { SIDE_DELTA, Track } from '../track/track';
+import { getTrackBits, SIDE_DELTA, Track } from '../track/track';
 import { inBounds } from '../world/map';
 import { isElectrified, needsCatenary } from '../track/catenary';
 import { isFree, type Taken } from './reservation';
@@ -41,7 +41,8 @@ function isPlatformEnd(state: GameState, s: Step, stationId: number): boolean {
   const [dx, dy] = SIDE_DELTA[s.exit];
   const nx = s.x + dx;
   const ny = s.y + dy;
-  return !inBounds(map, nx, ny) || map.station[ny * map.width + nx] !== stationId;
+  if (!inBounds(map, nx, ny) || map.station[ny * map.width + nx] !== stationId) return true;
+  return getTrackBits(map, nx, ny) !== s.track;
 }
 
 function goalTest(state: GameState, goal: NonNullable<Goal>): (s: Step) => boolean {

@@ -91,6 +91,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
       `Stacja (P): przeciągnij prostokąt – dłuższy bok to długość peronu, krótszy liczba torów (max ${STATION_MAX_LENGTH} × ${STATION_MAX_PLATFORMS}). Można ją postawić na pustym terenie albo na prostym torze. ${zl(E.construction.stationTile)} za kafelek.`,
       `**Zasięg** (niebieskie pole, ${CATCHMENT_RADIUS} kafelki od peronów): stacja zbiera pasażerów i pocztę z domów oraz ładunek z zakładów w zasięgu i dostarcza do nich. Przy stawianiu podpowiedź pokazuje „Zbiera: … · Przyjmuje: …”.`,
       `Stacja przyjmuje pasażerów, gdy w zasięgu jest jakikolwiek dom; pocztę od ${E.town.acceptance.mail} mieszkańców, towary od ${E.town.acceptance.goods}. Węgiel, rudę i drewno – gdy w zasięgu jest zakład, który ich potrzebuje.`,
+      '**Rozbudowa**: peron postawiony tuż obok stacji (bokiem przylega do jej peronu) staje się jej częścią – ta sama nazwa, czekający ładunek i rozkłady, zasięg rośnie. Tak dokładasz kolejne tory, gdy stacja nie nadąża. Ctrl albo Shift przy budowie (albo „Osobna” w panelu) stawia osobną stację.',
       'Pociąg staje czołem na końcu peronu. Peron powinien mieścić cały skład (długość pokazuje okno zajezdni).',
     ],
   },
