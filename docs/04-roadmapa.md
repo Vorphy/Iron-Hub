@@ -73,34 +73,33 @@ Etapy są ułożone tak, żeby po każdym istniała działająca, testowalna wer
 - Płatne dodatki (pakiety pojazdów) – wymaga backendu i systemu płatności.
 - Symulacja w Web Workerze, ewentualnie multiplayer.
 
-## Kolejka – co dalej (stan na 2026-10-19)
+## Kolejka – co dalej (stan na 2026-10-21)
 
-Kolejność proponowana; zmieniamy według potrzeb. Punkty 1–4 przygotowują etap 5 (test z ludźmi).
+Jedna kolejka, w kolejności, która najszybciej poprawia granie. Maglevy, kolej jednoszynowa i katastrofy – świadomie pomijamy.
 
-1. ~~**Kredyt i bankructwo**~~ ✅ (2026-10-21) – kredyt do 300 tys. zł, 5% rocznie, ostrzeżenia, bankructwo po 3 miesiącach na minusie.
-2. ~~**Minimapa**~~ ✅ (2026-10-21) – lewy górny róg, klik/przeciąganie przenosi kamerę, widać pociągi i obszar ekranu; można zwinąć.
-3. ~~**Pierwsze kroki dla nowego gracza**~~ ✅ (2026-10-21) – panel z 7 celami (tor → stacje → zajezdnia → pociąg → rozkład → wyjazd → zarobek) zaliczanymi automatycznie, podpowiedź do bieżącego, przycisk Nowa gra; ukrywany, powrót przez Menu.
-4. ~~**Poziomy pociągów i trakcje**~~ ✅ (2026-10-21) – 13 lokomotyw 1900–2005 (parowe → spalinowe → elektryczne do 250 km/h, bez maglevów), wycofywanie starych modeli, wybór roku startu, sieć trakcyjna dla elektrycznych.
-5. **Etap 5 – test „czy to jest fajne”** – granie, strojenie `src/data/economy.ts`.
-6. ~~Drobne~~ ✅ (2026-10-21): ciężarówki w miastach przy zakładach, pojazdy chowają się za domami, lint/format (Biome, sprawdzany przy każdym pushu).
-7. **Etap 7** – grafika, dźwięki, retro UI, wydanie na itch.io.
-8. **Etap 8** – generator/edytor map, chmura, Web Worker, płatne dodatki.
+### Faza A – przed testami z ludźmi
+1. **Droższe zmiany terenu** – dziś kształtowanie terenu prawie nie obciąża portfela (`terraformCorner` w pliku ekonomii, propozycja 150–200 zł za narożnik).
+2. **Nowa gra – tryb własny** – zamiast poziomów gęstości dokładne liczby: ile miast oraz ile zakładów każdego typu (kopalnie węgla, kopalnie rudy, lasy, elektrownie, huty, tartaki); położenie losowane z ziarna mapy (generator już liczy osobno każdy typ – `worldCounts`).
+3. **Lista pociągów** – okno z podglądem wszystkich pociągów: zysk w tym i zeszłym roku, sortowanie, oznaczenie nierentownych (i komunikat o nich raz w roku); filtry, w tym **grupy pociągów** (np. „Węgiel”, „Pasażerskie”).
+4. **Lepsza minimapa** – zoom, przenoszenie po ekranie i powiększanie; po wejściu w nią – jak w OpenTTD – filtr zakładów (np. tylko kopalnie węgla, tylko elektrownie) z legendą kolorów, żeby zaplanować start i rozbudowę sieci.
+5. **Wspólne rozkłady** – kopia pociągu może dzielić rozkład z oryginałem: zmiana w jednym zmienia wszystkie na linii.
+6. **Rozkład czasowy** – postój X dni na stacji i **równe odstępy**: na wspólnym rozkładzie wyrównuje pociągi linii (czas obiegu / liczba pociągów) i wypuszcza je w odpowiednich odstępach.
+7. **Etap 5 – test „czy to jest fajne”** – granie z kilkoma osobami, strojenie `src/data/economy.ts` i `vehicles.json`.
 
-## Kolejka 2 – pociągi i budowa (braki względem OpenTTD, ustalone 2026-10-21)
+### Faza B – głębia rozgrywki (po wnioskach z testów)
+8. **Podwójna trakcja** – 2 lokomotywy w składzie (ciężkie pociągi pod górę). *Pamiętać!*
+9. **Tory na zboczach z fundamentami** – łuki i rozjazdy na zboczu, wyraźnie droższe od zwykłych torów.
+10. **Szablony budowy** – gotowe do wklejenia układy, np. bezkolizyjne skrzyżowanie łączące cztery dwutorowe linie.
+11. **Super stacja** – ulepszenie stacji w mieście za ~100× ceny peronu: druga kondygnacja peronów (4 tory zamiast 2 na tym samym obszarze), zjazdy jak portale tuneli, 2-torowy wjazd w głowicy (szczegóły w Pomysłach).
+12. **„Jedź bez zatrzymania” i punkty kontrolne** (wymuszenie trasy przez dany tor) – przewidzieć w modelu rozkładu już przy punkcie 5.
+13. **Awarie i serwis** – niezawodność spada z wiekiem, nieserwisowane pociągi psują się częściej i stają, serwis w zajezdni; możliwość wyłączenia przy nowej grze.
 
-Kolejność ustalona z graczem. Maglevy, kolej jednoszynowa i katastrofy – świadomie pomijamy.
+### Faza C
+14. **Etap 7** – grafika, dźwięki, retro UI, wydanie na itch.io.
+15. **Etap 8** – generator/edytor map, chmura, Web Worker, płatne dodatki.
 
-1. **Lista pociągów** – okno z podglądem wszystkich pociągów: zysk w tym i zeszłym roku, sortowanie, oznaczenie nierentownych (i komunikat o nich raz w roku); filtry, w tym **grupy pociągów** (np. „Węgiel”, „Pasażerskie”).
-2. **Wspólne rozkłady** – kopia pociągu może dzielić rozkład z oryginałem: zmiana w jednym pociągu zmienia wszystkie na linii.
-3. **„Jedź bez zatrzymania” i punkty kontrolne** (wymuszenie trasy przez dany tor) – na razie bez pilnej potrzeby, ale przewidzieć w modelu rozkładu.
-4. **Rozkład czasowy** – postój X dni na stacji i **równe odstępy** między pociągami. Działa na wspólnym rozkładzie: wyrównuje pociągi linii (czas obiegu linii / liczba pociągów) i wypuszcza je w odpowiednich odstępach.
-5. **Awarie i serwis** (daleki plan) – niezawodność spada z wiekiem, nieserwisowane pociągi psują się częściej i stają, serwis w zajezdni; możliwość wyłączenia przy nowej grze.
-6. **Podwójna trakcja** – 2 lokomotywy w składzie (ciężkie pociągi pod górę). *Pamiętać!*
-7. **Tory na zboczach z fundamentami** – łuki i rozjazdy na zboczu, wyraźnie droższe od zwykłych torów.
-8. **Droższe zmiany terenu** – dziś kształtowanie terenu prawie nie obciąża portfela (strojenie `terraformCorner` w pliku ekonomii).
-9. **Szablony budowy** – gotowe do wklejenia układy, np. bezkolizyjne skrzyżowanie łączące cztery dwutorowe linie.
-10. **Lepsza minimapa** – zoom minimapy, przenoszenie jej po ekranie (i powiększanie okna), a po wejściu w nią – jak w OpenTTD – filtr pokazujący wybrane zakłady (np. tylko kopalnie węgla, tylko elektrownie) z legendą kolorów, żeby zaplanować, gdzie zacząć i jak rozbudowywać sieć.
-11. **Nowa gra – tryb własny** – zamiast poziomów gęstości gracz podaje dokładne liczby: ile miast oraz ile zakładów każdego typu (kopalnie węgla, kopalnie rudy, lasy, elektrownie, huty, tartaki); położenie dalej losowane z ziarna mapy. (Generator już liczy zakłady osobno dla każdego typu – `worldCounts` – więc to głównie okno nowej gry.)
+### Zrobione z wcześniejszej kolejki (2026-10-21)
+Kredyt i bankructwo · minimapa · pierwsze kroki · lokomotywy z biegiem lat i sieć trakcyjna · ciężarówki, chowanie pojazdów za domami, lint/format · wymiana lokomotyw · pomoc i historia zmian · nazwy miast · kopiowanie pociągów · pełny ładunek · magazyn wagonów · rozbudowa stacji · gęstość miast, kopalń i przemysłu · numery zajezdni.
 
 ## Pomysły (lista otwarta – dopisuj na dole)
 
