@@ -71,6 +71,7 @@ Etapy są ułożone tak, żeby po każdym istniała działająca, testowalna wer
 - ~~Wysokości terenu, zbocza, mosty, tunele.~~ ✅ (zrobione wcześniej – 2026-10-18)
 - Backend: zapis w chmurze, rankingi.
   - *Kandydat (2026-10-21):* Cloudflare Workers + D1 (baza SQLite) – bez własnego serwera do utrzymania, darmowy próg wystarcza na testy, strona zostaje na GitHub Pages. Pierwszy krok: statystyki graczy (nazwa firmy, identyfikator z przeglądarki, czas grania), potem zapis w chmurze i rankingi na tej samej bazie. Alternatywy: Supabase (Postgres + logowanie), mały VPS z SQLite (najwięcej kontroli, ale trzeba go utrzymywać).
+  - Pełna dyskusja możliwości (licznik vs Workers + D1 vs Supabase vs VPS, nazwa firmy, identyfikator gracza, IP, RODO, szkic tabeli): [07-backend-mozliwosci](07-backend-mozliwosci.md).
 - Płatne dodatki (pakiety pojazdów) – wymaga backendu i systemu płatności.
 - Symulacja w Web Workerze, ewentualnie multiplayer.
 
@@ -122,7 +123,7 @@ Kredyt i bankructwo · minimapa · pierwsze kroki · lokomotywy z biegiem lat i 
 - ~~historia zmian na stronie w menu~~ ✅ (Menu → Co nowego; `src/data/changelog.ts`, kropka przy Menu przy nowościach – 2026-10-21)
 - ~~samouczek + mini wiki jak co działą jak rosnie miasto fabryka.~~ ✅ (Pomoc – H / „?”: 16 tematów, liczby z plików danych, linki „?” w oknach; `src/data/help.ts` – 2026-10-21)
 - **Super stacja** (pomysł 2026-10-21): ulepszenie istniejącej stacji za ~100× ceny peronu – druga kondygnacja peronów pod spodem (4 tory zamiast 2 na tym samym obszarze), zjazdy na dolny poziom jak portale tuneli, dolne tory jako osobna warstwa (bez kolizji z górnymi). Żeby nie było zatorów: osobne tory zjazdów w głowicy (wymóg 2-torowego wjazdu), wybór peronu przez obecny planer. Warunek: stacja w mieście (np. ≥ 2000 mieszkańców w zasięgu). Prostsza alternatywa: „dworzec główny” – 2× szybszy załadunek, wyższa ocena, większy zasięg. Po etapie 5.
-- **Statystyki graczy** (pomysł 2026-10-21): kto wchodził, czy grał i jak długo – przyda się przy etapie 5. Gra jest statyczną stroną (GitHub Pages, bez serwera), więc do wyboru:
+- **Statystyki graczy** (pomysł 2026-10-21): kto wchodził, czy grał i jak długo – przyda się przy etapie 5. Omówienie możliwości: [07-backend-mozliwosci](07-backend-mozliwosci.md). Gra jest statyczną stroną (GitHub Pages, bez serwera), więc do wyboru:
   - *Prosto, bez serwera:* lekki licznik odwiedzin szanujący prywatność (np. GoatCounter, Plausible) + własne zdarzenia z gry: start nowej gry (rozmiar mapy), czas grania co kilka minut, osiągnięte kroki samouczka. Bez kont – widać liczby, nie konkretne osoby.
   - *„Kto” konkretnie:* opcjonalny nick przy pierwszym uruchomieniu albo kod testera w linku (np. `?tester=ania`) dołączany do zdarzeń – wystarczy na testy z kilkoma osobami.
   - **Nazwa firmy przy nowej grze** (pomysł 2026-10-21): gracz wpisuje nazwę swojej kolei (np. „Kolej Żelazna Sp. z o.o.”) – widać ją w grze (HUD, finanse, podpis zapisu), a w statystykach działa jak osobny „login”. Fajne samo w sobie, nawet bez statystyk.
