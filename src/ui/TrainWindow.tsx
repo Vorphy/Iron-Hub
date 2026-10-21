@@ -89,13 +89,18 @@ export function TrainWindow({ data: t, actions }: { data: TrainWindowData; actio
         <div class="row order" key={i}>
           <span class="order-mark">{i === t.currentOrder && !t.goToDepot ? '▶' : `${i + 1}.`}</span>
           <span class="grow">{o.name}</span>
+          <label class="full-load" title="Czekaj na tej stacji, aż wagony na jej ładunek będą pełne">
+            <input type="checkbox" checked={o.fullLoad} onChange={() => actions.toggleFullLoad(id, i)} />
+            pełny ładunek
+          </label>
           <button
             class="close"
             title="Usuń z rozkładu"
             onClick={() =>
               actions.setOrders(
                 id,
-                [...t.orders.map((x) => x.stationId)].filter((_, j) => j !== i),
+                t.orders.map((x) => x.stationId).filter((_, j) => j !== i),
+                t.orders.map((x) => x.fullLoad).filter((_, j) => j !== i),
               )
             }
           >

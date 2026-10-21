@@ -48,7 +48,7 @@ export interface TrainWindowData {
   stopped: boolean;
   goToDepot: boolean;
   lost: boolean;
-  orders: { stationId: number; name: string }[];
+  orders: { stationId: number; name: string; fullLoad: boolean }[];
   currentOrder: number;
   resale: number;
   /** Trwa wskazywanie stacji do rozkładu. */
@@ -270,7 +270,8 @@ export interface HudActions {
   reverseTrain(trainId: number): void;
   /** Wymiana lokomotywy (null – anulowanie); `all` – we wszystkich pociągach z tą samą lokomotywą. */
   replaceEngine(trainId: number, engine: string | null, all?: boolean): void;
-  setOrders(trainId: number, orders: number[]): void;
+  setOrders(trainId: number, orders: number[], fullLoad?: boolean[]): void;
+  toggleFullLoad(trainId: number, index: number): void;
   /** Włącza/wyłącza wskazywanie stacji do rozkładu. */
   pickOrders(trainId: number): void;
   focusTrain(trainId: number): void;

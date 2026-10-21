@@ -136,6 +136,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     title: 'Rozkład jazdy',
     blocks: [
       'Rozkład to lista stacji, po których pociąg jeździ w kółko: w oknie pociągu „+ Dodaj stacje”, klikaj stacje na mapie, „Gotowe”.',
+      '**Pełny ładunek** (ptaszek przy stacji w rozkładzie): pociąg nie odjedzie, dopóki nie napełni wagonów na ładunek, który ta stacja zbiera (status „Czeka na pełny ładunek”). Dobre przy kopalniach – zamiast wozić pół pustych wagonów. Wagony na inny ładunek nie wstrzymują odjazdu; „■ Stop” albo „Zawróć” przerywa czekanie.',
       'Pociąg sam wybiera trasę (najkrótszą, omijając zajęte perony) i zawraca na końcu toru albo na stacji, gdy następny cel jest za nim.',
       'Status „Nie może dojechać” – do celu nie ma toru (albo lokomotywa elektryczna nie ma sieci trakcyjnej).',
       'Bez rozkładu pociąg jeździ przed siebie i zawraca na końcach toru.',

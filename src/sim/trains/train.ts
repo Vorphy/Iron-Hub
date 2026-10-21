@@ -43,6 +43,8 @@ export interface Train {
   stopped: boolean;
   /** Rozkład: id stacji. */
   orders: number[];
+  /** Przy której pozycji rozkładu czekać na pełny ładunek (ta sama długość co `orders`). */
+  fullLoad: boolean[];
   currentOrder: number;
   goToDepot: boolean;
   /** Może zawrócić w miejscu przy ruszaniu (np. po postoju na stacji). */
@@ -118,6 +120,7 @@ export function buyTrain(
     depotId,
     stopped: true,
     orders: [],
+    fullLoad: [],
     currentOrder: 0,
     goToDepot: false,
     mayReverse: false,
@@ -325,6 +328,7 @@ export function cloneTrain(state: GameState, trainId: number, events: SimEvent[]
   if (!result.ok) return result;
   const copy = state.trains[state.trains.length - 1]!;
   copy.orders = [...train.orders];
+  copy.fullLoad = [...train.fullLoad];
   events.push({ type: 'trainCloned', trainId: copy.id, depotId: depot.id });
   return { ok: true };
 }
@@ -347,9 +351,19 @@ function cloneDepot(state: GameState, train: Train) {
   return best;
 }
 
-export function setOrders(state: GameState, trainId: number, orders: readonly number[]): CommandResult {
+/**
+ * Nowy rozkład. `fullLoad` – ptaszki „pełny ładunek” dla pozycji; bez niego zostają ptaszki
+ * dotychczasowych pozycji (dopisanie stacji na końcu ich nie rusza), nowe – bez ptaszka.
+ */
+export function setOrders(
+  state: GameState,
+  trainId: number,
+  orders: readonly number[],
+  fullLoad?: readonly boolean[],
+): CommandResult {
   const train = trainById(state, trainId);
   if (!train || orders.some((id) => !state.stations.some((s) => s.id === id))) return { ok: false, reason: 'blocked' };
+  train.fullLoad = orders.map((_, i) => (fullLoad ? fullLoad[i] === true : train.fullLoad[i] === true));
   train.orders = [...orders];
   if (train.currentOrder >= train.orders.length) train.currentOrder = 0;
   train.resTerminal = null;
@@ -361,9 +375,18 @@ export function dropStationFromOrders(state: GameState, stationId: number): void
   for (const t of state.trains) {
     const i = t.orders.indexOf(stationId);
     if (i < 0) continue;
+    t.fullLoad = t.fullLoad.filter((_, j) => t.orders[j] !== stationId);
     t.orders = t.orders.filter((id) => id !== stationId);
     if (i < t.currentOrder) t.currentOrder--;
     if (t.currentOrder >= t.orders.length) t.currentOrder = 0;
     t.resTerminal = null;
   }
+}
+
+/** Przełącza „czekaj na pełny ładunek” dla pozycji rozkładu. */
+export function toggleFullLoad(state: GameState, trainId: number, index: number): CommandResult {
+  const train = trainById(state, trainId);
+  if (!train || index < 0 || index >= train.orders.length) return { ok: false, reason: 'blocked' };
+  train.fullLoad[index] = !train.fullLoad[index];
+  return { ok: true };
 }

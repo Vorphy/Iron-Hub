@@ -12,6 +12,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-21',
+    title: 'Czekaj na pełny ładunek',
+    items: [
+      'W rozkładzie jazdy ptaszek „pełny ładunek” przy każdej stacji, osobno dla każdego pociągu: pociąg nie odjedzie, dopóki nie napełni wagonów na ładunek tej stacji.',
+      'Wagony na ładunek, którego stacja nie zbiera (np. pocztowy przy kopalni), nie wstrzymują odjazdu.',
+    ],
+  },
+  {
+    date: '2026-10-21',
     title: 'Kopiowanie pociągów',
     items: [
       'Okno pociągu → „⧉ Kopiuj”: taki sam pociąg (lokomotywa, wagony, rozkład) staje w zajezdni – wystarczy kliknąć „▶ Wyjedź”.',

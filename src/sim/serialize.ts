@@ -14,7 +14,7 @@ import { engineDef, wagonDef } from './trains/vehicles';
 import { MAX_HEIGHT } from './world/height';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 13;
+export const SAVE_VERSION = 14;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -187,6 +187,11 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     mapTrains((t) => ({ ...t, replaceWith: null, engineBuilt: 0 }));
     d.version = 13;
   }
+  if (d.version === 13) {
+    // v14: „czekaj na pełny ładunek” przy pozycjach rozkładu
+    mapTrains((t) => ({ ...t, fullLoad: Array.isArray(t.orders) ? t.orders.map(() => false) : [] }));
+    d.version = 14;
+  }
   return d as Partial<SerializedState>;
 }
 
@@ -331,6 +336,9 @@ function isTrain(v: unknown): v is Train {
     typeof t.stopped === 'boolean' &&
     Array.isArray(t.orders) &&
     t.orders.every(isInt) &&
+    Array.isArray(t.fullLoad) &&
+    t.fullLoad.length === t.orders.length &&
+    t.fullLoad.every((f) => typeof f === 'boolean') &&
     isInt(t.currentOrder) &&
     typeof t.goToDepot === 'boolean' &&
     typeof t.mayReverse === 'boolean' &&

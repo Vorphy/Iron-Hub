@@ -1,3 +1,5 @@
+import { wagonDef } from './vehicles';
+import type { Station } from '../station/station';
 import {
   ADHESION,
   GRADE_PER_LEVEL,
@@ -11,7 +13,7 @@ import {
   UNITS_PER_KMH_TICK,
 } from '../config';
 import type { SimEvent } from '../commands';
-import { serveTrainAtStation } from '../economy/cargoFlow';
+import { catchmentCargo, serveTrainAtStation } from '../economy/cargoFlow';
 import { SignalIndex } from '../signals/signals';
 import type { GameState } from '../state';
 import { trainLength } from './geometry';
@@ -68,7 +70,9 @@ export function tickTrains(state: GameState, planner: Planner, events: SimEvent[
         // Przed odjazdem dobieramy ładunek, który pojawił się w czasie postoju.
         const st = stationUnderHead(state, train);
         if (st) serveTrainAtStation(state, train, st, events, false);
-        departStation(train);
+        // „Pełny ładunek”: zostaje i ładuje dalej, aż wagony na ładunek tej stacji będą pełne.
+        if (st && waitsForFullLoad(state, train, st)) train.waitTicks = FULL_LOAD_CHECK_TICKS;
+        else departStation(train);
       }
       continue;
     }
@@ -116,6 +120,22 @@ function tryLeaveDepot(ctx: TickContext, train: Train): void {
   addTaken(ctx.state, ctx.taken, exit, train.id);
   train.blockedTicks = 0;
   train.blockedBy = null;
+}
+
+/** Co ile ticków pociąg czekający na pełny ładunek sprawdza, czy coś przybyło (pół dnia). */
+const FULL_LOAD_CHECK_TICKS = 20;
+
+/** Czeka na pełny ładunek: ptaszek przy tej pozycji rozkładu i są niepełne wagony na ładunek stacji. */
+export function waitsForFullLoad(state: GameState, train: Train, st: Station): boolean {
+  if (train.stopped || train.reverseRequested) return false;
+  if (train.orders[train.currentOrder] !== st.id || !train.fullLoad[train.currentOrder]) return false;
+  const { supplies } = catchmentCargo(state, st.tiles);
+  return train.wagons.some((id, k) => {
+    const def = wagonDef(id)!;
+    const load = train.loads[k]!;
+    // Wagon z ładunkiem z innej stacji tu nie dobierze (nie mieszamy ładunków).
+    return supplies.has(def.cargo) && load.amount < def.capacity && (load.amount === 0 || load.source === st.id);
+  });
 }
 
 function departStation(train: Train): void {

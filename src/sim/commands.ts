@@ -16,6 +16,7 @@ import {
   sellTrain,
   sendToDepot,
   setOrders,
+  toggleFullLoad,
   startTrain,
   stopTrain,
   trainsInDepot,
@@ -42,7 +43,9 @@ export type Command =
   | { type: 'reverseTrain'; trainId: number }
   /** Wymiana lokomotywy na inną (null – anulowanie zamówionej wymiany). */
   | { type: 'replaceEngine'; trainId: number; engine: string | null }
-  | { type: 'setOrders'; trainId: number; orders: number[] }
+  | { type: 'setOrders'; trainId: number; orders: number[]; fullLoad?: boolean[] }
+  /** Ptaszek „czekaj na pełny ładunek” przy pozycji rozkładu. */
+  | { type: 'toggleFullLoad'; trainId: number; index: number }
   | { type: 'placeSignal'; x: number; y: number; track: Track; oneWay: boolean }
   | { type: 'removeSignal'; x: number; y: number; track: Track }
   | { type: 'setSignalMode'; mode: SignalMode }
@@ -147,7 +150,9 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
     case 'reverseTrain':
       return requestReverse(state, cmd.trainId);
     case 'setOrders':
-      return setOrders(state, cmd.trainId, cmd.orders);
+      return setOrders(state, cmd.trainId, cmd.orders, cmd.fullLoad);
+    case 'toggleFullLoad':
+      return toggleFullLoad(state, cmd.trainId, cmd.index);
     case 'placeSignal':
       return placeSignal(state, cmd.x, cmd.y, cmd.track, cmd.oneWay, events);
     case 'removeSignal':
