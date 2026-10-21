@@ -128,6 +128,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
       `Sprzedaż tylko w zajezdni: wagony – zwrot ${pct(E.refunds.trainResale)} ceny, lokomotywa – zależnie od wieku (patrz Wymiana lokomotyw).`,
       `Koszt utrzymania (rocznie, tylko poza zajezdnią): lokomotywa parowa ${pct(E.trainRunningCost.traction.steam)} ceny, spalinowa ${pct(E.trainRunningCost.traction.diesel)}, elektryczna ${pct(E.trainRunningCost.traction.electric)}; wagony ${pct(E.trainRunningCost.wagon)}.`,
       'Okno pociągu (klik na pociąg): start/stop, „Do zajezdni”, „Zawróć”, „Pokaż”, rozkład i wymiana lokomotywy.',
+      '**Zmiana składu** (okno zajezdni, pociąg musi stać w zajezdni): klik na wagon w składzie odpina go do **magazynu** zajezdni; klik na wagon w magazynie doczepia go do wybranego pociągu (◉). Wagony kupisz też prosto do magazynu, a ✕ sprzedaje wagon z magazynu. „Sprzedaj lokomotywę” zostawia wagony w magazynie – tak przełożysz wagony na nową lokomotywę (kup ją jako pociąg bez wagonów). Zajezdni z wagonami w magazynie nie zburzysz.',
       '**Kopiuj** (⧉ w oknie pociągu lub zajezdni): kupuje taki sam pociąg z tym samym rozkładem. Kopia staje w tej samej zajezdni, a z pociągu w trasie – w najbliższej (dla elektrycznej – z siecią trakcyjną). Kliknij „▶ Wyjedź” – najlepiej, gdy poprzedni odjedzie kawałek, żeby pociągi jechały w odstępie.',
     ],
   },

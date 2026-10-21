@@ -24,6 +24,9 @@ export function DepotWindow({ data, money, actions }: { data: DepotWindowData; m
   // Wybrana lokomotywa mogła wyjść ze sprzedaży (nowy rok) – wtedy pierwsza dostępna.
   const engine = engines.some((e) => e.id === picked) ? picked : engines[0]!.id;
   const [wagons, setWagons] = useState<string[]>([]);
+  const [selected, setSelected] = useState<number | null>(null);
+  // Wybrany pociąg (do niego trafiają wagony z magazynu); domyślnie pierwszy w zajezdni.
+  const target = data.trains.find((t) => t.id === selected) ?? data.trains[0];
   const stats = consistStats(engine, wagons);
   const canBuy = stats.cost <= money;
   const electric = engineDef(engine)!.traction === 'electric';
@@ -41,31 +44,105 @@ export function DepotWindow({ data, money, actions }: { data: DepotWindowData; m
       </div>
 
       <div class="section-title">Pociągi w zajezdni</div>
-      {data.trains.length === 0 && <div class="muted">Brak – kup pierwszy pociąg poniżej.</div>}
+      {data.trains.length === 0 && (
+        <div class="muted">Brak – kup pierwszy pociąg poniżej (sama lokomotywa też jest pociągiem).</div>
+      )}
+      {data.trains.length > 0 && <div class="muted small">Klik na pociąg – wybór; klik na wagon – odepnij do magazynu.</div>}
       {data.trains.map((t) => (
-        <div class="row" key={t.id}>
-          <div class="grow">
-            <div>{t.name}</div>
-            <div class="muted small">
-              {engineDef(t.engine)?.name} + {t.wagons.length} wag.
-            </div>
+        <div class={`depot-train ${t.id === target?.id ? 'selected' : ''}`} key={t.id}>
+          <div class="row">
+            <button
+              class="link grow train-pick"
+              onClick={() => setSelected(t.id)}
+              title="Wybierz – do tego pociągu trafią wagony z magazynu"
+            >
+              {t.id === target?.id ? '◉' : '○'} {t.name}
+            </button>
+            <button class="primary" onClick={() => actions.startTrain(t.id)} title="Wyjedź z zajezdni">
+              ▶
+            </button>
+            <button onClick={() => actions.openTrain(t.id)} title="Okno pociągu (rozkład jazdy, wymiana lokomotywy)">
+              Rozkład
+            </button>
+            <button onClick={() => actions.cloneTrain(t.id)} title="Kup taki sam pociąg z tym samym rozkładem">
+              ⧉
+            </button>
           </div>
-          <button class="primary" onClick={() => actions.startTrain(t.id)} title="Wyjedź z zajezdni">
-            ▶
-          </button>
-          <button onClick={() => actions.openTrain(t.id)} title="Okno pociągu (rozkład jazdy)">
-            Rozkład
-          </button>
-          <button onClick={() => actions.cloneTrain(t.id)} title="Kup taki sam pociąg z tym samym rozkładem">
-            ⧉
-          </button>
-          <button onClick={() => actions.sellTrain(t.id)} title={`Sprzedaj (+${formatMoney(t.resale)})`}>
-            Sprzedaj
-          </button>
+          <div class="consist">
+            <span class="chip engine" style={{ background: engineDef(t.engine)!.color }}>
+              {engineDef(t.engine)!.name}
+            </span>
+            {t.wagons.map((w, i) => (
+              <button
+                key={i}
+                class="chip"
+                style={{ background: wagonDef(w)!.color }}
+                title={`${wagonDef(w)!.name} – kliknij, aby odpiąć do magazynu`}
+                onClick={() => actions.detachWagon(t.id, i)}
+              >
+                {wagonDef(w)!.name.split(' ').pop()}
+              </button>
+            ))}
+          </div>
+          <div class="buttons wrap">
+            <button onClick={() => actions.sellTrain(t.id)} title="Sprzedaj cały pociąg">
+              Sprzedaj <small>+{formatMoney(t.resale)}</small>
+            </button>
+            {t.wagons.length > 0 && (
+              <button onClick={() => actions.sellEngine(t.id)} title="Sprzedaj tylko lokomotywę – wagony zostaną w magazynie">
+                Sprzedaj lokomotywę <small>+{formatMoney(t.engineResale)}</small>
+              </button>
+            )}
+          </div>
         </div>
       ))}
 
-      <div class="section-title">Kup pociąg</div>
+      <div class="section-title">Magazyn wagonów</div>
+      {data.spare.length === 0 ? (
+        <div class="muted small">Pusto. Odepnij wagon z pociągu albo kup wagon poniżej.</div>
+      ) : (
+        <div class="muted small">
+          {target ? `Klik na wagon – doczep do: ${target.name}.` : 'Kup lokomotywę, żeby doczepić wagony.'} ✕ – sprzedaj.
+        </div>
+      )}
+      <div class="consist">
+        {data.spare.map((w, i) => (
+          <span class="spare" key={i}>
+            <button
+              class="chip"
+              style={{ background: wagonDef(w.type)!.color }}
+              disabled={!target || target.wagons.length >= MAX_WAGONS}
+              title={`${wagonDef(w.type)!.name}${w.amount ? ` (ładunek ${w.amount})` : ''} – doczep do wybranego pociągu`}
+              onClick={() => target && actions.attachWagon(target.id, i)}
+            >
+              {wagonDef(w.type)!.name.split(' ').pop()}
+            </button>
+            <button
+              class="close"
+              title={`Sprzedaj (+${formatMoney(w.resale)})`}
+              onClick={() => actions.sellSpareWagon(data.depotId, i)}
+            >
+              ✕
+            </button>
+          </span>
+        ))}
+      </div>
+      <div class="muted small">Kup wagon do magazynu:</div>
+      <div class="wagon-grid">
+        {WAGONS.map((w) => (
+          <button
+            key={w.id}
+            disabled={w.cost > money}
+            onClick={() => actions.buyWagon(data.depotId, w.id)}
+            title={`${w.name}: ${w.capacity} (${CARGO_NAMES[w.cargo]})`}
+          >
+            <span class="swatch" style={{ background: w.color }} />
+            {w.name} <small>{formatMoney(w.cost)}</small>
+          </button>
+        ))}
+      </div>
+
+      <div class="section-title">Kup nowy pociąg</div>
       {TRACTIONS.map((traction) => {
         const list = engines.filter((e) => e.traction === traction);
         if (!list.length) return null;

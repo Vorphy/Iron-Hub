@@ -156,8 +156,8 @@ export function sellTrain(state: GameState, trainId: number, events: SimEvent[])
 
 /** Zwrot przy sprzedaży: wagony 75% ceny, lokomotywa – zależnie od wieku (jak przy wymianie). */
 export function resaleValue(state: GameState, train: Train): number {
-  const engineCost = engineDef(train.engine)!.cost;
-  return Math.round((train.value - engineCost) * TRAIN_RESALE_RATE) + engineTradeIn(state, train);
+  const wagons = train.wagons.reduce((sum, w) => sum + wagonDef(w)!.cost, 0);
+  return Math.round(wagons * TRAIN_RESALE_RATE) + engineTradeIn(state, train);
 }
 
 /** Kafelki zajęte przez pociągi na torach – tam nie wolno rozbierać torów ani stacji. */

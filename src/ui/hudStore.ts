@@ -23,12 +23,17 @@ export interface TrainSummary {
   wagons: string[];
   status: string;
   resale: number;
+  /** Zwrot za samą lokomotywę (wagony zostają w magazynie). */
+  engineResale: number;
+  stopped: boolean;
 }
 
 export interface DepotWindowData {
   kind: 'depot';
   depotId: number;
   trains: TrainSummary[];
+  /** Magazyn wagonów (typy) i zwrot za każdy. */
+  spare: { type: string; resale: number; amount: number }[];
   /** Bieżący rok – od niego zależą lokomotywy w sprzedaży. */
   year: number;
   /** Zajezdnia ma sieć trakcyjną (lokomotywy elektryczne mogą z niej wyjechać). */
@@ -261,6 +266,11 @@ export interface HudActions {
   closeWindow(): void;
   buyTrain(depotId: number, engine: string, wagons: string[]): void;
   sellTrain(trainId: number): void;
+  buyWagon(depotId: number, wagon: string): void;
+  sellSpareWagon(depotId: number, index: number): void;
+  attachWagon(trainId: number, index: number): void;
+  detachWagon(trainId: number, index: number): void;
+  sellEngine(trainId: number): void;
   /** Kopia pociągu z tym samym rozkładem do zajezdni. */
   cloneTrain(trainId: number): void;
   openTrain(trainId: number): void;

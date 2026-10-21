@@ -47,7 +47,7 @@ export const FAIL_MESSAGES: Record<FailReason, string> = {
   blocked: 'Nie można tu budować',
   nothingToRemove: 'Brak torów do rozebrania',
   tooBig: 'Za duże (stacja max 12 × 6, pociąg max 10 wagonów)',
-  depotNotEmpty: 'W zajezdni stoją pociągi',
+  depotNotEmpty: 'W zajezdni stoją pociągi albo wagony w magazynie',
   notInDepot: 'Pociąg musi stać w zajezdni',
   depotNotConnected: 'Zajezdnia nie ma toru przy wjeździe',
   trainInWay: 'Na drodze stoi pociąg',

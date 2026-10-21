@@ -6,6 +6,7 @@ import type { GameState } from './state';
 import { buildStation, removeStationTile, type StationAxis } from './station/station';
 import { buildTrack, removeTrack } from './track/build';
 import { buildCatenary, dropOrphanCatenary } from './track/catenary';
+import { attachWagon, buyWagon, detachWagon, sellEngine, sellSpareWagon } from './trains/consist';
 import { getTrackBits, tracksOn, type Side, type Track, type TrackPiece } from './track/track';
 import {
   buyTrain,
@@ -35,6 +36,12 @@ export type Command =
   | { type: 'buildDepot'; x: number; y: number; side: Side }
   | { type: 'buyTrain'; depotId: number; engine: string; wagons: string[] }
   | { type: 'sellTrain'; trainId: number }
+  /** Magazyn wagonów w zajezdni i zmiany składu (pociąg stoi w zajezdni). */
+  | { type: 'buyWagon'; depotId: number; wagon: string }
+  | { type: 'sellSpareWagon'; depotId: number; index: number }
+  | { type: 'attachWagon'; trainId: number; index: number }
+  | { type: 'detachWagon'; trainId: number; index: number }
+  | { type: 'sellEngine'; trainId: number }
   /** Kopia pociągu (lokomotywa, wagony, rozkład) do zajezdni. */
   | { type: 'cloneTrain'; trainId: number }
   | { type: 'startTrain'; trainId: number }
@@ -135,6 +142,16 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
       return buildDepot(state, cmd.x, cmd.y, cmd.side, events);
     case 'buyTrain':
       return buyTrain(state, cmd.depotId, cmd.engine, cmd.wagons, events);
+    case 'buyWagon':
+      return buyWagon(state, cmd.depotId, cmd.wagon, events);
+    case 'sellSpareWagon':
+      return sellSpareWagon(state, cmd.depotId, cmd.index, events);
+    case 'attachWagon':
+      return attachWagon(state, cmd.trainId, cmd.index, events);
+    case 'detachWagon':
+      return detachWagon(state, cmd.trainId, cmd.index, events);
+    case 'sellEngine':
+      return sellEngine(state, cmd.trainId, events);
     case 'cloneTrain':
       return cloneTrain(state, cmd.trainId, events);
     case 'sellTrain':
@@ -219,7 +236,7 @@ function clearTile(state: GameState, x: number, y: number, events: SimEvent[]): 
   }
   const depot = depotAt(state, x, y);
   if (depot) {
-    if (trainsInDepot(state, depot.id).length) return { ok: false, reason: 'depotNotEmpty' };
+    if (trainsInDepot(state, depot.id).length || depot.wagons.length) return { ok: false, reason: 'depotNotEmpty' };
     return removeDepot(state, depot, events);
   }
   const bits = getTrackBits(map, x, y);

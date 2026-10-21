@@ -12,6 +12,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-21',
+    title: 'Magazyn wagonów w zajezdni',
+    items: [
+      'Pociągi w oknie zajezdni pokazują skład. Klik na wagon odpina go do magazynu zajezdni, a klik na wagon w magazynie doczepia go do wybranego pociągu (z ładunkiem).',
+      'Wagony można kupić prosto do magazynu i sprzedać z niego pojedynczo (zwrot 75%).',
+      '„Sprzedaj lokomotywę” – lokomotywa idzie na sprzedaż, a wagony zostają w magazynie; samą lokomotywę kupisz jako pociąg bez wagonów.',
+    ],
+  },
+  {
+    date: '2026-10-21',
     title: 'Czekaj na pełny ładunek',
     items: [
       'W rozkładzie jazdy ptaszek „pełny ładunek” przy każdej stacji, osobno dla każdego pociągu: pociąg nie odjedzie, dopóki nie napełni wagonów na ładunek tej stacji.',

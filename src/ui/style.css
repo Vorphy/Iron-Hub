@@ -678,3 +678,25 @@ input.seed {
   margin: 0;
   accent-color: var(--accent);
 }
+
+.depot-train {
+  border: 1px solid var(--panel-border);
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.depot-train.selected {
+  border-color: var(--accent);
+}
+.panel button.train-pick {
+  text-align: left;
+  color: var(--text);
+}
+.spare {
+  display: inline-flex;
+  align-items: center;
+}
+.spare .close {
+  padding: 0 4px;
+}

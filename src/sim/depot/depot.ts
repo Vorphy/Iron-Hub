@@ -1,3 +1,4 @@
+import type { WagonLoad } from '../trains/train';
 import { CLEAR_ROUGH_COST, DEPOT_COST, TRACK_REFUND_RATE } from '../config';
 import { spend } from '../economy/finance';
 import type { CommandResult, SimEvent } from '../commands';
@@ -10,11 +11,19 @@ import { getTerrain, hasBuilding, inBounds, setTerrain, Terrain, type WorldMap }
  * Zajezdnia zajmuje kafelek; tor wychodzi z niej jednym bokiem (wjazd).
  * Pociągi stojące w zajezdni nie zajmują torów na mapie.
  */
+/** Wagon w magazynie zajezdni (odpięty albo kupiony luzem). */
+export interface SpareWagon {
+  type: string;
+  load: WagonLoad;
+}
+
 export interface Depot {
   id: number;
   x: number;
   y: number;
   side: Side;
+  /** Magazyn wagonów – można je doczepić do pociągu stojącego w tej zajezdni. */
+  wagons: SpareWagon[];
 }
 
 export function depotAt(state: GameState, x: number, y: number): Depot | undefined {
@@ -69,7 +78,7 @@ export function buildDepot(state: GameState, x: number, y: number, side: Side, e
   state.map.depot[y * state.map.width + x] = id;
   state.map.road[y * state.map.width + x] = 0;
   if (getTerrain(state.map, x, y) === Terrain.Rough) setTerrain(state.map, x, y, Terrain.Grass);
-  state.depots.push({ id, x, y, side });
+  state.depots.push({ id, x, y, side, wagons: [] });
   spend(state, 'construction', plan.cost);
   events.push({ type: 'tileChanged', x, y });
   return { ok: true };

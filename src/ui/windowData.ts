@@ -6,6 +6,7 @@ import { infrastructureCost } from '../sim/economy/monthly';
 import { BANKRUPTCY_MONTHS, LOAN_INTEREST, LOAN_MAX, LOAN_STEP, monthlyInterest } from '../sim/economy/finance';
 import { gameDate } from '../sim/time';
 import { isElectrified } from '../sim/track/catenary';
+import { wagonResale } from '../sim/trains/consist';
 
 const MONTH_NAMES = ['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'];
 import { averageSupply, industryDef, MAX_INDUSTRY_LEVEL, monthlyDemand, monthlyProduction } from '../sim/economy/industry';
@@ -58,6 +59,8 @@ function summary(sim: Simulation, t: Train): TrainSummary {
     wagons: t.wagons,
     status: trainStatus(sim, t),
     resale: resaleValue(sim.state, t),
+    engineResale: engineTradeIn(sim.state, t),
+    stopped: t.stopped,
   };
 }
 
@@ -71,6 +74,7 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
       kind: 'depot',
       depotId: ref.depotId,
       trains: trainsInDepot(state, ref.depotId).map((t) => summary(sim, t)),
+      spare: depot.wagons.map((w) => ({ type: w.type, resale: wagonResale(w.type), amount: w.load.amount })),
       year: gameDate(state).year,
       electrified: isElectrified(state.map, depot.x, depot.y),
     };

@@ -23,7 +23,7 @@ describe('zajezdnia', () => {
     const sim = flatSim();
     sim.enqueue({ type: 'buildDepot', x: 4, y: 4, side: Side.SE });
     sim.step();
-    expect(depotAt(sim.state, 4, 4)).toEqual({ id: 1, x: 4, y: 4, side: Side.SE });
+    expect(depotAt(sim.state, 4, 4)).toEqual({ id: 1, x: 4, y: 4, side: Side.SE, wagons: [] });
     expect(sim.state.money).toBe(START_MONEY - DEPOT_COST);
   });
 

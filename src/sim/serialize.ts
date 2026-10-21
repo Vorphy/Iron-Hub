@@ -14,7 +14,7 @@ import { engineDef, wagonDef } from './trains/vehicles';
 import { MAX_HEIGHT } from './world/height';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 14;
+export const SAVE_VERSION = 15;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -191,6 +191,11 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     // v14: „czekaj na pełny ładunek” przy pozycjach rozkładu
     mapTrains((t) => ({ ...t, fullLoad: Array.isArray(t.orders) ? t.orders.map(() => false) : [] }));
     d.version = 14;
+  }
+  if (d.version === 14) {
+    // v15: magazyn wagonów w zajezdniach
+    if (Array.isArray(d.depots)) d.depots = d.depots.map((dep) => ({ ...(dep as object), wagons: [] }));
+    d.version = 15;
   }
   return d as Partial<SerializedState>;
 }
@@ -377,7 +382,15 @@ function isSignal(v: unknown): v is Signal {
 
 function isDepot(v: unknown): v is Depot {
   const d = v as Depot;
-  return isObj(d) && isInt(d.id) && isInt(d.x) && isInt(d.y) && SIDES.includes(d.side);
+  return (
+    isObj(d) &&
+    isInt(d.id) &&
+    isInt(d.x) &&
+    isInt(d.y) &&
+    SIDES.includes(d.side) &&
+    Array.isArray(d.wagons) &&
+    d.wagons.every((w) => isObj(w) && !!wagonDef(w.type) && isLoad(w.load))
+  );
 }
 
 function isStation(v: unknown): v is Station {
