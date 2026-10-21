@@ -1,3 +1,4 @@
+import { LATEST_CHANGELOG } from './ui/HelpWindows';
 import { START_YEAR, START_YEARS } from './sim/time';
 import { Application } from 'pixi.js';
 import { h, render } from 'preact';
@@ -24,6 +25,15 @@ const AUTOSAVE_MS = 30_000;
 const TRAFFIC_KEY = 'ironhub.traffic';
 const MINIMAP_KEY = 'ironhub.minimap';
 const TUTORIAL_KEY = 'ironhub.tutorial';
+const CHANGELOG_KEY = 'ironhub.changelogSeen';
+
+function storedText(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
 
 /** Przełącznik z pamięci przeglądarki (domyślnie włączony). */
 function storedFlag(key: string): boolean {
@@ -118,6 +128,17 @@ const actions: HudActions = {
     if (game) game.trafficEnabled = traffic;
     storeFlag(TRAFFIC_KEY, traffic);
   },
+  openHelp: (topic = 'start') => hudStore.set({ helpTopic: topic, changelogOpen: false, menuOpen: false }),
+  closeHelp: () => hudStore.set({ helpTopic: null }),
+  openChangelog: () => {
+    hudStore.set({ changelogOpen: true, helpTopic: null, menuOpen: false, changelogUnseen: false });
+    try {
+      localStorage.setItem(CHANGELOG_KEY, LATEST_CHANGELOG);
+    } catch {
+      // Bez pamięci przeglądarki kropka wróci po odświeżeniu – nic poważnego.
+    }
+  },
+  closeChangelog: () => hudStore.set({ changelogOpen: false }),
   toggleMinimap: () => {
     const minimapOpen = !hudStore.get().minimapOpen;
     hudStore.set({ minimapOpen });
@@ -182,6 +203,7 @@ const actions: HudActions = {
 };
 
 async function start(): Promise<void> {
+  hudStore.set({ changelogUnseen: storedText(CHANGELOG_KEY) !== LATEST_CHANGELOG });
   hudStore.set({
     traffic: storedFlag(TRAFFIC_KEY),
     minimapOpen: storedFlag(MINIMAP_KEY),

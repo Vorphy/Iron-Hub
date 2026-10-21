@@ -159,6 +159,11 @@ export interface HudState {
   /** Daty zapisów w przeglądarce (ISO) – do menu. */
   saves: { quick: string | null; auto: string | null };
   menuOpen: boolean;
+  /** Otwarty temat pomocy (null – pomoc zamknięta). */
+  helpTopic: string | null;
+  changelogOpen: boolean;
+  /** Są wpisy w „Co nowego”, których gracz jeszcze nie widział. */
+  changelogUnseen: boolean;
   /** Firma zbankrutowała – koniec gry. */
   bankrupt: boolean;
   minimapOpen: boolean;
@@ -197,6 +202,9 @@ export const hudStore = new Store<HudState>({
   message: null,
   saves: { quick: null, auto: null },
   menuOpen: false,
+  helpTopic: null,
+  changelogOpen: false,
+  changelogUnseen: false,
   bankrupt: false,
   minimapOpen: true,
   tutorialOpen: true,
@@ -224,6 +232,11 @@ export interface HudActions {
   setTerrainMode(mode: TerrainMode): void;
   setSignalMode(mode: SignalMode): void;
   toggleMenu(): void;
+  /** Pomoc na danym temacie (domyślnie „Jak zacząć”). */
+  openHelp(topic?: string): void;
+  closeHelp(): void;
+  openChangelog(): void;
+  closeChangelog(): void;
   toggleMinimap(): void;
   toggleTutorial(): void;
   /** Płótno minimapy (null – odpięte). */

@@ -76,6 +76,9 @@ export function TutorialPanel({ steps, actions }: { steps: boolean[]; actions: H
         <button onClick={actions.newGame} title="Inny rozmiar mapy lub inne ziarno">
           Nowa gra…
         </button>
+        <button onClick={() => actions.openHelp()} title="Opis całej gry (H)">
+          Pomoc
+        </button>
         <button onClick={actions.toggleTutorial}>Ukryj</button>
       </div>
     </div>

@@ -127,6 +127,11 @@ Pozycja jest zapisana w układzie kafelków (jak w TTD), a nie jako krawędź gr
 - Statystyki miast liczone tylko w okolicy rynku (domy powstają najwyżej 16 kafelków od niego), nie po całej mapie.
 - Kierunki pojazdów: 8 sprite'ów (co 45°), wybierane wg kierunku krawędzi.
 
+## Pomoc i historia zmian
+
+- **Pomoc** (wiki w grze, klawisz H, „?” na górnym pasku i w oknach): treść w `src/data/help.ts`. Liczby (ceny, stawki, progi, lokomotywy, zakłady) są wstawiane z plików danych – po strojeniu ekonomii opis aktualizuje się sam.
+- **Co nowego** (Menu): `src/data/changelog.ts`, pisane dla gracza. **Przy każdej funkcji widocznej dla gracza dopisujemy wpis na górze.** Kropka przy Menu znika po obejrzeniu (klucz najnowszego wpisu w pamięci przeglądarki).
+
 ## Zapis gry
 
 - Format: JSON `{ format: 'iron-hub-save', savedAt, state }`, gdzie `state` to wynik `serializeState()` z polem `version` (obecnie 1). Tablice kafelków zakodowane w base64 (mapa 128×128 ≈ 130 KB).

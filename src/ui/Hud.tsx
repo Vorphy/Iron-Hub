@@ -6,6 +6,7 @@ import { formatMoney, type SignalKind, type Tool } from '../tools';
 import { DepotWindow } from './DepotWindow';
 import { NewGameDialog } from './NewGameDialog';
 import { MinimapPanel, TutorialPanel } from './Guide';
+import { ChangelogWindow, HelpWindow } from './HelpWindows';
 import { FinanceWindow, IndustryWindow, StationWindow, TownWindow } from './InfoWindows';
 import { TrainWindow } from './TrainWindow';
 import { hudStore, type HudActions, type HudState } from './hudStore';
@@ -87,8 +88,15 @@ export function Hud({ actions }: { actions: HudActions }) {
         </span>
         <span class="sep" />
         <span class="buttons">
+          <button
+            class={s.helpTopic ? 'active' : ''}
+            title="Pomoc (H)"
+            onClick={() => (s.helpTopic ? actions.closeHelp() : actions.openHelp())}
+          >
+            ?
+          </button>
           <button class={s.menuOpen ? 'active' : ''} title="Menu gry" onClick={actions.toggleMenu}>
-            ☰ Menu
+            ☰ Menu{s.changelogUnseen && <span class="dot" title="Nowości w „Co nowego”" />}
           </button>
         </span>
       </div>
@@ -97,8 +105,18 @@ export function Hud({ actions }: { actions: HudActions }) {
       {s.tutorialOpen && <TutorialPanel steps={s.tutorialSteps} actions={actions} />}
 
       {s.bankrupt && !s.newGameOpen && <BankruptDialog actions={actions} hasQuickSave={!!s.saves.quick} />}
+      {s.helpTopic && <HelpWindow topic={s.helpTopic} actions={actions} />}
+      {s.changelogOpen && <ChangelogWindow actions={actions} />}
       {s.newGameOpen && <NewGameDialog actions={actions} canCancel={true} />}
-      {s.menuOpen && <Menu actions={actions} saves={s.saves} signalMode={s.signalMode} traffic={s.traffic} />}
+      {s.menuOpen && (
+        <Menu
+          actions={actions}
+          saves={s.saves}
+          signalMode={s.signalMode}
+          traffic={s.traffic}
+          changelogUnseen={s.changelogUnseen}
+        />
+      )}
       {s.windowData?.kind === 'depot' && <DepotWindow data={s.windowData} money={s.money} actions={actions} />}
       {s.windowData?.kind === 'train' && <TrainWindow data={s.windowData} actions={actions} />}
       {s.windowData?.kind === 'town' && <TownWindow data={s.windowData} actions={actions} />}
@@ -298,11 +316,13 @@ function Menu({
   saves,
   signalMode,
   traffic,
+  changelogUnseen,
 }: {
   actions: HudActions;
   saves: HudState['saves'];
   signalMode: HudState['signalMode'];
   traffic: boolean;
+  changelogUnseen: boolean;
 }) {
   return (
     <div class="panel menu">
@@ -329,6 +349,10 @@ function Menu({
         Ruch w miastach: {traffic ? 'wł.' : 'wył.'}
       </button>
       <button onClick={actions.toggleTutorial}>Pierwsze kroki</button>
+      <button onClick={() => actions.openHelp()}>
+        Pomoc <small>H</small>
+      </button>
+      <button onClick={actions.openChangelog}>Co nowego {changelogUnseen && <span class="dot" />}</button>
       <div class="menu-title">Gra</div>
       <button onClick={actions.quickSave}>Zapisz</button>
       <button onClick={actions.quickLoad} disabled={!saves.quick}>

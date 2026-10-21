@@ -11,6 +11,9 @@ export function TrainWindow({ data: t, actions }: { data: TrainWindowData; actio
     <div class="panel window">
       <div class="window-head">
         <span class="window-title">{t.name}</span>
+        <button class="close" title="Pomoc: rozkład jazdy" onClick={() => actions.openHelp('orders')}>
+          ?
+        </button>
         <button class="close" title="Zamknij (Esc)" onClick={actions.closeWindow}>
           ✕
         </button>

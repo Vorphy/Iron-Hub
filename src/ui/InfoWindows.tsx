@@ -6,10 +6,13 @@ function percent(v: number): string {
   return `${Math.round(v * 100)}%`;
 }
 
-function Head({ title, actions }: { title: string; actions: HudActions }) {
+function Head({ title, help, actions }: { title: string; help: string; actions: HudActions }) {
   return (
     <div class="window-head">
       <span class="window-title">{title}</span>
+      <button class="close" title="Pomoc do tego okna" onClick={() => actions.openHelp(help)}>
+        ?
+      </button>
       <button class="close" title="Zamknij (Esc)" onClick={actions.closeWindow}>
         ✕
       </button>
@@ -20,7 +23,7 @@ function Head({ title, actions }: { title: string; actions: HudActions }) {
 export function TownWindow({ data: t, actions }: { data: TownWindowData; actions: HudActions }) {
   return (
     <div class="panel window">
-      <Head title={t.name} actions={actions} />
+      <Head title={t.name} help="towns" actions={actions} />
       <div class="row">
         <span class="grow">Mieszkańcy</span>
         <b>{t.population.toLocaleString('pl-PL')}</b>
@@ -54,7 +57,7 @@ export function IndustryWindow({ data: d, actions }: { data: IndustryWindowData;
   const primary = d.accepts.length === 0;
   return (
     <div class="panel window">
-      <Head title={d.name} actions={actions} />
+      <Head title={d.name} help="industries" actions={actions} />
       <div class="row">
         <span class="grow">Poziom</span>
         <b>
@@ -120,7 +123,7 @@ export function IndustryWindow({ data: d, actions }: { data: IndustryWindowData;
 export function StationWindow({ data: d, actions }: { data: StationWindowData; actions: HudActions }) {
   return (
     <div class="panel window">
-      <Head title={d.name} actions={actions} />
+      <Head title={d.name} help="rating" actions={actions} />
       <div class="muted small">Peronów (kafelków): {d.platforms}</div>
 
       <div class="section-title">Czeka na odbiór</div>
@@ -165,7 +168,7 @@ export function FinanceWindow({ data: d, money, actions }: { data: FinanceWindow
   const total = (m: FinanceWindowData['months'][number]) => m.income - m.trains - m.infrastructure - m.construction - m.interest;
   return (
     <div class="panel window wide">
-      <Head title="Finanse" actions={actions} />
+      <Head title="Finanse" help="finance" actions={actions} />
       <table class="ledger">
         <thead>
           <tr>

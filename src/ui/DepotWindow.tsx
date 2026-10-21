@@ -32,6 +32,9 @@ export function DepotWindow({ data, money, actions }: { data: DepotWindowData; m
     <div class="panel window">
       <div class="window-head">
         <span class="window-title">Zajezdnia #{data.depotId}</span>
+        <button class="close" title="Pomoc: lokomotywy" onClick={() => actions.openHelp('engines')}>
+          ?
+        </button>
         <button class="close" title="Zamknij (Esc)" onClick={actions.closeWindow}>
           ✕
         </button>

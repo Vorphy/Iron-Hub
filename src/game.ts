@@ -259,6 +259,15 @@ export class Game {
       this.setTool('cursor');
       return;
     }
+    const hud = hudStore.get();
+    if (code === 'Escape' && (hud.helpTopic || hud.changelogOpen)) {
+      hudStore.set({ helpTopic: null, changelogOpen: false });
+      return;
+    }
+    if (code === 'KeyH') {
+      hudStore.set({ helpTopic: hud.helpTopic ? null : 'start', changelogOpen: false });
+      return;
+    }
     if (code === 'Escape' && hudStore.get().window) {
       this.closeWindow();
       return;

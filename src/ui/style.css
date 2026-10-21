@@ -592,3 +592,75 @@ input.seed {
 .badge.old {
   background: var(--muted);
 }
+
+.big-window {
+  top: 56px;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: min(860px, calc(100vw - 16px));
+  height: calc(100vh - 140px);
+  max-height: none;
+  overflow: hidden;
+}
+.help-body {
+  display: flex;
+  gap: 12px;
+  min-height: 0;
+  flex: 1;
+}
+.help-topics {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 210px;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+.help-topics button {
+  text-align: left;
+}
+.help-content {
+  flex: 1;
+  overflow-y: auto;
+  line-height: 1.5;
+  padding-right: 6px;
+}
+.help-content p {
+  margin: 0 0 10px;
+}
+.help-content ul {
+  margin: 0 0 10px;
+  padding-left: 18px;
+}
+.help-table {
+  margin-bottom: 10px;
+}
+.changelog-entry {
+  margin-bottom: 8px;
+}
+.panel button.link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  padding: 4px 6px;
+}
+.dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 5px;
+  border-radius: 50%;
+  background: #ff6b5a;
+  vertical-align: middle;
+}
+@media (max-width: 640px) {
+  .help-body {
+    flex-direction: column;
+  }
+  .help-topics {
+    width: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
