@@ -119,7 +119,7 @@ function chargeRunningCosts(state: GameState): void {
   let trains = 0;
   for (const t of state.trains) {
     if (t.status === 'depot') continue;
-    const cost = consistStats(t.engine, t.wagons).runningCost / 12;
+    const cost = consistStats(t.engine, t.wagons, t.engineCount).runningCost / 12;
     trains += cost;
     t.profitThisYear -= cost;
   }

@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { MAX_WAGONS } from '../sim/config';
+import { MAX_ENGINES, MAX_WAGONS } from '../sim/config';
 import type { Traction } from '../data/economy';
 import {
   availableEngines,
@@ -24,10 +24,12 @@ export function DepotWindow({ data, money, actions }: { data: DepotWindowData; m
   // Wybrana lokomotywa mogła wyjść ze sprzedaży (nowy rok) – wtedy pierwsza dostępna.
   const engine = engines.some((e) => e.id === picked) ? picked : engines[0]!.id;
   const [wagons, setWagons] = useState<string[]>([]);
+  const [double, setDouble] = useState(false);
+  const engineCount = double ? MAX_ENGINES : 1;
   const [selected, setSelected] = useState<number | null>(null);
   // Wybrany pociąg (do niego trafiają wagony z magazynu); domyślnie pierwszy w zajezdni.
   const target = data.trains.find((t) => t.id === selected) ?? data.trains[0];
-  const stats = consistStats(engine, wagons);
+  const stats = consistStats(engine, wagons, engineCount);
   const canBuy = stats.cost <= money;
   const electric = engineDef(engine)!.traction === 'electric';
 
@@ -69,9 +71,11 @@ export function DepotWindow({ data, money, actions }: { data: DepotWindowData; m
             </button>
           </div>
           <div class="consist">
-            <span class="chip engine" style={{ background: engineDef(t.engine)!.color }}>
-              {engineDef(t.engine)!.name}
-            </span>
+            {Array.from({ length: t.engineCount }, (_, k) => (
+              <span key={`e${k}`} class="chip engine" style={{ background: engineDef(t.engine)!.color }}>
+                {engineDef(t.engine)!.name}
+              </span>
+            ))}
             {t.wagons.map((w, i) => (
               <button
                 key={i}
@@ -90,7 +94,24 @@ export function DepotWindow({ data, money, actions }: { data: DepotWindowData; m
             </button>
             {t.wagons.length > 0 && (
               <button onClick={() => actions.sellEngine(t.id)} title="Sprzedaj tylko lokomotywę – wagony zostaną w magazynie">
-                Sprzedaj lokomotywę <small>+{formatMoney(t.engineResale)}</small>
+                Sprzedaj {t.engineCount > 1 ? 'lokomotywy' : 'lokomotywę'} <small>+{formatMoney(t.engineResale)}</small>
+              </button>
+            )}
+            {t.engineCount < MAX_ENGINES ? (
+              <button
+                disabled={!t.engineAvailable || engineDef(t.engine)!.cost > money}
+                onClick={() => actions.setEngineCount(t.id, t.engineCount + 1)}
+                title={
+                  t.engineAvailable
+                    ? 'Podwójna trakcja: druga taka sama lokomotywa – 2× moc i przyczepność (ciężkie składy pod górę), 2× utrzymanie'
+                    : 'Ta lokomotywa jest już wycofana ze sprzedaży'
+                }
+              >
+                + 2. lokomotywa <small>{formatMoney(engineDef(t.engine)!.cost)}</small>
+              </button>
+            ) : (
+              <button onClick={() => actions.setEngineCount(t.id, 1)} title="Sprzedaj drugą lokomotywę">
+                − 2. lokomotywa <small>+{formatMoney(t.oneEngineResale)}</small>
               </button>
             )}
           </div>
@@ -178,6 +199,11 @@ export function DepotWindow({ data, money, actions }: { data: DepotWindowData; m
         </div>
       )}
 
+      <label class="full-load" title="Dwie takie same lokomotywy: 2× moc i przyczepność, 2× cena i utrzymanie">
+        <input type="checkbox" checked={double} onChange={() => setDouble(!double)} />
+        Podwójna trakcja (2 lokomotywy – ciężkie składy pod górę)
+      </label>
+
       <div class="muted small">Dodaj wagony (max {MAX_WAGONS}):</div>
       <div class="wagon-grid">
         {WAGONS.map((w) => (
@@ -193,9 +219,11 @@ export function DepotWindow({ data, money, actions }: { data: DepotWindowData; m
       </div>
 
       <div class="consist">
-        <span class="chip engine" style={{ background: engineDef(engine)!.color }}>
-          {engineDef(engine)!.name}
-        </span>
+        {Array.from({ length: engineCount }, (_, k) => (
+          <span key={`e${k}`} class="chip engine" style={{ background: engineDef(engine)!.color }}>
+            {engineDef(engine)!.name}
+          </span>
+        ))}
         {wagons.map((id, i) => (
           <button
             key={i}
@@ -209,15 +237,15 @@ export function DepotWindow({ data, money, actions }: { data: DepotWindowData; m
         ))}
       </div>
       <div class="muted small">
-        Długość {(stats.length / TILE_UNITS).toFixed(1)} kaf. · masa {stats.weight} t · max {stats.maxSpeed} km/h · utrzymanie{' '}
-        {formatMoney(stats.runningCost)}/rok (trakcja {TRACTION_NAMES[engineDef(engine)!.traction]})
+        Długość {(stats.length / TILE_UNITS).toFixed(1)} kaf. · masa {stats.weight} t · {stats.power} kW · max {stats.maxSpeed}{' '}
+        km/h · utrzymanie {formatMoney(stats.runningCost)}/rok (trakcja {TRACTION_NAMES[engineDef(engine)!.traction]})
       </div>
 
       <button
         class="primary"
         disabled={!canBuy}
         onClick={() => {
-          actions.buyTrain(data.depotId, engine, wagons);
+          actions.buyTrain(data.depotId, engine, wagons, engineCount);
           setWagons([]);
         }}
       >

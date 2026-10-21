@@ -87,7 +87,7 @@ Jedna kolejka, w kolejności, która najszybciej poprawia granie. Maglevy, kolej
 7. **Etap 5 – test „czy to jest fajne”** – granie z kilkoma osobami, strojenie `src/data/economy.ts` i `vehicles.json`.
 
 ### Faza B – głębia rozgrywki (po wnioskach z testów)
-8. **Podwójna trakcja** – 2 lokomotywy w składzie (ciężkie pociągi pod górę). *Pamiętać!*
+8. ~~**Podwójna trakcja**~~ ✅ (2026-10-21) – 2 takie same lokomotywy w składzie: 2× moc i przyczepność (ciężkie pociągi pod górę).
 9. **Tory na zboczach z fundamentami** – łuki i rozjazdy na zboczu, wyraźnie droższe od zwykłych torów.
 10. **Szablony budowy** – gotowe do wklejenia układy, np. bezkolizyjne skrzyżowanie łączące cztery dwutorowe linie.
 11. **Super stacja** – ulepszenie stacji w mieście za ~100× ceny peronu: druga kondygnacja peronów (4 tory zamiast 2 na tym samym obszarze), zjazdy jak portale tuneli, 2-torowy wjazd w głowicy (szczegóły w Pomysłach).

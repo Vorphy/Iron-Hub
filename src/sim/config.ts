@@ -33,6 +33,8 @@ export const MAX_BRIDGE_LENGTH = 14;
 export const MAX_TUNNEL_LENGTH = 20;
 /** Maksymalna liczba wagonów w składzie. */
 export const MAX_WAGONS = 10;
+/** Najwięcej lokomotyw w składzie (podwójna trakcja). */
+export const MAX_ENGINES = 2;
 
 // --- Ruch pociągów (wartości startowe do strojenia) ---
 

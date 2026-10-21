@@ -23,9 +23,11 @@ export function TrainWindow({ data: t, actions }: { data: TrainWindowData; actio
       </div>
 
       <div class="consist">
-        <span class="chip engine" style={{ background: engineDef(t.engine)!.color }}>
-          {engineDef(t.engine)!.name}
-        </span>
+        {Array.from({ length: t.engineCount }, (_, k) => (
+          <span key={`e${k}`} class="chip engine" style={{ background: engineDef(t.engine)!.color }}>
+            {engineDef(t.engine)!.name}
+          </span>
+        ))}
         {t.wagons.map((w, i) => (
           <span key={i} class="chip static" style={{ background: wagonDef(w)!.color }}>
             {wagonDef(w)!.name.split(' ').pop()}
@@ -196,7 +198,8 @@ function EngineSection({ t, actions }: { t: TrainWindowData; actions: HudActions
       <div class="section-title">Lokomotywa</div>
       <div class="row small">
         <span class="grow">
-          {current.name} · {current.maxSpeed} km/h · {t.engineAge} {t.engineAge === 1 ? 'rok' : 'lat'}
+          {t.engineCount > 1 ? `${t.engineCount}× ${current.name} (podwójna trakcja)` : current.name} · {current.maxSpeed} km/h ·{' '}
+          {t.engineAge} {t.engineAge === 1 ? 'rok' : 'lat'}
         </span>
         <span class="muted">zwrot przy wymianie {formatMoney(t.tradeIn)}</span>
       </div>

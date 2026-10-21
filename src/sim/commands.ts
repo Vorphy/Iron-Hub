@@ -6,7 +6,7 @@ import type { GameState } from './state';
 import { buildStation, removeStationTile, type StationAxis } from './station/station';
 import { buildTrack, removeTrack } from './track/build';
 import { buildCatenary, dropOrphanCatenary } from './track/catenary';
-import { attachWagon, buyWagon, detachWagon, sellEngine, sellSpareWagon } from './trains/consist';
+import { attachWagon, buyWagon, detachWagon, sellEngine, sellSpareWagon, setEngineCount } from './trains/consist';
 import { createGroup, deleteGroup, renameGroup, setTrainGroup } from './trains/groups';
 import { getTrackBits, tracksOn, type Side, type Track, type TrackPiece } from './track/track';
 import {
@@ -39,7 +39,8 @@ export type Command =
   /** Peron obok istniejącej stacji ją rozbudowuje; `separate` – osobna stacja. */
   | { type: 'buildStation'; x0: number; y0: number; x1: number; y1: number; axis: StationAxis; separate?: boolean }
   | { type: 'buildDepot'; x: number; y: number; side: Side }
-  | { type: 'buyTrain'; depotId: number; engine: string; wagons: string[] }
+  /** `engineCount` – 2 lokomotywy (podwójna trakcja); domyślnie 1. */
+  | { type: 'buyTrain'; depotId: number; engine: string; wagons: string[]; engineCount?: number }
   | { type: 'sellTrain'; trainId: number }
   /** Magazyn wagonów w zajezdni i zmiany składu (pociąg stoi w zajezdni). */
   | { type: 'buyWagon'; depotId: number; wagon: string }
@@ -47,6 +48,8 @@ export type Command =
   | { type: 'attachWagon'; trainId: number; index: number }
   | { type: 'detachWagon'; trainId: number; index: number }
   | { type: 'sellEngine'; trainId: number }
+  /** Podwójna trakcja: liczba lokomotyw pociągu stojącego w zajezdni. */
+  | { type: 'setEngineCount'; trainId: number; count: number }
   /** Grupy pociągów. */
   | { type: 'createGroup'; name: string }
   | { type: 'renameGroup'; groupId: number; name: string }
@@ -160,7 +163,7 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
     case 'buildDepot':
       return buildDepot(state, cmd.x, cmd.y, cmd.side, events);
     case 'buyTrain':
-      return buyTrain(state, cmd.depotId, cmd.engine, cmd.wagons, events);
+      return buyTrain(state, cmd.depotId, cmd.engine, cmd.wagons, events, cmd.engineCount ?? 1);
     case 'buyWagon':
       return buyWagon(state, cmd.depotId, cmd.wagon, events);
     case 'sellSpareWagon':
@@ -171,6 +174,8 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
       return detachWagon(state, cmd.trainId, cmd.index, events);
     case 'sellEngine':
       return sellEngine(state, cmd.trainId, events);
+    case 'setEngineCount':
+      return setEngineCount(state, cmd.trainId, cmd.count, events);
     case 'createGroup':
       return createGroup(state, cmd.name, events);
     case 'renameGroup':

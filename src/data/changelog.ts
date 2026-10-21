@@ -12,6 +12,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-21',
+    title: 'Podwójna trakcja',
+    items: [
+      'Pociąg może mieć dwie takie same lokomotywy: 2× moc i przyczepność, więc ciężki skład szybciej się rozpędza i lepiej radzi sobie pod górę. Prędkość maksymalna się nie zmienia, cena i utrzymanie lokomotyw – 2×.',
+      'Przy zakupie: ptaszek „Podwójna trakcja”. W zajezdni: „+ 2. lokomotywa” / „− 2. lokomotywa” przy pociągu. Kopia pociągu i wymiana lokomotywy obejmują obie.',
+    ],
+  },
+  {
+    date: '2026-10-21',
     title: 'Rozkład czasowy i równe odstępy',
     items: [
       'Przy każdej stacji rozkładu: dodatkowy postój 1–30 dni.',

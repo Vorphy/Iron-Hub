@@ -62,17 +62,22 @@ export function wagonDef(id: string): WagonDef | undefined {
   return wagonById.get(id);
 }
 
-/** Parametry całego składu (lokomotywa + wagony); zakłada poprawne id. */
-export function consistStats(engine: string, wagons: readonly string[]) {
+/**
+ * Parametry całego składu (lokomotywy + wagony); zakłada poprawne id. `engines` – liczba lokomotyw
+ * tego samego typu (podwójna trakcja: moc i masa się sumują, prędkość maksymalna bez zmian).
+ */
+export function consistStats(engine: string, wagons: readonly string[], engines = 1) {
   const e = engineById.get(engine)!;
   const ws = wagons.map((w) => wagonById.get(w)!);
   return {
-    cost: e.cost + ws.reduce((s, w) => s + w.cost, 0),
-    weight: e.weight + ws.reduce((s, w) => s + w.weight, 0),
-    length: e.length + ws.reduce((s, w) => s + w.length, 0),
+    cost: e.cost * engines + ws.reduce((s, w) => s + w.cost, 0),
+    weight: e.weight * engines + ws.reduce((s, w) => s + w.weight, 0),
+    /** Masa lokomotyw – od niej zależy przyczepność. */
+    engineWeight: e.weight * engines,
+    length: e.length * engines + ws.reduce((s, w) => s + w.length, 0),
     maxSpeed: e.maxSpeed,
-    power: e.power,
-    runningCost: engineRunningCost(e) + ws.reduce((s, w) => s + wagonRunningCost(w), 0),
+    power: e.power * engines,
+    runningCost: engineRunningCost(e) * engines + ws.reduce((s, w) => s + wagonRunningCost(w), 0),
   };
 }
 

@@ -15,7 +15,7 @@ import { engineDef, wagonDef } from './trains/vehicles';
 import { MAX_HEIGHT } from './world/height';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 19;
+export const SAVE_VERSION = 20;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -234,6 +234,11 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     }));
     d.version = 19;
   }
+  if (d.version === 19) {
+    // v20: podwójna trakcja
+    mapTrains((t) => ({ ...t, engineCount: 1 }));
+    d.version = 20;
+  }
   return d as Partial<SerializedState>;
 }
 
@@ -390,6 +395,7 @@ function isTrain(v: unknown): v is Train {
     isInt(t.id) &&
     typeof t.name === 'string' &&
     !!engineDef(t.engine) &&
+    (t.engineCount === 1 || t.engineCount === 2) &&
     Array.isArray(t.wagons) &&
     t.wagons.every((w) => !!wagonDef(w)) &&
     ['depot', 'running', 'loading'].includes(t.status) &&

@@ -228,7 +228,9 @@ const actions: HudActions = {
     });
   },
   closeWindow: () => game?.closeWindow(),
-  buyTrain: (depotId, engine, wagons) => game?.command({ type: 'buyTrain', depotId, engine, wagons }),
+  buyTrain: (depotId, engine, wagons, engineCount = 1) =>
+    game?.command({ type: 'buyTrain', depotId, engine, wagons, engineCount }),
+  setEngineCount: (trainId, count) => game?.command({ type: 'setEngineCount', trainId, count }),
   sellTrain: (trainId) => game?.command({ type: 'sellTrain', trainId }),
   buyWagon: (depotId, wagon) => game?.command({ type: 'buyWagon', depotId, wagon }),
   sellSpareWagon: (depotId, index) => game?.command({ type: 'sellSpareWagon', depotId, index }),

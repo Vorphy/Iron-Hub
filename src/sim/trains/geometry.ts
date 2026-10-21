@@ -6,21 +6,21 @@ import type { Step, Train } from './train';
 import { engineDef, wagonDef } from './vehicles';
 
 export interface VehicleSlot {
-  /** Indeks w składzie: 0 – lokomotywa, 1.. – wagony. */
+  /** Indeks w składzie (od lokomotyw, potem wagony) – stały mimo zawracania. */
   index: number;
   length: number;
   color: string;
   engine: boolean;
 }
 
-/** Pojazdy w kolejności jazdy (od czoła); po zawróceniu lokomotywa jest na końcu. */
+/** Pojazdy w kolejności jazdy (od czoła); po zawróceniu lokomotywy są na końcu. */
 export function vehiclesInOrder(train: Train): VehicleSlot[] {
   const e = engineDef(train.engine)!;
   const list: VehicleSlot[] = [
-    { index: 0, length: e.length, color: e.color, engine: true },
+    ...Array.from({ length: train.engineCount }, (_, k) => ({ index: k, length: e.length, color: e.color, engine: true })),
     ...train.wagons.map((id, i) => {
       const w = wagonDef(id)!;
-      return { index: i + 1, length: w.length, color: w.color, engine: false };
+      return { index: train.engineCount + i, length: w.length, color: w.color, engine: false };
     }),
   ];
   return train.reversed ? list.reverse() : list;

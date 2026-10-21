@@ -215,11 +215,10 @@ function headGrade(state: GameState, train: Train): number {
 
 /** Przyspieszenie (km/h na tick) z mocy, przyczepności, oporów i nachylenia toru. */
 function acceleration(train: Train, grade: number): number {
-  const e = engineDef(train.engine)!;
-  const { weight } = consistStats(train.engine, train.wagons);
+  const { weight, power, engineWeight } = consistStats(train.engine, train.wagons, train.engineCount);
   const mass = weight * 1000;
   const v = train.speed / 3.6;
-  const force = Math.min((e.power * 1000) / Math.max(v, 1.5), ADHESION * e.weight * 1000 * 9.81);
+  const force = Math.min((power * 1000) / Math.max(v, 1.5), ADHESION * engineWeight * 1000 * 9.81);
   const resist = mass * 9.81 * (0.002 + 0.00002 * train.speed + grade);
   return ((force - resist) / mass) * 3.6 * PHYS_DT;
 }

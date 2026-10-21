@@ -74,11 +74,17 @@ export interface TrainSummary {
   id: number;
   name: string;
   engine: string;
+  /** Liczba lokomotyw (2 – podwójna trakcja). */
+  engineCount: number;
   wagons: string[];
   status: string;
   resale: number;
   /** Zwrot za samą lokomotywę (wagony zostają w magazynie). */
   engineResale: number;
+  /** Zwrot za jedną lokomotywę – przy odpinaniu drugiej. */
+  oneEngineResale: number;
+  /** Lokomotywa w sprzedaży (można dokupić drugą). */
+  engineAvailable: boolean;
   stopped: boolean;
 }
 
@@ -99,6 +105,7 @@ export interface TrainWindowData {
   trainId: number;
   name: string;
   engine: string;
+  engineCount: number;
   wagons: string[];
   status: string;
   speed: number;
@@ -343,7 +350,9 @@ export interface HudActions {
   closeNewGame(): void;
   startNewGame(size: number, seed: number, settings: NewWorldSettings): void;
   closeWindow(): void;
-  buyTrain(depotId: number, engine: string, wagons: string[]): void;
+  buyTrain(depotId: number, engine: string, wagons: string[], engineCount?: number): void;
+  /** Podwójna trakcja: liczba lokomotyw pociągu w zajezdni. */
+  setEngineCount(trainId: number, count: number): void;
   sellTrain(trainId: number): void;
   buyWagon(depotId: number, wagon: string): void;
   sellSpareWagon(depotId: number, index: number): void;

@@ -1,9 +1,10 @@
 import type { CommandResult, SimEvent } from '../commands';
-import { MAX_WAGONS, TRAIN_RESALE_RATE } from '../config';
+import { MAX_ENGINES, MAX_WAGONS, TRAIN_RESALE_RATE } from '../config';
 import { spend } from '../economy/finance';
 import type { GameState } from '../state';
-import { engineTradeIn, trainById, unshare } from './train';
-import { wagonDef } from './vehicles';
+import { gameDate } from '../time';
+import { engineTradeIn, oneEngineTradeIn, trainById, unshare } from './train';
+import { engineAvailable, engineDef, wagonDef } from './vehicles';
 
 /**
  * Zmiany składu w zajezdni (jak w OpenTTD): wagony odpięte albo kupione luzem czekają w magazynie
@@ -91,6 +92,33 @@ export function sellEngine(state: GameState, trainId: number, events: SimEvent[]
   unshare(state, train);
   state.trains = state.trains.filter((t) => t !== train);
   spend(state, 'construction', -refund);
+  events.push({ type: 'trainsChanged' });
+  return { ok: true };
+}
+
+/**
+ * Podwójna trakcja: dokupienie drugiej lokomotywy tego samego typu (pełna cena) albo jej sprzedaż
+ * (zwrot jak przy wymianie, zależny od wieku). Tylko w zajezdni.
+ */
+export function setEngineCount(state: GameState, trainId: number, count: number, events: SimEvent[]): CommandResult {
+  const found = trainInDepot(state, trainId);
+  if (!found) return { ok: false, reason: 'notInDepot' };
+  const { train } = found;
+  if (!Number.isInteger(count) || count < 1 || count > MAX_ENGINES) return { ok: false, reason: 'tooBig' };
+  if (count === train.engineCount) return { ok: true };
+  const def = engineDef(train.engine)!;
+  if (count > train.engineCount) {
+    if (!engineAvailable(def, gameDate(state).year)) return { ok: false, reason: 'notAvailable' };
+    const cost = def.cost * (count - train.engineCount);
+    if (cost > state.money) return { ok: false, reason: 'noMoney' };
+    spend(state, 'construction', cost);
+    train.value += cost;
+  } else {
+    const removed = train.engineCount - count;
+    spend(state, 'construction', -oneEngineTradeIn(state, train) * removed);
+    train.value -= def.cost * removed;
+  }
+  train.engineCount = count;
   events.push({ type: 'trainsChanged' });
   return { ok: true };
 }

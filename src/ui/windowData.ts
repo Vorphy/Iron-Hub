@@ -2,6 +2,7 @@ import type { Simulation } from '../sim/simulation';
 import {
   engineAge,
   engineTradeIn,
+  oneEngineTradeIn,
   lineHeadway,
   replaceCost,
   resaleValue,
@@ -67,10 +68,13 @@ function summary(sim: Simulation, t: Train): TrainSummary {
     id: t.id,
     name: t.name,
     engine: t.engine,
+    engineCount: t.engineCount,
     wagons: t.wagons,
     status: trainStatus(sim, t),
     resale: resaleValue(sim.state, t),
     engineResale: engineTradeIn(sim.state, t),
+    oneEngineResale: oneEngineTradeIn(sim.state, t),
+    engineAvailable: engineAvailable(engineDef(t.engine)!, gameDate(sim.state).year),
     stopped: t.stopped,
   };
 }
@@ -103,7 +107,7 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
         return {
           id: t.id,
           name: t.name,
-          engine: e.name,
+          engine: t.engineCount > 1 ? `${t.engineCount}× ${e.name}` : e.name,
           color: e.color,
           status: trainStatus(sim, t),
           lost: sim.planner.isLost(t.id),
@@ -144,8 +148,9 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
       bankruptcyMonths: BANKRUPTCY_MONTHS,
       infrastructurePerMonth: infrastructureCost(state),
       trainsPerMonth: Math.round(
-        state.trains.filter((t) => t.status !== 'depot').reduce((s, t) => s + consistStats(t.engine, t.wagons).runningCost, 0) /
-          12,
+        state.trains
+          .filter((t) => t.status !== 'depot')
+          .reduce((s, t) => s + consistStats(t.engine, t.wagons, t.engineCount).runningCost, 0) / 12,
       ),
     };
   }
@@ -212,6 +217,7 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
     trainId: t.id,
     name: t.name,
     engine: t.engine,
+    engineCount: t.engineCount,
     wagons: t.wagons,
     status: trainStatus(sim, t),
     speed: Math.round(t.speed),
@@ -247,7 +253,7 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
       .filter((e) => e.id !== t.engine)
       .map((e) => ({ id: e.id, cost: replaceCost(state, t, e.id) })),
     sameEngineTrains: state.trains.filter((o) => o.engine === t.engine).length,
-    cloneCost: consistStats(t.engine, t.wagons).cost,
+    cloneCost: consistStats(t.engine, t.wagons, t.engineCount).cost,
     cloneAvailable: engineAvailable(engineDef(t.engine)!, gameDate(state).year),
   };
 }

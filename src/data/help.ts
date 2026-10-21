@@ -220,6 +220,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
         },
       },
       'Moc decyduje o przyspieszeniu i podjazdach z ciężkim składem, prędkość – o czasie przewozu. Elektryczne są najtańsze w utrzymaniu, ale potrzebują sieci trakcyjnej.',
+      '**Podwójna trakcja**: dwie takie same lokomotywy w składzie (ptaszek przy zakupie albo „+ 2. lokomotywa” w zajezdni) – 2× moc i przyczepność, ta sama prędkość maksymalna, 2× cena i utrzymanie lokomotyw. Opłaca się przy ciężkich składach na trasach pod górę.',
     ],
   },
   {

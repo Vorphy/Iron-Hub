@@ -1,7 +1,7 @@
 import { isElectrified, needsCatenary } from '../track/catenary';
 import { DAYS_PER_MONTH, gameDate, MONTHS_PER_YEAR, TICKS_PER_DAY } from '../time';
 import { ECONOMY } from '../../data/economy';
-import { MAX_WAGONS, TRAIN_RESALE_RATE } from '../config';
+import { MAX_ENGINES, MAX_WAGONS, TRAIN_RESALE_RATE } from '../config';
 import { spend } from '../economy/finance';
 import type { CommandResult, SimEvent } from '../commands';
 import type { GameState } from '../state';
@@ -35,6 +35,8 @@ export interface Train {
   id: number;
   name: string;
   engine: string;
+  /** Liczba lokomotyw (typu `engine`): 2 – podwójna trakcja. */
+  engineCount: number;
   wagons: string[];
   status: TrainStatus;
   /** Zajezdnia, w której stoi (status 'depot'). */
@@ -114,12 +116,15 @@ export function planBuyTrain(
   state: GameState,
   engine: string,
   wagons: readonly string[],
+  engineCount = 1,
 ): { cost: number; result: CommandResult } {
   if (!engineDef(engine) || wagons.some((w) => !wagonDef(w))) return { cost: 0, result: { ok: false, reason: 'blocked' } };
+  if (!Number.isInteger(engineCount) || engineCount < 1 || engineCount > MAX_ENGINES)
+    return { cost: 0, result: { ok: false, reason: 'blocked' } };
   if (wagons.length > MAX_WAGONS) return { cost: 0, result: { ok: false, reason: 'tooBig' } };
   if (!engineAvailable(engineDef(engine)!, gameDate(state).year))
     return { cost: 0, result: { ok: false, reason: 'notAvailable' } };
-  const { cost } = consistStats(engine, wagons);
+  const { cost } = consistStats(engine, wagons, engineCount);
   return { cost, result: cost > state.money ? { ok: false, reason: 'noMoney' } : { ok: true } };
 }
 
@@ -129,15 +134,17 @@ export function buyTrain(
   engine: string,
   wagons: readonly string[],
   events: SimEvent[],
+  engineCount = 1,
 ): CommandResult {
   if (!state.depots.some((d) => d.id === depotId)) return { ok: false, reason: 'blocked' };
-  const plan = planBuyTrain(state, engine, wagons);
+  const plan = planBuyTrain(state, engine, wagons, engineCount);
   if (!plan.result.ok) return plan.result;
   const id = state.nextTrainId++;
   state.trains.push({
     id,
     name: `Pociąg ${id}`,
     engine,
+    engineCount,
     wagons: [...wagons],
     status: 'depot',
     depotId,
@@ -259,16 +266,21 @@ export function engineAge(state: GameState, train: Train): number {
   return Math.max(0, (state.tick - train.engineBuilt) / (TICKS_PER_DAY * DAYS_PER_MONTH * MONTHS_PER_YEAR));
 }
 
-/** Zwrot za starą lokomotywę przy wymianie: od 75% ceny dla nowej, liniowo do 10% po 50 latach. */
-export function engineTradeIn(state: GameState, train: Train): number {
+/** Zwrot za jedną starą lokomotywę przy wymianie: od 75% ceny dla nowej, liniowo do 10% po 50 latach. */
+export function oneEngineTradeIn(state: GameState, train: Train): number {
   const { full, old, years } = ECONOMY.refunds.engineTradeIn;
   const rate = full + (old - full) * Math.min(1, engineAge(state, train) / years);
   return Math.round(engineDef(train.engine)!.cost * rate);
 }
 
-/** Dopłata za wymianę lokomotywy: cena nowej minus zwrot za starą (zależny od jej wieku). */
+/** Zwrot za wszystkie lokomotywy pociągu (przy podwójnej trakcji – za obie). */
+export function engineTradeIn(state: GameState, train: Train): number {
+  return oneEngineTradeIn(state, train) * train.engineCount;
+}
+
+/** Dopłata za wymianę lokomotyw (wszystkich w składzie): cena nowych minus zwrot za stare. */
 export function replaceCost(state: GameState, train: Train, engine: string): number {
-  return engineDef(engine)!.cost - engineTradeIn(state, train);
+  return engineDef(engine)!.cost * train.engineCount - engineTradeIn(state, train);
 }
 
 /**
@@ -306,7 +318,7 @@ export function requestReplace(state: GameState, trainId: number, engine: string
 
 function swapEngine(state: GameState, train: Train, engine: string, events: SimEvent[]): void {
   const cost = replaceCost(state, train, engine);
-  train.value += engineDef(engine)!.cost - engineDef(train.engine)!.cost;
+  train.value += (engineDef(engine)!.cost - engineDef(train.engine)!.cost) * train.engineCount;
   train.engine = engine;
   train.engineBuilt = state.tick;
   spend(state, 'construction', cost);
@@ -363,7 +375,7 @@ export function cloneTrain(state: GameState, trainId: number, events: SimEvent[]
   if (!train) return { ok: false, reason: 'blocked' };
   const depot = cloneDepot(state, train);
   if (!depot) return { ok: false, reason: 'noDepot' };
-  const result = buyTrain(state, depot.id, train.engine, train.wagons, events);
+  const result = buyTrain(state, depot.id, train.engine, train.wagons, events, train.engineCount);
   if (!result.ok) return result;
   const copy = state.trains[state.trains.length - 1]!;
   copy.orders = [...train.orders];
