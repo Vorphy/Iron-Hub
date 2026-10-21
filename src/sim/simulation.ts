@@ -37,6 +37,8 @@ export class Simulation {
   /** Jeden tick symulacji: komendy, potem systemy gry. */
   step(): void {
     this.processCommands();
+    // Po bankructwie czas stoi.
+    if (this.state.finances.bankrupt) return;
     tickTrains(this.state, this.planner, this.events);
     this.state.tick++;
     if (this.state.tick % TICKS_PER_DAY === 0) dailyCargo(this.state);

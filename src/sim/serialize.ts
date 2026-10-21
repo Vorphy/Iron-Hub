@@ -14,7 +14,7 @@ import { engineDef, wagonDef } from './trains/vehicles';
 import { MAX_HEIGHT } from './world/height';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 10;
+export const SAVE_VERSION = 11;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -161,6 +161,17 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     // v10: drogi w miastach (stare mapy bez dróg – miasta zbudują je przy wzroście)
     if (d.map) d.map.road = emptyLayer('road');
     d.version = 10;
+  }
+  if (d.version === 10) {
+    // v11: kredyt, bankructwo, odsetki w bilansie
+    const f = d.finances as Record<string, unknown> | undefined;
+    if (f && typeof f === 'object') {
+      const addInterest = (l: unknown) => (l && typeof l === 'object' ? { ...l, interest: 0 } : l);
+      f.month = addInterest(f.month);
+      if (Array.isArray(f.history)) f.history = f.history.map(addInterest);
+      Object.assign(f, { loan: 0, debtMonths: 0, bankrupt: false });
+    }
+    d.version = 11;
   }
   return d as Partial<SerializedState>;
 }
@@ -383,12 +394,21 @@ function isIndustry(v: unknown): v is Industry {
 
 function isLedger(v: unknown): v is Ledger {
   const l = v as Ledger;
-  return isObj(l) && isNum(l.income) && isNum(l.trains) && isNum(l.infrastructure) && isNum(l.construction);
+  return isObj(l) && isNum(l.income) && isNum(l.trains) && isNum(l.infrastructure) && isNum(l.construction) && isNum(l.interest);
 }
 
 function isFinances(v: unknown): v is Finances {
   const f = v as Finances;
-  return isObj(f) && isLedger(f.month) && Array.isArray(f.history) && f.history.every(isLedger);
+  return (
+    isObj(f) &&
+    isLedger(f.month) &&
+    Array.isArray(f.history) &&
+    f.history.every(isLedger) &&
+    isNum(f.loan) &&
+    f.loan >= 0 &&
+    isInt(f.debtMonths) &&
+    typeof f.bankrupt === 'boolean'
+  );
 }
 
 // --- base64 ---

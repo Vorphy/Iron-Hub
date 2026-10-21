@@ -160,4 +160,7 @@ Produkcja i zapotrzebowanie rosną liniowo z poziomem (1–5). Zakłady startuj�
 
 - **Koszty miesięczne**: eksploatacja pociągów poza zajezdnią – rocznie część ceny zakupu zależna od **trakcji lokomotywy**: parowa 20%, spalinowa 15%, elektryczna 10%; wagony 10% (naliczane co miesiąc 1/12); utrzymanie: 2 zł za element toru, 10 zł za kafelek peronu, 30 zł za zajezdnię, 1 zł za semafor. Okno zajezdni pokazuje trakcję i roczny koszt utrzymania składu.
 - **Okno finansów** (klik na pieniądze): przewozy, pociągi, utrzymanie, budowa i zakupy (po zwrotach) – bieżący miesiąc i poprzednie.
-- Kredytu i bankructwa na razie nie ma – przy braku pieniędzy nie da się budować ani kupować.
+- Przy braku pieniędzy nie da się budować ani kupować; saldo może spaść poniżej zera tylko przez koszty miesięczne.
+- **Kredyt** (okno Finanse – klik na kwotę na górnym pasku): do 300 000 zł, pożyczany i spłacany po 10 000 zł, odsetki 5% rocznie naliczane co miesiąc (osobny wiersz w bilansie). Spłata wymaga gotówki.
+- **Bankructwo**: saldo ujemne na koniec miesiąca 3 razy z rzędu = koniec gry (czas staje, budowa zablokowana; do wyboru nowa gra lub wczytanie zapisu). Po 1. i 2. takim miesiącu ostrzeżenie; wyjście na plus zeruje licznik. Autozapis nie nadpisuje się stanem po bankructwie.
+- Wszystkie te liczby są w `src/data/economy.ts` (sekcja `loan`).

@@ -61,6 +61,9 @@ export const FAIL_MESSAGES: Record<FailReason, string> = {
   bridgeHeads: 'Przyczółki mostu muszą być na tej samej wysokości',
   bridgeLow: 'Teren pod mostem jest za wysoko',
   tunnelNoExit: 'Tunel nie trafia na zbocze po drugiej stronie (albo nad nim jest za nisko)',
+  loanLimit: 'Osiągnięto limit kredytu',
+  noLoan: 'Nie masz kredytu do spłaty',
+  bankrupt: 'Firma zbankrutowała',
 };
 
 export interface CursorLabel {

@@ -3,6 +3,7 @@ import { resaleValue, trainById, trainsInDepot, type Train } from '../sim/trains
 import { isWaiting } from '../sim/trains/movement';
 import { consistStats, engineDef } from '../sim/trains/vehicles';
 import { infrastructureCost } from '../sim/economy/monthly';
+import { BANKRUPTCY_MONTHS, LOAN_INTEREST, LOAN_MAX, LOAN_STEP, monthlyInterest } from '../sim/economy/finance';
 import { tickToDate } from '../sim/time';
 
 const MONTH_NAMES = ['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'];
@@ -82,8 +83,16 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
           trains: Math.round(l.trains),
           infrastructure: Math.round(l.infrastructure),
           construction: Math.round(l.construction),
+          interest: Math.round(l.interest),
         };
       }),
+      loan: state.finances.loan,
+      loanMax: LOAN_MAX,
+      loanStep: LOAN_STEP,
+      loanInterest: LOAN_INTEREST,
+      interestPerMonth: monthlyInterest(state),
+      debtMonths: state.finances.debtMonths,
+      bankruptcyMonths: BANKRUPTCY_MONTHS,
       infrastructurePerMonth: infrastructureCost(state),
       trainsPerMonth: Math.round(
         state.trains.filter((t) => t.status !== 'depot').reduce((s, t) => s + consistStats(t.engine, t.wagons).runningCost, 0) / 12,

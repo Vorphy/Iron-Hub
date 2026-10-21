@@ -147,15 +147,16 @@ export function StationWindow({ data: d, actions }: { data: StationWindowData; a
   );
 }
 
-export function FinanceWindow({ data: d, actions }: { data: FinanceWindowData; actions: HudActions }) {
+export function FinanceWindow({ data: d, money, actions }: { data: FinanceWindowData; money: number; actions: HudActions }) {
   const rows: { key: keyof FinanceWindowData['months'][number]; label: string; sign: 1 | -1 }[] = [
     { key: 'income', label: 'Przewozy', sign: 1 },
     { key: 'trains', label: 'Pociągi', sign: -1 },
     { key: 'infrastructure', label: 'Utrzymanie', sign: -1 },
     { key: 'construction', label: 'Budowa i zakupy', sign: -1 },
+    { key: 'interest', label: 'Odsetki kredytu', sign: -1 },
   ];
   const months = d.months.slice(0, 4);
-  const total = (m: FinanceWindowData['months'][number]) => m.income - m.trains - m.infrastructure - m.construction;
+  const total = (m: FinanceWindowData['months'][number]) => m.income - m.trains - m.infrastructure - m.construction - m.interest;
   return (
     <div class="panel window wide">
       <Head title="Finanse" actions={actions} />
@@ -197,6 +198,43 @@ export function FinanceWindow({ data: d, actions }: { data: FinanceWindowData; a
         Koszty stałe co miesiąc: utrzymanie {formatMoney(d.infrastructurePerMonth)}, pociągi w trasie{' '}
         {formatMoney(d.trainsPerMonth)}. Pociągi w zajezdni nie generują kosztów.
       </div>
+
+      <div class="section-title">Kredyt</div>
+      <div class="row">
+        <span class="grow">
+          Zadłużenie <b>{formatMoney(d.loan)}</b> z {formatMoney(d.loanMax)}
+        </span>
+        <span class="muted">
+          {Math.round(d.loanInterest * 100)}% rocznie · {formatMoney(d.interestPerMonth)} / mies.
+        </span>
+      </div>
+      <div class="buttons wrap">
+        <button disabled={d.loan >= d.loanMax} onClick={() => actions.borrow(d.loanStep)}>
+          Pożycz {formatMoney(d.loanStep)}
+        </button>
+        <button disabled={d.loan >= d.loanMax} onClick={() => actions.borrow(d.loanMax - d.loan)}>
+          Pożycz maksimum
+        </button>
+        <button disabled={d.loan <= 0 || money < Math.min(d.loanStep, d.loan)} onClick={() => actions.repay(d.loanStep)}>
+          Spłać {formatMoney(Math.min(d.loanStep, d.loan || d.loanStep))}
+        </button>
+        <button
+          disabled={d.loan <= 0 || money < d.loanStep}
+          onClick={() => actions.repay(Math.min(d.loan, Math.floor(money / d.loanStep) * d.loanStep))}
+        >
+          Spłać ile się da
+        </button>
+      </div>
+      {d.debtMonths > 0 ? (
+        <div class="warning">
+          Saldo ujemne na koniec miesiąca już {d.debtMonths}× z rzędu. Jeśli tak będzie {d.bankruptcyMonths}× – bankructwo
+          i koniec gry. Weź kredyt, sprzedaj pociągi albo ogranicz koszty.
+        </div>
+      ) : (
+        <div class="muted small">
+          Ujemne saldo na koniec {d.bankruptcyMonths} miesięcy z rzędu oznacza bankructwo i koniec gry.
+        </div>
+      )}
     </div>
   );
 }

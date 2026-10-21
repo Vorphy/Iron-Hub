@@ -97,7 +97,16 @@ export interface StationWindowData {
 export interface FinanceWindowData {
   kind: 'finance';
   /** Miesiące od bieżącego wstecz. */
-  months: { label: string; income: number; trains: number; infrastructure: number; construction: number }[];
+  months: { label: string; income: number; trains: number; infrastructure: number; construction: number; interest: number }[];
+  loan: number;
+  loanMax: number;
+  loanStep: number;
+  /** Odsetki rocznie (ułamek) i za bieżący miesiąc (zł). */
+  loanInterest: number;
+  interestPerMonth: number;
+  /** Miesiące z rzędu z ujemnym saldem i ile ich prowadzi do bankructwa. */
+  debtMonths: number;
+  bankruptcyMonths: number;
   /** Szacunek miesięcznych kosztów stałych. */
   infrastructurePerMonth: number;
   trainsPerMonth: number;
@@ -137,6 +146,8 @@ export interface HudState {
   /** Daty zapisów w przeglądarce (ISO) – do menu. */
   saves: { quick: string | null; auto: string | null };
   menuOpen: boolean;
+  /** Firma zbankrutowała – koniec gry. */
+  bankrupt: boolean;
   minimapOpen: boolean;
   /** Panel „Pierwsze kroki” i które kroki są zrobione. */
   tutorialOpen: boolean;
@@ -165,6 +176,7 @@ export const hudStore = new Store<HudState>({
   message: null,
   saves: { quick: null, auto: null },
   menuOpen: false,
+  bankrupt: false,
   minimapOpen: true,
   tutorialOpen: true,
   tutorialSteps: [],
@@ -198,6 +210,8 @@ export interface HudActions {
   toggleTraffic(): void;
   openFinance(): void;
   addTestMoney(): void;
+  borrow(amount: number): void;
+  repay(amount: number): void;
   quickSave(): void;
   quickLoad(): void;
   exportFile(): void;

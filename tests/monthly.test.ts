@@ -88,7 +88,7 @@ describe('koszty miesięczne', () => {
     expect(last.trains).toBe(Math.round(consistStats('iskra', ['osobowy']).runningCost / 12));
     expect(last.infrastructure).toBe(infrastructureCost(s));
     expect(s.money).toBe(money - last.trains - last.infrastructure);
-    expect(s.finances.month).toEqual({ income: 0, trains: 0, infrastructure: 0, construction: 0 });
+    expect(s.finances.month).toEqual({ income: 0, trains: 0, infrastructure: 0, construction: 0, interest: 0 });
   });
 
   it('budowa i zwroty trafiają do księgi jako koszty budowy', () => {

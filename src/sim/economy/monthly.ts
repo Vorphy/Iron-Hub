@@ -6,7 +6,7 @@ import { nextFloat, nextInt } from '../rng';
 import { consistStats } from '../trains/vehicles';
 import { growTown } from '../world/generate';
 import { updateTownRoads } from '../world/roads';
-import { closeMonth, spend } from './finance';
+import { checkDebt, closeMonth, monthlyInterest, spend } from './finance';
 import {
   averageSupply,
   emptyIndustryMonth,
@@ -35,6 +35,10 @@ export function monthlyEconomy(state: GameState, events: SimEvent[]): void {
   const nearStations = stationCatchmentMask(state);
   for (const town of state.towns) closeTownMonth(state, town, nearStations, events);
   chargeRunningCosts(state);
+  spend(state, 'interest', monthlyInterest(state));
+  const left = checkDebt(state);
+  if (left === 0) events.push({ type: 'bankrupt' });
+  else if (left !== null) events.push({ type: 'debtWarning', monthsLeft: left });
   closeMonth(state);
 }
 

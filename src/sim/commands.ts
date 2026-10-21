@@ -1,5 +1,5 @@
 import { CLEAR_ROUGH_COST, HOUSE_DEMOLISH_COST, ROAD_REMOVE_COST } from './config';
-import { spend } from './economy/finance';
+import { LOAN_MAX, LOAN_STEP, spend } from './economy/finance';
 import { buildDepot, depotAt, removeDepot } from './depot/depot';
 import { dropOrphanSignals, placeSignal, removeSignal, type SignalMode } from './signals/signals';
 import type { GameState } from './state';
@@ -43,6 +43,9 @@ export type Command =
   | { type: 'buildTunnel'; x: number; y: number }
   | { type: 'terraform'; vx: number; vy: number; delta: 1 | -1 }
   | { type: 'levelLand'; vx0: number; vy0: number; vx1: number; vy1: number; level: number }
+  /** Kredyt: pożyczka / spłata (kwota zaokrąglana do kroku kredytu, przycinana do możliwej). */
+  | { type: 'borrow'; amount: number }
+  | { type: 'repay'; amount: number }
   /** Testy: dopisanie pieniędzy (poza księgą finansów). */
   | { type: 'addMoney'; amount: number };
 
@@ -61,7 +64,10 @@ export type FailReason =
   | 'tooHigh'
   | 'bridgeHeads'
   | 'bridgeLow'
-  | 'tunnelNoExit';
+  | 'tunnelNoExit'
+  | 'loanLimit'
+  | 'noLoan'
+  | 'bankrupt';
 
 export type CommandResult = { ok: true } | { ok: false; reason: FailReason };
 
@@ -75,9 +81,14 @@ export type SimEvent =
   | { type: 'tunnelsChanged' }
   /** Zapłata za dostawę – (x, y) w układzie logicznym, do napisu nad pociągiem. */
   | { type: 'income'; amount: number; x: number; y: number }
+  /** Zamknięcie miesiąca z ujemnym saldem: tyle miesięcy do bankructwa. */
+  | { type: 'debtWarning'; monthsLeft: number }
+  | { type: 'bankrupt' }
   | { type: 'commandFailed'; command: Command; reason: FailReason };
 
 export function applyCommand(state: GameState, cmd: Command, events: SimEvent[]): CommandResult {
+  // Po bankructwie gra jest skończona.
+  if (state.finances.bankrupt) return { ok: false, reason: 'bankrupt' };
   const result = apply(state, cmd, events);
   // Rozbiórka toru lub stacji mogła zostawić semafory bez toru.
   if (result.ok && (cmd.type === 'removeTrack' || cmd.type === 'clearTile' || cmd.type === 'buildStation')) {
@@ -131,6 +142,10 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
     case 'addMoney':
       state.money += cmd.amount;
       return { ok: true };
+    case 'borrow':
+      return borrow(state, cmd.amount);
+    case 'repay':
+      return repay(state, cmd.amount);
     case 'setSignalMode':
       state.signalMode = cmd.mode;
       events.push({ type: 'signalsChanged' });
@@ -187,5 +202,29 @@ function clearTile(state: GameState, x: number, y: number, events: SimEvent[]): 
   spend(state, 'construction', CLEAR_ROUGH_COST);
   setTerrain(map, x, y, Terrain.Grass);
   events.push({ type: 'tileChanged', x, y });
+  return { ok: true };
+}
+
+/** Kwota kredytu: wielokrotność kroku, co najmniej jeden krok. */
+function loanAmount(amount: number): number {
+  return Math.max(LOAN_STEP, Math.round(amount / LOAN_STEP) * LOAN_STEP);
+}
+
+function borrow(state: GameState, amount: number): CommandResult {
+  const f = state.finances;
+  const value = Math.min(loanAmount(amount), LOAN_MAX - f.loan);
+  if (value <= 0) return { ok: false, reason: 'loanLimit' };
+  f.loan += value;
+  state.money += value;
+  return { ok: true };
+}
+
+function repay(state: GameState, amount: number): CommandResult {
+  const f = state.finances;
+  if (f.loan <= 0) return { ok: false, reason: 'noLoan' };
+  const value = Math.min(loanAmount(amount), f.loan);
+  if (state.money < value) return { ok: false, reason: 'noMoney' };
+  f.loan -= value;
+  state.money -= value;
   return { ok: true };
 }

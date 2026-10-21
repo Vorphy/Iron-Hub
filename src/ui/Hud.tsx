@@ -65,7 +65,7 @@ export function Hud({ actions }: { actions: HudActions }) {
         <span class="sep" />
         <span>{s.date}</span>
         <span class="sep" />
-        <button class="money link" title="Finanse" onClick={actions.openFinance}>
+        <button class={`money link ${s.money < 0 ? 'negative' : ''}`} title="Finanse i kredyt" onClick={actions.openFinance}>
           {formatMoney(s.money)}
         </button>
         <span class="sep" />
@@ -92,13 +92,14 @@ export function Hud({ actions }: { actions: HudActions }) {
       <MinimapPanel open={s.minimapOpen} actions={actions} />
       {s.tutorialOpen && <TutorialPanel steps={s.tutorialSteps} actions={actions} />}
 
+      {s.bankrupt && !s.newGameOpen && <BankruptDialog actions={actions} hasQuickSave={!!s.saves.quick} />}
       {s.newGameOpen && <NewGameDialog actions={actions} canCancel={true} />}
       {s.menuOpen && <Menu actions={actions} saves={s.saves} signalMode={s.signalMode} traffic={s.traffic} />}
       {s.windowData?.kind === 'depot' && <DepotWindow data={s.windowData} money={s.money} actions={actions} />}
       {s.windowData?.kind === 'train' && <TrainWindow data={s.windowData} actions={actions} />}
       {s.windowData?.kind === 'town' && <TownWindow data={s.windowData} actions={actions} />}
       {s.windowData?.kind === 'station' && <StationWindow data={s.windowData} actions={actions} />}
-      {s.windowData?.kind === 'finance' && <FinanceWindow data={s.windowData} actions={actions} />}
+      {s.windowData?.kind === 'finance' && <FinanceWindow data={s.windowData} money={s.money} actions={actions} />}
       {s.windowData?.kind === 'industry' && <IndustryWindow data={s.windowData} actions={actions} />}
 
       <div class="panel toolbar">
@@ -332,4 +333,28 @@ function Toast({ message }: { message: HudState['message'] }) {
   }, [message?.id]);
   if (!message || !visible) return null;
   return <div class="panel toast">{message.text}</div>;
+}
+
+/** Koniec gry po bankructwie: nowa gra albo powrót do zapisu. */
+function BankruptDialog({ actions, hasQuickSave }: { actions: HudActions; hasQuickSave: boolean }) {
+  return (
+    <div class="modal-backdrop">
+      <div class="panel window dialog">
+        <div class="window-head">
+          <span class="window-title">Bankructwo</span>
+        </div>
+        <div>
+          Firma zbyt długo miała ujemne saldo i ogłosiła upadłość. Wierzyciele przejęli majątek – to koniec tej gry.
+        </div>
+        <div class="buttons wrap">
+          <button class="primary" onClick={actions.newGame}>
+            Nowa gra…
+          </button>
+          <button disabled={!hasQuickSave} onClick={actions.quickLoad}>
+            Wczytaj zapis
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }

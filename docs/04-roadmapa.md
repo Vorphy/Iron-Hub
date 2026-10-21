@@ -77,7 +77,7 @@ Etapy są ułożone tak, żeby po każdym istniała działająca, testowalna wer
 
 Kolejność proponowana; zmieniamy według potrzeb. Punkty 1–4 przygotowują etap 5 (test z ludźmi).
 
-1. **Kredyt i bankructwo** (przeniesione z etapu 4) – pożyczka z odsetkami, ostrzeżenie przy długu, koniec gry przy bankructwie.
+1. ~~**Kredyt i bankructwo**~~ ✅ (2026-10-21) – kredyt do 300 tys. zł, 5% rocznie, ostrzeżenia, bankructwo po 3 miesiącach na minusie.
 2. ~~**Minimapa**~~ ✅ (2026-10-21) – lewy górny róg, klik/przeciąganie przenosi kamerę, widać pociągi i obszar ekranu; można zwinąć.
 3. ~~**Pierwsze kroki dla nowego gracza**~~ ✅ (2026-10-21) – panel z 7 celami (tor → stacje → zajezdnia → pociąg → rozkład → wyjazd → zarobek) zaliczanymi automatycznie, podpowiedź do bieżącego, przycisk Nowa gra; ukrywany, powrót przez Menu.
 4. **Poziomy pociągów i trakcje** (z pomysłów) – lokomotywy dostępne z upływem lat: parowa → spalinowa → elektryczna; elektryczna wymaga sieci trakcyjnej.

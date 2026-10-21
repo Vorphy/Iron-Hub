@@ -38,6 +38,18 @@ export const ECONOMY = {
     removeRoad: 20,
   },
 
+  /** Kredyt i bankructwo. */
+  loan: {
+    /** Najwyższy możliwy kredyt. */
+    max: 300_000,
+    /** Pożyczamy i spłacamy po tyle. */
+    step: 10_000,
+    /** Odsetki rocznie (naliczane co miesiąc, 1/12). */
+    yearlyInterest: 0.05,
+    /** Tyle zamknięć miesiąca z rzędu z ujemnym saldem = bankructwo (koniec gry). */
+    bankruptcyMonths: 3,
+  },
+
   /** Zwroty. */
   refunds: {
     /** Część kosztu zwracana przy rozbiórce (tory, stacje, zajezdnie, semafory, mosty, tunele). */

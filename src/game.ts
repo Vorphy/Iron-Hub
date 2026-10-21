@@ -288,6 +288,13 @@ export class Game {
       else if (ev.type === 'bridgesChanged') this.bridges.draw(this.sim.state);
       else if (ev.type === 'tunnelsChanged') this.tunnels.draw(this.sim.state);
       else if (ev.type === 'income') this.floaters.spawn(`+${formatMoney(ev.amount)}`, ev.x, ev.y);
+      else if (ev.type === 'debtWarning') {
+        showMessage(
+          ev.monthsLeft === 1
+            ? 'Ujemne saldo! Za miesiąc bankructwo – weź kredyt (Finanse) lub sprzedaj pociągi'
+            : `Ujemne saldo! Bankructwo za ${ev.monthsLeft} mies. – weź kredyt (Finanse) lub sprzedaj pociągi`,
+        );
+      }
       else if (ev.type === 'commandFailed') {
         showMessage(FAIL_MESSAGES[ev.reason]);
       }
@@ -412,6 +419,7 @@ export class Game {
       graphInfo: this.graphDebug.visible ? `${this.sim.graph.nodes.length} węzłów · ${this.sim.graph.edges.length} krawędzi` : null,
       hover: hoverChanged ? (tile && terrain !== null ? { ...tile, terrain, station } : null) : h,
       cursorLabel: labelChanged ? label : pl,
+      bankrupt: state.finances.bankrupt,
     });
   }
 }

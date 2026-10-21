@@ -563,3 +563,13 @@ input.seed {
   color: var(--text);
   margin: 2px 0 4px;
 }
+
+.money.link.negative {
+  color: #ff9a85;
+}
+
+.warning {
+  color: #ffcf8a;
+  border-left: 3px solid #c0634a;
+  padding-left: 6px;
+}

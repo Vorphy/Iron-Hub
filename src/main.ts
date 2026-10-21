@@ -133,6 +133,8 @@ const actions: HudActions = {
   minimapGoto: (u, v) => game?.minimapGoto(u, v),
   openFinance: () => game?.openWindow({ kind: 'finance' }),
   addTestMoney: () => game?.command({ type: 'addMoney', amount: 100_000 }),
+  borrow: (amount) => game?.command({ type: 'borrow', amount }),
+  repay: (amount) => game?.command({ type: 'repay', amount }),
   quickSave: () => void saveTo('quick'),
   quickLoad: () => {
     void loadFrom('quick').then((ok) => ok && showMessage('Wczytano zapis'));
@@ -204,10 +206,11 @@ async function start(): Promise<void> {
     const factor = Math.max(1, game.state.map.width / 256);
     if (Date.now() - lastAutosave < AUTOSAVE_MS * factor) return;
     lastAutosave = Date.now();
-    if (autosaveKey(game) !== autosavedKey) void saveTo('auto', true);
+    // Po bankructwie zostawiamy ostatni autozapis sprzed końca gry.
+    if (autosaveKey(game) !== autosavedKey && !game.state.finances.bankrupt) void saveTo('auto', true);
   }, 5000);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') void saveTo('auto', true);
+    if (document.visibilityState === 'hidden' && !game?.state.finances.bankrupt) void saveTo('auto', true);
   });
 }
 
