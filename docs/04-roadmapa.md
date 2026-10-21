@@ -124,6 +124,8 @@ Kredyt i bankructwo · minimapa · pierwsze kroki · lokomotywy z biegiem lat i 
 - **Statystyki graczy** (pomysł 2026-10-21): kto wchodził, czy grał i jak długo – przyda się przy etapie 5. Gra jest statyczną stroną (GitHub Pages, bez serwera), więc do wyboru:
   - *Prosto, bez serwera:* lekki licznik odwiedzin szanujący prywatność (np. GoatCounter, Plausible) + własne zdarzenia z gry: start nowej gry (rozmiar mapy), czas grania co kilka minut, osiągnięte kroki samouczka. Bez kont – widać liczby, nie konkretne osoby.
   - *„Kto” konkretnie:* opcjonalny nick przy pierwszym uruchomieniu albo kod testera w linku (np. `?tester=ania`) dołączany do zdarzeń – wystarczy na testy z kilkoma osobami.
+  - **Nazwa firmy przy nowej grze** (pomysł 2026-10-21): gracz wpisuje nazwę swojej kolei (np. „Kolej Żelazna Sp. z o.o.”) – widać ją w grze (HUD, finanse, podpis zapisu), a w statystykach działa jak osobny „login”. Fajne samo w sobie, nawet bez statystyk.
+  - *Łączenie sesji jednego gracza:* zamiast IP lepiej losowy identyfikator gracza zapisany w przeglądarce (localStorage) – IP zmienia się (telefon, domowy router) albo jest wspólne dla wielu osób (firma, akademik). IP da się dołożyć, ale tylko z własnym małym serwerem (np. Cloudflare Worker), bo gotowe liczniki go nie pokazują; IP to dane osobowe – wtedy obowiązkowa informacja o zbieraniu i ograniczony czas przechowywania.
   - *Własny backend:* razem z etapem 8 (zapis w chmurze, rankingi) – wtedy pełne logi sesji.
   - Lokalnie w grze: łączny czas grania i liczba sesji w Menu (tylko dla tego gracza, bez wysyłania).
   - Pamiętać o RODO: krótka informacja w grze, co jest zbierane; bez danych osobowych, jeśli się da.
