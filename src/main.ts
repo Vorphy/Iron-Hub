@@ -17,7 +17,7 @@ import {
 } from './persistence/saves';
 import { createGame, type GameState } from './sim/state';
 import { Hud } from './ui/Hud';
-import type { NewWorldSettings } from './ui/hudStore';
+import { defaultMinimapSettings, type MinimapSettings, type NewWorldSettings } from './ui/hudStore';
 import { hudStore, showMessage, type HudActions } from './ui/hudStore';
 
 /** Domyślny rozmiar mapy (okno nowej gry pozwala wybrać inny). */
@@ -26,6 +26,29 @@ const ALLOWED_SIZES = [64, 128, 256, 512, 1024];
 const AUTOSAVE_MS = 30_000;
 const TRAFFIC_KEY = 'ironhub.traffic';
 const MINIMAP_KEY = 'ironhub.minimap';
+const MINIMAP_SETTINGS_KEY = 'ironhub.minimapSettings';
+
+/** Zapamiętane ustawienia minimapy (nowe typy zakładów – domyślnie widoczne). */
+function storedMinimap(): MinimapSettings {
+  const def = defaultMinimapSettings();
+  try {
+    const raw = JSON.parse(localStorage.getItem(MINIMAP_SETTINGS_KEY) ?? 'null') as Partial<MinimapSettings> | null;
+    if (!raw) return def;
+    return {
+      ...def,
+      zoom: [1, 2, 4, 8].includes(raw.zoom ?? 1) ? (raw.zoom ?? 1) : 1,
+      pos: raw.pos ?? null,
+      legend: raw.legend === true,
+      filters: {
+        ...def.filters,
+        ...raw.filters,
+        industries: { ...def.filters.industries, ...raw.filters?.industries },
+      },
+    };
+  } catch {
+    return def;
+  }
+}
 const TUTORIAL_KEY = 'ironhub.tutorial';
 const CHANGELOG_KEY = 'ironhub.changelogSeen';
 
@@ -153,6 +176,16 @@ const actions: HudActions = {
     }
   },
   closeChangelog: () => hudStore.set({ changelogOpen: false }),
+  setMinimap: (patch) => {
+    const minimap = { ...hudStore.get().minimap, ...patch };
+    hudStore.set({ minimap });
+    try {
+      // Duża mapa to chwilowy podgląd – zapamiętujemy resztę.
+      localStorage.setItem(MINIMAP_SETTINGS_KEY, JSON.stringify({ ...minimap, big: false }));
+    } catch {
+      // Bez pamięci przeglądarki ustawienia działają do zamknięcia strony.
+    }
+  },
   toggleMinimap: () => {
     const minimapOpen = !hudStore.get().minimapOpen;
     hudStore.set({ minimapOpen });
@@ -229,7 +262,7 @@ const actions: HudActions = {
 };
 
 async function start(): Promise<void> {
-  hudStore.set({ changelogUnseen: storedText(CHANGELOG_KEY) !== LATEST_CHANGELOG });
+  hudStore.set({ changelogUnseen: storedText(CHANGELOG_KEY) !== LATEST_CHANGELOG, minimap: storedMinimap() });
   hudStore.set({
     traffic: storedFlag(TRAFFIC_KEY),
     minimapOpen: storedFlag(MINIMAP_KEY),

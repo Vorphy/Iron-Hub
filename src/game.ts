@@ -175,9 +175,11 @@ export class Game {
     this.minimapDirty = true;
   }
 
-  /** Klik na minimapie (0–1 w obu osiach) – kamera w to miejsce. */
-  minimapGoto(u: number, v: number): void {
-    this.camera.centerOn(minimapToWorld(this.sim.state, u, v));
+  /** Klik na minimapie (ułamek płótna 0–1) – kamera w to miejsce (uwzględnia przybliżenie minimapy). */
+  minimapGoto(fx: number, fy: number): void {
+    if (!this.minimap) return;
+    const m = this.minimap.toMap(fx, fy);
+    this.camera.centerOn(minimapToWorld(this.sim.state, m.u, m.v));
   }
 
   setSpeed(speed: Speed): void {
@@ -268,6 +270,10 @@ export class Game {
       return;
     }
     const hud = hudStore.get();
+    if (code === 'Escape' && hud.minimap.big) {
+      hudStore.set({ minimap: { ...hud.minimap, big: false } });
+      return;
+    }
     if (code === 'Escape' && (hud.helpTopic || hud.changelogOpen)) {
       hudStore.set({ helpTopic: null, changelogOpen: false });
       return;
@@ -379,16 +385,17 @@ export class Game {
     this.updateHud();
   }
 
-  /** Kolory terenu minimapy odświeżane najwyżej co sekundę (po zmianach mapy), widok – co klatkę. */
+  /** Teren minimapy po zmianach mapy najwyżej co sekundę (i przy przesuwaniu przybliżonej), reszta co klatkę. */
   private updateMinimap(deltaMs: number): void {
     if (!this.minimap) return;
     this.minimapSince += deltaMs;
-    if (this.minimapDirty && this.minimapSince >= 1000) {
-      this.minimap.redrawTerrain(this.sim.state);
+    const s = hudStore.get().minimap;
+    const terrainChanged = this.minimapDirty && this.minimapSince >= 1000;
+    const opts = { zoom: s.zoom, filters: s.filters, labels: s.big };
+    if (this.minimap.update(this.sim.state, this.camera.viewRect(), opts, terrainChanged, performance.now()) && terrainChanged) {
       this.minimapDirty = false;
       this.minimapSince = 0;
     }
-    this.minimap.draw(this.sim.state, this.camera.viewRect());
   }
 
   /** Postęp „Pierwszych kroków” – sprawdzany dwa razy na sekundę. */

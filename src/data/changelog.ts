@@ -12,6 +12,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-21',
+    title: 'Lepsza minimapa',
+    items: [
+      'Minimapę przeniesiesz w dowolne miejsce, łapiąc za nagłówek; zoom − / + (do 8×) pokazuje okolicę kamery.',
+      '⛶ – duża mapa z nazwami miast; ☰ – legenda z filtrami: każdy typ zakładu w swoim kolorze, „tylko” pokazuje sam ten typ (np. wszystkie kopalnie węgla), do tego miasta, tory i pociągi.',
+    ],
+  },
+  {
+    date: '2026-10-21',
     title: 'Lista pociągów, zyski i grupy',
     items: [
       'Okno „🚆 Pociągi” (K): wszystkie pociągi z zyskiem w tym i zeszłym roku, wiekiem i statusem; sortowanie po kliknięciu w nagłówek, filtr „tylko na minusie”.',

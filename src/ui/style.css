@@ -766,3 +766,58 @@ input.seed {
 .muted.small.bad {
   color: #ff9a85;
 }
+
+.minimap-head.draggable {
+  cursor: move;
+}
+.minimap-tools {
+  display: flex;
+  gap: 2px;
+}
+.minimap-tools .close {
+  padding: 0 5px;
+}
+.minimap-body {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.minimap:not(.big) .minimap-body {
+  flex-direction: column;
+}
+.minimap.big {
+  position: static;
+  padding: 6px 8px 8px;
+}
+.minimap-backdrop {
+  background: rgba(10, 12, 15, 0.35);
+}
+.minimap-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 200px;
+}
+.legend-row {
+  gap: 4px;
+}
+.legend-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+.modal-backdrop.minimap-backdrop {
+  z-index: 20;
+}
+.minimap-legend {
+  font-size: 11px;
+}
+.minimap-legend .panel button.link,
+.minimap-legend button.link {
+  padding: 0 4px;
+  font-size: 11px;
+}
+.minimap:not(.big) .minimap-legend {
+  min-width: 0;
+}

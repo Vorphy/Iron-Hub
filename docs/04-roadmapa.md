@@ -81,7 +81,7 @@ Jedna kolejka, w kolejności, która najszybciej poprawia granie. Maglevy, kolej
 1. ~~**Droższe zmiany terenu**~~ ✅ (2026-10-21) – 150 zł za narożnik zamiast 30 zł (`terraformCorner`).
 2. ~~**Nowa gra – tryb własny**~~ ✅ (2026-10-21) – przełącznik „Gęstość / Własne”, dokładne liczby miast i zakładów każdego typu, położenie z ziarna mapy.
 3. ~~**Lista pociągów**~~ ✅ (2026-10-21) – okno z podglądem wszystkich pociągów: zysk w tym i zeszłym roku, sortowanie, oznaczenie nierentownych (i komunikat o nich raz w roku); filtry, w tym **grupy pociągów** (np. „Węgiel”, „Pasażerskie”).
-4. **Lepsza minimapa** – zoom, przenoszenie po ekranie i powiększanie; po wejściu w nią – jak w OpenTTD – filtr zakładów (np. tylko kopalnie węgla, tylko elektrownie) z legendą kolorów, żeby zaplanować start i rozbudowę sieci.
+4. ~~**Lepsza minimapa**~~ ✅ (2026-10-21) – zoom, przenoszenie po ekranie i powiększanie; po wejściu w nią – jak w OpenTTD – filtr zakładów (np. tylko kopalnie węgla, tylko elektrownie) z legendą kolorów, żeby zaplanować start i rozbudowę sieci.
 5. **Wspólne rozkłady** – kopia pociągu może dzielić rozkład z oryginałem: zmiana w jednym zmienia wszystkie na linii.
 6. **Rozkład czasowy** – postój X dni na stacji i **równe odstępy**: na wspólnym rozkładzie wyrównuje pociągi linii (czas obiegu / liczba pociągów) i wypuszcza je w odpowiednich odstępach.
 7. **Etap 5 – test „czy to jest fajne”** – granie z kilkoma osobami, strojenie `src/data/economy.ts` i `vehicles.json`.
@@ -92,11 +92,12 @@ Jedna kolejka, w kolejności, która najszybciej poprawia granie. Maglevy, kolej
 10. **Szablony budowy** – gotowe do wklejenia układy, np. bezkolizyjne skrzyżowanie łączące cztery dwutorowe linie.
 11. **Super stacja** – ulepszenie stacji w mieście za ~100× ceny peronu: druga kondygnacja peronów (4 tory zamiast 2 na tym samym obszarze), zjazdy jak portale tuneli, 2-torowy wjazd w głowicy (szczegóły w Pomysłach).
 12. **„Jedź bez zatrzymania” i punkty kontrolne** (wymuszenie trasy przez dany tor) – przewidzieć w modelu rozkładu już przy punkcie 5.
-13. **Awarie i serwis** – niezawodność spada z wiekiem, nieserwisowane pociągi psują się częściej i stają, serwis w zajezdni; możliwość wyłączenia przy nowej grze.
+13. **Wersja na telefon** – większy refaktor interfejsu: sterowanie dotykiem (przesuwanie palcem, zoom dwoma palcami, przytrzymanie zamiast prawego przycisku), panele i okna dopasowane do wąskiego ekranu (pasek narzędzi na dole, okna na cały ekran, większe przyciski), czytelne podpisy i minimapa na małym ekranie.
+14. **Awarie i serwis** – niezawodność spada z wiekiem, nieserwisowane pociągi psują się częściej i stają, serwis w zajezdni; możliwość wyłączenia przy nowej grze.
 
 ### Faza C
-14. **Etap 7** – grafika, dźwięki, retro UI, wydanie na itch.io.
-15. **Etap 8** – generator/edytor map, chmura, Web Worker, płatne dodatki.
+15. **Etap 7** – grafika, dźwięki, retro UI, wydanie na itch.io.
+16. **Etap 8** – generator/edytor map, chmura, Web Worker, płatne dodatki.
 
 ### Zrobione z wcześniejszej kolejki (2026-10-21)
 Kredyt i bankructwo · minimapa · pierwsze kroki · lokomotywy z biegiem lat i sieć trakcyjna · ciężarówki, chowanie pojazdów za domami, lint/format · wymiana lokomotyw · pomoc i historia zmian · nazwy miast · kopiowanie pociągów · pełny ładunek · magazyn wagonów · rozbudowa stacji · gęstość miast, kopalń i przemysłu · numery zajezdni.

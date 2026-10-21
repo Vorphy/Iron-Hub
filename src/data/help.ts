@@ -58,6 +58,10 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
             ['przeciąganie, WASD, strzałki', 'przesuwanie mapy (prawy przycisk – także przy narzędziach)'],
             ['kółko myszy', 'zoom (0,125× – 4×)'],
             ['klik na minimapie', 'skok w to miejsce'],
+            [
+              'minimapa: nagłówek / − + / ☰ / ⛶',
+              'przeciągnij – przenieś; zoom; legenda z filtrami zakładów; duża mapa (Esc zamyka)',
+            ],
             ['spacja / 1–4', 'pauza / prędkość 1×, 2×, 4×, 8×'],
             ['Esc', 'anuluj, zamknij okno, kursor'],
             ['T, P, Z, E, L, M, N, X', 'Tory, Stacja, Zajezdnia, Trakcja, Teren, Most, Tunel, Rozbiórka'],
@@ -251,7 +255,8 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     blocks: [
       'Gra zapisuje się sama co 30 s (na dużych mapach rzadziej) i przy zamknięciu karty. W Menu: Zapisz / Wczytaj (ręczny zapis), eksport i import pliku (przeniesienie na inny komputer).',
       'Zapisy w przeglądarce są widoczne tylko na tym urządzeniu i tej stronie.',
-      'Menu → Ruch w miastach – auta i autobusy można wyłączyć na słabszym komputerze. Minimapę zwijasz przyciskiem „–”.',
+      'Menu → Ruch w miastach – auta i autobusy można wyłączyć na słabszym komputerze. Minimapę zwijasz przyciskiem ▾, przenosisz za nagłówek; jej położenie, zoom i filtry przeglądarka zapamiętuje.',
+      '**Planowanie z mapą**: ⛶ na minimapie otwiera dużą mapę z nazwami miast, a legenda (☰) pozwala pokazać tylko wybrane zakłady – np. „tylko” przy Kopalni węgla, potem przy Elektrowni – i znaleźć dobrą parę na pierwszą linię.',
       'Nowa gra: rozmiar mapy (64 – 1024), rok startu, gęstość miast, kopalń i lasów oraz przemysłu (brak / mało / normalnie / dużo) albo tryb „Własne” z dokładnymi liczbami każdego typu i ziarno – ta sama liczba i ustawienia dają tę samą mapę.',
     ],
   },

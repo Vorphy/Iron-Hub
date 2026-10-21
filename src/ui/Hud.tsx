@@ -109,7 +109,7 @@ export function Hud({ actions }: { actions: HudActions }) {
         </span>
       </div>
 
-      <MinimapPanel open={s.minimapOpen} actions={actions} />
+      <MinimapPanel open={s.minimapOpen} settings={s.minimap} actions={actions} />
       {s.tutorialOpen && <TutorialPanel steps={s.tutorialSteps} actions={actions} />}
 
       {s.bankrupt && !s.newGameOpen && <BankruptDialog actions={actions} hasQuickSave={!!s.saves.quick} />}

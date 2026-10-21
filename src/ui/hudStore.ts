@@ -1,4 +1,18 @@
+import { defaultFilters, type MinimapFilters } from '../render/minimap';
 import type { CustomCounts, Density } from '../sim/world/generate';
+
+export interface MinimapSettings {
+  big: boolean;
+  zoom: number;
+  /** Położenie małej minimapy (px od lewego górnego rogu); null – domyślne. */
+  pos: { x: number; y: number } | null;
+  legend: boolean;
+  filters: MinimapFilters;
+}
+
+export function defaultMinimapSettings(): MinimapSettings {
+  return { big: false, zoom: 1, pos: null, legend: false, filters: defaultFilters() };
+}
 
 /** Ustawienia świata z okna nowej gry. */
 export interface NewWorldSettings {
@@ -220,6 +234,8 @@ export interface HudState {
   /** Firma zbankrutowała – koniec gry. */
   bankrupt: boolean;
   minimapOpen: boolean;
+  /** Ustawienia minimapy: duża (na środku), przybliżenie, położenie panelu, legenda i filtry. */
+  minimap: MinimapSettings;
   /** Panel „Pierwsze kroki” i które kroki są zrobione. */
   tutorialOpen: boolean;
   tutorialSteps: boolean[];
@@ -261,6 +277,7 @@ export const hudStore = new Store<HudState>({
   changelogUnseen: false,
   bankrupt: false,
   minimapOpen: true,
+  minimap: defaultMinimapSettings(),
   tutorialOpen: true,
   tutorialSteps: [],
   traffic: true,
@@ -293,6 +310,8 @@ export interface HudActions {
   openChangelog(): void;
   closeChangelog(): void;
   toggleMinimap(): void;
+  /** Zmiana ustawień minimapy (zapamiętywane w przeglądarce). */
+  setMinimap(patch: Partial<MinimapSettings>): void;
   toggleTutorial(): void;
   /** Płótno minimapy (null – odpięte). */
   attachMinimap(canvas: HTMLCanvasElement | null): void;
