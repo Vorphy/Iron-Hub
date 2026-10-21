@@ -60,9 +60,19 @@ export function DepotWindow({ data, money, actions }: { data: DepotWindowData; m
             >
               {t.id === target?.id ? '◉' : '○'} {t.name}
             </button>
-            <button class="primary" onClick={() => actions.startTrain(t.id)} title="Wyjedź z zajezdni">
-              ▶
-            </button>
+            {t.stopped ? (
+              <button class="primary" onClick={() => actions.startTrain(t.id)} title="Wyjedź z zajezdni">
+                ▶
+              </button>
+            ) : (
+              <button
+                class="active"
+                onClick={() => actions.stopTrain(t.id)}
+                title="Pociąg czeka na wyjazd (wyjedzie, gdy wyjazd będzie wolny) – kliknij, aby anulować"
+              >
+                ■ Anuluj
+              </button>
+            )}
             <button onClick={() => actions.openTrain(t.id)} title="Okno pociągu (rozkład jazdy, wymiana lokomotywy)">
               Rozkład
             </button>
@@ -70,6 +80,7 @@ export function DepotWindow({ data, money, actions }: { data: DepotWindowData; m
               ⧉
             </button>
           </div>
+          {!t.stopped && <div class="status small">{t.status}</div>}
           <div class="consist">
             {Array.from({ length: t.engineCount }, (_, k) => (
               <span key={`e${k}`} class="chip engine" style={{ background: engineDef(t.engine)!.color }}>

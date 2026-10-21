@@ -12,6 +12,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-21',
+    title: 'Poprawka: wyjazd z zajezdni',
+    items: [
+      'Po kliknięciu ▶ w oknie zajezdni widać, że pociąg czeka na wyjazd (status i podświetlony przycisk „■ Anuluj”, który odwołuje wyjazd).',
+    ],
+  },
+  {
+    date: '2026-10-21',
     title: 'Podwójna trakcja',
     items: [
       'Pociąg może mieć dwie takie same lokomotywy: 2× moc i przyczepność, więc ciężki skład szybciej się rozpędza i lepiej radzi sobie pod górę. Prędkość maksymalna się nie zmienia, cena i utrzymanie lokomotyw – 2×.',
