@@ -6,6 +6,7 @@ import { createGame } from '../src/sim/state';
 import { planTrackLine } from '../src/sim/track/autorail';
 import { Track, type TrackPiece } from '../src/sim/track/track';
 import { growTown } from '../src/sim/world/generate';
+import { updateTownRoads } from '../src/sim/world/roads';
 import { Terrain } from '../src/sim/world/map';
 
 const W = 64;
@@ -44,5 +45,22 @@ describe('wzrost miast przez tory', () => {
     const state = townWithTrack(Array.from({ length: 30 }, (_, k) => ({ x: 23, y: 5 + k, track: Track.Y })));
     growTown(state, createRng(7), state.towns[0]!, 300);
     expect(houses(state).filter((h) => h.x > 23).length).toBeGreaterThan(5);
+  });
+
+  it('miasto buduje przejazd przez prosty tor poprzeczny do ulicy, ale nie wzdłuż toru', () => {
+    // Tor w kolumnie x = 23 (oś Y) przecina ulice-rzędy y = 16, 20, 24…
+    const state = townWithTrack([
+      ...Array.from({ length: 30 }, (_, k) => ({ x: 23, y: 5 + k, track: Track.Y })),
+      // Tor w osi X na ulicy-rzędzie y = 28 (wzdłuż ulicy) – tu drogi nie będzie.
+      ...Array.from({ length: 3 }, (_, k) => ({ x: 25 + k, y: 28, track: Track.X })),
+    ]);
+    growTown(state, createRng(7), state.towns[0]!, 300);
+    updateTownRoads(state, state.towns[0]!);
+    const road = (x: number, y: number) => state.map.road[y * W + x] === 1;
+    expect(road(23, 20)).toBe(true);
+    expect(state.map.track[20 * W + 23]).toBe(Track.Y);
+    // Miasto doszło do rzędu y = 28 (są tam drogi), a mimo to na torze wzdłuż ulicy drogi nie ma.
+    expect([21, 22, 28, 29, 30].some((x) => road(x, 28))).toBe(true);
+    for (let x = 25; x <= 27; x++) expect(road(x, 28)).toBe(false);
   });
 });

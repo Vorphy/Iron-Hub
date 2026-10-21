@@ -1,19 +1,35 @@
 import type { SimEvent } from '../commands';
 import { isStreet, TOWN_EXTENT, type Town } from '../economy/town';
 import type { GameState } from '../state';
+import { Track } from '../track/track';
 import { isFlat } from './height';
 import { hasBuilding, inBounds, setTerrain, Terrain, type WorldMap } from './map';
 
 /**
  * Drogi w miastach – na ulicach (co czwarty rząd i kolumna od rynku) obok domów. Miasto buduje je
- * samo przy wzroście. Drogi są dekoracją i tłem dla ruchu aut; nie wpływają na przewozy.
+ * samo przy wzroście, także przez proste tory poprzeczne do ulicy (przejazdy). Drogi są dekoracją
+ * i tłem dla ruchu aut; nie wpływają na przewozy ani na ruch pociągów.
  */
-export function canHaveRoad(map: WorldMap, x: number, y: number): boolean {
+export function canHaveRoad(map: WorldMap, x: number, y: number, town?: Town): boolean {
   if (!inBounds(map, x, y)) return false;
   const i = y * map.width + x;
   if (map.terrain[i] === Terrain.Water || !isFlat(map, x, y)) return false;
-  // Miasto nie buduje dróg przez tory, perony, zajezdnie, budynki ani mosty/tunele.
-  return !map.track[i] && !map.station[i] && !map.depot[i] && !hasBuilding(map, i) && !map.bridge[i] && !map.tunnel[i];
+  // Miasto nie buduje dróg przez perony, zajezdnie, budynki ani mosty/tunele.
+  if (map.station[i] || map.depot[i] || hasBuilding(map, i) || map.bridge[i] || map.tunnel[i]) return false;
+  const bits = map.track[i]!;
+  return bits === 0 || (!!town && bits === crossingTrack(town, x, y));
+}
+
+/**
+ * Przejazd kolejowo-drogowy: tor, przez który ulica może przejść – prosty i poprzeczny do ulicy
+ * (ulica w rzędzie biegnie wzdłuż osi X, więc tor w osi Y, i odwrotnie). Na skrzyżowaniu ulic – brak.
+ * Pociągi mają pierwszeństwo: auta są tylko dekoracją i nie zatrzymują pociągów.
+ */
+export function crossingTrack(town: Town, x: number, y: number): number {
+  const row = (y - town.y) % 4 === 0;
+  const column = (x - town.x) % 4 === 0;
+  if (row === column) return 0;
+  return row ? Track.Y : Track.X;
 }
 
 /** Sąsiaduje (także po skosie) z domem tego miasta. */
@@ -32,7 +48,7 @@ export function updateTownRoads(state: GameState, town: Town, events?: SimEvent[
   for (let y = Math.max(0, town.y - TOWN_EXTENT); y <= Math.min(map.height - 1, town.y + TOWN_EXTENT); y++) {
     for (let x = Math.max(0, town.x - TOWN_EXTENT); x <= Math.min(map.width - 1, town.x + TOWN_EXTENT); x++) {
       const i = y * map.width + x;
-      if (map.road[i] || !isStreet(town, x, y) || !canHaveRoad(map, x, y) || !nextToHouse(map, x, y, town.id)) continue;
+      if (map.road[i] || !isStreet(town, x, y) || !canHaveRoad(map, x, y, town) || !nextToHouse(map, x, y, town.id)) continue;
       map.road[i] = 1;
       if (map.terrain[i] === Terrain.Rough) setTerrain(map, x, y, Terrain.Grass);
       events?.push({ type: 'tileChanged', x, y });

@@ -12,6 +12,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-21',
+    title: 'Przejazdy kolejowo-drogowe',
+    items: [
+      'Miasta same prowadzą ulice przez tory – przez prosty tor poprzeczny do ulicy powstaje przejazd, więc dzielnice za torami dostają połączenie z resztą miasta.',
+      'Pociągi mają pierwszeństwo: auta i autobusy przejeżdżają przez tor, ale nigdy nie zatrzymują pociągów.',
+    ],
+  },
+  {
+    date: '2026-10-21',
     title: 'Poprawka: miasta za torami',
     items: [
       'Miasta rozrastają się za torami – także za skośnymi i podwójnymi liniami. Dotąd tor (zwłaszcza skośny) zamykał zabudowie drogę.',
