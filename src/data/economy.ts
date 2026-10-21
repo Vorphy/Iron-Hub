@@ -58,6 +58,8 @@ export const ECONOMY = {
     demolition: 0.25,
     /** Część ceny pociągu zwracana przy sprzedaży. */
     trainResale: 0.75,
+    /** Zwrot za starą lokomotywę przy wymianie: `full` ceny dla nowej, liniowo do `old` po `years` latach. */
+    engineTradeIn: { full: 0.75, old: 0.1, years: 50 },
   },
 
   /** Utrzymanie infrastruktury – co miesiąc. */

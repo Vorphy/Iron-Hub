@@ -1,5 +1,6 @@
 import { CARGO_DEFS } from '../sim/economy/cargo';
-import { engineDef, wagonDef } from '../sim/trains/vehicles';
+import { useState } from 'preact/hooks';
+import { engineDef, TRACTION_NAMES, wagonDef } from '../sim/trains/vehicles';
 import { formatMoney } from '../tools';
 import type { HudActions, TrainWindowData } from './hudStore';
 
@@ -66,6 +67,8 @@ export function TrainWindow({ data: t, actions }: { data: TrainWindowData; actio
         )}
       </div>
 
+      <EngineSection t={t} actions={actions} />
+
       <div class="section-title">Rozkład jazdy</div>
       {t.orders.length === 0 && <div class="muted small">Brak stacji – pociąg jeździ przed siebie.</div>}
       {t.orders.map((o, i) => (
@@ -94,5 +97,75 @@ export function TrainWindow({ data: t, actions }: { data: TrainWindowData; actio
       </div>
       {t.picking && <div class="muted small">Klikaj stacje na mapie – dopisują się na koniec rozkładu.</div>}
     </div>
+  );
+}
+
+/** Lokomotywa: wiek, zwrot i wymiana na nowszą (wagony i rozkład zostają). */
+function EngineSection({ t, actions }: { t: TrainWindowData; actions: HudActions }) {
+  const current = engineDef(t.engine)!;
+  // Domyślnie najszybsza dostępna lokomotywa tej samej trakcji, inaczej najszybsza w ogóle.
+  const sorted = [...t.replaceOptions].sort((a, b) => engineDef(b.id)!.maxSpeed - engineDef(a.id)!.maxSpeed);
+  const fallback = (sorted.find((o) => engineDef(o.id)!.traction === current.traction) ?? sorted[0])?.id ?? '';
+  const [picked, setPicked] = useState('');
+  const choice = t.replaceOptions.find((o) => o.id === picked) ?? t.replaceOptions.find((o) => o.id === fallback);
+  return (
+    <>
+      <div class="section-title">Lokomotywa</div>
+      <div class="row small">
+        <span class="grow">
+          {current.name} · {current.maxSpeed} km/h · {t.engineAge} {t.engineAge === 1 ? 'rok' : 'lat'}
+        </span>
+        <span class="muted">zwrot przy wymianie {formatMoney(t.tradeIn)}</span>
+      </div>
+      {t.replaceWith ? (
+        <div class="row small">
+          <span class="grow">
+            Wymiana na <b>{engineDef(t.replaceWith)!.name}</b> w najbliższej zajezdni, potem powrót na trasę.
+          </span>
+          <button onClick={() => actions.replaceEngine(t.trainId, null)}>Anuluj</button>
+        </div>
+      ) : choice ? (
+        <>
+          <div class="row small">
+            <select
+              class="grow"
+              value={choice.id}
+              onChange={(e) => setPicked((e.target as HTMLSelectElement).value)}
+              title="Nowa lokomotywa"
+            >
+              {sorted.map((o) => {
+                const e = engineDef(o.id)!;
+                return (
+                  <option key={o.id} value={o.id}>
+                    {e.name} – {TRACTION_NAMES[e.traction]}, {e.maxSpeed} km/h
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+          <div class="buttons wrap">
+            <button
+              class="primary"
+              onClick={() => actions.replaceEngine(t.trainId, choice.id)}
+              title={
+                t.inDepot ? 'Wymiana od razu' : 'Pociąg zjedzie do najbliższej zajezdni, wymieni lokomotywę i wróci na trasę'
+              }
+            >
+              Wymień · dopłata {formatMoney(Math.max(0, choice.cost))}
+            </button>
+            {t.sameEngineTrains > 1 && (
+              <button onClick={() => actions.replaceEngine(t.trainId, choice.id, true)}>
+                Wymień we wszystkich ({t.sameEngineTrains}) z {current.name}
+              </button>
+            )}
+          </div>
+          {engineDef(choice.id)!.traction === 'electric' && (
+            <div class="muted small">Elektryczna jeździ tylko pod siecią trakcyjną – zajezdnia i trasa muszą ją mieć.</div>
+          )}
+        </>
+      ) : (
+        <div class="muted small">Brak innych lokomotyw w sprzedaży.</div>
+      )}
+    </>
   );
 }

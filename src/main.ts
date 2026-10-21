@@ -162,6 +162,13 @@ const actions: HudActions = {
   stopTrain: (trainId) => game?.command({ type: 'stopTrain', trainId }),
   sendToDepot: (trainId) => game?.command({ type: 'sendToDepot', trainId }),
   reverseTrain: (trainId) => game?.command({ type: 'reverseTrain', trainId }),
+  replaceEngine: (trainId, engine, all = false) => {
+    if (!game) return;
+    const train = game.state.trains.find((t) => t.id === trainId);
+    if (!train) return;
+    const ids = all ? game.state.trains.filter((t) => t.engine === train.engine).map((t) => t.id) : [trainId];
+    for (const id of ids) game.command({ type: 'replaceEngine', trainId: id, engine });
+  },
   setOrders: (trainId, orders) => game?.command({ type: 'setOrders', trainId, orders }),
   pickOrders: (trainId) => game?.pickOrders(trainId),
   focusTrain: (trainId) => game?.focusTrain(trainId),

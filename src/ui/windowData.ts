@@ -1,7 +1,7 @@
 import type { Simulation } from '../sim/simulation';
-import { resaleValue, trainById, trainsInDepot, type Train } from '../sim/trains/train';
+import { engineAge, engineTradeIn, replaceCost, resaleValue, trainById, trainsInDepot, type Train } from '../sim/trains/train';
 import { isWaiting } from '../sim/trains/movement';
-import { consistStats, engineDef } from '../sim/trains/vehicles';
+import { availableEngines, consistStats, engineDef } from '../sim/trains/vehicles';
 import { infrastructureCost } from '../sim/economy/monthly';
 import { BANKRUPTCY_MONTHS, LOAN_INTEREST, LOAN_MAX, LOAN_STEP, monthlyInterest } from '../sim/economy/finance';
 import { gameDate } from '../sim/time';
@@ -28,6 +28,7 @@ function trainStatus(sim: Simulation, t: Train): string {
   if (t.stopped) return t.speed > 0 ? 'Hamuje' : 'Zatrzymany';
   if (t.reverseRequested) return 'Zawraca';
   if (isWaiting(t) && t.speed < 1) return 'Czeka na wolny tor';
+  if (t.replaceWith) return `Jedzie do zajezdni – wymiana lokomotywy na ${engineDef(t.replaceWith)!.name}`;
   if (t.goToDepot) return 'Jedzie do zajezdni';
   const target = t.orders[t.currentOrder];
   if (target === undefined) return 'Jedzie (brak rozkładu)';
@@ -54,7 +55,7 @@ function summary(sim: Simulation, t: Train): TrainSummary {
     engine: t.engine,
     wagons: t.wagons,
     status: trainStatus(sim, t),
-    resale: resaleValue(t),
+    resale: resaleValue(sim.state, t),
   };
 }
 
@@ -175,8 +176,15 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
     lost: sim.planner.isLost(t.id),
     orders: t.orders.map((id) => ({ stationId: id, name: stationName(sim, id) })),
     currentOrder: t.currentOrder,
-    resale: resaleValue(t),
+    resale: resaleValue(sim.state, t),
     picking: pickingFor === t.id,
     load: trainLoad(t),
+    engineAge: Math.floor(engineAge(state, t)),
+    tradeIn: engineTradeIn(state, t),
+    replaceWith: t.replaceWith,
+    replaceOptions: availableEngines(gameDate(state).year)
+      .filter((e) => e.id !== t.engine)
+      .map((e) => ({ id: e.id, cost: replaceCost(state, t, e.id) })),
+    sameEngineTrains: state.trains.filter((o) => o.engine === t.engine).length,
   };
 }

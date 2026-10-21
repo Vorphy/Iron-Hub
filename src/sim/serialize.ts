@@ -14,7 +14,7 @@ import { engineDef, wagonDef } from './trains/vehicles';
 import { MAX_HEIGHT } from './world/height';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 12;
+export const SAVE_VERSION = 13;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -182,6 +182,11 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     if (d.map) d.map.electric = emptyLayer('electric');
     d.version = 12;
   }
+  if (d.version === 12) {
+    // v13: zamówiona wymiana lokomotywy
+    mapTrains((t) => ({ ...t, replaceWith: null, engineBuilt: 0 }));
+    d.version = 13;
+  }
   return d as Partial<SerializedState>;
 }
 
@@ -344,7 +349,9 @@ function isTrain(v: unknown): v is Train {
     t.loads.every(isLoad) &&
     isInt(t.blockedTicks) &&
     (t.blockedBy === null || isInt(t.blockedBy)) &&
-    typeof t.reverseRequested === 'boolean'
+    typeof t.reverseRequested === 'boolean' &&
+    (t.replaceWith === null || !!engineDef(t.replaceWith)) &&
+    isNum(t.engineBuilt)
   );
 }
 

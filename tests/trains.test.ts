@@ -82,7 +82,7 @@ describe('zakup pociągu', () => {
     sim.enqueue({ type: 'sellTrain', trainId: train.id });
     sim.step();
     expect(sim.state.trains).toEqual([]);
-    expect(sim.state.money).toBe(before + resaleValue(train));
+    expect(sim.state.money).toBe(before + resaleValue(sim.state, train));
   });
 
   it('zajezdni z pociągiem nie da się zburzyć', () => {

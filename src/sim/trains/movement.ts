@@ -19,7 +19,7 @@ import { planRoute, type Plan } from './path';
 import { addTaken, blockerOf, buildTaken, isFree, isSafeStop, type Taken } from './reservation';
 import { flipStep, isBend, stepHeight, stepLength } from './steps';
 import { STRAIGHT_LENGTH } from '../track/graph';
-import { depotExit, leaveDepot, type Step, type Train } from './train';
+import { depotExit, leaveDepot, replaceOnArrival, type Step, type Train } from './train';
 import { consistStats, engineDef } from './vehicles';
 
 /**
@@ -306,6 +306,7 @@ function arrive(ctx: TickContext, train: Train): void {
       train.stopped = true;
       train.goToDepot = false;
       train.reversed = false;
+      replaceOnArrival(state, train, ctx.events);
       ctx.events.push({ type: 'trainsChanged' });
       break;
     }

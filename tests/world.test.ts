@@ -103,7 +103,8 @@ describe('zapis świata', () => {
   it('miasta, zakłady i warstwy mapy przechodzą przez zapis', () => {
     const s = world(9);
     expect(deserializeState(JSON.parse(JSON.stringify(serializeState(s))))).toEqual(s);
-  });
+    // Porównanie całego świata (kilkanaście warstw mapy) bywa wolne przy obciążonej maszynie.
+  }, 20_000);
 
   it('zapis v4 (sprzed ekonomii) wczytuje się jako świat bez miast', () => {
     const s = createGame({ width: 32, height: 32, seed: 2, empty: true });

@@ -53,7 +53,8 @@ Wartości liczbowe w tym dokumencie są **startowe** – do strojenia w trakcie 
 
 ## Pociągi i rozkłady
 
-- Gracz kupuje pociąg w zajezdni (klik kursorem na zajezdnię): lokomotywa + do 10 wagonów. Sprzedaż tylko w zajezdni, zwrot 75% ceny.
+- Gracz kupuje pociąg w zajezdni (klik kursorem na zajezdnię): lokomotywa + do 10 wagonów. Sprzedaż tylko w zajezdni: wagony – zwrot 75% ceny, lokomotywa – zależnie od wieku (jak przy wymianie).
+- **Wymiana lokomotywy** (okno pociągu → Lokomotywa): wybierasz nowszą i klikasz „Wymień”. W zajezdni – od razu; w trasie – pociąg sam zjeżdża do najbliższej zajezdni, wymienia lokomotywę i wraca na trasę. Wagony, ładunek, rozkład i nazwa zostają. Dopłata = cena nowej − zwrot za starą: **75% ceny dla nowej, liniowo do 10% po 50 latach** (plik ekonomii: `refunds.engineTradeIn`). „Wymień we wszystkich” – to samo dla każdego pociągu z tą samą lokomotywą. Bez pieniędzy w chwili wjazdu do zajezdni pociąg jedzie dalej starą lokomotywą; elektryczna do zajezdni bez sieci – wymiana anulowana, pociąg czeka w zajezdni.
 - Pojazdy definiuje plik danych `src/data/vehicles.json` (moc kW, prędkość km/h, masa t, długość w jednostkach toru, cena, rok wejścia i wycofania). 13 lokomotyw i 6 typów wagonów.
 - **Lokomotywy z biegiem lat** (jak w OpenTTD, bez maglevów): każda wchodzi do sprzedaży w swoim roku i część z nich jest po latach wycofywana – jeżdżące pociągi zostają, nowych nie kupisz. Na początku roku komunikat o nowościach; w zajezdni znaczki „nowość” i „wkrótce wycofana”.
 

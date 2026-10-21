@@ -10,6 +10,7 @@ import { getTrackBits, tracksOn, type Side, type Track, type TrackPiece } from '
 import {
   buyTrain,
   occupiedTiles,
+  requestReplace,
   requestReverse,
   sellTrain,
   sendToDepot,
@@ -36,6 +37,8 @@ export type Command =
   | { type: 'stopTrain'; trainId: number }
   | { type: 'sendToDepot'; trainId: number }
   | { type: 'reverseTrain'; trainId: number }
+  /** Wymiana lokomotywy na inną (null – anulowanie zamówionej wymiany). */
+  | { type: 'replaceEngine'; trainId: number; engine: string | null }
   | { type: 'setOrders'; trainId: number; orders: number[] }
   | { type: 'placeSignal'; x: number; y: number; track: Track; oneWay: boolean }
   | { type: 'removeSignal'; x: number; y: number; track: Track }
@@ -94,6 +97,8 @@ export type SimEvent =
   | { type: 'bankrupt' }
   /** Nowy rok: lokomotywy, które właśnie weszły do sprzedaży. */
   | { type: 'newEngines'; engines: string[] }
+  | { type: 'engineReplaced'; trainId: number }
+  | { type: 'replaceFailed'; trainId: number; reason: 'noMoney' | 'noCatenary' | 'notAvailable' }
   | { type: 'commandFailed'; command: Command; reason: FailReason };
 
 export function applyCommand(state: GameState, cmd: Command, events: SimEvent[]): CommandResult {
@@ -130,6 +135,8 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
       return stopTrain(state, cmd.trainId);
     case 'sendToDepot':
       return sendToDepot(state, cmd.trainId);
+    case 'replaceEngine':
+      return requestReplace(state, cmd.trainId, cmd.engine, events);
     case 'reverseTrain':
       return requestReverse(state, cmd.trainId);
     case 'setOrders':

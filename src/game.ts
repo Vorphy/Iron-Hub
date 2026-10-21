@@ -302,6 +302,17 @@ export class Game {
           return `${e.name} (${TRACTION_NAMES[e.traction]}, ${e.maxSpeed} km/h)`;
         });
         showMessage(`Nowa lokomotywa w zajezdniach: ${names.join(', ')}`);
+      } else if (ev.type === 'engineReplaced') {
+        const t = this.sim.state.trains.find((tr) => tr.id === ev.trainId);
+        if (t) showMessage(`${t.name}: nowa lokomotywa ${engineDef(t.engine)!.name} – wraca na trasę`);
+      } else if (ev.type === 'replaceFailed') {
+        const t = this.sim.state.trains.find((tr) => tr.id === ev.trainId);
+        const why = {
+          noMoney: 'brak pieniędzy – jedzie dalej starą lokomotywą',
+          noCatenary: 'zajezdnia bez sieci trakcyjnej – czeka w zajezdni',
+          notAvailable: 'lokomotywa wycofana ze sprzedaży – jedzie dalej starą',
+        }[ev.reason];
+        if (t) showMessage(`${t.name}: wymiana nieudana (${why})`);
       } else if (ev.type === 'debtWarning') {
         showMessage(
           ev.monthsLeft === 1

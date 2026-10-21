@@ -1,5 +1,6 @@
 import { isElectrified, needsCatenary } from '../track/catenary';
-import { gameDate } from '../time';
+import { DAYS_PER_MONTH, gameDate, MONTHS_PER_YEAR, TICKS_PER_DAY } from '../time';
+import { ECONOMY } from '../../data/economy';
 import { MAX_WAGONS, TRAIN_RESALE_RATE } from '../config';
 import { spend } from '../economy/finance';
 import type { CommandResult, SimEvent } from '../commands';
@@ -68,6 +69,10 @@ export interface Train {
   blockedBy: number | null;
   /** Gracz kazał zawrócić: pociąg hamuje i zawraca po zatrzymaniu. */
   reverseRequested: boolean;
+  /** Wymiana lokomotywy w najbliższej zajezdni (id nowej) – potem pociąg wraca na trasę. */
+  replaceWith: string | null;
+  /** Tick zakupu lokomotywy (od niego zależy zwrot przy wymianie). */
+  engineBuilt: number;
   /** Ładunek, po jednym wpisie na wagon (w kolejności `wagons`). */
   loads: WagonLoad[];
 }
@@ -128,6 +133,8 @@ export function buyTrain(
     blockedTicks: 0,
     blockedBy: null,
     reverseRequested: false,
+    replaceWith: null,
+    engineBuilt: state.tick,
   });
   spend(state, 'construction', plan.cost);
   events.push({ type: 'trainsChanged' });
@@ -139,13 +146,15 @@ export function sellTrain(state: GameState, trainId: number, events: SimEvent[])
   if (!train) return { ok: false, reason: 'blocked' };
   if (train.status !== 'depot') return { ok: false, reason: 'notInDepot' };
   state.trains = state.trains.filter((t) => t !== train);
-  spend(state, 'construction', -resaleValue(train));
+  spend(state, 'construction', -resaleValue(state, train));
   events.push({ type: 'trainsChanged' });
   return { ok: true };
 }
 
-export function resaleValue(train: Train): number {
-  return Math.round(train.value * TRAIN_RESALE_RATE);
+/** Zwrot przy sprzedaży: wagony 75% ceny, lokomotywa – zależnie od wieku (jak przy wymianie). */
+export function resaleValue(state: GameState, train: Train): number {
+  const engineCost = engineDef(train.engine)!.cost;
+  return Math.round((train.value - engineCost) * TRAIN_RESALE_RATE) + engineTradeIn(state, train);
 }
 
 /** Kafelki zajęte przez pociągi na torach – tam nie wolno rozbierać torów ani stacji. */
@@ -207,11 +216,97 @@ export function requestReverse(state: GameState, trainId: number): CommandResult
   return { ok: true };
 }
 
+/** Wiek lokomotywy w latach gry. */
+export function engineAge(state: GameState, train: Train): number {
+  return Math.max(0, (state.tick - train.engineBuilt) / (TICKS_PER_DAY * DAYS_PER_MONTH * MONTHS_PER_YEAR));
+}
+
+/** Zwrot za starą lokomotywę przy wymianie: od 75% ceny dla nowej, liniowo do 10% po 50 latach. */
+export function engineTradeIn(state: GameState, train: Train): number {
+  const { full, old, years } = ECONOMY.refunds.engineTradeIn;
+  const rate = full + (old - full) * Math.min(1, engineAge(state, train) / years);
+  return Math.round(engineDef(train.engine)!.cost * rate);
+}
+
+/** Dopłata za wymianę lokomotywy: cena nowej minus zwrot za starą (zależny od jej wieku). */
+export function replaceCost(state: GameState, train: Train, engine: string): number {
+  return engineDef(engine)!.cost - engineTradeIn(state, train);
+}
+
+/**
+ * Wymiana lokomotywy (wagony, rozkład i ładunek zostają). W zajezdni – od razu; w trasie – pociąg
+ * jedzie do najbliższej zajezdni, tam wymienia lokomotywę i wraca na trasę. `null` – anulowanie.
+ */
+export function requestReplace(state: GameState, trainId: number, engine: string | null, events: SimEvent[]): CommandResult {
+  const train = trainById(state, trainId);
+  if (!train) return { ok: false, reason: 'blocked' };
+  if (engine === null) {
+    if (train.replaceWith !== null) {
+      train.replaceWith = null;
+      train.goToDepot = false;
+      train.resTerminal = null;
+    }
+    return { ok: true };
+  }
+  const def = engineDef(engine);
+  if (!def || engine === train.engine) return { ok: false, reason: 'blocked' };
+  if (!engineAvailable(def, gameDate(state).year)) return { ok: false, reason: 'notAvailable' };
+  if (replaceCost(state, train, engine) > state.money) return { ok: false, reason: 'noMoney' };
+  if (train.status === 'depot') {
+    const depot = state.depots.find((d) => d.id === train.depotId);
+    if (needsCatenary(engine) && depot && !isElectrified(state.map, depot.x, depot.y) && !train.stopped) {
+      return { ok: false, reason: 'noCatenary' };
+    }
+    swapEngine(state, train, engine, events);
+    return { ok: true };
+  }
+  train.replaceWith = engine;
+  train.goToDepot = true;
+  train.resTerminal = null;
+  return { ok: true };
+}
+
+function swapEngine(state: GameState, train: Train, engine: string, events: SimEvent[]): void {
+  const cost = replaceCost(state, train, engine);
+  train.value += engineDef(engine)!.cost - engineDef(train.engine)!.cost;
+  train.engine = engine;
+  train.engineBuilt = state.tick;
+  spend(state, 'construction', cost);
+  events.push({ type: 'trainsChanged' });
+}
+
+/**
+ * Pociąg wjechał do zajezdni z zamówioną wymianą: wymiana i powrót na trasę. Bez pieniędzy jedzie
+ * dalej starą lokomotywą; elektryczna bez sieci w zajezdni – zostaje (stara lokomotywa) i czeka na gracza.
+ */
+export function replaceOnArrival(state: GameState, train: Train, events: SimEvent[]): void {
+  const engine = train.replaceWith;
+  if (engine === null) return;
+  train.replaceWith = null;
+  const depot = state.depots.find((d) => d.id === train.depotId);
+  if (needsCatenary(engine) && depot && !isElectrified(state.map, depot.x, depot.y)) {
+    events.push({ type: 'replaceFailed', trainId: train.id, reason: 'noCatenary' });
+    return;
+  }
+  if (!engineAvailable(engineDef(engine)!, gameDate(state).year)) {
+    events.push({ type: 'replaceFailed', trainId: train.id, reason: 'notAvailable' });
+  } else if (replaceCost(state, train, engine) > state.money) {
+    events.push({ type: 'replaceFailed', trainId: train.id, reason: 'noMoney' });
+  } else {
+    swapEngine(state, train, engine, events);
+    events.push({ type: 'engineReplaced', trainId: train.id });
+  }
+  // Wraca na trasę (wyjedzie, gdy wyjazd będzie wolny).
+  train.stopped = false;
+}
+
 /** Przełącza „jedź do zajezdni”. */
 export function sendToDepot(state: GameState, trainId: number): CommandResult {
   const train = trainById(state, trainId);
   if (!train || train.status === 'depot') return { ok: false, reason: 'blocked' };
   train.goToDepot = !train.goToDepot;
+  // Ręczne odwołanie zjazdu anuluje też zamówioną wymianę lokomotywy.
+  if (!train.goToDepot) train.replaceWith = null;
   // Cel się zmienił – po dojechaniu do końca obecnej rezerwacji trasa zostanie policzona od nowa.
   train.resTerminal = null;
   return { ok: true };

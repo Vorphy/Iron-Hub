@@ -88,7 +88,7 @@ Kolejność proponowana; zmieniamy według potrzeb. Punkty 1–4 przygotowują e
 
 ## Pomysły (lista otwarta – dopisuj na dole)
 
-- Poziomy pociągów, rodzaje kolei (np. parowa → spalinowa → elektryczna) i przechodzenie między nimi; prosty system ulepszeń. ✅ *(lokomotywy z biegiem lat i sieć trakcyjna – 2026-10-21; ulepszenia/wymiana starych pociągów – później)*
+- Poziomy pociągów, rodzaje kolei (np. parowa → spalinowa → elektryczna) i przechodzenie między nimi; prosty system ulepszeń. ✅ *(lokomotywy z biegiem lat i sieć trakcyjna – 2026-10-21; wymiana lokomotywy z odbiorem starej zależnym od wieku – 2026-10-21)*
 - Mapa nierówna: góry, kaniony; generator map i edytor. ✅ *(wysokości terenu, kształtowanie terenu, mosty, tunele – 2026-10-18; generator i edytor map – później)*
 - ~~Budowa mostów i tuneli.~~ ✅
 - ~~przycisk testowy + 100000 zł~~ ✅ (Menu → Testy)

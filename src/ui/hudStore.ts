@@ -55,6 +55,14 @@ export interface TrainWindowData {
   picking: boolean;
   /** Ładunek w składzie, zsumowany po rodzajach. */
   load: { cargo: Cargo; amount: number; capacity: number }[];
+  /** Wiek lokomotywy (lata) i zwrot za nią przy wymianie. */
+  engineAge: number;
+  tradeIn: number;
+  /** Zamówiona wymiana (id nowej lokomotywy). */
+  replaceWith: string | null;
+  /** Lokomotywy, na które można wymienić (z dopłatą); ile pociągów ma tę samą lokomotywę. */
+  replaceOptions: { id: string; cost: number }[];
+  sameEngineTrains: number;
 }
 
 export interface TownWindowData {
@@ -242,6 +250,8 @@ export interface HudActions {
   stopTrain(trainId: number): void;
   sendToDepot(trainId: number): void;
   reverseTrain(trainId: number): void;
+  /** Wymiana lokomotywy (null – anulowanie); `all` – we wszystkich pociągach z tą samą lokomotywą. */
+  replaceEngine(trainId: number, engine: string | null, all?: boolean): void;
   setOrders(trainId: number, orders: number[]): void;
   /** Włącza/wyłącza wskazywanie stacji do rozkładu. */
   pickOrders(trainId: number): void;
