@@ -1,3 +1,4 @@
+import type { Density } from '../sim/world/generate';
 import type { Speed } from '../loop';
 import type { Terrain } from '../sim/world/map';
 import type { Cargo } from '../sim/economy/cargo';
@@ -265,7 +266,7 @@ export interface HudActions {
   /** Otwiera okno nowej gry. */
   newGame(): void;
   closeNewGame(): void;
-  startNewGame(size: number, seed: number, startYear: number): void;
+  startNewGame(size: number, seed: number, startYear: number, towns: Density, industry: Density): void;
   closeWindow(): void;
   buyTrain(depotId: number, engine: string, wagons: string[]): void;
   sellTrain(trainId: number): void;

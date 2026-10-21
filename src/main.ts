@@ -1,3 +1,4 @@
+import { DEFAULT_DENSITY, type Density, isDensity } from './sim/world/generate';
 import { LATEST_CHANGELOG } from './ui/HelpWindows';
 import { START_YEAR, START_YEARS } from './sim/time';
 import { Application } from 'pixi.js';
@@ -78,8 +79,14 @@ function startGame(state: GameState, view: ViewState | null = null): void {
   hudStore.set({ menuOpen: false });
 }
 
-function newGame(seed: number, size = DEFAULT_MAP_SIZE, startYear = START_YEAR): void {
-  startGame(createGame({ width: size, height: size, seed, startYear }));
+function newGame(
+  seed: number,
+  size = DEFAULT_MAP_SIZE,
+  startYear = START_YEAR,
+  towns: Density = DEFAULT_DENSITY,
+  industry: Density = DEFAULT_DENSITY,
+): void {
+  startGame(createGame({ width: size, height: size, seed, startYear, towns, industry }));
 }
 
 async function refreshSaveInfo(): Promise<void> {
@@ -203,9 +210,9 @@ const actions: HudActions = {
   focusTrain: (trainId) => game?.focusTrain(trainId),
   newGame: () => hudStore.set({ newGameOpen: true, menuOpen: false }),
   closeNewGame: () => hudStore.set({ newGameOpen: false }),
-  startNewGame: (size, seed, startYear) => {
+  startNewGame: (size, seed, startYear, towns, industry) => {
     hudStore.set({ newGameOpen: false });
-    newGame(seed, size, startYear);
+    newGame(seed, size, startYear, towns, industry);
     void saveTo('auto', true);
   },
 };
@@ -236,7 +243,11 @@ async function start(): Promise<void> {
   const size = ALLOWED_SIZES.includes(sizeParam) ? sizeParam : DEFAULT_MAP_SIZE;
   const yearParam = Number(params.get('year'));
   const year = (START_YEARS as readonly number[]).includes(yearParam) ? yearParam : START_YEAR;
-  if (seedParam) newGame(seedParam, size, year);
+  const density = (name: string) => {
+    const v = Number(params.get(name) ?? DEFAULT_DENSITY);
+    return isDensity(v) ? v : DEFAULT_DENSITY;
+  };
+  if (seedParam) newGame(seedParam, size, year, density('towns'), density('industry'));
   else if (await loadFrom('auto')) showMessage('Wczytano autozapis');
   else {
     newGame(1);

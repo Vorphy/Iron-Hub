@@ -17,6 +17,7 @@ Wartości liczbowe w tym dokumencie są **startowe** – do strojenia w trakcie 
   | Ogromna (eksperymentalna) | 512×512 | 128 | 192 |
   | Testowa (wydajność) | 1024×1024 | 512 | 768 |
 
+- **Gęstość miast i przemysłu** (osobno): brak / mało (30%) / normalnie (60%) / dużo (100% – liczby w tabeli, domyślnie). Przy przemyśle innym niż „brak” każdy typ zakładu jest na mapie co najmniej raz. Okno pokazuje, ile miast i zakładów powstanie. Adres: `&towns=0..3&industry=0..3`.
 - Liczba miast i zakładów rośnie z powierzchnią. Symulacja jest lekka nawet dla największej mapy (miesiąc gry 512×512 ≈ 0,15 s obliczeń); ograniczeniem jest rysowanie i rozmiar autozapisu.
 - Adres `?seed=N&size=S` uruchamia nową grę na danej mapie (S: 64, 128, 256, 512, 1024).
 - Na dużych mapach autozapis jest rzadszy: 512 – co minutę, 1024 – co 2 minuty.

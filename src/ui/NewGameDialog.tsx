@@ -1,22 +1,23 @@
 import { useState } from 'preact/hooks';
 import { START_YEAR, START_YEARS } from '../sim/time';
+import { DEFAULT_DENSITY, DENSITIES, DENSITY_NAMES, type Density, worldCounts } from '../sim/world/generate';
 import type { HudActions } from './hudStore';
 
 export const MAP_SIZES: { size: number; name: string; note: string; title?: string }[] = [
-  { size: 64, name: 'Mała', note: '64×64 – szybka gra, 2 miasta' },
-  { size: 128, name: 'Średnia', note: '128×128 – zalecana, 8 miast' },
-  { size: 256, name: 'Duża', note: '256×256 – 32 miasta' },
+  { size: 64, name: 'Mała', note: '64×64 – szybka gra' },
+  { size: 128, name: 'Średnia', note: '128×128 – zalecana' },
+  { size: 256, name: 'Duża', note: '256×256' },
   {
     size: 512,
     name: 'Ogromna',
     note: '512×512 – eksperymentalna',
-    title: '128 miast; wolniejsze wczytywanie i autozapis – wymaga mocnego komputera',
+    title: 'Wolniejsze wczytywanie i autozapis – wymaga mocnego komputera',
   },
   {
     size: 1024,
     name: 'Testowa',
     note: '1024×1024 – test wydajności',
-    title: '512 miast, milion kafelków; autozapis co 2 minuty – tylko do testów',
+    title: 'Milion kafelków; autozapis co 2 minuty – tylko do testów',
   },
 ];
 
@@ -29,6 +30,26 @@ const YEAR_NOTES: Record<number, string> = {
   2000: 'Nowoczesne lokomotywy do 200 km/h, wkrótce 250 km/h.',
 };
 
+function DensityPicker({ value, onChange }: { value: Density; onChange: (d: Density) => void }) {
+  return (
+    <div class="buttons wrap">
+      {DENSITIES.map((d) => (
+        <button key={d} class={d === value ? 'active' : ''} onClick={() => onChange(d)}>
+          {DENSITY_NAMES[d]}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Polska odmiana liczebnika: 1 miasto, 2 miasta, 5 miast. */
+function plural(n: number, one: string, few: string, many: string): string {
+  if (n === 1) return one;
+  const d = n % 10;
+  const t = n % 100;
+  return d >= 2 && d <= 4 && (t < 12 || t > 14) ? few : many;
+}
+
 function randomSeed(): number {
   return Math.floor(Math.random() * 1_000_000) + 1;
 }
@@ -38,6 +59,9 @@ export function NewGameDialog({ actions, canCancel }: { actions: HudActions; can
   const [size, setSize] = useState(128);
   const [seed, setSeed] = useState(randomSeed);
   const [year, setYear] = useState<number>(START_YEAR);
+  const [towns, setTowns] = useState<Density>(DEFAULT_DENSITY);
+  const [industry, setIndustry] = useState<Density>(DEFAULT_DENSITY);
+  const counts = worldCounts(size, size, towns, industry);
 
   return (
     <div class="modal-backdrop">
@@ -71,6 +95,17 @@ export function NewGameDialog({ actions, canCancel }: { actions: HudActions; can
         </div>
         <div class="muted small">{YEAR_NOTES[year]}</div>
 
+        <div class="section-title">Miasta</div>
+        <DensityPicker value={towns} onChange={setTowns} />
+        <div class="section-title">Przemysł (kopalnie, lasy, zakłady)</div>
+        <DensityPicker value={industry} onChange={setIndustry} />
+        <div class="muted small">
+          Na tej mapie: {counts.towns} {plural(counts.towns, 'miasto', 'miasta', 'miast')}, {counts.industries}{' '}
+          {plural(counts.industries, 'zakład', 'zakłady', 'zakładów')}.
+          {counts.towns === 0 && ' Bez miast nie ma pasażerów, poczty ani odbiorców towarów.'}
+          {counts.industries === 0 && ' Bez przemysłu wozisz tylko pasażerów i pocztę.'}
+        </div>
+
         <div class="section-title">Ziarno mapy</div>
         <div class="row">
           <input
@@ -86,7 +121,7 @@ export function NewGameDialog({ actions, canCancel }: { actions: HudActions; can
         </div>
         <div class="muted small">Ta sama liczba i rozmiar dają zawsze tę samą mapę.</div>
 
-        <button class="primary" onClick={() => actions.startNewGame(size, seed, year)}>
+        <button class="primary" onClick={() => actions.startNewGame(size, seed, year, towns, industry)}>
           Rozpocznij
         </button>
         {canCancel && <div class="muted small">Bieżąca gra zostanie zastąpiona (autozapis też).</div>}

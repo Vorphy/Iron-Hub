@@ -12,6 +12,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-21',
+    title: 'Gęstość miast i przemysłu',
+    items: [
+      'Nowa gra: osobno dla miast i przemysłu – brak, mało, normalnie albo dużo (dotychczasowe mapy to „dużo”). Okno pokazuje, ile miast i zakładów powstanie.',
+    ],
+  },
+  {
+    date: '2026-10-21',
     title: 'Rozbudowa stacji',
     items: [
       'Peron dobudowany tuż przy stacji ją rozbudowuje – ta sama nazwa, ładunek i rozkłady, większy zasięg. Podgląd pokazuje „Rozbudowa: …”.',

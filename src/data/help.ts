@@ -248,7 +248,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
       'Gra zapisuje się sama co 30 s (na dużych mapach rzadziej) i przy zamknięciu karty. W Menu: Zapisz / Wczytaj (ręczny zapis), eksport i import pliku (przeniesienie na inny komputer).',
       'Zapisy w przeglądarce są widoczne tylko na tym urządzeniu i tej stronie.',
       'Menu → Ruch w miastach – auta i autobusy można wyłączyć na słabszym komputerze. Minimapę zwijasz przyciskiem „–”.',
-      'Nowa gra: rozmiar mapy (64 – 1024), rok startu i ziarno – ta sama liczba daje tę samą mapę.',
+      'Nowa gra: rozmiar mapy (64 – 1024), rok startu, gęstość miast i przemysłu (brak / mało / normalnie / dużo) i ziarno – ta sama liczba i ustawienia dają tę samą mapę.',
     ],
   },
 ];

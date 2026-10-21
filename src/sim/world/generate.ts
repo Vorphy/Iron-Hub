@@ -14,13 +14,45 @@ const MIN_INDUSTRY_TOWN_DISTANCE = 9;
 const MIN_INDUSTRY_DISTANCE = 6;
 const EDGE_MARGIN = 5;
 
+/** Gęstość miast / przemysłu przy nowej grze: 0 – brak, 1 – mało, 2 – normalnie, 3 – dużo. */
+export type Density = 0 | 1 | 2 | 3;
+export const DENSITIES: readonly Density[] = [0, 1, 2, 3];
+export const DENSITY_NAMES: Record<Density, string> = { 0: 'Brak', 1: 'Mało', 2: 'Normalnie', 3: 'Dużo' };
+/** Część pełnej liczby („dużo” = dotychczasowa gęstość map). */
+const DENSITY_FACTOR: Record<Density, number> = { 0: 0, 1: 0.3, 2: 0.6, 3: 1 };
+export const DEFAULT_DENSITY: Density = 3;
+
+export function isDensity(v: number): v is Density {
+  return (DENSITIES as readonly number[]).includes(v);
+}
+
+/** Ile miast i zakładów (każdego typu) powstanie na mapie danej wielkości. */
+export function worldCounts(width: number, height: number, towns: Density, industry: Density) {
+  const scale = (width * height) / REFERENCE_AREA;
+  const tk = DENSITY_FACTOR[towns];
+  const ik = DENSITY_FACTOR[industry];
+  const perType = INDUSTRY_DEFS.map((def) => ({
+    def,
+    count: ik === 0 || def.perMap <= 0 ? 0 : Math.max(1, Math.round(def.perMap * scale * ik)),
+  }));
+  return {
+    towns: tk === 0 ? 0 : Math.max(1, Math.round(TOWNS_PER_REFERENCE * scale * tk)),
+    perType,
+    industries: perType.reduce((s, t) => s + t.count, 0),
+  };
+}
+
 /** Rozmieszcza miasta i przemysł na świeżej mapie (osobny PRNG z ziarna mapy – determinizm). */
-export function generateWorld(state: GameState, seed: number): void {
+export function generateWorld(
+  state: GameState,
+  seed: number,
+  towns: Density = DEFAULT_DENSITY,
+  industry: Density = DEFAULT_DENSITY,
+): void {
   const rng = createRng((seed ^ 0x9e3779b9) >>> 0);
-  const scale = (state.map.width * state.map.height) / REFERENCE_AREA;
-  placeTowns(state, rng, seed, Math.max(1, Math.round(TOWNS_PER_REFERENCE * scale)));
-  for (const def of INDUSTRY_DEFS) {
-    const count = Math.max(def.perMap > 0 ? 1 : 0, Math.round(def.perMap * scale));
+  const counts = worldCounts(state.map.width, state.map.height, towns, industry);
+  placeTowns(state, rng, seed, counts.towns);
+  for (const { def, count } of counts.perType) {
     for (let i = 0; i < count; i++) placeIndustry(state, rng, def);
   }
   for (const town of state.towns) updateTownRoads(state, town);

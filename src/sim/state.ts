@@ -9,7 +9,7 @@ import type { Station } from './station/station';
 import type { Bridge } from './track/bridge';
 import type { Tunnel } from './track/tunnel';
 import type { Train } from './trains/train';
-import { generateWorld } from './world/generate';
+import { DEFAULT_DENSITY, type Density, generateWorld } from './world/generate';
 import { generateMap, type WorldMap } from './world/map';
 
 /** Pełny stan gry. Wszystko, co tu jest, trafi do zapisu. */
@@ -48,9 +48,20 @@ export interface NewGameOptions {
   empty?: boolean;
   /** Rok startu (domyślnie 1950) – od niego zależą dostępne lokomotywy. */
   startYear?: number;
+  /** Gęstość miast i przemysłu (domyślnie „dużo”). */
+  towns?: Density;
+  industry?: Density;
 }
 
-export function createGame({ width, height, seed, empty = false, startYear = START_YEAR }: NewGameOptions): GameState {
+export function createGame({
+  width,
+  height,
+  seed,
+  empty = false,
+  startYear = START_YEAR,
+  towns = DEFAULT_DENSITY,
+  industry = DEFAULT_DENSITY,
+}: NewGameOptions): GameState {
   const state: GameState = {
     version: 1,
     tick: 0,
@@ -76,6 +87,6 @@ export function createGame({ width, height, seed, empty = false, startYear = STA
   };
   // Pusty świat (testy) jest płaski.
   if (empty) state.map.heights.fill(0);
-  else generateWorld(state, seed);
+  else generateWorld(state, seed, towns, industry);
   return state;
 }
