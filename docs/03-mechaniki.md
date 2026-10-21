@@ -174,12 +174,14 @@ Produkcja i zapotrzebowanie rosną liniowo z poziomem (1–5). Zakłady startuj�
 
   | Ładunek | Stawka (zł / jedn. / kafelek) | Pełna stawka do (dni) |
   |---|---|---|
-  | pasażerowie | 3,0 | 10 |
-  | poczta | 4,5 | 8 |
-  | węgiel | 1,8 | 30 |
-  | ruda | 1,9 | 30 |
-  | towary | 3,2 | 15 |
-  | drewno | 1,7 | 30 |
+  | pasażerowie | 2,4 | 10 |
+  | poczta | 3,6 | 8 |
+  | węgiel | 1,44 | 30 |
+  | ruda | 1,52 | 30 |
+  | towary | 2,56 | 15 |
+  | drewno | 1,36 | 30 |
+
+  (2026-10-21: stawki obniżone o 20% – za szybko rosły oszczędności.)
 
 - **Koszty miesięczne**: eksploatacja pociągów poza zajezdnią – rocznie część ceny zakupu zależna od **trakcji lokomotywy**: parowa 20%, spalinowa 15%, elektryczna 10%; wagony 10% (naliczane co miesiąc 1/12); utrzymanie: 2 zł za element toru, 10 zł za kafelek peronu, 30 zł za zajezdnię, 1 zł za semafor, 1 zł za kafelek sieci trakcyjnej. Okno zajezdni pokazuje trakcję i roczny koszt utrzymania składu.
 - **Okno finansów** (klik na pieniądze): przewozy, pociągi, utrzymanie, budowa i zakupy (po zwrotach) – bieżący miesiąc i poprzednie.

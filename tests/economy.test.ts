@@ -1,3 +1,4 @@
+import { ECONOMY } from '../src/data/economy';
 import { describe, expect, it } from 'vitest';
 import { deliveryPayment, stationAccepts, stationRating } from '../src/sim/economy/cargoFlow';
 import { emptyIndustryMonth, industryDef } from '../src/sim/economy/industry';
@@ -55,7 +56,7 @@ function coalLine(): { sim: Simulation; state: GameState } {
 describe('zapłata za dostawę', () => {
   it('rośnie z ilością i odległością, maleje przy długim przewozie', () => {
     const fast = deliveryPayment('coal', 30, 40, 5);
-    expect(fast).toBe(Math.round(30 * 1.8 * 40));
+    expect(fast).toBe(Math.round(30 * ECONOMY.cargo.coal.rate * 40));
     expect(deliveryPayment('coal', 60, 40, 5)).toBe(fast * 2);
     expect(deliveryPayment('coal', 30, 80, 5)).toBe(fast * 2);
     expect(deliveryPayment('coal', 30, 40, 60)).toBeLessThan(fast);

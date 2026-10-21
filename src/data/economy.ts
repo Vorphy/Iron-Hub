@@ -93,14 +93,17 @@ export const ECONOMY = {
     minTimeFactor: 0.3,
   },
 
-  /** Stawki ładunków: zł za jednostkę za kafelek i liczba dni z pełną stawką. */
+  /**
+   * Stawki ładunków: zł za jednostkę za kafelek i liczba dni z pełną stawką.
+   * 2026-10-21: −20% (po 10 latach gry 3,2 mln zł bez kredytu – zarobki za wysokie).
+   */
   cargo: {
-    passengers: { rate: 3.0, fastDays: 10 },
-    mail: { rate: 4.5, fastDays: 8 },
-    coal: { rate: 1.8, fastDays: 30 },
-    ore: { rate: 1.9, fastDays: 30 },
-    goods: { rate: 3.2, fastDays: 15 },
-    wood: { rate: 1.7, fastDays: 30 },
+    passengers: { rate: 2.4, fastDays: 10 },
+    mail: { rate: 3.6, fastDays: 8 },
+    coal: { rate: 1.44, fastDays: 30 },
+    ore: { rate: 1.52, fastDays: 30 },
+    goods: { rate: 2.56, fastDays: 15 },
+    wood: { rate: 1.36, fastDays: 30 },
   } satisfies Record<Cargo, { rate: number; fastDays: number }>,
 
   /** Stacje: zbieranie ładunku i ocena (jaka część produkcji trafia na stację). */
