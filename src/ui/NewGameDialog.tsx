@@ -61,7 +61,8 @@ export function NewGameDialog({ actions, canCancel }: { actions: HudActions; can
   const [year, setYear] = useState<number>(START_YEAR);
   const [towns, setTowns] = useState<Density>(DEFAULT_DENSITY);
   const [industry, setIndustry] = useState<Density>(DEFAULT_DENSITY);
-  const counts = worldCounts(size, size, towns, industry);
+  const [resources, setResources] = useState<Density>(DEFAULT_DENSITY);
+  const counts = worldCounts(size, size, towns, industry, resources);
 
   return (
     <div class="modal-backdrop">
@@ -97,13 +98,17 @@ export function NewGameDialog({ actions, canCancel }: { actions: HudActions; can
 
         <div class="section-title">Miasta</div>
         <DensityPicker value={towns} onChange={setTowns} />
-        <div class="section-title">Przemysł (kopalnie, lasy, zakłady)</div>
+        <div class="section-title">Kopalnie i lasy</div>
+        <DensityPicker value={resources} onChange={setResources} />
+        <div class="section-title">Przemysł (elektrownie, huty, tartaki)</div>
         <DensityPicker value={industry} onChange={setIndustry} />
         <div class="muted small">
-          Na tej mapie: {counts.towns} {plural(counts.towns, 'miasto', 'miasta', 'miast')}, {counts.industries}{' '}
-          {plural(counts.industries, 'zakład', 'zakłady', 'zakładów')}.
+          Na tej mapie: {counts.towns} {plural(counts.towns, 'miasto', 'miasta', 'miast')}, {counts.mines}{' '}
+          {plural(counts.mines, 'kopalnia/las', 'kopalnie/lasy', 'kopalń/lasów')}, {counts.factories}{' '}
+          {plural(counts.factories, 'zakład', 'zakłady', 'zakładów')}.
           {counts.towns === 0 && ' Bez miast nie ma pasażerów, poczty ani odbiorców towarów.'}
-          {counts.industries === 0 && ' Bez przemysłu wozisz tylko pasażerów i pocztę.'}
+          {counts.mines > 0 && counts.factories === 0 && ' Bez przemysłu węgla, rudy i drewna nie ma komu dowieźć.'}
+          {counts.mines === 0 && counts.factories > 0 && ' Bez kopalń i lasów przemysł nie dostanie surowców.'}
         </div>
 
         <div class="section-title">Ziarno mapy</div>
@@ -121,7 +126,7 @@ export function NewGameDialog({ actions, canCancel }: { actions: HudActions; can
         </div>
         <div class="muted small">Ta sama liczba i rozmiar dają zawsze tę samą mapę.</div>
 
-        <button class="primary" onClick={() => actions.startNewGame(size, seed, year, towns, industry)}>
+        <button class="primary" onClick={() => actions.startNewGame(size, seed, year, towns, industry, resources)}>
           Rozpocznij
         </button>
         {canCancel && <div class="muted small">Bieżąca gra zostanie zastąpiona (autozapis też).</div>}

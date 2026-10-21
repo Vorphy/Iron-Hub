@@ -1,4 +1,4 @@
-import { emptyIndustryMonth, INDUSTRY_DEFS, type IndustryDef } from '../economy/industry';
+import { emptyIndustryMonth, INDUSTRY_DEFS, type IndustryDef, isPrimary } from '../economy/industry';
 import { emptyTownMonth, isStreet, MAX_HOUSE_LEVEL, TOWN_NAMES, townNameGenerator, type Town } from '../economy/town';
 import { createRng, nextFloat, nextInt, type Rng } from '../rng';
 import type { GameState } from '../state';
@@ -26,19 +26,24 @@ export function isDensity(v: number): v is Density {
   return (DENSITIES as readonly number[]).includes(v);
 }
 
-/** Ile miast i zakładów (każdego typu) powstanie na mapie danej wielkości. */
-export function worldCounts(width: number, height: number, towns: Density, industry: Density) {
+/**
+ * Ile miast i zakładów (każdego typu) powstanie na mapie danej wielkości. Osobno: przemysł
+ * (przetwórnie: elektrownia, huta, tartak) i surowce (kopalnie, lasy).
+ */
+export function worldCounts(width: number, height: number, towns: Density, industry: Density, resources: Density = industry) {
   const scale = (width * height) / REFERENCE_AREA;
   const tk = DENSITY_FACTOR[towns];
-  const ik = DENSITY_FACTOR[industry];
-  const perType = INDUSTRY_DEFS.map((def) => ({
-    def,
-    count: ik === 0 || def.perMap <= 0 ? 0 : Math.max(1, Math.round(def.perMap * scale * ik)),
-  }));
+  const perType = INDUSTRY_DEFS.map((def) => {
+    const k = DENSITY_FACTOR[isPrimary(def) ? resources : industry];
+    return { def, count: k === 0 || def.perMap <= 0 ? 0 : Math.max(1, Math.round(def.perMap * scale * k)) };
+  });
+  const sum = (primary: boolean) => perType.filter((t) => isPrimary(t.def) === primary).reduce((s, t) => s + t.count, 0);
   return {
     towns: tk === 0 ? 0 : Math.max(1, Math.round(TOWNS_PER_REFERENCE * scale * tk)),
     perType,
-    industries: perType.reduce((s, t) => s + t.count, 0),
+    industries: sum(false) + sum(true),
+    factories: sum(false),
+    mines: sum(true),
   };
 }
 
@@ -48,9 +53,10 @@ export function generateWorld(
   seed: number,
   towns: Density = DEFAULT_DENSITY,
   industry: Density = DEFAULT_DENSITY,
+  resources: Density = DEFAULT_DENSITY,
 ): void {
   const rng = createRng((seed ^ 0x9e3779b9) >>> 0);
-  const counts = worldCounts(state.map.width, state.map.height, towns, industry);
+  const counts = worldCounts(state.map.width, state.map.height, towns, industry, resources);
   placeTowns(state, rng, seed, counts.towns);
   for (const { def, count } of counts.perType) {
     for (let i = 0; i < count; i++) placeIndustry(state, rng, def);

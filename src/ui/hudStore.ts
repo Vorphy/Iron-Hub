@@ -266,7 +266,7 @@ export interface HudActions {
   /** Otwiera okno nowej gry. */
   newGame(): void;
   closeNewGame(): void;
-  startNewGame(size: number, seed: number, startYear: number, towns: Density, industry: Density): void;
+  startNewGame(size: number, seed: number, startYear: number, towns: Density, industry: Density, resources: Density): void;
   closeWindow(): void;
   buyTrain(depotId: number, engine: string, wagons: string[]): void;
   sellTrain(trainId: number): void;

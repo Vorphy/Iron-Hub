@@ -12,9 +12,10 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-21',
-    title: 'Gęstość miast i przemysłu',
+    title: 'Gęstość miast, kopalń i przemysłu',
     items: [
-      'Nowa gra: osobno dla miast i przemysłu – brak, mało, normalnie albo dużo (dotychczasowe mapy to „dużo”). Okno pokazuje, ile miast i zakładów powstanie.',
+      'Nowa gra: osobno dla miast, kopalń i lasów oraz przemysłu – brak, mało, normalnie albo dużo (dotychczasowe mapy to „dużo”). Okno pokazuje, co powstanie.',
+      'Np. bez miast, z jedną elektrownią i mnóstwem kopalń – czysto towarowa gra.',
     ],
   },
   {

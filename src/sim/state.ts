@@ -50,7 +50,9 @@ export interface NewGameOptions {
   startYear?: number;
   /** Gęstość miast i przemysłu (domyślnie „dużo”). */
   towns?: Density;
+  /** Przetwórnie (elektrownia, huta, tartak) i surowce (kopalnie, lasy) – osobno. */
   industry?: Density;
+  resources?: Density;
 }
 
 export function createGame({
@@ -61,6 +63,7 @@ export function createGame({
   startYear = START_YEAR,
   towns = DEFAULT_DENSITY,
   industry = DEFAULT_DENSITY,
+  resources = DEFAULT_DENSITY,
 }: NewGameOptions): GameState {
   const state: GameState = {
     version: 1,
@@ -87,6 +90,6 @@ export function createGame({
   };
   // Pusty świat (testy) jest płaski.
   if (empty) state.map.heights.fill(0);
-  else generateWorld(state, seed, towns, industry);
+  else generateWorld(state, seed, towns, industry, resources);
   return state;
 }

@@ -85,8 +85,9 @@ function newGame(
   startYear = START_YEAR,
   towns: Density = DEFAULT_DENSITY,
   industry: Density = DEFAULT_DENSITY,
+  resources: Density = DEFAULT_DENSITY,
 ): void {
-  startGame(createGame({ width: size, height: size, seed, startYear, towns, industry }));
+  startGame(createGame({ width: size, height: size, seed, startYear, towns, industry, resources }));
 }
 
 async function refreshSaveInfo(): Promise<void> {
@@ -210,9 +211,9 @@ const actions: HudActions = {
   focusTrain: (trainId) => game?.focusTrain(trainId),
   newGame: () => hudStore.set({ newGameOpen: true, menuOpen: false }),
   closeNewGame: () => hudStore.set({ newGameOpen: false }),
-  startNewGame: (size, seed, startYear, towns, industry) => {
+  startNewGame: (size, seed, startYear, towns, industry, resources) => {
     hudStore.set({ newGameOpen: false });
-    newGame(seed, size, startYear, towns, industry);
+    newGame(seed, size, startYear, towns, industry, resources);
     void saveTo('auto', true);
   },
 };
@@ -247,7 +248,7 @@ async function start(): Promise<void> {
     const v = Number(params.get(name) ?? DEFAULT_DENSITY);
     return isDensity(v) ? v : DEFAULT_DENSITY;
   };
-  if (seedParam) newGame(seedParam, size, year, density('towns'), density('industry'));
+  if (seedParam) newGame(seedParam, size, year, density('towns'), density('industry'), density('resources'));
   else if (await loadFrom('auto')) showMessage('Wczytano autozapis');
   else {
     newGame(1);
