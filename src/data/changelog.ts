@@ -12,6 +12,11 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-21',
+    title: 'Numery zajezdni na mapie',
+    items: ['Nad każdą zajezdnią podpis „Zajezdnia #N” – ten sam numer co w oknie zajezdni i komunikatach.'],
+  },
+  {
+    date: '2026-10-21',
     title: 'Gęstość miast, kopalń i przemysłu',
     items: [
       'Nowa gra: osobno dla miast, kopalń i lasów oraz przemysłu – brak, mało, normalnie albo dużo (dotychczasowe mapy to „dużo”). Okno pokazuje, co powstanie.',

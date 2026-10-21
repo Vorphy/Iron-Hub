@@ -80,7 +80,7 @@ export function buildDepot(state: GameState, x: number, y: number, side: Side, e
   if (getTerrain(state.map, x, y) === Terrain.Rough) setTerrain(state.map, x, y, Terrain.Grass);
   state.depots.push({ id, x, y, side, wagons: [] });
   spend(state, 'construction', plan.cost);
-  events.push({ type: 'tileChanged', x, y });
+  events.push({ type: 'tileChanged', x, y }, { type: 'depotsChanged' });
   return { ok: true };
 }
 
@@ -88,7 +88,7 @@ export function removeDepot(state: GameState, depot: Depot, events: SimEvent[]):
   state.map.depot[depot.y * state.map.width + depot.x] = 0;
   state.depots = state.depots.filter((d) => d !== depot);
   spend(state, 'construction', -depotRefund());
-  events.push({ type: 'tileChanged', x: depot.x, y: depot.y });
+  events.push({ type: 'tileChanged', x: depot.x, y: depot.y }, { type: 'depotsChanged' });
   return { ok: true };
 }
 

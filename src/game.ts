@@ -309,7 +309,7 @@ export class Game {
         ] as const)
           this.mapRenderer.markTileDirty(ev.x + dx, ev.y + dy);
         this.minimapDirty = true;
-      } else if (ev.type === 'stationsChanged') this.labels.rebuild(this.sim.state);
+      } else if (ev.type === 'stationsChanged' || ev.type === 'depotsChanged') this.labels.rebuild(this.sim.state);
       else if (ev.type === 'bridgesChanged') this.bridges.draw(this.sim.state);
       else if (ev.type === 'tunnelsChanged') this.tunnels.draw(this.sim.state);
       else if (ev.type === 'income') this.floaters.spawn(`+${formatMoney(ev.amount)}`, ev.x, ev.y);

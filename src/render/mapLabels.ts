@@ -4,15 +4,16 @@ import type { GameState } from '../sim/state';
 import type { Rect } from './camera';
 import { tileCenter, tileToWorld } from './iso';
 
-type Kind = 'station' | 'town' | 'industry';
+type Kind = 'station' | 'town' | 'industry' | 'depot';
 
 const STYLES: Record<Kind, { size: number; fill: number; border: number | null; bg: number; bold: boolean }> = {
   town: { size: 14, fill: 0xffffff, border: null, bg: 0x1b1f24, bold: true },
   station: { size: 12, fill: 0xffffff, border: 0xffe066, bg: 0x1b1f24, bold: false },
   industry: { size: 11, fill: 0xd8d4c8, border: null, bg: 0x2a2620, bold: false },
+  depot: { size: 10, fill: 0xffffff, border: null, bg: 0x6b3a2a, bold: true },
 };
 
-/** Nazwy miast, stacji i zakładów – stały rozmiar na ekranie niezależnie od zoomu. */
+/** Nazwy miast, stacji, zakładów i numery zajezdni – stały rozmiar na ekranie niezależnie od zoomu. */
 export class MapLabels {
   readonly container = new Container();
 
@@ -27,6 +28,10 @@ export class MapLabels {
     for (const town of state.towns) {
       const c = tileCenter(town.x, town.y);
       this.add('town', town.name, c.x, c.y - 36);
+    }
+    for (const depot of state.depots) {
+      const c = tileCenter(depot.x, depot.y);
+      this.add('depot', `Zajezdnia #${depot.id}`, c.x, c.y - 22);
     }
     for (const st of state.stations) {
       let sx = 0;

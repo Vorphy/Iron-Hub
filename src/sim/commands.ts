@@ -101,6 +101,8 @@ export type CommandResult = { ok: true } | { ok: false; reason: FailReason };
 export type SimEvent =
   | { type: 'tileChanged'; x: number; y: number }
   | { type: 'stationsChanged' }
+  /** Postawiono / rozebrano zajezdnię (podpisy z numerami na mapie). */
+  | { type: 'depotsChanged' }
   | { type: 'trainsChanged' }
   | { type: 'signalsChanged' }
   | { type: 'bridgesChanged' }
