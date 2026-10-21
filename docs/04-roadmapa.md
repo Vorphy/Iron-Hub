@@ -100,6 +100,7 @@ Kolejność ustalona z graczem. Maglevy, kolej jednoszynowa i katastrofy – św
 8. **Droższe zmiany terenu** – dziś kształtowanie terenu prawie nie obciąża portfela (strojenie `terraformCorner` w pliku ekonomii).
 9. **Szablony budowy** – gotowe do wklejenia układy, np. bezkolizyjne skrzyżowanie łączące cztery dwutorowe linie.
 10. **Lepsza minimapa** – zoom minimapy, przenoszenie jej po ekranie (i powiększanie okna), a po wejściu w nią – jak w OpenTTD – filtr pokazujący wybrane zakłady (np. tylko kopalnie węgla, tylko elektrownie) z legendą kolorów, żeby zaplanować, gdzie zacząć i jak rozbudowywać sieć.
+11. **Nowa gra – tryb własny** – zamiast poziomów gęstości gracz podaje dokładne liczby: ile miast oraz ile zakładów każdego typu (kopalnie węgla, kopalnie rudy, lasy, elektrownie, huty, tartaki); położenie dalej losowane z ziarna mapy. (Generator już liczy zakłady osobno dla każdego typu – `worldCounts` – więc to głównie okno nowej gry.)
 
 ## Pomysły (lista otwarta – dopisuj na dole)
 
