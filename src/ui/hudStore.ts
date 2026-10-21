@@ -137,6 +137,10 @@ export interface HudState {
   /** Daty zapisów w przeglądarce (ISO) – do menu. */
   saves: { quick: string | null; auto: string | null };
   menuOpen: boolean;
+  minimapOpen: boolean;
+  /** Panel „Pierwsze kroki” i które kroki są zrobione. */
+  tutorialOpen: boolean;
+  tutorialSteps: boolean[];
   /** Ruch aut i autobusów w miastach. */
   traffic: boolean;
   /** Okno nowej gry (rozmiar mapy, ziarno). */
@@ -161,6 +165,9 @@ export const hudStore = new Store<HudState>({
   message: null,
   saves: { quick: null, auto: null },
   menuOpen: false,
+  minimapOpen: true,
+  tutorialOpen: true,
+  tutorialSteps: [],
   traffic: true,
   newGameOpen: false,
   window: null,
@@ -183,6 +190,11 @@ export interface HudActions {
   setTerrainMode(mode: TerrainMode): void;
   setSignalMode(mode: SignalMode): void;
   toggleMenu(): void;
+  toggleMinimap(): void;
+  toggleTutorial(): void;
+  /** Płótno minimapy (null – odpięte). */
+  attachMinimap(canvas: HTMLCanvasElement | null): void;
+  minimapGoto(u: number, v: number): void;
   toggleTraffic(): void;
   openFinance(): void;
   addTestMoney(): void;

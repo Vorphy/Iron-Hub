@@ -5,6 +5,7 @@ import { Terrain } from '../sim/world/map';
 import { formatMoney, type SignalKind, type Tool } from '../tools';
 import { DepotWindow } from './DepotWindow';
 import { NewGameDialog } from './NewGameDialog';
+import { MinimapPanel, TutorialPanel } from './Guide';
 import { FinanceWindow, IndustryWindow, StationWindow, TownWindow } from './InfoWindows';
 import { TrainWindow } from './TrainWindow';
 import { hudStore, type HudActions, type HudState } from './hudStore';
@@ -87,6 +88,9 @@ export function Hud({ actions }: { actions: HudActions }) {
           </button>
         </span>
       </div>
+
+      <MinimapPanel open={s.minimapOpen} actions={actions} />
+      {s.tutorialOpen && <TutorialPanel steps={s.tutorialSteps} actions={actions} />}
 
       {s.newGameOpen && <NewGameDialog actions={actions} canCancel={true} />}
       {s.menuOpen && <Menu actions={actions} saves={s.saves} signalMode={s.signalMode} traffic={s.traffic} />}
@@ -288,6 +292,7 @@ function Menu({
       <button class={traffic ? 'active' : ''} onClick={actions.toggleTraffic} title="Auta i autobusy w miastach – tylko dekoracja">
         Ruch w miastach: {traffic ? 'wł.' : 'wył.'}
       </button>
+      <button onClick={actions.toggleTutorial}>Pierwsze kroki</button>
       <div class="menu-title">Gra</div>
       <button onClick={actions.quickSave}>Zapisz</button>
       <button onClick={actions.quickLoad} disabled={!saves.quick}>

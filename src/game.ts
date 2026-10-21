@@ -14,6 +14,8 @@ import { FloatingTexts } from './render/floatingText';
 import { MapLabels } from './render/mapLabels';
 import { SignalRenderer } from './render/signals';
 import { TrafficRenderer } from './render/traffic';
+import { Minimap, minimapToWorld } from './render/minimap';
+import { tutorialProgress } from './tutorial';
 import { TrainRenderer } from './render/trains';
 import type { ViewState } from './persistence/saves';
 import type { Command } from './sim/commands';
@@ -61,6 +63,11 @@ export class Game {
   private readonly trains = new TrainRenderer();
   private readonly signals = new SignalRenderer();
   private readonly traffic = new TrafficRenderer();
+  private minimap: Minimap | null = null;
+  private minimapDirty = true;
+  private minimapSince = 0;
+  private tutorialSince = 0;
+  private tutorialDone: boolean[] = [];
   private readonly tools: Tools;
   private readonly input: Input;
   private pointer: Point | null = null;
@@ -150,6 +157,17 @@ export class Game {
   /** Ruch aut i autobusów w miastach (dekoracja, można wyłączyć na słabszym komputerze). */
   set trafficEnabled(on: boolean) {
     this.traffic.enabled = on;
+  }
+
+  /** Płótno minimapy z interfejsu (null – minimapa zwinięta). */
+  attachMinimap(canvas: HTMLCanvasElement | null): void {
+    this.minimap = canvas ? new Minimap(canvas) : null;
+    this.minimapDirty = true;
+  }
+
+  /** Klik na minimapie (0–1 w obu osiach) – kamera w to miejsce. */
+  minimapGoto(u: number, v: number): void {
+    this.camera.centerOn(minimapToWorld(this.sim.state, u, v));
   }
 
   setSpeed(speed: Speed): void {
@@ -264,6 +282,7 @@ export class Game {
       if (ev.type === 'tileChanged') {
         // Drogi łączą się z sąsiadami – odświeżamy też sąsiednie kafelki (mogą być w innym kawałku).
         for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]] as const) this.mapRenderer.markTileDirty(ev.x + dx, ev.y + dy);
+        this.minimapDirty = true;
       }
       else if (ev.type === 'stationsChanged') this.labels.rebuild(this.sim.state);
       else if (ev.type === 'bridgesChanged') this.bridges.draw(this.sim.state);
@@ -295,8 +314,34 @@ export class Game {
     this.trains.draw(this.sim.state, this.loop.alpha, win?.kind === 'train' ? win.trainId : null);
     if (this.tools.tool === 'signal' && this.sim.state.signalMode !== 'manual') this.setTool('cursor');
     this.tools.update();
+    this.updateMinimap(deltaMs);
+    this.updateTutorial(deltaMs);
     this.updateWindow();
     this.updateHud();
+  }
+
+  /** Kolory terenu minimapy odświeżane najwyżej co sekundę (po zmianach mapy), widok – co klatkę. */
+  private updateMinimap(deltaMs: number): void {
+    if (!this.minimap) return;
+    this.minimapSince += deltaMs;
+    if (this.minimapDirty && this.minimapSince >= 1000) {
+      this.minimap.redrawTerrain(this.sim.state);
+      this.minimapDirty = false;
+      this.minimapSince = 0;
+    }
+    this.minimap.draw(this.sim.state, this.camera.viewRect());
+  }
+
+  /** Postęp „Pierwszych kroków” – sprawdzany dwa razy na sekundę. */
+  private updateTutorial(deltaMs: number): void {
+    this.tutorialSince += deltaMs;
+    if (this.tutorialSince < 500) return;
+    this.tutorialSince = 0;
+    const done = tutorialProgress(this.sim.state, this.sim.graph, this.tutorialDone);
+    if (done.join() !== this.tutorialDone.join()) {
+      this.tutorialDone = done;
+      hudStore.set({ tutorialSteps: done });
+    }
   }
 
   /** Dane otwartego okna; do UI trafiają tylko przy zmianie. */

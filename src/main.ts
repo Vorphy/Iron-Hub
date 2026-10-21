@@ -21,15 +21,27 @@ const DEFAULT_MAP_SIZE = 128;
 const ALLOWED_SIZES = [64, 128, 256, 512, 1024];
 const AUTOSAVE_MS = 30_000;
 const TRAFFIC_KEY = 'ironhub.traffic';
+const MINIMAP_KEY = 'ironhub.minimap';
+const TUTORIAL_KEY = 'ironhub.tutorial';
 
-/** Ustawienie ruchu w miastach z pamięci przeglądarki (domyślnie włączony). */
-function storedTraffic(): boolean {
+/** Przełącznik z pamięci przeglądarki (domyślnie włączony). */
+function storedFlag(key: string): boolean {
   try {
-    return localStorage.getItem(TRAFFIC_KEY) !== '0';
+    return localStorage.getItem(key) !== '0';
   } catch {
     return true;
   }
 }
+
+function storeFlag(key: string, on: boolean): void {
+  try {
+    localStorage.setItem(key, on ? '1' : '0');
+  } catch {
+    // Bez dostępu do pamięci przeglądarki ustawienie działa do zamknięcia strony.
+  }
+}
+
+let minimapCanvas: HTMLCanvasElement | null = null;
 
 let app: Application;
 let game: Game | null = null;
@@ -46,6 +58,8 @@ function startGame(state: GameState, view: ViewState | null = null): void {
   game = new Game(app, state);
   if (view) game.view = view;
   game.trafficEnabled = hudStore.get().traffic;
+  game.attachMinimap(minimapCanvas);
+  hudStore.set({ tutorialSteps: [] });
   game.closeWindow();
   // Dostęp z konsoli przeglądarki przy pracy lokalnej (testy, debugowanie).
   if (import.meta.env.DEV) Object.assign(window, { game, iron: { startGame, createGame } });
@@ -100,12 +114,23 @@ const actions: HudActions = {
     const traffic = !hudStore.get().traffic;
     hudStore.set({ traffic });
     if (game) game.trafficEnabled = traffic;
-    try {
-      localStorage.setItem(TRAFFIC_KEY, traffic ? '1' : '0');
-    } catch {
-      // Bez dostępu do pamięci przeglądarki ustawienie działa do zamknięcia strony.
-    }
+    storeFlag(TRAFFIC_KEY, traffic);
   },
+  toggleMinimap: () => {
+    const minimapOpen = !hudStore.get().minimapOpen;
+    hudStore.set({ minimapOpen });
+    storeFlag(MINIMAP_KEY, minimapOpen);
+  },
+  toggleTutorial: () => {
+    const tutorialOpen = !hudStore.get().tutorialOpen;
+    hudStore.set({ tutorialOpen, menuOpen: false });
+    storeFlag(TUTORIAL_KEY, tutorialOpen);
+  },
+  attachMinimap: (canvas) => {
+    minimapCanvas = canvas;
+    game?.attachMinimap(canvas);
+  },
+  minimapGoto: (u, v) => game?.minimapGoto(u, v),
   openFinance: () => game?.openWindow({ kind: 'finance' }),
   addTestMoney: () => game?.command({ type: 'addMoney', amount: 100_000 }),
   quickSave: () => void saveTo('quick'),
@@ -146,7 +171,7 @@ const actions: HudActions = {
 };
 
 async function start(): Promise<void> {
-  hudStore.set({ traffic: storedTraffic() });
+  hudStore.set({ traffic: storedFlag(TRAFFIC_KEY), minimapOpen: storedFlag(MINIMAP_KEY), tutorialOpen: storedFlag(TUTORIAL_KEY) });
   app = new Application();
   await app.init({
     resizeTo: window,
