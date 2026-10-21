@@ -86,6 +86,20 @@ Kolejność proponowana; zmieniamy według potrzeb. Punkty 1–4 przygotowują e
 7. **Etap 7** – grafika, dźwięki, retro UI, wydanie na itch.io.
 8. **Etap 8** – generator/edytor map, chmura, Web Worker, płatne dodatki.
 
+## Kolejka 2 – pociągi i budowa (braki względem OpenTTD, ustalone 2026-10-21)
+
+Kolejność ustalona z graczem. Maglevy, kolej jednoszynowa i katastrofy – świadomie pomijamy.
+
+1. **Lista pociągów** – okno z podglądem wszystkich pociągów: zysk w tym i zeszłym roku, sortowanie, oznaczenie nierentownych (i komunikat o nich raz w roku); filtry, w tym **grupy pociągów** (np. „Węgiel”, „Pasażerskie”).
+2. **Wspólne rozkłady** – kopia pociągu może dzielić rozkład z oryginałem: zmiana w jednym pociągu zmienia wszystkie na linii.
+3. **„Jedź bez zatrzymania” i punkty kontrolne** (wymuszenie trasy przez dany tor) – na razie bez pilnej potrzeby, ale przewidzieć w modelu rozkładu.
+4. **Rozkład czasowy** – postój X dni na stacji i **równe odstępy** między pociągami. Działa na wspólnym rozkładzie: wyrównuje pociągi linii (czas obiegu linii / liczba pociągów) i wypuszcza je w odpowiednich odstępach.
+5. **Awarie i serwis** (daleki plan) – niezawodność spada z wiekiem, nieserwisowane pociągi psują się częściej i stają, serwis w zajezdni; możliwość wyłączenia przy nowej grze.
+6. **Podwójna trakcja** – 2 lokomotywy w składzie (ciężkie pociągi pod górę). *Pamiętać!*
+7. **Tory na zboczach z fundamentami** – łuki i rozjazdy na zboczu, wyraźnie droższe od zwykłych torów.
+8. **Droższe zmiany terenu** – dziś kształtowanie terenu prawie nie obciąża portfela (strojenie `terraformCorner` w pliku ekonomii).
+9. **Szablony budowy** – gotowe do wklejenia układy, np. bezkolizyjne skrzyżowanie łączące cztery dwutorowe linie.
+
 ## Pomysły (lista otwarta – dopisuj na dole)
 
 - Poziomy pociągów, rodzaje kolei (np. parowa → spalinowa → elektryczna) i przechodzenie między nimi; prosty system ulepszeń. ✅ *(lokomotywy z biegiem lat i sieć trakcyjna – 2026-10-21; wymiana lokomotywy z odbiorem starej zależnym od wieku – 2026-10-21)*
