@@ -14,7 +14,7 @@ import { engineDef, wagonDef } from './trains/vehicles';
 import { MAX_HEIGHT } from './world/height';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 15;
+export const SAVE_VERSION = 16;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -197,6 +197,11 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     if (Array.isArray(d.depots)) d.depots = d.depots.map((dep) => ({ ...(dep as object), wagons: [] }));
     d.version = 15;
   }
+  if (d.version === 15) {
+    // v16: zajezdnia zakupu (kopie trafiają tam); dla starych pociągów – ta, w której stoją
+    mapTrains((t) => ({ ...t, homeDepot: t.status === 'depot' ? (t.depotId ?? null) : null }));
+    d.version = 16;
+  }
   return d as Partial<SerializedState>;
 }
 
@@ -364,7 +369,8 @@ function isTrain(v: unknown): v is Train {
     (t.blockedBy === null || isInt(t.blockedBy)) &&
     typeof t.reverseRequested === 'boolean' &&
     (t.replaceWith === null || !!engineDef(t.replaceWith)) &&
-    isNum(t.engineBuilt)
+    isNum(t.engineBuilt) &&
+    (t.homeDepot === null || isInt(t.homeDepot))
   );
 }
 

@@ -68,7 +68,7 @@ export function TrainWindow({ data: t, actions }: { data: TrainWindowData; actio
           onClick={() => actions.cloneTrain(id)}
           title={
             t.cloneAvailable
-              ? 'Kupuje taki sam pociąg z tym samym rozkładem – stanie w zajezdni (tej samej albo najbliższej)'
+              ? 'Kupuje taki sam pociąg z tym samym rozkładem – stanie w zajezdni, w której kupiono ten pociąg'
               : 'Ta lokomotywa jest już wycofana ze sprzedaży'
           }
         >

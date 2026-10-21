@@ -54,11 +54,23 @@ describe('kopiowanie pociągu', () => {
     expect(sim.state.trains[0]!.orders).toEqual([1, 2]);
   });
 
-  it('w trasie: kopia w najbliższej zajezdni', () => {
+  it('w trasie: kopia w zajezdni, w której pociąg kupiono, nawet gdy inna jest bliżej', () => {
     const sim = line();
     sim.enqueue({ type: 'startTrain', trainId: 1 });
     // Jedzie do B (koniec linii przy zajezdni 2).
     for (let i = 0; i < 4000 && (sim.state.trains[0]!.trail[0]?.x ?? 0) < 22; i++) sim.step();
+    sim.drainEvents();
+    sim.enqueue({ type: 'cloneTrain', trainId: 1 });
+    sim.processCommands();
+    expect(sim.drainEvents()).toContainEqual({ type: 'trainCloned', trainId: 2, depotId: 1 });
+    expect(sim.state.trains[1]!.homeDepot).toBe(1);
+  });
+
+  it('zajezdnia zakupu rozebrana – kopia w najbliższej', () => {
+    const sim = line();
+    sim.enqueue({ type: 'startTrain', trainId: 1 });
+    for (let i = 0; i < 4000 && (sim.state.trains[0]!.trail[0]?.x ?? 0) < 22; i++) sim.step();
+    sim.state.depots = sim.state.depots.filter((d) => d.id !== 1);
     sim.drainEvents();
     sim.enqueue({ type: 'cloneTrain', trainId: 1 });
     sim.processCommands();

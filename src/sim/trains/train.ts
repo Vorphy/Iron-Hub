@@ -39,6 +39,8 @@ export interface Train {
   status: TrainStatus;
   /** Zajezdnia, w której stoi (status 'depot'). */
   depotId: number | null;
+  /** Zajezdnia, w której pociąg kupiono – tam trafiają jego kopie (null – rozebrana / nieznana). */
+  homeDepot: number | null;
   /** Zatrzymany przez gracza. */
   stopped: boolean;
   /** Rozkład: id stacji. */
@@ -137,6 +139,7 @@ export function buyTrain(
     blockedBy: null,
     reverseRequested: false,
     replaceWith: null,
+    homeDepot: depotId,
     engineBuilt: state.tick,
   });
   spend(state, 'construction', plan.cost);
@@ -335,6 +338,9 @@ export function cloneTrain(state: GameState, trainId: number, events: SimEvent[]
 
 function cloneDepot(state: GameState, train: Train) {
   if (train.status === 'depot') return state.depots.find((d) => d.id === train.depotId);
+  // Zajezdnia, w której pociąg kupiono (elektryczna – tylko jeśli ma sieć, inaczej by nie wyjechała).
+  const home = state.depots.find((d) => d.id === train.homeDepot);
+  if (home && (!needsCatenary(train.engine) || isElectrified(state.map, home.x, home.y))) return home;
   const head = train.trail[0];
   if (!head) return undefined;
   const electric = needsCatenary(train.engine);

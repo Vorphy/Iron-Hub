@@ -54,7 +54,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
     title: 'Kopiowanie pociągów',
     items: [
       'Okno pociągu → „⧉ Kopiuj”: taki sam pociąg (lokomotywa, wagony, rozkład) staje w zajezdni – wystarczy kliknąć „▶ Wyjedź”.',
-      'W oknie zajezdni „⧉” przy każdym pociągu. Kopia trafia do tej samej zajezdni albo – z pociągu w trasie – do najbliższej.',
+      'W oknie zajezdni „⧉” przy każdym pociągu. Kopia trafia do zajezdni, w której kupiono oryginał (gdy jej nie ma – do najbliższej).',
     ],
   },
   {
