@@ -15,6 +15,17 @@ Jednorazowy pomiar w Node (vitest), świat z generatora (seed 3) z 40 stacjami p
 
 Dla skali: przy 8× gra liczy 160 ticków/s, a dzień ma 40 ticków, czyli `dailyCargo` leci 4 razy na sekundę. Na mapie 1024 z 40 stacjami to ~370 ms procesora na sekundę gry, w porcjach po ~90 ms, czyli wyraźne przycięcia klatek.
 
+## 0. Autozapis zamraża grę na dużych mapach ⭐ dopisane po audycie
+
+`serializeState()` na mapie 1024 trwa **~560 ms** (do tego `JSON.stringify` ~20 ms i zapis ~34 MB do IndexedDB), cały czas w wątku gry. Autozapis na 1024 leci co 2 min (`AUTOSAVE_MS × szerokość / 256`, `src/main.ts`), więc co 2 minuty gra staje na ponad pół sekundy. Na 512 to ~150 ms co minutę. Zapis przy zamknięciu karty działa tak samo.
+
+Prawie cały czas zabiera zamiana warstw mapy na base64 (`toBase64` w `src/sim/serialize.ts`: sklejanie napisu po 32 KB, potem `btoa`). Możliwe poprawki, od najprostszej:
+
+1. Pamiętać base64 warstw, które się nie zmieniły (teren, wysokości, woda zmieniają się rzadko). Flaga „brudna” na warstwie, ustawiana tam, gdzie dziś leci `tileChanged`.
+2. Szybsze kodowanie: `Uint8Array.prototype.toBase64()` tam, gdzie przeglądarka je ma, z obecną funkcją jako zapasem.
+3. Mniej danych: większość warstw to zera, więc proste kodowanie RLE przed base64 zmniejszy zapis kilka–kilkadziesiąt razy (wymaga nowej wersji zapisu i migracji).
+4. Serializacja w Web Workerze (kopia tablic przez `postMessage`) – gra nie staje wcale.
+
 ## 1. `catchment()` przegląda całą mapę ⭐ największy zysk, mała zmiana
 
 `src/sim/station/station.ts` – `catchment(map, tiles)` przy każdym wywołaniu tworzy `Uint8Array` wielkości całej mapy (1 MB przy 1024²) i przegląda ją całą, choć zasięg stacji to kilkadziesiąt kafelków. Wywołują ją:
@@ -67,12 +78,17 @@ To najpewniej największy koszt ticku przy wielu pociągach na rozbudowanej siec
 - **`passesOrder`** (`src/sim/trains/train.ts`): `state.stations.some(...)` przy każdym wjeździe czoła na nowy odcinek. Koszt pomijalny przy kilkudziesięciu stacjach. Wróć do niego, jeśli stacji będą setki.
 - **`infrastructureCost`** raz w miesiącu – w symulacji OK, problemem jest tylko okno finansów (pkt 3).
 
+## Czego audyt nie objął
+
+Audyt to przegląd kodu i pomiary w Node, nie profil gry w przeglądarce. Nie mierzono: ruchu ulicznego (`traffic.ts`), minimapy, podpisów na mapie, renderu dalekiego zoomu, odświeżania interfejsu Preact, pamięci (wycieki, GC) ani generowania mapy (~2 s na 1024, jednorazowo). Pewność „reszta jest optymalna” da dopiero profil z DevTools (zakładka Performance) na dużej mapie przy 8× z kilkudziesięcioma pociągami.
+
 ## Proponowana kolejność
 
-1. `catchment()` w prostokącie (pkt 1) i jedno `stationAccepts` w oknie stacji – kilkanaście linii, największy efekt.
-2. `Map` miast w `dailyCargo` i indeks zasięgów odświeżany po zmianie stacji (pkt 2).
-3. Okna odświeżane 4–5×/s (pkt 3).
-4. Profil prawdziwej gry przy 8×, potem decyzja o pamiętaniu tras (pkt 4).
-5. Odrzucanie pociągów poza ekranem (pkt 5).
+1. Autozapis bez zamrożeń (pkt 0) – odczuwalne dla gracza na mapach 512 i 1024.
+2. `catchment()` w prostokącie (pkt 1) i jedno `stationAccepts` w oknie stacji – kilkanaście linii, największy efekt.
+3. `Map` miast w `dailyCargo` i indeks zasięgów odświeżany po zmianie stacji (pkt 2).
+4. Okna odświeżane 4–5×/s (pkt 3).
+5. Profil prawdziwej gry przy 8×, potem decyzja o pamiętaniu tras (pkt 4).
+6. Odrzucanie pociągów poza ekranem (pkt 5).
 
 Po każdym kroku: `npm test` (w tym testy determinizmu) i ponowny pomiar jak w tabeli wyżej.

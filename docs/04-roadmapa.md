@@ -86,6 +86,9 @@ Jedna kolejka, w kolejności, która najszybciej poprawia granie. Maglevy, kolej
 6. ~~**Rozkład czasowy**~~ ✅ (2026-10-21) – postój X dni na stacji i **równe odstępy**: na wspólnym rozkładzie wyrównuje pociągi linii (czas obiegu / liczba pociągów) i wypuszcza je w odpowiednich odstępach.
 7. **Etap 5 – test „czy to jest fajne”** – granie z kilkoma osobami, strojenie `src/data/economy.ts` i `vehicles.json`.
 
+### Wydajność – wrócić przed testami na dużych mapach
+- **Audyt wydajności** – lista poprawek z pomiarami w [06-audyt-wydajnosci](06-audyt-wydajnosci.md). Najpierw: autozapis bez zamrożeń (~0,6 s co 2 min na mapie 1024), liczenie zasięgu stacji bez przeglądania całej mapy, dzienny ładunek (~90 ms na 1024 przy 40 stacjach), okna odświeżane 4–5×/s. Potem profil gry w przeglądarce przy 8× i decyzja o pamiętaniu tras pociągów.
+
 ### Faza B – głębia rozgrywki (po wnioskach z testów)
 8. ~~**Podwójna trakcja**~~ ✅ (2026-10-21) – 2 takie same lokomotywy w składzie: 2× moc i przyczepność (ciężkie pociągi pod górę).
 9. **Tory na zboczach z fundamentami** – łuki i rozjazdy na zboczu, wyraźnie droższe od zwykłych torów.
