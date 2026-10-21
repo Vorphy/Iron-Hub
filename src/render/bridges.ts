@@ -1,6 +1,6 @@
 import { Graphics } from 'pixi.js';
 import type { GameState } from '../sim/state';
-import { axisTrack, bridgeTileCoords, headSpanSide, sideHeight, type Bridge } from '../sim/track/bridge';
+import { axisTrack, bridgeRole, bridgeTileCoords, headSpanSide, sideHeight, type Bridge } from '../sim/track/bridge';
 import { oppositeSide } from '../sim/track/track';
 import { heightAt } from '../sim/world/height';
 import { toWorld, type Point } from './iso';
@@ -27,7 +27,7 @@ export class BridgeRenderer {
   }
 }
 
-function drawBridge(g: Graphics, state: GameState, b: Bridge): void {
+export function drawBridge(g: Graphics, state: GameState, b: Bridge): void {
   const { map } = state;
   const tiles = bridgeTileCoords(b);
   // Kierunek mostu (oś) i prostopadła „na zewnątrz” w stronę widza (SW dla osi x, SE dla osi y).
@@ -69,8 +69,8 @@ function drawBridge(g: Graphics, state: GameState, b: Bridge): void {
   for (const t of tiles.slice(1, -1)) {
     const cx = t.x + 0.5;
     const cy = t.y + 0.5;
-    // Filary (od terenu do pomostu), po obu stronach osi.
-    for (const k of [-1, 1]) {
+    // Filary (od terenu do pomostu), po obu stronach osi – nie nad torem pod mostem (stałyby na torze).
+    for (const k of map.track[t.y * map.width + t.x] ? [] : [-1, 1]) {
       const px = cx + nx * k * 0.18;
       const py = cy + ny * k * 0.18;
       const top = toWorld(px, py, b.deck);
@@ -116,4 +116,16 @@ function drawBridge(g: Graphics, state: GameState, b: Bridge): void {
 /** Element toru przyczółka (rysuje go most, nie mapa). */
 export function isHeadAxisTrack(b: Bridge, track: number): boolean {
   return track === axisTrack(b.axis);
+}
+
+/** Most, pod którego pomostem jest punkt (x, y, z) – pojazd jedzie torem pod mostem, nie po nim. */
+export function bridgeAbove(state: GameState, x: number, y: number, z: number): Bridge | undefined {
+  const { map } = state;
+  const tx = Math.floor(x);
+  const ty = Math.floor(y);
+  if (tx < 0 || ty < 0 || tx >= map.width || ty >= map.height) return undefined;
+  const id = map.bridge[ty * map.width + tx];
+  if (!id) return undefined;
+  const b = state.bridges.find((br) => br.id === id);
+  return b && bridgeRole(b, tx, ty) === 'span' && z < b.deck - 0.5 ? b : undefined;
 }

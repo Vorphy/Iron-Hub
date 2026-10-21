@@ -3,6 +3,8 @@ import type { GameState } from '../sim/state';
 import { vehiclePoses, type Point3, type VehiclePose } from '../sim/trains/geometry';
 import { toWorld, type Point } from './iso';
 import { houseDepth, housesInFront, redrawHouse } from './buildings';
+import { bridgeAbove, drawBridge } from './bridges';
+import type { Bridge } from '../sim/track/bridge';
 
 const HALF_WIDTH = 0.13;
 const BODY_H = 7;
@@ -56,13 +58,29 @@ export class TrainRenderer {
     ];
     order.sort((a, b) => a.depth - b.depth);
     this.hits = [];
+    const drawItem = (item: Drawn) => {
+      const c = drawVehicle(g, item.pose, item.trainId === selectedId);
+      this.hits.push({ trainId: item.trainId, x: c.x, y: c.y });
+    };
+    // Pojazdy na torze pod mostem: najpierw one, potem ten most nad nimi, na końcu reszta.
+    const under = new Set<Drawn>();
+    const bridges = new Set<Bridge>();
+    for (const it of items) {
+      const { front: f, back: b } = it.pose;
+      const br = bridgeAbove(state, (f.x + b.x) / 2, (f.y + b.y) / 2, (f.z + b.z) / 2);
+      if (br) {
+        under.add(it);
+        bridges.add(br);
+      }
+    }
+    for (const o of order) if ('item' in o && under.has(o.item)) drawItem(o.item);
+    for (const br of [...bridges].sort((a, c) => a.x + a.y - (c.x + c.y))) drawBridge(g, state, br);
     for (const o of order) {
       if ('house' in o) {
         redrawHouse(g, state.map, o.house);
         continue;
       }
-      const c = drawVehicle(g, o.item.pose, o.item.trainId === selectedId);
-      this.hits.push({ trainId: o.item.trainId, x: c.x, y: c.y });
+      if (!under.has(o.item)) drawItem(o.item);
     }
   }
 

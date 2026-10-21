@@ -12,6 +12,11 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-21',
+    title: 'Poprawka: pociągi pod mostami',
+    items: ['Pociąg jadący torem pod mostem jest teraz rysowany pod pomostem, a nie nad nim.'],
+  },
+  {
+    date: '2026-10-21',
     title: 'Długość pociągów i peronów',
     items: [
       'Każdy pojazd zajmuje pół kafelka: na kafelku mieści się lokomotywa z wagonem albo dwa wagony.',
