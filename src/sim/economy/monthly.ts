@@ -5,7 +5,7 @@ import type { GameState } from '../state';
 import { nextFloat, nextInt } from '../rng';
 import { consistStats, ENGINES } from '../trains/vehicles';
 import { catenaryTiles } from '../track/catenary';
-import { gameDate } from '../time';
+import { DAYS_PER_MONTH, gameDate, MONTHS_PER_YEAR, TICKS_PER_DAY } from '../time';
 import { growTown } from '../world/generate';
 import { updateTownRoads } from '../world/roads';
 import { checkDebt, closeMonth, monthlyInterest, spend } from './finance';
@@ -48,6 +48,7 @@ export function monthlyEconomy(state: GameState, events: SimEvent[]): void {
   if (left === 0) events.push({ type: 'bankrupt' });
   else if (left !== null) events.push({ type: 'debtWarning', monthsLeft: left });
   closeMonth(state);
+  if (date.month === 1) closeTrainYear(state, events);
 }
 
 /** Wskaźnik miesiąca: kopalnie – odsetek wywiezionej produkcji, przetwórnie – średnie zaopatrzenie. */
@@ -117,10 +118,25 @@ function tileEvent(state: GameState, i: number): SimEvent {
 function chargeRunningCosts(state: GameState): void {
   let trains = 0;
   for (const t of state.trains) {
-    if (t.status !== 'depot') trains += consistStats(t.engine, t.wagons).runningCost / 12;
+    if (t.status === 'depot') continue;
+    const cost = consistStats(t.engine, t.wagons).runningCost / 12;
+    trains += cost;
+    t.profitThisYear -= cost;
   }
   spend(state, 'trains', Math.round(trains));
   spend(state, 'infrastructure', infrastructureCost(state));
+}
+
+/** Nowy rok: zysk „w tym roku” przechodzi do „zeszłego”; pociągi na minusie (jeżdżące cały rok) – komunikat. */
+function closeTrainYear(state: GameState, events: SimEvent[]): void {
+  const yearTicks = TICKS_PER_DAY * DAYS_PER_MONTH * MONTHS_PER_YEAR;
+  const unprofitable: number[] = [];
+  for (const t of state.trains) {
+    t.profitLastYear = Math.round(t.profitThisYear);
+    t.profitThisYear = 0;
+    if (t.profitLastYear < 0 && state.tick - t.createdTick >= yearTicks) unprofitable.push(t.id);
+  }
+  if (unprofitable.length) events.push({ type: 'unprofitableTrains', trainIds: unprofitable });
 }
 
 export function infrastructureCost(state: GameState): number {

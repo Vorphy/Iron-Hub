@@ -8,6 +8,7 @@ import type { Signal, SignalMode } from './signals/signals';
 import type { Station } from './station/station';
 import type { Bridge } from './track/bridge';
 import type { Tunnel } from './track/tunnel';
+import type { TrainGroup } from './trains/groups';
 import type { Train } from './trains/train';
 import { type CustomCounts, DEFAULT_DENSITY, type Density, generateWorld } from './world/generate';
 import { generateMap, type WorldMap } from './world/map';
@@ -38,6 +39,9 @@ export interface GameState {
   nextBridgeId: number;
   tunnels: Tunnel[];
   nextTunnelId: number;
+  /** Grupy pociągów gracza. */
+  groups: TrainGroup[];
+  nextGroupId: number;
 }
 
 export interface NewGameOptions {
@@ -90,6 +94,8 @@ export function createGame({
     nextBridgeId: 1,
     tunnels: [],
     nextTunnelId: 1,
+    groups: [],
+    nextGroupId: 1,
   };
   // Pusty świat (testy) jest płaski.
   if (empty) state.map.heights.fill(0);

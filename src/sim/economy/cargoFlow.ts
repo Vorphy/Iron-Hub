@@ -180,6 +180,7 @@ export function serveTrainAtStation(state: GameState, train: Train, st: Station,
 
   if (income > 0) {
     earn(state, income);
+    train.profitThisYear += income;
     const head = train.trail[0]!;
     events.push({ type: 'income', amount: income, x: head.x + 0.5, y: head.y + 0.5 });
   }

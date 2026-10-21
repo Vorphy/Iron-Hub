@@ -1,3 +1,4 @@
+import type { TrainGroup } from './trains/groups';
 import type { Depot } from './depot/depot';
 import { isCargo } from './economy/cargo';
 import type { Finances, Ledger } from './economy/finance';
@@ -14,7 +15,7 @@ import { engineDef, wagonDef } from './trains/vehicles';
 import { MAX_HEIGHT } from './world/height';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 16;
+export const SAVE_VERSION = 17;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -55,6 +56,8 @@ export interface SerializedState {
   nextBridgeId: number;
   tunnels: Tunnel[];
   nextTunnelId: number;
+  groups: TrainGroup[];
+  nextGroupId: number;
 }
 
 export class SaveError extends Error {}
@@ -87,6 +90,8 @@ export function serializeState(state: GameState): SerializedState {
     nextBridgeId: state.nextBridgeId,
     tunnels: structuredClone(state.tunnels),
     nextTunnelId: state.nextTunnelId,
+    groups: structuredClone(state.groups),
+    nextGroupId: state.nextGroupId,
   };
 }
 
@@ -202,6 +207,13 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     mapTrains((t) => ({ ...t, homeDepot: t.status === 'depot' ? (t.depotId ?? null) : null }));
     d.version = 16;
   }
+  if (d.version === 16) {
+    // v17: zysk pociągów, data zakupu, grupy
+    mapTrains((t) => ({ ...t, profitThisYear: 0, profitLastYear: 0, createdTick: 0, groupId: null }));
+    d.groups = [];
+    d.nextGroupId = 1;
+    d.version = 17;
+  }
   return d as Partial<SerializedState>;
 }
 
@@ -231,7 +243,7 @@ export function deserializeState(data: unknown): GameState {
     electric: bytes('electric'),
   };
   if (map.heights.some((h) => h > MAX_HEIGHT)) throw new SaveError('Uszkodzone wysokości terenu');
-  const ints = [d.tick, d.rng, d.nextStationId, d.nextDepotId, d.nextTrainId, d.nextBridgeId, d.nextTunnelId];
+  const ints = [d.tick, d.rng, d.nextStationId, d.nextDepotId, d.nextTrainId, d.nextBridgeId, d.nextTunnelId, d.nextGroupId];
   if (!ints.every(isInt) || typeof d.money !== 'number') throw new SaveError('Uszkodzone dane gry');
   check(d.stations, isStation, 'stacje');
   check(d.depots, isDepot, 'zajezdnie');
@@ -241,6 +253,7 @@ export function deserializeState(data: unknown): GameState {
   check(d.industries, isIndustry, 'zakłady');
   check(d.bridges, isBridge, 'mosty');
   check(d.tunnels, isTunnel, 'tunele');
+  check(d.groups, isGroup, 'grupy');
   if (d.signalMode !== 'auto' && d.signalMode !== 'manual') throw new SaveError('Uszkodzony tryb sygnalizacji');
   if (!isFinances(d.finances)) throw new SaveError('Uszkodzone finanse');
   return {
@@ -265,7 +278,14 @@ export function deserializeState(data: unknown): GameState {
     nextBridgeId: d.nextBridgeId!,
     tunnels: d.tunnels!,
     nextTunnelId: d.nextTunnelId!,
+    groups: d.groups!,
+    nextGroupId: d.nextGroupId!,
   };
+}
+
+function isGroup(v: unknown): v is TrainGroup {
+  const g = v as TrainGroup;
+  return isObj(g) && isInt(g.id) && typeof g.name === 'string';
 }
 
 function isTunnel(v: unknown): v is Tunnel {
@@ -370,7 +390,11 @@ function isTrain(v: unknown): v is Train {
     typeof t.reverseRequested === 'boolean' &&
     (t.replaceWith === null || !!engineDef(t.replaceWith)) &&
     isNum(t.engineBuilt) &&
-    (t.homeDepot === null || isInt(t.homeDepot))
+    (t.homeDepot === null || isInt(t.homeDepot)) &&
+    isNum(t.profitThisYear) &&
+    isNum(t.profitLastYear) &&
+    isInt(t.createdTick) &&
+    (t.groupId === null || isInt(t.groupId))
   );
 }
 

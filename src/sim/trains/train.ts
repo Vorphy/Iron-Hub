@@ -41,6 +41,13 @@ export interface Train {
   depotId: number | null;
   /** Zajezdnia, w której pociąg kupiono – tam trafiają jego kopie (null – rozebrana / nieznana). */
   homeDepot: number | null;
+  /** Zysk (przewozy − utrzymanie) w bieżącym i poprzednim roku gry, zł. */
+  profitThisYear: number;
+  profitLastYear: number;
+  /** Tick zakupu pociągu (do oceny, czy jeździł cały rok). */
+  createdTick: number;
+  /** Grupa gracza (null – bez grupy). */
+  groupId: number | null;
   /** Zatrzymany przez gracza. */
   stopped: boolean;
   /** Rozkład: id stacji. */
@@ -140,6 +147,10 @@ export function buyTrain(
     reverseRequested: false,
     replaceWith: null,
     homeDepot: depotId,
+    profitThisYear: 0,
+    profitLastYear: 0,
+    createdTick: state.tick,
+    groupId: null,
     engineBuilt: state.tick,
   });
   spend(state, 'construction', plan.cost);
@@ -332,6 +343,7 @@ export function cloneTrain(state: GameState, trainId: number, events: SimEvent[]
   const copy = state.trains[state.trains.length - 1]!;
   copy.orders = [...train.orders];
   copy.fullLoad = [...train.fullLoad];
+  copy.groupId = train.groupId;
   events.push({ type: 'trainCloned', trainId: copy.id, depotId: depot.id });
   return { ok: true };
 }

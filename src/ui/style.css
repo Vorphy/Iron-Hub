@@ -718,3 +718,51 @@ input.seed {
 .count-field button {
   padding: 2px 8px;
 }
+
+.trains-table {
+  overflow-y: auto;
+  max-height: calc(100vh - 300px);
+}
+.trains-table .ledger td {
+  vertical-align: top;
+}
+.trains-table tr.unprofitable td:first-child {
+  border-left: 3px solid #ff9a85;
+}
+.panel button.train-name {
+  color: var(--text);
+  padding: 0;
+  text-align: left;
+}
+.panel button.sort {
+  color: var(--muted);
+  padding: 0;
+}
+.panel button.sort.active {
+  color: var(--accent);
+}
+.trains-filters select,
+.trains-table select,
+.window select {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+  font: inherit;
+}
+.group-name {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+  font: inherit;
+  padding: 3px 6px;
+}
+.neg-text {
+  color: #ff9a85;
+}
+.pos-text {
+  color: var(--money);
+}
+.small .bad,
+.muted.small.bad {
+  color: #ff9a85;
+}

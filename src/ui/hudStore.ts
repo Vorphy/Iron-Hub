@@ -24,7 +24,34 @@ export type WindowRef =
   | { kind: 'town'; townId: number }
   | { kind: 'industry'; industryId: number }
   | { kind: 'station'; stationId: number }
-  | { kind: 'finance' };
+  | { kind: 'finance' }
+  | { kind: 'trains' };
+
+/** Wiersz listy pociągów. */
+export interface TrainRow {
+  id: number;
+  name: string;
+  engine: string;
+  color: string;
+  status: string;
+  lost: boolean;
+  profitThis: number;
+  profitLast: number;
+  /** Wiek pociągu w latach. */
+  age: number;
+  groupId: number | null;
+  /** Strata w zeszłym roku przy pełnym roku jazdy. */
+  unprofitable: boolean;
+  /** Kupiony w tym roku – zeszłoroczny zysk nie dotyczy. */
+  newTrain: boolean;
+}
+
+export interface TrainsWindowData {
+  kind: 'trains';
+  year: number;
+  rows: TrainRow[];
+  groups: { id: number; name: string; count: number }[];
+}
 
 /** Skrót pociągu do list w oknach. */
 export interface TrainSummary {
@@ -76,6 +103,11 @@ export interface TrainWindowData {
   tradeIn: number;
   /** Zamówiona wymiana (id nowej lokomotywy). */
   replaceWith: string | null;
+  /** Zysk w tym i zeszłym roku; grupa i lista grup. */
+  profitThis: number;
+  profitLast: number;
+  groupId: number | null;
+  groups: { id: number; name: string }[];
   /** Lokomotywy, na które można wymienić (z dopłatą); ile pociągów ma tę samą lokomotywę. */
   replaceOptions: { id: string; cost: number }[];
   /** Cena kopii (obecne ceny) i czy lokomotywa jest jeszcze w sprzedaży. */
@@ -149,7 +181,8 @@ export type WindowData =
   | TownWindowData
   | IndustryWindowData
   | StationWindowData
-  | FinanceWindowData;
+  | FinanceWindowData
+  | TrainsWindowData;
 
 export interface HudState {
   date: string;
@@ -266,6 +299,12 @@ export interface HudActions {
   minimapGoto(u: number, v: number): void;
   toggleTraffic(): void;
   openFinance(): void;
+  /** Lista pociągów (K). */
+  openTrains(): void;
+  createGroup(name: string): void;
+  renameGroup(groupId: number, name: string): void;
+  deleteGroup(groupId: number): void;
+  setTrainGroup(trainId: number, groupId: number | null): void;
   addTestMoney(): void;
   borrow(amount: number): void;
   repay(amount: number): void;

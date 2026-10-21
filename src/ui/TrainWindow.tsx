@@ -81,6 +81,28 @@ export function TrainWindow({ data: t, actions }: { data: TrainWindowData; actio
         )}
       </div>
 
+      <div class="row small">
+        <span class="grow">
+          Zysk w tym roku <b class={t.profitThis < 0 ? 'neg-text' : 'pos-text'}>{formatMoney(t.profitThis)}</b>
+          {' · '}w zeszłym <b class={t.profitLast < 0 ? 'neg-text' : ''}>{formatMoney(t.profitLast)}</b>
+        </span>
+        <select
+          value={t.groupId === null ? '' : String(t.groupId)}
+          title="Grupa (lista pociągów – K)"
+          onChange={(e) => {
+            const v = (e.target as HTMLSelectElement).value;
+            actions.setTrainGroup(id, v === '' ? null : Number(v));
+          }}
+        >
+          <option value="">bez grupy</option>
+          {t.groups.map((g) => (
+            <option key={g.id} value={String(g.id)}>
+              {g.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <EngineSection t={t} actions={actions} />
 
       <div class="section-title">Rozkład jazdy</div>

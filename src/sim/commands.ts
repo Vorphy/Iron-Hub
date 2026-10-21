@@ -7,6 +7,7 @@ import { buildStation, removeStationTile, type StationAxis } from './station/sta
 import { buildTrack, removeTrack } from './track/build';
 import { buildCatenary, dropOrphanCatenary } from './track/catenary';
 import { attachWagon, buyWagon, detachWagon, sellEngine, sellSpareWagon } from './trains/consist';
+import { createGroup, deleteGroup, renameGroup, setTrainGroup } from './trains/groups';
 import { getTrackBits, tracksOn, type Side, type Track, type TrackPiece } from './track/track';
 import {
   buyTrain,
@@ -43,6 +44,11 @@ export type Command =
   | { type: 'attachWagon'; trainId: number; index: number }
   | { type: 'detachWagon'; trainId: number; index: number }
   | { type: 'sellEngine'; trainId: number }
+  /** Grupy pociągów. */
+  | { type: 'createGroup'; name: string }
+  | { type: 'renameGroup'; groupId: number; name: string }
+  | { type: 'deleteGroup'; groupId: number }
+  | { type: 'setTrainGroup'; trainId: number; groupId: number | null }
   /** Kopia pociągu (lokomotywa, wagony, rozkład) do zajezdni. */
   | { type: 'cloneTrain'; trainId: number }
   | { type: 'startTrain'; trainId: number }
@@ -116,6 +122,8 @@ export type SimEvent =
   | { type: 'newEngines'; engines: string[] }
   | { type: 'engineReplaced'; trainId: number }
   | { type: 'trainCloned'; trainId: number; depotId: number }
+  /** Nowy rok: pociągi, które w zeszłym roku przyniosły stratę. */
+  | { type: 'unprofitableTrains'; trainIds: number[] }
   | { type: 'replaceFailed'; trainId: number; reason: 'noMoney' | 'noCatenary' | 'notAvailable' }
   | { type: 'commandFailed'; command: Command; reason: FailReason };
 
@@ -155,6 +163,14 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
       return detachWagon(state, cmd.trainId, cmd.index, events);
     case 'sellEngine':
       return sellEngine(state, cmd.trainId, events);
+    case 'createGroup':
+      return createGroup(state, cmd.name, events);
+    case 'renameGroup':
+      return renameGroup(state, cmd.groupId, cmd.name, events);
+    case 'deleteGroup':
+      return deleteGroup(state, cmd.groupId, events);
+    case 'setTrainGroup':
+      return setTrainGroup(state, cmd.trainId, cmd.groupId, events);
     case 'cloneTrain':
       return cloneTrain(state, cmd.trainId, events);
     case 'sellTrain':

@@ -10,6 +10,7 @@ import { MinimapPanel, TutorialPanel } from './Guide';
 import { ChangelogWindow, HelpWindow } from './HelpWindows';
 import { FinanceWindow, IndustryWindow, StationWindow, TownWindow } from './InfoWindows';
 import { TrainWindow } from './TrainWindow';
+import { TrainsWindow } from './TrainsWindow';
 import { hudStore, type HudActions, type HudState } from './hudStore';
 import { useStore } from './store';
 
@@ -89,6 +90,13 @@ export function Hud({ actions }: { actions: HudActions }) {
         <span class="sep" />
         <span class="buttons">
           <button
+            class={s.window?.kind === 'trains' ? 'active' : ''}
+            title="Lista pociągów – zyski, grupy (K)"
+            onClick={() => (s.window?.kind === 'trains' ? actions.closeWindow() : actions.openTrains())}
+          >
+            🚆 Pociągi
+          </button>
+          <button
             class={s.helpTopic ? 'active' : ''}
             title="Pomoc (H)"
             onClick={() => (s.helpTopic ? actions.closeHelp() : actions.openHelp())}
@@ -121,6 +129,7 @@ export function Hud({ actions }: { actions: HudActions }) {
       {s.windowData?.kind === 'train' && <TrainWindow data={s.windowData} actions={actions} />}
       {s.windowData?.kind === 'town' && <TownWindow data={s.windowData} actions={actions} />}
       {s.windowData?.kind === 'station' && <StationWindow data={s.windowData} actions={actions} />}
+      {s.windowData?.kind === 'trains' && <TrainsWindow data={s.windowData} actions={actions} />}
       {s.windowData?.kind === 'finance' && <FinanceWindow data={s.windowData} money={s.money} actions={actions} />}
       {s.windowData?.kind === 'industry' && <IndustryWindow data={s.windowData} actions={actions} />}
 

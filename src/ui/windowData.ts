@@ -4,7 +4,7 @@ import { isWaiting, waitsForFullLoad } from '../sim/trains/movement';
 import { availableEngines, consistStats, engineAvailable, engineDef } from '../sim/trains/vehicles';
 import { infrastructureCost } from '../sim/economy/monthly';
 import { BANKRUPTCY_MONTHS, LOAN_INTEREST, LOAN_MAX, LOAN_STEP, monthlyInterest } from '../sim/economy/finance';
-import { gameDate } from '../sim/time';
+import { DAYS_PER_MONTH, gameDate, MONTHS_PER_YEAR, TICKS_PER_DAY } from '../sim/time';
 import { isElectrified } from '../sim/track/catenary';
 import { wagonResale } from '../sim/trains/consist';
 
@@ -77,6 +77,34 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
       spare: depot.wagons.map((w) => ({ type: w.type, resale: wagonResale(w.type), amount: w.load.amount })),
       year: gameDate(state).year,
       electrified: isElectrified(state.map, depot.x, depot.y),
+    };
+  }
+  if (ref.kind === 'trains') {
+    const yearTicks = TICKS_PER_DAY * DAYS_PER_MONTH * MONTHS_PER_YEAR;
+    const year = gameDate(state).year;
+    const yearStart =
+      state.tick - (gameDate(state).month - 1) * DAYS_PER_MONTH * TICKS_PER_DAY - (gameDate(state).day - 1) * TICKS_PER_DAY;
+    return {
+      kind: 'trains',
+      year,
+      rows: state.trains.map((t) => {
+        const e = engineDef(t.engine)!;
+        return {
+          id: t.id,
+          name: t.name,
+          engine: e.name,
+          color: e.color,
+          status: trainStatus(sim, t),
+          lost: sim.planner.isLost(t.id),
+          profitThis: Math.round(t.profitThisYear),
+          profitLast: t.profitLastYear,
+          age: Math.floor((state.tick - t.createdTick) / yearTicks),
+          groupId: t.groupId,
+          unprofitable: t.profitLastYear < 0 && t.createdTick <= yearStart - yearTicks,
+          newTrain: t.createdTick > yearStart - 1 && t.profitLastYear === 0,
+        };
+      }),
+      groups: state.groups.map((g) => ({ id: g.id, name: g.name, count: state.trains.filter((t) => t.groupId === g.id).length })),
     };
   }
   if (ref.kind === 'finance') {
@@ -188,6 +216,10 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
     engineAge: Math.floor(engineAge(state, t)),
     tradeIn: engineTradeIn(state, t),
     replaceWith: t.replaceWith,
+    profitThis: Math.round(t.profitThisYear),
+    profitLast: t.profitLastYear,
+    groupId: t.groupId,
+    groups: state.groups.map((g) => ({ id: g.id, name: g.name })),
     replaceOptions: availableEngines(gameDate(state).year)
       .filter((e) => e.id !== t.engine)
       .map((e) => ({ id: e.id, cost: replaceCost(state, t, e.id) })),

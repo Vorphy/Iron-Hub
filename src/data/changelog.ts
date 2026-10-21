@@ -12,6 +12,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-21',
+    title: 'Lista pociągów, zyski i grupy',
+    items: [
+      'Okno „🚆 Pociągi” (K): wszystkie pociągi z zyskiem w tym i zeszłym roku, wiekiem i statusem; sortowanie po kliknięciu w nagłówek, filtr „tylko na minusie”.',
+      'Grupy pociągów (np. „Węgiel”, „Pasażerskie”) – filtr listy; grupę ustawisz w liście albo w oknie pociągu. Kopia pociągu trafia do tej samej grupy.',
+      'Na początku roku komunikat o pociągach, które w zeszłym roku przyniosły stratę; w liście są oznaczone na czerwono.',
+    ],
+  },
+  {
+    date: '2026-10-21',
     title: 'Nowa gra – tryb własny',
     items: [
       'Przełącznik „Gęstość / Własne”: w trybie własnym podajesz dokładnie, ile ma być miast i zakładów każdego typu (np. 0 miast, 1 elektrownia, 10 kopalń węgla). Położenie losuje się z ziarna mapy.',

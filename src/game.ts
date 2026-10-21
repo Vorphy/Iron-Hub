@@ -272,6 +272,11 @@ export class Game {
       hudStore.set({ helpTopic: null, changelogOpen: false });
       return;
     }
+    if (code === 'KeyK') {
+      if (hud.window?.kind === 'trains') this.closeWindow();
+      else this.openWindow({ kind: 'trains' });
+      return;
+    }
     if (code === 'KeyH') {
       hudStore.set({ helpTopic: hud.helpTopic ? null : 'start', changelogOpen: false });
       return;
@@ -319,6 +324,10 @@ export class Game {
           return `${e.name} (${TRACTION_NAMES[e.traction]}, ${e.maxSpeed} km/h)`;
         });
         showMessage(`Nowa lokomotywa w zajezdniach: ${names.join(', ')}`);
+      } else if (ev.type === 'unprofitableTrains') {
+        const names = ev.trainIds.map((id) => this.sim.state.trains.find((t) => t.id === id)?.name).filter(Boolean);
+        const list = names.length > 4 ? `${names.slice(0, 4).join(', ')} i ${names.length - 4} innych` : names.join(', ');
+        showMessage(`Strata w zeszłym roku: ${list} – lista pociągów (K)`);
       } else if (ev.type === 'trainCloned') {
         showMessage(`Kopia gotowa: Pociąg ${ev.trainId} w zajezdni #${ev.depotId} – kliknij ▶ Wyjedź`);
       } else if (ev.type === 'engineReplaced') {
