@@ -825,3 +825,13 @@ input.seed {
 .shared-line {
   color: var(--accent);
 }
+
+.order select.wait-days {
+  font-size: 11px;
+  max-width: 96px;
+}
+.full-load.spacing {
+  margin: 2px 0 4px;
+  white-space: normal;
+  align-items: flex-start;
+}

@@ -19,6 +19,8 @@ import {
   sellTrain,
   sendToDepot,
   setOrders,
+  setSpacing,
+  setWaitDays,
   toggleFullLoad,
   startTrain,
   stopTrain,
@@ -60,7 +62,10 @@ export type Command =
   | { type: 'reverseTrain'; trainId: number }
   /** Wymiana lokomotywy na inną (null – anulowanie zamówionej wymiany). */
   | { type: 'replaceEngine'; trainId: number; engine: string | null }
-  | { type: 'setOrders'; trainId: number; orders: number[]; fullLoad?: boolean[] }
+  | { type: 'setOrders'; trainId: number; orders: number[]; fullLoad?: boolean[]; waitDays?: number[] }
+  /** Rozkład czasowy: dodatkowy postój przy pozycji rozkładu i równe odstępy na linii. */
+  | { type: 'setWaitDays'; trainId: number; index: number; days: number }
+  | { type: 'setSpacing'; trainId: number; on: boolean }
   /** Ptaszek „czekaj na pełny ładunek” przy pozycji rozkładu. */
   | { type: 'toggleFullLoad'; trainId: number; index: number }
   | { type: 'placeSignal'; x: number; y: number; track: Track; oneWay: boolean }
@@ -191,7 +196,11 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
     case 'reverseTrain':
       return requestReverse(state, cmd.trainId);
     case 'setOrders':
-      return setOrders(state, cmd.trainId, cmd.orders, cmd.fullLoad);
+      return setOrders(state, cmd.trainId, cmd.orders, cmd.fullLoad, cmd.waitDays);
+    case 'setWaitDays':
+      return setWaitDays(state, cmd.trainId, cmd.index, cmd.days);
+    case 'setSpacing':
+      return setSpacing(state, cmd.trainId, cmd.on);
     case 'toggleFullLoad':
       return toggleFullLoad(state, cmd.trainId, cmd.index);
     case 'placeSignal':

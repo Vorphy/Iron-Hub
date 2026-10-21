@@ -1,3 +1,4 @@
+import { TICKS_PER_DAY } from '../time';
 import { getTrackBits, SIDE_DELTA } from '../track/track';
 import { inBounds } from '../world/map';
 import { wagonDef } from './vehicles';
@@ -24,7 +25,7 @@ import { planRoute, type Plan } from './path';
 import { addTaken, blockerOf, buildTaken, isFree, isSafeStop, type Taken } from './reservation';
 import { flipStep, isBend, stepHeight, stepLength } from './steps';
 import { STRAIGHT_LENGTH } from '../track/graph';
-import { depotExit, leaveDepot, replaceOnArrival, type Step, type Train } from './train';
+import { depotExit, leaveDepot, lineHeadway, replaceOnArrival, sharedTrains, type Step, type Train } from './train';
 import { consistStats, engineDef } from './vehicles';
 
 /**
@@ -75,7 +76,13 @@ export function tickTrains(state: GameState, planner: Planner, events: SimEvent[
         if (st) serveTrainAtStation(state, train, st, events, false);
         // „Pełny ładunek”: zostaje i ładuje dalej, aż wagony na ładunek tej stacji będą pełne.
         if (st && waitsForFullLoad(state, train, st)) train.waitTicks = FULL_LOAD_CHECK_TICKS;
-        else departStation(train);
+        else {
+          const hold = spacingHold(state, train);
+          if (hold > 0) {
+            train.holding = true;
+            train.waitTicks = Math.min(hold, FULL_LOAD_CHECK_TICKS);
+          } else departStation(state, train);
+        }
       }
       continue;
     }
@@ -172,7 +179,27 @@ export function platformPenalty(state: GameState, train: Train): number {
   return Math.min(2, Math.max(1, trainTiles(train) / platform));
 }
 
-function departStation(train: Train): void {
+/**
+ * Równe odstępy: na pierwszej stacji rozkładu pociąg linii czeka, aż od odjazdu poprzedniego minie
+ * odstęp (czas okrążenia / liczba pociągów). Zwraca, ile ticków jeszcze czekać (0 – może jechać).
+ */
+export function spacingHold(state: GameState, train: Train): number {
+  if (!train.spacing || train.currentOrder !== 0 || train.stopped) return 0;
+  const headway = lineHeadway(state, train);
+  if (headway <= 0) return 0;
+  let last = -1;
+  for (const t of sharedTrains(state, train)) if (t !== train) last = Math.max(last, t.departedFirstTick);
+  if (last < 0) return 0;
+  return Math.max(0, last + headway - state.tick);
+}
+
+function departStation(state: GameState, train: Train): void {
+  train.holding = false;
+  // Odjazd z pierwszej stacji rozkładu: pomiar czasu okrążenia linii.
+  if (train.orders.length && train.currentOrder === 0) {
+    if (train.departedFirstTick >= 0) train.loopTicks = state.tick - train.departedFirstTick;
+    train.departedFirstTick = state.tick;
+  }
   train.status = 'running';
   if (train.orders.length) train.currentOrder = (train.currentOrder + 1) % train.orders.length;
   train.mayReverse = true;
@@ -348,6 +375,8 @@ function arrive(ctx: TickContext, train: Train): void {
       const st = stationUnderHead(state, train);
       // Za krótki peron: postój dłuższy proporcjonalnie do tego, ile pociągu wystaje (najwyżej 2×).
       train.waitTicks = Math.round(STATION_WAIT_TICKS * (st ? platformPenalty(state, train) : 1));
+      // Rozkład czasowy: dodatkowy postój ustawiony przy tej stacji.
+      train.waitTicks += (train.waitDays[train.currentOrder] ?? 0) * TICKS_PER_DAY;
       if (st) serveTrainAtStation(state, train, st, ctx.events, true);
       break;
     }

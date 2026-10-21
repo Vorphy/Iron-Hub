@@ -4,6 +4,9 @@ import { engineDef, TRACTION_NAMES, wagonDef } from '../sim/trains/vehicles';
 import { formatMoney } from '../tools';
 import type { HudActions, TrainWindowData } from './hudStore';
 
+/** Dodatkowy postój na stacji do wyboru (dni gry). */
+const WAIT_CHOICES = [0, 1, 2, 3, 5, 10, 20, 30];
+
 export function TrainWindow({ data: t, actions }: { data: TrainWindowData; actions: HudActions }) {
   const id = t.trainId;
   const running = !t.stopped;
@@ -121,11 +124,34 @@ export function TrainWindow({ data: t, actions }: { data: TrainWindowData; actio
           </button>
         </div>
       )}
+      {t.sharedWith.length > 0 && (
+        <label
+          class="full-load spacing"
+          title="Na pierwszej stacji rozkładu pociąg czeka, aż od odjazdu poprzedniego pociągu linii minie czas okrążenia / liczba pociągów"
+        >
+          <input type="checkbox" checked={t.spacing} onChange={() => actions.setSpacing(id, !t.spacing)} />
+          Równe odstępy na linii
+          {t.spacing &&
+            (t.headwayDays !== null ? ` – co ok. ${t.headwayDays} d.` : ' – po pierwszym okrążeniu gra policzy odstęp')}
+        </label>
+      )}
       {t.orders.length === 0 && <div class="muted small">Brak stacji – pociąg jeździ przed siebie.</div>}
       {t.orders.map((o, i) => (
         <div class="row order" key={i}>
           <span class="order-mark">{i === t.currentOrder && !t.goToDepot ? '▶' : `${i + 1}.`}</span>
           <span class="grow">{o.name}</span>
+          <select
+            class="wait-days"
+            value={String(o.waitDays)}
+            title="Dodatkowy postój na tej stacji (dni)"
+            onChange={(e) => actions.setWaitDays(id, i, Number((e.target as HTMLSelectElement).value))}
+          >
+            {WAIT_CHOICES.map((d) => (
+              <option key={d} value={String(d)}>
+                {d === 0 ? 'bez postoju' : `postój ${d} d.`}
+              </option>
+            ))}
+          </select>
           <label class="full-load" title="Czekaj na tej stacji, aż wagony na jej ładunek będą pełne">
             <input type="checkbox" checked={o.fullLoad} onChange={() => actions.toggleFullLoad(id, i)} />
             pełny ładunek
@@ -138,6 +164,7 @@ export function TrainWindow({ data: t, actions }: { data: TrainWindowData; actio
                 id,
                 t.orders.map((x) => x.stationId).filter((_, j) => j !== i),
                 t.orders.map((x) => x.fullLoad).filter((_, j) => j !== i),
+                t.orders.map((x) => x.waitDays).filter((_, j) => j !== i),
               )
             }
           >

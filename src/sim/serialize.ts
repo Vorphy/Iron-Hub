@@ -15,7 +15,7 @@ import { engineDef, wagonDef } from './trains/vehicles';
 import { MAX_HEIGHT } from './world/height';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 18;
+export const SAVE_VERSION = 19;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -222,6 +222,18 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     d.nextShareId = 1;
     d.version = 18;
   }
+  if (d.version === 18) {
+    // v19: rozkład czasowy (postoje, równe odstępy)
+    mapTrains((t) => ({
+      ...t,
+      waitDays: Array.isArray(t.orders) ? t.orders.map(() => 0) : [],
+      spacing: false,
+      departedFirstTick: -1,
+      loopTicks: 0,
+      holding: false,
+    }));
+    d.version = 19;
+  }
   return d as Partial<SerializedState>;
 }
 
@@ -414,7 +426,14 @@ function isTrain(v: unknown): v is Train {
     isNum(t.profitLastYear) &&
     isInt(t.createdTick) &&
     (t.groupId === null || isInt(t.groupId)) &&
-    (t.shareId === null || isInt(t.shareId))
+    (t.shareId === null || isInt(t.shareId)) &&
+    Array.isArray(t.waitDays) &&
+    t.waitDays.length === t.orders.length &&
+    t.waitDays.every(isInt) &&
+    typeof t.spacing === 'boolean' &&
+    isInt(t.departedFirstTick) &&
+    isInt(t.loopTicks) &&
+    typeof t.holding === 'boolean'
   );
 }
 

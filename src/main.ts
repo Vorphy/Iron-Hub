@@ -249,7 +249,9 @@ const actions: HudActions = {
     const ids = all ? game.state.trains.filter((t) => t.engine === train.engine).map((t) => t.id) : [trainId];
     for (const id of ids) game.command({ type: 'replaceEngine', trainId: id, engine });
   },
-  setOrders: (trainId, orders, fullLoad) => game?.command({ type: 'setOrders', trainId, orders, fullLoad }),
+  setOrders: (trainId, orders, fullLoad, waitDays) => game?.command({ type: 'setOrders', trainId, orders, fullLoad, waitDays }),
+  setWaitDays: (trainId, index, days) => game?.command({ type: 'setWaitDays', trainId, index, days }),
+  setSpacing: (trainId, on) => game?.command({ type: 'setSpacing', trainId, on }),
   toggleFullLoad: (trainId, index) => game?.command({ type: 'toggleFullLoad', trainId, index }),
   pickOrders: (trainId) => game?.pickOrders(trainId),
   focusTrain: (trainId) => game?.focusTrain(trainId),

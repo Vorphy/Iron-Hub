@@ -12,6 +12,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-21',
+    title: 'Rozkład czasowy i równe odstępy',
+    items: [
+      'Przy każdej stacji rozkładu: dodatkowy postój 1–30 dni.',
+      '„Równe odstępy na linii” (wspólny rozkład): gra mierzy czas okrążenia i na pierwszej stacji wypuszcza pociągi co okrążenie / liczba pociągów – koniec jazdy „stadem”. Status: „Czeka na odstęp”.',
+    ],
+  },
+  {
+    date: '2026-10-21',
     title: 'Poprawka: pociągi pod mostami',
     items: ['Pociąg jadący torem pod mostem jest teraz rysowany pod pomostem, a nie nad nim.'],
   },

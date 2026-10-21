@@ -1,5 +1,14 @@
 import type { Simulation } from '../sim/simulation';
-import { engineAge, engineTradeIn, replaceCost, resaleValue, trainById, trainsInDepot, type Train } from '../sim/trains/train';
+import {
+  engineAge,
+  engineTradeIn,
+  lineHeadway,
+  replaceCost,
+  resaleValue,
+  trainById,
+  trainsInDepot,
+  type Train,
+} from '../sim/trains/train';
 import { isWaiting, platformPenalty, waitsForFullLoad } from '../sim/trains/movement';
 import { availableEngines, consistStats, engineAvailable, engineDef } from '../sim/trains/vehicles';
 import { infrastructureCost } from '../sim/economy/monthly';
@@ -26,6 +35,7 @@ function trainStatus(sim: Simulation, t: Train): string {
     const h = t.trail[0]!;
     const st = sim.state.stations.find((s) => s.id === sim.state.map.station[h.y * sim.state.map.width + h.x]);
     if (st && t.waitTicks > 0 && waitsForFullLoad(sim.state, t, st)) return `Czeka na pełny ładunek: ${st.name}`;
+    if (t.holding) return `Czeka na odstęp od poprzedniego pociągu linii: ${st?.name ?? ''}`;
     const short = platformPenalty(sim.state, t) > 1 ? ' (peron za krótki – dłuższy postój)' : '';
     return `Postój: ${stationName(sim, st?.id ?? 0)}${short}`;
   }
@@ -210,7 +220,14 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
     stopped: t.stopped,
     goToDepot: t.goToDepot,
     lost: sim.planner.isLost(t.id),
-    orders: t.orders.map((id, i) => ({ stationId: id, name: stationName(sim, id), fullLoad: t.fullLoad[i] === true })),
+    orders: t.orders.map((id, i) => ({
+      stationId: id,
+      name: stationName(sim, id),
+      fullLoad: t.fullLoad[i] === true,
+      waitDays: t.waitDays[i] ?? 0,
+    })),
+    spacing: t.spacing,
+    headwayDays: lineHeadway(state, t) > 0 ? Math.round((lineHeadway(state, t) / TICKS_PER_DAY) * 10) / 10 : null,
     currentOrder: t.currentOrder,
     resale: resaleValue(sim.state, t),
     picking: pickingFor === t.id,

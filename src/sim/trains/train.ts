@@ -53,6 +53,15 @@ export interface Train {
    * w jednym zmienia wszystkie. Każdy jedzie we własnym tempie (własne `currentOrder`). null – własny.
    */
   shareId: number | null;
+  /** Dodatkowy postój (dni gry) przy każdej pozycji rozkładu (ta sama długość co `orders`). */
+  waitDays: number[];
+  /** Równe odstępy na linii: na pierwszej stacji rozkładu czeka, aż minie odstęp od poprzedniego pociągu. */
+  spacing: boolean;
+  /** Tick ostatniego odjazdu z pierwszej stacji rozkładu (-1 – jeszcze nie) i czas ostatniego okrążenia linii. */
+  departedFirstTick: number;
+  loopTicks: number;
+  /** Teraz czeka na odstęp (do statusu). */
+  holding: boolean;
   /** Zatrzymany przez gracza. */
   stopped: boolean;
   /** Rozkład: id stacji. */
@@ -157,6 +166,11 @@ export function buyTrain(
     createdTick: state.tick,
     groupId: null,
     shareId: null,
+    waitDays: [],
+    spacing: false,
+    departedFirstTick: -1,
+    loopTicks: 0,
+    holding: false,
     engineBuilt: state.tick,
   });
   spend(state, 'construction', plan.cost);
@@ -354,6 +368,8 @@ export function cloneTrain(state: GameState, trainId: number, events: SimEvent[]
   const copy = state.trains[state.trains.length - 1]!;
   copy.orders = [...train.orders];
   copy.fullLoad = [...train.fullLoad];
+  copy.waitDays = [...train.waitDays];
+  copy.spacing = train.spacing;
   copy.groupId = train.groupId;
   if (shared && train.orders.length) {
     train.shareId ??= state.nextShareId++;
@@ -393,13 +409,16 @@ export function setOrders(
   trainId: number,
   orders: readonly number[],
   fullLoad?: readonly boolean[],
+  waitDays?: readonly number[],
 ): CommandResult {
   const train = trainById(state, trainId);
   if (!train || orders.some((id) => !state.stations.some((s) => s.id === id))) return { ok: false, reason: 'blocked' };
   const flags = orders.map((_, i) => (fullLoad ? fullLoad[i] === true : train.fullLoad[i] === true));
+  const waits = orders.map((_, i) => clampWait(waitDays ? waitDays[i] : train.waitDays[i]));
   // Wspólny rozkład: ta sama zmiana dla całej linii.
   for (const t of sharedTrains(state, train)) {
     t.fullLoad = [...flags];
+    t.waitDays = [...waits];
     t.orders = [...orders];
     if (t.currentOrder >= t.orders.length) t.currentOrder = 0;
     t.resTerminal = null;
@@ -414,6 +433,7 @@ export function dropStationFromOrders(state: GameState, stationId: number): void
     const i = t.orders.indexOf(stationId);
     if (i < 0) continue;
     t.fullLoad = t.fullLoad.filter((_, j) => t.orders[j] !== stationId);
+    t.waitDays = t.waitDays.filter((_, j) => t.orders[j] !== stationId);
     t.orders = t.orders.filter((id) => id !== stationId);
     if (i < t.currentOrder) t.currentOrder--;
     if (t.currentOrder >= t.orders.length) t.currentOrder = 0;
@@ -449,4 +469,42 @@ export function unshareOrders(state: GameState, trainId: number): CommandResult 
   if (!train || train.shareId === null) return { ok: false, reason: 'blocked' };
   unshare(state, train);
   return { ok: true };
+}
+
+/** Najdłuższy dodatkowy postój na stacji (dni). */
+export const MAX_WAIT_DAYS = 30;
+
+function clampWait(v: number | undefined): number {
+  return Math.max(0, Math.min(MAX_WAIT_DAYS, Math.floor(v ?? 0) || 0));
+}
+
+/** Dodatkowy postój (dni) przy pozycji rozkładu – dla całej linii. */
+export function setWaitDays(state: GameState, trainId: number, index: number, days: number): CommandResult {
+  const train = trainById(state, trainId);
+  if (!train || index < 0 || index >= train.orders.length) return { ok: false, reason: 'blocked' };
+  for (const t of sharedTrains(state, train)) t.waitDays[index] = clampWait(days);
+  return { ok: true };
+}
+
+/** Równe odstępy na linii (wspólny rozkład) – wł. / wył. dla wszystkich jej pociągów. */
+export function setSpacing(state: GameState, trainId: number, on: boolean): CommandResult {
+  const train = trainById(state, trainId);
+  if (!train) return { ok: false, reason: 'blocked' };
+  for (const t of sharedTrains(state, train)) {
+    t.spacing = on;
+    t.holding = false;
+  }
+  return { ok: true };
+}
+
+/**
+ * Odstęp między pociągami linii (ticki): średni czas okrążenia / liczba pociągów. 0 – jeszcze
+ * nieznany (żaden pociąg nie objechał linii) albo linia ma jeden pociąg.
+ */
+export function lineHeadway(state: GameState, train: Train): number {
+  const line = sharedTrains(state, train);
+  if (line.length < 2) return 0;
+  const loops = line.map((t) => t.loopTicks).filter((v) => v > 0);
+  if (!loops.length) return 0;
+  return Math.round(loops.reduce((s, v) => s + v, 0) / loops.length / line.length);
 }

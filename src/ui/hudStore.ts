@@ -107,7 +107,10 @@ export interface TrainWindowData {
   stopped: boolean;
   goToDepot: boolean;
   lost: boolean;
-  orders: { stationId: number; name: string; fullLoad: boolean }[];
+  orders: { stationId: number; name: string; fullLoad: boolean; waitDays: number }[];
+  /** Równe odstępy na linii i odstęp w dniach (null – jeszcze nieznany). */
+  spacing: boolean;
+  headwayDays: number | null;
   currentOrder: number;
   resale: number;
   /** Trwa wskazywanie stacji do rozkładu. */
@@ -358,7 +361,9 @@ export interface HudActions {
   reverseTrain(trainId: number): void;
   /** Wymiana lokomotywy (null – anulowanie); `all` – we wszystkich pociągach z tą samą lokomotywą. */
   replaceEngine(trainId: number, engine: string | null, all?: boolean): void;
-  setOrders(trainId: number, orders: number[], fullLoad?: boolean[]): void;
+  setOrders(trainId: number, orders: number[], fullLoad?: boolean[], waitDays?: number[]): void;
+  setWaitDays(trainId: number, index: number, days: number): void;
+  setSpacing(trainId: number, on: boolean): void;
   toggleFullLoad(trainId: number, index: number): void;
   /** Włącza/wyłącza wskazywanie stacji do rozkładu. */
   pickOrders(trainId: number): void;
