@@ -48,6 +48,11 @@ export interface Train {
   createdTick: number;
   /** Grupa gracza (null – bez grupy). */
   groupId: number | null;
+  /**
+   * Wspólny rozkład (linia): pociągi o tym samym `shareId` mają te same stacje i ptaszki; zmiana
+   * w jednym zmienia wszystkie. Każdy jedzie we własnym tempie (własne `currentOrder`). null – własny.
+   */
+  shareId: number | null;
   /** Zatrzymany przez gracza. */
   stopped: boolean;
   /** Rozkład: id stacji. */
@@ -151,6 +156,7 @@ export function buyTrain(
     profitLastYear: 0,
     createdTick: state.tick,
     groupId: null,
+    shareId: null,
     engineBuilt: state.tick,
   });
   spend(state, 'construction', plan.cost);
@@ -162,6 +168,7 @@ export function sellTrain(state: GameState, trainId: number, events: SimEvent[])
   const train = trainById(state, trainId);
   if (!train) return { ok: false, reason: 'blocked' };
   if (train.status !== 'depot') return { ok: false, reason: 'notInDepot' };
+  unshare(state, train);
   state.trains = state.trains.filter((t) => t !== train);
   spend(state, 'construction', -resaleValue(state, train));
   events.push({ type: 'trainsChanged' });
@@ -333,7 +340,11 @@ export function sendToDepot(state: GameState, trainId: number): CommandResult {
  * Kopia pociągu: ta sama lokomotywa, wagony i rozkład; staje w zajezdni (zatrzymana). Zajezdnia:
  * ta, w której stoi oryginał, a w trasie – najbliższa (dla elektrycznej – z siecią trakcyjną).
  */
-export function cloneTrain(state: GameState, trainId: number, events: SimEvent[]): CommandResult {
+/**
+ * Kopia pociągu. `shared` – kopia dzieli rozkład z oryginałem (ta sama linia); inaczej dostaje
+ * własną kopię rozkładu.
+ */
+export function cloneTrain(state: GameState, trainId: number, events: SimEvent[], shared = true): CommandResult {
   const train = trainById(state, trainId);
   if (!train) return { ok: false, reason: 'blocked' };
   const depot = cloneDepot(state, train);
@@ -344,6 +355,10 @@ export function cloneTrain(state: GameState, trainId: number, events: SimEvent[]
   copy.orders = [...train.orders];
   copy.fullLoad = [...train.fullLoad];
   copy.groupId = train.groupId;
+  if (shared && train.orders.length) {
+    train.shareId ??= state.nextShareId++;
+    copy.shareId = train.shareId;
+  }
   events.push({ type: 'trainCloned', trainId: copy.id, depotId: depot.id });
   return { ok: true };
 }
@@ -381,10 +396,15 @@ export function setOrders(
 ): CommandResult {
   const train = trainById(state, trainId);
   if (!train || orders.some((id) => !state.stations.some((s) => s.id === id))) return { ok: false, reason: 'blocked' };
-  train.fullLoad = orders.map((_, i) => (fullLoad ? fullLoad[i] === true : train.fullLoad[i] === true));
-  train.orders = [...orders];
-  if (train.currentOrder >= train.orders.length) train.currentOrder = 0;
-  train.resTerminal = null;
+  const flags = orders.map((_, i) => (fullLoad ? fullLoad[i] === true : train.fullLoad[i] === true));
+  // Wspólny rozkład: ta sama zmiana dla całej linii.
+  for (const t of sharedTrains(state, train)) {
+    t.fullLoad = [...flags];
+    t.orders = [...orders];
+    if (t.currentOrder >= t.orders.length) t.currentOrder = 0;
+    t.resTerminal = null;
+  }
+  if (orders.length === 0) unshare(state, train);
   return { ok: true };
 }
 
@@ -405,6 +425,28 @@ export function dropStationFromOrders(state: GameState, stationId: number): void
 export function toggleFullLoad(state: GameState, trainId: number, index: number): CommandResult {
   const train = trainById(state, trainId);
   if (!train || index < 0 || index >= train.orders.length) return { ok: false, reason: 'blocked' };
-  train.fullLoad[index] = !train.fullLoad[index];
+  const on = !train.fullLoad[index];
+  for (const t of sharedTrains(state, train)) t.fullLoad[index] = on;
+  return { ok: true };
+}
+
+/** Pociągi dzielące rozkład z danym (z nim samym); bez wspólnego rozkładu – tylko on. */
+export function sharedTrains(state: GameState, train: Train): Train[] {
+  return train.shareId === null ? [train] : state.trains.filter((t) => t.shareId === train.shareId);
+}
+
+/** Odłącza pociąg od wspólnego rozkładu (zostaje mu kopia); samotny ostatni pociąg linii też przestaje dzielić. */
+export function unshare(state: GameState, train: Train): void {
+  const id = train.shareId;
+  if (id === null) return;
+  train.shareId = null;
+  const rest = state.trains.filter((t) => t.shareId === id && t !== train);
+  if (rest.length === 1) rest[0]!.shareId = null;
+}
+
+export function unshareOrders(state: GameState, trainId: number): CommandResult {
+  const train = trainById(state, trainId);
+  if (!train || train.shareId === null) return { ok: false, reason: 'blocked' };
+  unshare(state, train);
   return { ok: true };
 }

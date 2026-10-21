@@ -1,3 +1,4 @@
+import { deserializeState, serializeState } from '../src/sim/serialize';
 import { describe, expect, it } from 'vitest';
 import type { SimEvent } from '../src/sim/commands';
 import { Simulation } from '../src/sim/simulation';
@@ -101,5 +102,55 @@ describe('kopiowanie pociągu', () => {
     sim.processCommands();
     expect(fails(sim.drainEvents())).toEqual(['notAvailable']);
     expect(sim.state.trains).toHaveLength(1);
+  });
+
+  it('wspólny rozkład: kopia dzieli rozkład – zmiany i ptaszki dla całej linii, każdy jedzie swoim tempem', () => {
+    const sim = line();
+    const s = sim.state;
+    sim.enqueue({ type: 'cloneTrain', trainId: 1 });
+    sim.enqueue({ type: 'cloneTrain', trainId: 2 });
+    sim.processCommands();
+    const [a, b, c] = s.trains;
+    expect(a!.shareId).not.toBeNull();
+    expect(b!.shareId).toBe(a!.shareId);
+    expect(c!.shareId).toBe(a!.shareId);
+    // Zmiana w kopii zmienia oryginał i trzeci pociąg.
+    sim.enqueue({ type: 'setOrders', trainId: 3, orders: [2, 1, 2] });
+    sim.enqueue({ type: 'toggleFullLoad', trainId: 2, index: 1 });
+    sim.processCommands();
+    for (const t of [a!, b!, c!]) {
+      expect(t.orders).toEqual([2, 1, 2]);
+      expect(t.fullLoad).toEqual([false, true, false]);
+    }
+    // Własne tempo: inny bieżący cel.
+    a!.currentOrder = 2;
+    expect(b!.currentOrder).toBe(0);
+    // Odłączenie: własna kopia, reszta dalej wspólna.
+    sim.enqueue({ type: 'unshareOrders', trainId: 1 });
+    sim.enqueue({ type: 'setOrders', trainId: 2, orders: [1] });
+    sim.processCommands();
+    expect(a!.shareId).toBeNull();
+    expect(a!.orders).toEqual([2, 1, 2]);
+    expect(c!.orders).toEqual([1]);
+    // Sprzedaż jednego z dwóch – ostatni przestaje „dzielić” rozkład.
+    sim.enqueue({ type: 'sellTrain', trainId: 3 });
+    sim.processCommands();
+    expect(b!.shareId).toBeNull();
+  });
+
+  it('„osobny” – kopia z niezależnym rozkładem; wspólny rozkład przechodzi przez zapis', () => {
+    const sim = line();
+    sim.enqueue({ type: 'cloneTrain', trainId: 1, shared: false });
+    sim.enqueue({ type: 'cloneTrain', trainId: 1 });
+    sim.processCommands();
+    const [a, b, c] = sim.state.trains;
+    expect(b!.shareId).toBeNull();
+    expect(c!.shareId).toBe(a!.shareId);
+    sim.enqueue({ type: 'setOrders', trainId: 2, orders: [2] });
+    sim.processCommands();
+    expect(a!.orders).toEqual([1, 2]);
+    const loaded = deserializeState(JSON.parse(JSON.stringify(serializeState(sim.state))));
+    expect(loaded.trains.map((t) => t.shareId)).toEqual(sim.state.trains.map((t) => t.shareId));
+    expect(loaded.nextShareId).toBe(sim.state.nextShareId);
   });
 });

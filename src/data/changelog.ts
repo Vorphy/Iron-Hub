@@ -12,6 +12,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-21',
+    title: 'Wspólne rozkłady',
+    items: [
+      '„⧉ Kopiuj” tworzy pociąg ze wspólnym rozkładem: dodanie lub usunięcie stacji albo ptaszek pełnego ładunku w jednym zmienia całą linię. Każdy pociąg jedzie we własnym tempie.',
+      '„⧉ osobny” – kopia z niezależnym rozkładem (jak dotąd). „Odłącz” w oknie pociągu – pociąg dostaje własną kopię rozkładu.',
+      'Na liście pociągów znaczek ⇄N przy pociągach na wspólnym rozkładzie.',
+    ],
+  },
+  {
+    date: '2026-10-21',
     title: 'Niższe stawki za przewóz',
     items: [
       'Wszystkie stawki za przewóz niższe o 20% – po 10 latach gry pieniądze rosły za szybko. Aktualne stawki: Pomoc → „Za co płacą”.',

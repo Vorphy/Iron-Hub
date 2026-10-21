@@ -102,6 +102,7 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
           groupId: t.groupId,
           unprofitable: t.profitLastYear < 0 && t.createdTick <= yearStart - yearTicks,
           newTrain: t.createdTick > yearStart - 1 && t.profitLastYear === 0,
+          lineSize: t.shareId === null ? 0 : state.trains.filter((o) => o.shareId === t.shareId).length,
         };
       }),
       groups: state.groups.map((g) => ({ id: g.id, name: g.name, count: state.trains.filter((t) => t.groupId === g.id).length })),
@@ -220,6 +221,10 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
     profitLast: t.profitLastYear,
     groupId: t.groupId,
     groups: state.groups.map((g) => ({ id: g.id, name: g.name })),
+    sharedWith:
+      t.shareId === null
+        ? []
+        : state.trains.filter((o) => o.shareId === t.shareId && o !== t).map((o) => ({ id: o.id, name: o.name })),
     replaceOptions: availableEngines(gameDate(state).year)
       .filter((e) => e.id !== t.engine)
       .map((e) => ({ id: e.id, cost: replaceCost(state, t, e.id) })),

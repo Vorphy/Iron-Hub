@@ -68,11 +68,18 @@ export function TrainWindow({ data: t, actions }: { data: TrainWindowData; actio
           onClick={() => actions.cloneTrain(id)}
           title={
             t.cloneAvailable
-              ? 'Kupuje taki sam pociąg z tym samym rozkładem – stanie w zajezdni, w której kupiono ten pociąg'
+              ? 'Kupuje taki sam pociąg ze WSPÓLNYM rozkładem (zmiana w jednym zmienia oba) – stanie w zajezdni, w której kupiono ten pociąg'
               : 'Ta lokomotywa jest już wycofana ze sprzedaży'
           }
         >
           ⧉ Kopiuj <small>{formatMoney(t.cloneCost)}</small>
+        </button>
+        <button
+          disabled={!t.cloneAvailable}
+          onClick={() => actions.cloneTrain(id, true)}
+          title="Kopia z osobnym rozkładem – zmiany w nim nie dotyczą tego pociągu"
+        >
+          ⧉ osobny
         </button>
         {t.inDepot && (
           <button onClick={() => actions.sellTrain(id)}>
@@ -106,6 +113,14 @@ export function TrainWindow({ data: t, actions }: { data: TrainWindowData; actio
       <EngineSection t={t} actions={actions} />
 
       <div class="section-title">Rozkład jazdy</div>
+      {t.sharedWith.length > 0 && (
+        <div class="row small shared-line">
+          <span class="grow">⇄ Wspólny z: {t.sharedWith.map((o) => o.name).join(', ')} – zmiany dotyczą wszystkich</span>
+          <button onClick={() => actions.unshareOrders(id)} title="Ten pociąg dostanie własną kopię rozkładu">
+            Odłącz
+          </button>
+        </div>
+      )}
       {t.orders.length === 0 && <div class="muted small">Brak stacji – pociąg jeździ przed siebie.</div>}
       {t.orders.map((o, i) => (
         <div class="row order" key={i}>

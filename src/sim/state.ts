@@ -42,6 +42,8 @@ export interface GameState {
   /** Grupy pociągów gracza. */
   groups: TrainGroup[];
   nextGroupId: number;
+  /** Kolejny numer wspólnego rozkładu (linii). */
+  nextShareId: number;
 }
 
 export interface NewGameOptions {
@@ -96,6 +98,7 @@ export function createGame({
     nextTunnelId: 1,
     groups: [],
     nextGroupId: 1,
+    nextShareId: 1,
   };
   // Pusty świat (testy) jest płaski.
   if (empty) state.map.heights.fill(0);

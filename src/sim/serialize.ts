@@ -15,7 +15,7 @@ import { engineDef, wagonDef } from './trains/vehicles';
 import { MAX_HEIGHT } from './world/height';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 17;
+export const SAVE_VERSION = 18;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -58,6 +58,7 @@ export interface SerializedState {
   nextTunnelId: number;
   groups: TrainGroup[];
   nextGroupId: number;
+  nextShareId: number;
 }
 
 export class SaveError extends Error {}
@@ -92,6 +93,7 @@ export function serializeState(state: GameState): SerializedState {
     nextTunnelId: state.nextTunnelId,
     groups: structuredClone(state.groups),
     nextGroupId: state.nextGroupId,
+    nextShareId: state.nextShareId,
   };
 }
 
@@ -214,6 +216,12 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     d.nextGroupId = 1;
     d.version = 17;
   }
+  if (d.version === 17) {
+    // v18: wspólne rozkłady
+    mapTrains((t) => ({ ...t, shareId: null }));
+    d.nextShareId = 1;
+    d.version = 18;
+  }
   return d as Partial<SerializedState>;
 }
 
@@ -243,7 +251,17 @@ export function deserializeState(data: unknown): GameState {
     electric: bytes('electric'),
   };
   if (map.heights.some((h) => h > MAX_HEIGHT)) throw new SaveError('Uszkodzone wysokości terenu');
-  const ints = [d.tick, d.rng, d.nextStationId, d.nextDepotId, d.nextTrainId, d.nextBridgeId, d.nextTunnelId, d.nextGroupId];
+  const ints = [
+    d.tick,
+    d.rng,
+    d.nextStationId,
+    d.nextDepotId,
+    d.nextTrainId,
+    d.nextBridgeId,
+    d.nextTunnelId,
+    d.nextGroupId,
+    d.nextShareId,
+  ];
   if (!ints.every(isInt) || typeof d.money !== 'number') throw new SaveError('Uszkodzone dane gry');
   check(d.stations, isStation, 'stacje');
   check(d.depots, isDepot, 'zajezdnie');
@@ -280,6 +298,7 @@ export function deserializeState(data: unknown): GameState {
     nextTunnelId: d.nextTunnelId!,
     groups: d.groups!,
     nextGroupId: d.nextGroupId!,
+    nextShareId: d.nextShareId!,
   };
 }
 
@@ -394,7 +413,8 @@ function isTrain(v: unknown): v is Train {
     isNum(t.profitThisYear) &&
     isNum(t.profitLastYear) &&
     isInt(t.createdTick) &&
-    (t.groupId === null || isInt(t.groupId))
+    (t.groupId === null || isInt(t.groupId)) &&
+    (t.shareId === null || isInt(t.shareId))
   );
 }
 

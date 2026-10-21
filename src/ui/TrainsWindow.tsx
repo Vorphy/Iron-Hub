@@ -111,6 +111,11 @@ export function TrainsWindow({ data, actions }: { data: TrainsWindowData; action
                   <td>
                     <button class="link train-name" onClick={() => actions.openTrain(r.id)} title={r.status}>
                       <span class="swatch" style={{ background: r.color }} /> {r.name}
+                      {r.lineSize > 0 && (
+                        <span class="badge" title={`Wspólny rozkład: ${r.lineSize} pociągów`}>
+                          ⇄{r.lineSize}
+                        </span>
+                      )}
                     </button>
                     <div class={`muted small ${r.lost ? 'bad' : ''}`}>
                       {r.engine} · {r.status}

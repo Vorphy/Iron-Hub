@@ -58,6 +58,8 @@ export interface TrainRow {
   unprofitable: boolean;
   /** Kupiony w tym roku – zeszłoroczny zysk nie dotyczy. */
   newTrain: boolean;
+  /** Liczba pociągów na wspólnym rozkładzie (0 – własny rozkład). */
+  lineSize: number;
 }
 
 export interface TrainsWindowData {
@@ -122,6 +124,8 @@ export interface TrainWindowData {
   profitLast: number;
   groupId: number | null;
   groups: { id: number; name: string }[];
+  /** Pozostałe pociągi ze wspólnym rozkładem (linia). */
+  sharedWith: { id: number; name: string }[];
   /** Lokomotywy, na które można wymienić (z dopłatą); ile pociągów ma tę samą lokomotywę. */
   replaceOptions: { id: string; cost: number }[];
   /** Cena kopii (obecne ceny) i czy lokomotywa jest jeszcze w sprzedaży. */
@@ -344,7 +348,9 @@ export interface HudActions {
   detachWagon(trainId: number, index: number): void;
   sellEngine(trainId: number): void;
   /** Kopia pociągu z tym samym rozkładem do zajezdni. */
-  cloneTrain(trainId: number): void;
+  /** Kopia; `separate` – z osobnym rozkładem (domyślnie wspólny). */
+  cloneTrain(trainId: number, separate?: boolean): void;
+  unshareOrders(trainId: number): void;
   openTrain(trainId: number): void;
   startTrain(trainId: number): void;
   stopTrain(trainId: number): void;

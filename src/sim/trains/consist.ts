@@ -2,7 +2,7 @@ import type { CommandResult, SimEvent } from '../commands';
 import { MAX_WAGONS, TRAIN_RESALE_RATE } from '../config';
 import { spend } from '../economy/finance';
 import type { GameState } from '../state';
-import { engineTradeIn, trainById } from './train';
+import { engineTradeIn, trainById, unshare } from './train';
 import { wagonDef } from './vehicles';
 
 /**
@@ -88,6 +88,7 @@ export function sellEngine(state: GameState, trainId: number, events: SimEvent[]
     depot.wagons.push({ type, load: train.loads[k]! });
   });
   const refund = engineTradeIn(state, train);
+  unshare(state, train);
   state.trains = state.trains.filter((t) => t !== train);
   spend(state, 'construction', -refund);
   events.push({ type: 'trainsChanged' });

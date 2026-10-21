@@ -821,3 +821,7 @@ input.seed {
 .minimap:not(.big) .minimap-legend {
   min-width: 0;
 }
+
+.shared-line {
+  color: var(--accent);
+}

@@ -13,6 +13,7 @@ import {
   buyTrain,
   occupiedTiles,
   cloneTrain,
+  unshareOrders,
   requestReplace,
   requestReverse,
   sellTrain,
@@ -50,7 +51,9 @@ export type Command =
   | { type: 'deleteGroup'; groupId: number }
   | { type: 'setTrainGroup'; trainId: number; groupId: number | null }
   /** Kopia pociągu (lokomotywa, wagony, rozkład) do zajezdni. */
-  | { type: 'cloneTrain'; trainId: number }
+  | { type: 'cloneTrain'; trainId: number; shared?: boolean }
+  /** Odłącza pociąg od wspólnego rozkładu (zostaje z jego kopią). */
+  | { type: 'unshareOrders'; trainId: number }
   | { type: 'startTrain'; trainId: number }
   | { type: 'stopTrain'; trainId: number }
   | { type: 'sendToDepot'; trainId: number }
@@ -172,7 +175,9 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
     case 'setTrainGroup':
       return setTrainGroup(state, cmd.trainId, cmd.groupId, events);
     case 'cloneTrain':
-      return cloneTrain(state, cmd.trainId, events);
+      return cloneTrain(state, cmd.trainId, events, cmd.shared !== false);
+    case 'unshareOrders':
+      return unshareOrders(state, cmd.trainId);
     case 'sellTrain':
       return sellTrain(state, cmd.trainId, events);
     case 'startTrain':
