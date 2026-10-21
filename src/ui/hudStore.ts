@@ -62,6 +62,9 @@ export interface TrainWindowData {
   replaceWith: string | null;
   /** Lokomotywy, na które można wymienić (z dopłatą); ile pociągów ma tę samą lokomotywę. */
   replaceOptions: { id: string; cost: number }[];
+  /** Cena kopii (obecne ceny) i czy lokomotywa jest jeszcze w sprzedaży. */
+  cloneCost: number;
+  cloneAvailable: boolean;
   sameEngineTrains: number;
 }
 
@@ -258,6 +261,8 @@ export interface HudActions {
   closeWindow(): void;
   buyTrain(depotId: number, engine: string, wagons: string[]): void;
   sellTrain(trainId: number): void;
+  /** Kopia pociągu z tym samym rozkładem do zajezdni. */
+  cloneTrain(trainId: number): void;
   openTrain(trainId: number): void;
   startTrain(trainId: number): void;
   stopTrain(trainId: number): void;

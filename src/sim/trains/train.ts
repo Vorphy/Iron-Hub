@@ -312,6 +312,41 @@ export function sendToDepot(state: GameState, trainId: number): CommandResult {
   return { ok: true };
 }
 
+/**
+ * Kopia pociągu: ta sama lokomotywa, wagony i rozkład; staje w zajezdni (zatrzymana). Zajezdnia:
+ * ta, w której stoi oryginał, a w trasie – najbliższa (dla elektrycznej – z siecią trakcyjną).
+ */
+export function cloneTrain(state: GameState, trainId: number, events: SimEvent[]): CommandResult {
+  const train = trainById(state, trainId);
+  if (!train) return { ok: false, reason: 'blocked' };
+  const depot = cloneDepot(state, train);
+  if (!depot) return { ok: false, reason: 'noDepot' };
+  const result = buyTrain(state, depot.id, train.engine, train.wagons, events);
+  if (!result.ok) return result;
+  const copy = state.trains[state.trains.length - 1]!;
+  copy.orders = [...train.orders];
+  events.push({ type: 'trainCloned', trainId: copy.id, depotId: depot.id });
+  return { ok: true };
+}
+
+function cloneDepot(state: GameState, train: Train) {
+  if (train.status === 'depot') return state.depots.find((d) => d.id === train.depotId);
+  const head = train.trail[0];
+  if (!head) return undefined;
+  const electric = needsCatenary(train.engine);
+  let best: (typeof state.depots)[number] | undefined;
+  let bestD = Infinity;
+  for (const d of state.depots) {
+    if (electric && !isElectrified(state.map, d.x, d.y)) continue;
+    const dist = Math.abs(d.x - head.x) + Math.abs(d.y - head.y);
+    if (dist < bestD) {
+      bestD = dist;
+      best = d;
+    }
+  }
+  return best;
+}
+
 export function setOrders(state: GameState, trainId: number, orders: readonly number[]): CommandResult {
   const train = trainById(state, trainId);
   if (!train || orders.some((id) => !state.stations.some((s) => s.id === id))) return { ok: false, reason: 'blocked' };

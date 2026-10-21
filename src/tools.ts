@@ -59,6 +59,7 @@ export const FAIL_MESSAGES: Record<FailReason, string> = {
   noTrack: 'Tu nie ma toru',
   alreadyBuilt: 'Sieć trakcyjna już tu jest',
   notAvailable: 'Ta lokomotywa nie jest dostępna w tym roku',
+  noDepot: 'Brak zajezdni na kopię (dla lokomotywy elektrycznej – zajezdni z siecią trakcyjną)',
   noCatenary: 'Lokomotywa elektryczna – zajezdnia nie ma sieci trakcyjnej (narzędzie Trakcja, E)',
   loanLimit: 'Osiągnięto limit kredytu',
   noLoan: 'Nie masz kredytu do spłaty',

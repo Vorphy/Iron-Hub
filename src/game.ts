@@ -311,6 +311,8 @@ export class Game {
           return `${e.name} (${TRACTION_NAMES[e.traction]}, ${e.maxSpeed} km/h)`;
         });
         showMessage(`Nowa lokomotywa w zajezdniach: ${names.join(', ')}`);
+      } else if (ev.type === 'trainCloned') {
+        showMessage(`Kopia gotowa: Pociąg ${ev.trainId} w zajezdni #${ev.depotId} – kliknij ▶ Wyjedź`);
       } else if (ev.type === 'engineReplaced') {
         const t = this.sim.state.trains.find((tr) => tr.id === ev.trainId);
         if (t) showMessage(`${t.name}: nowa lokomotywa ${engineDef(t.engine)!.name} – wraca na trasę`);

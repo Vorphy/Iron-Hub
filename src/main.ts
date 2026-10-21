@@ -178,6 +178,7 @@ const actions: HudActions = {
   closeWindow: () => game?.closeWindow(),
   buyTrain: (depotId, engine, wagons) => game?.command({ type: 'buyTrain', depotId, engine, wagons }),
   sellTrain: (trainId) => game?.command({ type: 'sellTrain', trainId }),
+  cloneTrain: (trainId) => game?.command({ type: 'cloneTrain', trainId }),
   openTrain: (trainId) => game?.openWindow({ kind: 'train', trainId }),
   startTrain: (trainId) => game?.command({ type: 'startTrain', trainId }),
   stopTrain: (trainId) => game?.command({ type: 'stopTrain', trainId }),

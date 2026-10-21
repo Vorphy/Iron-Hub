@@ -10,6 +10,7 @@ import { getTrackBits, tracksOn, type Side, type Track, type TrackPiece } from '
 import {
   buyTrain,
   occupiedTiles,
+  cloneTrain,
   requestReplace,
   requestReverse,
   sellTrain,
@@ -33,6 +34,8 @@ export type Command =
   | { type: 'buildDepot'; x: number; y: number; side: Side }
   | { type: 'buyTrain'; depotId: number; engine: string; wagons: string[] }
   | { type: 'sellTrain'; trainId: number }
+  /** Kopia pociągu (lokomotywa, wagony, rozkład) do zajezdni. */
+  | { type: 'cloneTrain'; trainId: number }
   | { type: 'startTrain'; trainId: number }
   | { type: 'stopTrain'; trainId: number }
   | { type: 'sendToDepot'; trainId: number }
@@ -76,6 +79,7 @@ export type FailReason =
   | 'alreadyBuilt'
   | 'notAvailable'
   | 'noCatenary'
+  | 'noDepot'
   | 'loanLimit'
   | 'noLoan'
   | 'bankrupt';
@@ -98,6 +102,7 @@ export type SimEvent =
   /** Nowy rok: lokomotywy, które właśnie weszły do sprzedaży. */
   | { type: 'newEngines'; engines: string[] }
   | { type: 'engineReplaced'; trainId: number }
+  | { type: 'trainCloned'; trainId: number; depotId: number }
   | { type: 'replaceFailed'; trainId: number; reason: 'noMoney' | 'noCatenary' | 'notAvailable' }
   | { type: 'commandFailed'; command: Command; reason: FailReason };
 
@@ -127,6 +132,8 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
       return buildDepot(state, cmd.x, cmd.y, cmd.side, events);
     case 'buyTrain':
       return buyTrain(state, cmd.depotId, cmd.engine, cmd.wagons, events);
+    case 'cloneTrain':
+      return cloneTrain(state, cmd.trainId, events);
     case 'sellTrain':
       return sellTrain(state, cmd.trainId, events);
     case 'startTrain':

@@ -1,7 +1,7 @@
 import type { Simulation } from '../sim/simulation';
 import { engineAge, engineTradeIn, replaceCost, resaleValue, trainById, trainsInDepot, type Train } from '../sim/trains/train';
 import { isWaiting } from '../sim/trains/movement';
-import { availableEngines, consistStats, engineDef } from '../sim/trains/vehicles';
+import { availableEngines, consistStats, engineAvailable, engineDef } from '../sim/trains/vehicles';
 import { infrastructureCost } from '../sim/economy/monthly';
 import { BANKRUPTCY_MONTHS, LOAN_INTEREST, LOAN_MAX, LOAN_STEP, monthlyInterest } from '../sim/economy/finance';
 import { gameDate } from '../sim/time';
@@ -186,5 +186,7 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
       .filter((e) => e.id !== t.engine)
       .map((e) => ({ id: e.id, cost: replaceCost(state, t, e.id) })),
     sameEngineTrains: state.trains.filter((o) => o.engine === t.engine).length,
+    cloneCost: consistStats(t.engine, t.wagons).cost,
+    cloneAvailable: engineAvailable(engineDef(t.engine)!, gameDate(state).year),
   };
 }

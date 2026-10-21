@@ -63,6 +63,17 @@ export function TrainWindow({ data: t, actions }: { data: TrainWindowData; actio
         <button disabled={t.inDepot} onClick={() => actions.focusTrain(id)}>
           ◎ Pokaż
         </button>
+        <button
+          disabled={!t.cloneAvailable}
+          onClick={() => actions.cloneTrain(id)}
+          title={
+            t.cloneAvailable
+              ? 'Kupuje taki sam pociąg z tym samym rozkładem – stanie w zajezdni (tej samej albo najbliższej)'
+              : 'Ta lokomotywa jest już wycofana ze sprzedaży'
+          }
+        >
+          ⧉ Kopiuj <small>{formatMoney(t.cloneCost)}</small>
+        </button>
         {t.inDepot && (
           <button onClick={() => actions.sellTrain(id)}>
             Sprzedaj <small>+{formatMoney(t.resale)}</small>

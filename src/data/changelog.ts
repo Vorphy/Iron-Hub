@@ -12,6 +12,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-21',
+    title: 'Kopiowanie pociągów',
+    items: [
+      'Okno pociągu → „⧉ Kopiuj”: taki sam pociąg (lokomotywa, wagony, rozkład) staje w zajezdni – wystarczy kliknąć „▶ Wyjedź”.',
+      'W oknie zajezdni „⧉” przy każdym pociągu. Kopia trafia do tej samej zajezdni albo – z pociągu w trasie – do najbliższej.',
+    ],
+  },
+  {
+    date: '2026-10-21',
     title: 'Więcej nazw miast',
     items: [
       'Duże mapy dostają polsko brzmiące nazwy z generatora (np. Gajice Dolne, Stara Wrzosówka, Boguszany nad Wilgą) zamiast „Osiedle 1, 2, 3…” – tysiące niepowtarzalnych nazw.',

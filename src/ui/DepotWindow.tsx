@@ -56,6 +56,9 @@ export function DepotWindow({ data, money, actions }: { data: DepotWindowData; m
           <button onClick={() => actions.openTrain(t.id)} title="Okno pociągu (rozkład jazdy)">
             Rozkład
           </button>
+          <button onClick={() => actions.cloneTrain(t.id)} title="Kup taki sam pociąg z tym samym rozkładem">
+            ⧉
+          </button>
           <button onClick={() => actions.sellTrain(t.id)} title={`Sprzedaj (+${formatMoney(t.resale)})`}>
             Sprzedaj
           </button>
