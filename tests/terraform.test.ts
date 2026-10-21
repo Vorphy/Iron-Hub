@@ -27,7 +27,7 @@ function expectSmooth(s: GameState): void {
 }
 
 describe('kształtowanie terenu', () => {
-  it('podniesienie narożnika zmienia 4 kafelki wokół i kosztuje 30 zł', () => {
+  it('podniesienie narożnika zmienia 4 kafelki wokół i kosztuje cenę narożnika', () => {
     const { sim, s } = flat();
     const money = s.money;
     sim.enqueue({ type: 'terraform', vx: 10, vy: 10, delta: 1 });

@@ -29,7 +29,7 @@ export const ECONOMY = {
     /** Kafelek tunelu (z portalami). */
     tunnelTile: 600,
     /** Zmiana wysokości jednego narożnika terenu. */
-    terraformCorner: 30,
+    terraformCorner: 150,
     /** Oczyszczenie nieużytku. */
     clearRough: 50,
     /** Wyburzenie domu. */

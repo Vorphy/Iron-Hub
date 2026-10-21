@@ -1,3 +1,4 @@
+import { TERRAFORM_COST } from '../sim/config';
 import { useEffect, useState } from 'preact/hooks';
 import { SPEEDS, type Speed } from '../loop';
 import { Side } from '../sim/track/track';
@@ -43,8 +44,7 @@ const TOOL_HELP: Record<Tool, string> = {
     'Klik na tor stawia semafor ścieżkowy (200 zł); kolejne kliknięcia zmieniają kierunek. Pociąg może stanąć tylko przed semaforem, na końcu peronu lub toru · V – podgląd rezerwacji',
   catenary:
     'Sieć trakcyjna dla lokomotyw elektrycznych: przeciągnij wzdłuż toru (jak przy budowie, także po skosie) albo kliknij kafelek. Most i tunel – w całości. Zajezdnia też musi mieć sieć. 150 zł za kafelek',
-  terrain:
-    'Podnieś / Obniż: klik zmienia o poziom narożnik najbliższy kursorowi (sąsiedni teren dopasuje się sam). Wyrównaj: przeciągnij prostokąt – teren do wysokości punktu startowego. 30 zł za narożnik',
+  terrain: `Podnieś / Obniż: klik zmienia o poziom narożnik najbliższy kursorowi (sąsiedni teren dopasuje się sam). Wyrównaj: przeciągnij prostokąt – teren do wysokości punktu startowego. ${TERRAFORM_COST} zł za narożnik`,
   bridge:
     'Przeciągnij od przyczółka do przyczółka (wzdłuż osi, max 14 kafelków). Przyczółki płaskie lub wznoszące się w stronę mostu, na tej samej wysokości; pod mostem teren co najmniej poziom niżej. 400 zł za kafelek',
   tunnel:

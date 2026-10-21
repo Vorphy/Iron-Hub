@@ -12,6 +12,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-21',
+    title: 'Droższe kształtowanie terenu',
+    items: [
+      'Zmiana wysokości narożnika kosztuje 150 zł zamiast 30 zł – przekopywanie wzgórz i zasypywanie dolin to teraz odczuwalny wydatek; czasem taniej zbudować most albo tunel.',
+    ],
+  },
+  {
+    date: '2026-10-21',
     title: 'Numery zajezdni na mapie',
     items: ['Nad każdą zajezdnią podpis „Zajezdnia #N” – ten sam numer co w oknie zajezdni i komunikatach.'],
   },
