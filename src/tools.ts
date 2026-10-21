@@ -5,7 +5,15 @@ import { BRIDGE_TILE_COST, CLEAR_ROUGH_COST, SIGNAL_COST, TRACK_REFUND_RATE, TUN
 import { CARGO_DEFS, type Cargo } from './sim/economy/cargo';
 import { catchmentCargo } from './sim/economy/cargoFlow';
 import { autoDepotSide, depotAt, depotRefund, planDepot } from './sim/depot/depot';
-import { catchment, planStation, stationAt, stationAxis, stationTileRefund, type StationAxis } from './sim/station/station';
+import {
+  catchment,
+  planStation,
+  planWaypoint,
+  stationAt,
+  stationAxis,
+  stationTileRefund,
+  type StationAxis,
+} from './sim/station/station';
 import { planTrackLine } from './sim/track/autorail';
 import { planBuildTrack, planRemoveTrack, type TrackPlan } from './sim/track/build';
 import { nextSignalState } from './sim/signals/signals';
@@ -30,6 +38,9 @@ export type Tool =
   | 'tunnel'
   | 'bulldozer'
   | 'orders';
+
+/** Narzędzie Stacja: perony albo punkt kontrolny na torze. */
+export type StationKind = 'platform' | 'waypoint';
 
 /** Narzędzie Teren: podnieś / obniż narożnik albo wyrównaj obszar. */
 export type TerrainMode = 'raise' | 'lower' | 'level';
@@ -89,6 +100,7 @@ export class Tools {
   catenaryMode: TrackMode = 'build';
   /** Stacja: osobna zamiast rozbudowy sąsiedniej (panel); Ctrl / Shift odwraca na czas trzymania. */
   stationSeparate = false;
+  stationKind: StationKind = 'platform';
   private modifierHeld = false;
   terrainMode: TerrainMode = 'raise';
   /** Pociąg, któremu dopisujemy stacje (narzędzie 'orders'). */
@@ -174,6 +186,11 @@ export class Tools {
     this.dirty = true;
   }
 
+  setStationKind(kind: StationKind): void {
+    this.stationKind = kind;
+    this.dirty = true;
+  }
+
   cancel(): boolean {
     if (!this.dragStart) return false;
     this.dragStart = null;
@@ -201,7 +218,7 @@ export class Tools {
     if (this.tool === 'cursor' || !p) {
       this.overlay.setHover(tile);
       const station = tile && stationAt(this.sim.state, tile.x, tile.y);
-      if (station) this.overlay.setCatchment(catchment(map, station.tiles), map.width);
+      if (station && !station.waypoint) this.overlay.setCatchment(catchment(map, station.tiles), map.width);
       return;
     }
 
@@ -293,8 +310,10 @@ export class Tools {
     if (this.tool === 'orders') {
       const station = tile && stationAt(this.sim.state, tile.x, tile.y);
       this.overlay.setHover(tile, station ? 0x4cc9f0 : 0x9aa0a8);
-      if (station) this.overlay.setCatchment(catchment(map, station.tiles), map.width);
-      this.label = station ? { text: `Dodaj: ${station.name}`, ok: true } : { text: 'Wskaż stację', ok: false };
+      if (station && !station.waypoint) this.overlay.setCatchment(catchment(map, station.tiles), map.width);
+      this.label = station
+        ? { text: `Dodaj: ${station.name}${station.waypoint ? ' (punkt kontrolny)' : ''}`, ok: true }
+        : { text: 'Wskaż stację lub punkt kontrolny', ok: false };
       return;
     }
 
@@ -304,6 +323,14 @@ export class Tools {
       const plan = planDepot(this.sim.state, tile.x, tile.y);
       this.overlay.setDepotPreview(tile.x, tile.y, this.depotSideAt(tile.x, tile.y), plan.result.ok);
       this.label = planLabel(plan);
+      return;
+    }
+
+    if (this.tool === 'station' && this.stationKind === 'waypoint') {
+      this.overlay.setHover(tile, 0x4cc9f0);
+      if (!tile) return;
+      const plan = planWaypoint(this.sim.state, tile.x, tile.y);
+      this.label = plan.result.ok ? { text: `Punkt kontrolny · ${planLabel(plan).text}`, ok: true } : planLabel(plan);
       return;
     }
 
@@ -327,8 +354,9 @@ export class Tools {
       this.overlay.setHover(tile, 0xe0503a);
       if (!tile) return;
       const bits = getTrackBits(map, tile.x, tile.y);
-      if (stationAt(this.sim.state, tile.x, tile.y)) {
-        this.label = { text: `Zwrot: ${formatMoney(stationTileRefund())}`, ok: true };
+      const station = stationAt(this.sim.state, tile.x, tile.y);
+      if (station) {
+        this.label = { text: `Zwrot: ${formatMoney(stationTileRefund(station))}`, ok: true };
       } else if (depotAt(this.sim.state, tile.x, tile.y)) {
         this.label = { text: `Zwrot: ${formatMoney(depotRefund())}`, ok: true };
       } else if (structureAt(this.sim, tile.x, tile.y)) {
@@ -443,6 +471,9 @@ export class Tools {
       const x = Math.floor(end.x);
       const y = Math.floor(end.y);
       return { type: 'buildDepot', x, y, side: this.depotSideAt(x, y) };
+    }
+    if (this.tool === 'station' && this.stationKind === 'waypoint') {
+      return { type: 'buildWaypoint', x: Math.floor(end.x), y: Math.floor(end.y) };
     }
     if (this.tool === 'station') {
       const plan = this.stationPlan(start, end);

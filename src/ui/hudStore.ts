@@ -29,7 +29,7 @@ import type { Cargo } from '../sim/economy/cargo';
 import type { StationAxis } from '../sim/station/station';
 import type { Side } from '../sim/track/track';
 import type { SignalMode } from '../sim/signals/signals';
-import type { SignalKind, TerrainMode, Tool, TrackMode } from '../tools';
+import type { SignalKind, StationKind, TerrainMode, Tool, TrackMode } from '../tools';
 import { Store } from './store';
 
 export type WindowRef =
@@ -114,7 +114,8 @@ export interface TrainWindowData {
   stopped: boolean;
   goToDepot: boolean;
   lost: boolean;
-  orders: { stationId: number; name: string; fullLoad: boolean; waitDays: number }[];
+  /** `nonStop` – przejazd bez zatrzymania; `waypoint` – punkt kontrolny (zawsze przejazd). */
+  orders: { stationId: number; name: string; fullLoad: boolean; waitDays: number; nonStop: boolean; waypoint: boolean }[];
   /** Równe odstępy na linii i odstęp w dniach (null – jeszcze nieznany). */
   spacing: boolean;
   headwayDays: number | null;
@@ -179,6 +180,8 @@ export interface StationWindowData {
   kind: 'station';
   stationId: number;
   name: string;
+  /** Punkt kontrolny (bez peronu i ładunku). */
+  waypoint: boolean;
   platforms: number;
   /** Ładunki obsługiwane lub czekające: ilość i ocena (0–1, 0 – brak obsługi). */
   cargo: { cargo: Cargo; waiting: number; rating: number }[];
@@ -227,6 +230,7 @@ export interface HudState {
     catenaryMode: TrackMode;
     terrainMode: TerrainMode;
     stationSeparate: boolean;
+    stationKind: StationKind;
   };
   signalMode: SignalMode;
   fps: number;
@@ -276,6 +280,7 @@ export const hudStore = new Store<HudState>({
     catenaryMode: 'build',
     terrainMode: 'raise',
     stationSeparate: false,
+    stationKind: 'platform',
   },
   signalMode: 'auto',
   fps: 0,
@@ -315,6 +320,8 @@ export interface HudActions {
   setTrackMode(mode: TrackMode): void;
   setCatenaryMode(mode: TrackMode): void;
   setStationSeparate(on: boolean): void;
+  /** Narzędzie Stacja: peron albo punkt kontrolny. */
+  setStationKind(kind: StationKind): void;
   setTerrainMode(mode: TerrainMode): void;
   setSignalMode(mode: SignalMode): void;
   toggleMenu(): void;
@@ -370,7 +377,8 @@ export interface HudActions {
   reverseTrain(trainId: number): void;
   /** Wymiana lokomotywy (null – anulowanie); `all` – we wszystkich pociągach z tą samą lokomotywą. */
   replaceEngine(trainId: number, engine: string | null, all?: boolean): void;
-  setOrders(trainId: number, orders: number[], fullLoad?: boolean[], waitDays?: number[]): void;
+  setOrders(trainId: number, orders: number[], fullLoad?: boolean[], waitDays?: number[], nonStop?: boolean[]): void;
+  toggleNonStop(trainId: number, index: number): void;
   setWaitDays(trainId: number, index: number, days: number): void;
   setSpacing(trainId: number, on: boolean): void;
   toggleFullLoad(trainId: number, index: number): void;

@@ -21,11 +21,11 @@ import { catchmentCargo, serveTrainAtStation } from '../economy/cargoFlow';
 import { SignalIndex } from '../signals/signals';
 import type { GameState } from '../state';
 import { trainLength } from './geometry';
-import { planRoute, type Plan } from './path';
+import { isPlatformEnd, planRoute, type Plan } from './path';
 import { addTaken, blockerOf, buildTaken, isFree, isSafeStop, type Taken } from './reservation';
 import { flipStep, isBend, stepHeight, stepLength } from './steps';
 import { STRAIGHT_LENGTH } from '../track/graph';
-import { depotExit, leaveDepot, lineHeadway, replaceOnArrival, sharedTrains, type Step, type Train } from './train';
+import { depotExit, leaveDepot, lineHeadway, passesOrder, replaceOnArrival, sharedTrains, type Step, type Train } from './train';
 import { consistStats, engineDef } from './vehicles';
 
 /**
@@ -195,15 +195,32 @@ export function spacingHold(state: GameState, train: Train): number {
 
 function departStation(state: GameState, train: Train): void {
   train.holding = false;
-  // Odjazd z pierwszej stacji rozkładu: pomiar czasu okrążenia linii.
-  if (train.orders.length && train.currentOrder === 0) {
+  train.status = 'running';
+  nextOrder(state, train);
+  train.mayReverse = true;
+  train.resTerminal = null;
+}
+
+/** Następna pozycja rozkładu; odjazd z pierwszej (albo przejazd przez nią) – pomiar czasu okrążenia linii. */
+function nextOrder(state: GameState, train: Train): void {
+  if (!train.orders.length) return;
+  if (train.currentOrder === 0) {
     if (train.departedFirstTick >= 0) train.loopTicks = state.tick - train.departedFirstTick;
     train.departedFirstTick = state.tick;
   }
-  train.status = 'running';
-  if (train.orders.length) train.currentOrder = (train.currentOrder + 1) % train.orders.length;
-  train.mayReverse = true;
-  train.resTerminal = null;
+  train.currentOrder = (train.currentOrder + 1) % train.orders.length;
+}
+
+/** Czoło wjechało na koniec stacji „tylko przejazd” z bieżącej pozycji rozkładu – zaliczona, jedzie dalej. */
+function checkPassed(state: GameState, train: Train): void {
+  if (train.goToDepot) return;
+  const head = train.trail[0]!;
+  // Kilka kolejnych pozycji na tym samym kafelku (np. ten sam punkt dwa razy) zalicza się naraz.
+  for (let k = 0; k < train.orders.length; k++) {
+    const id = train.orders[train.currentOrder];
+    if (id === undefined || !passesOrder(state, train, train.currentOrder) || !isPlatformEnd(state, head, id)) return;
+    nextOrder(state, train);
+  }
 }
 
 /** Nachylenie odcinka czoła (dodatnie – pod górę). */
@@ -284,12 +301,12 @@ function moveTrain(ctx: TickContext, train: Train): void {
 
   const move = train.speed * UNITS_PER_KMH_TICK;
   if (move >= dist) {
-    advance(train, dist);
+    advance(state, train, dist);
     train.speed = 0;
     if (train.resTerminal) arrive(ctx, train);
     return;
   }
-  advance(train, move);
+  advance(state, train, move);
 }
 
 /**
@@ -348,7 +365,7 @@ function extendReservation(ctx: TickContext, train: Train): 'ok' | 'blocked' | '
 }
 
 /** Przesuwa czoło o `move` po zarezerwowanych odcinkach. */
-function advance(train: Train, move: number): void {
+function advance(state: GameState, train: Train, move: number): void {
   let remaining = move;
   for (;;) {
     const head = train.trail[0]!;
@@ -360,6 +377,7 @@ function advance(train: Train, move: number): void {
     remaining -= room;
     train.trail.unshift(train.reservedAhead.shift()!);
     train.progress = 0;
+    checkPassed(state, train);
   }
   trimTrail(train);
 }

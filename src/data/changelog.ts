@@ -12,6 +12,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-21',
+    title: 'Bez zatrzymania i punkty kontrolne',
+    items: [
+      'W rozkładzie przy każdej stacji ptaszek „bez zatrzymania”: pociąg przejeżdża przez stację i jedzie do następnej pozycji. Status: „Jedzie przez”.',
+      'Punkt kontrolny (narzędzie Stacja → „Punkt kontrolny”, klik na prosty tor, 500 zł): dodany do rozkładu wymusza jazdę tym torem, np. przez wybraną mijankę albo objazd. Pociąg się na nim nie zatrzymuje, punkt nie zbiera ładunku. Buldożer usuwa sam znacznik – tor zostaje.',
+    ],
+  },
+  {
+    date: '2026-10-21',
     title: 'Poprawka: wyjazd z zajezdni',
     items: [
       'Po kliknięciu ▶ w oknie zajezdni widać, że pociąg czeka na wyjazd (status i podświetlony przycisk „■ Anuluj”, który odwołuje wyjazd).',

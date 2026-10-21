@@ -121,6 +121,17 @@ export function IndustryWindow({ data: d, actions }: { data: IndustryWindowData;
 }
 
 export function StationWindow({ data: d, actions }: { data: StationWindowData; actions: HudActions }) {
+  if (d.waypoint) {
+    return (
+      <div class="panel window">
+        <Head title={d.name} help="orders" actions={actions} />
+        <div class="muted small">
+          Punkt kontrolny – dodaj go do rozkładu, a pociąg pojedzie tym torem i nie zatrzyma się. Nie zbiera ładunku. Buldożer
+          usuwa sam znacznik, tor zostaje.
+        </div>
+      </div>
+    );
+  }
   return (
     <div class="panel window">
       <Head title={d.name} help="rating" actions={actions} />

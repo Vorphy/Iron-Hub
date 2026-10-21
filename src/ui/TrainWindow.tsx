@@ -141,23 +141,36 @@ export function TrainWindow({ data: t, actions }: { data: TrainWindowData; actio
       {t.orders.map((o, i) => (
         <div class="row order" key={i}>
           <span class="order-mark">{i === t.currentOrder && !t.goToDepot ? '▶' : `${i + 1}.`}</span>
-          <span class="grow">{o.name}</span>
-          <select
-            class="wait-days"
-            value={String(o.waitDays)}
-            title="Dodatkowy postój na tej stacji (dni)"
-            onChange={(e) => actions.setWaitDays(id, i, Number((e.target as HTMLSelectElement).value))}
-          >
-            {WAIT_CHOICES.map((d) => (
-              <option key={d} value={String(d)}>
-                {d === 0 ? 'bez postoju' : `postój ${d} d.`}
-              </option>
-            ))}
-          </select>
-          <label class="full-load" title="Czekaj na tej stacji, aż wagony na jej ładunek będą pełne">
-            <input type="checkbox" checked={o.fullLoad} onChange={() => actions.toggleFullLoad(id, i)} />
-            pełny ładunek
-          </label>
+          <span class="grow">
+            {o.name}
+            {o.waypoint && <span class="badge">punkt kontrolny</span>}
+          </span>
+          {!o.waypoint && (
+            <label class="full-load" title="Pociąg przejeżdża przez stację bez zatrzymania (np. żeby jechał tym torem)">
+              <input type="checkbox" checked={o.nonStop} onChange={() => actions.toggleNonStop(id, i)} />
+              bez zatrzymania
+            </label>
+          )}
+          {!o.waypoint && !o.nonStop && (
+            <select
+              class="wait-days"
+              value={String(o.waitDays)}
+              title="Dodatkowy postój na tej stacji (dni)"
+              onChange={(e) => actions.setWaitDays(id, i, Number((e.target as HTMLSelectElement).value))}
+            >
+              {WAIT_CHOICES.map((d) => (
+                <option key={d} value={String(d)}>
+                  {d === 0 ? 'bez postoju' : `postój ${d} d.`}
+                </option>
+              ))}
+            </select>
+          )}
+          {!o.waypoint && !o.nonStop && (
+            <label class="full-load" title="Czekaj na tej stacji, aż wagony na jej ładunek będą pełne">
+              <input type="checkbox" checked={o.fullLoad} onChange={() => actions.toggleFullLoad(id, i)} />
+              pełny ładunek
+            </label>
+          )}
           <button
             class="close"
             title="Usuń z rozkładu"
@@ -167,6 +180,7 @@ export function TrainWindow({ data: t, actions }: { data: TrainWindowData; actio
                 t.orders.map((x) => x.stationId).filter((_, j) => j !== i),
                 t.orders.map((x) => x.fullLoad).filter((_, j) => j !== i),
                 t.orders.map((x) => x.waitDays).filter((_, j) => j !== i),
+                t.orders.map((x) => x.nonStop).filter((_, j) => j !== i),
               )
             }
           >
@@ -180,7 +194,7 @@ export function TrainWindow({ data: t, actions }: { data: TrainWindowData; actio
         </button>
         {t.orders.length > 0 && <button onClick={() => actions.setOrders(id, [])}>Wyczyść</button>}
       </div>
-      {t.picking && <div class="muted small">Klikaj stacje na mapie – dopisują się na koniec rozkładu.</div>}
+      {t.picking && <div class="muted small">Klikaj stacje lub punkty kontrolne na mapie – dopisują się na koniec rozkładu.</div>}
     </div>
   );
 }

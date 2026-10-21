@@ -6,7 +6,7 @@ import { inBounds } from '../world/map';
 import { isElectrified, needsCatenary } from '../track/catenary';
 import { blockerOf, type Taken } from './reservation';
 import { flipStep, isBend, stepKey, stepLength, successors } from './steps';
-import type { Step, Train } from './train';
+import { passesOrder, type Step, type Train } from './train';
 
 /**
  * Co pociąg robi po przejechaniu zaplanowanych odcinków:
@@ -23,17 +23,27 @@ export interface Plan {
   lost: boolean;
 }
 
-export type Goal = { kind: 'station'; stationId: number } | { kind: 'depot' } | null;
+/** `pass` – cel tylko do przejechania (bez zatrzymania, punkt kontrolny): trasa prowadzi przez niego dalej. */
+export type Goal = { kind: 'station'; stationId: number; pass: boolean } | { kind: 'depot' } | null;
 
-/** Dokąd pociąg aktualnie jedzie (wynika wyłącznie ze stanu pociągu). */
-export function trainGoal(train: Train): Goal {
+/**
+ * Dokąd liczyć trasę (wynika wyłącznie ze stanu gry). Pozycje „tylko przejazd”, przez które
+ * rezerwacja już prowadzi, są pomijane – trasa liczy się od nich do następnej pozycji rozkładu.
+ */
+export function trainGoal(state: GameState, train: Train): Goal {
   if (train.goToDepot) return { kind: 'depot' };
-  const stationId = train.orders[train.currentOrder];
-  return stationId === undefined ? null : { kind: 'station', stationId };
+  const n = train.orders.length;
+  for (let k = 0; k < n; k++) {
+    const index = (train.currentOrder + k) % n;
+    const stationId = train.orders[index]!;
+    if (!passesOrder(state, train, index)) return { kind: 'station', stationId, pass: false };
+    if (!train.reservedAhead.some((s) => isPlatformEnd(state, s, stationId))) return { kind: 'station', stationId, pass: true };
+  }
+  return null;
 }
 
 /** Czy odcinek kończy się na końcu peronu danej stacji (tam pociąg się zatrzymuje). */
-function isPlatformEnd(state: GameState, s: Step, stationId: number): boolean {
+export function isPlatformEnd(state: GameState, s: Step, stationId: number): boolean {
   const { map } = state;
   if (s.track !== Track.X && s.track !== Track.Y) return false;
   if (map.station[s.y * map.width + s.x] !== stationId) return false;
@@ -81,7 +91,7 @@ export interface RouteContext {
  */
 export function planRoute(state: GameState, train: Train, ctx: RouteContext): Plan {
   const head = ctx.from;
-  const goal = trainGoal(train);
+  const goal = trainGoal(state, train);
   const manual = state.signalMode === 'manual';
   // Lokomotywa elektryczna nie wjedzie tam, gdzie nie ma sieci trakcyjnej.
   const electric = needsCatenary(train.engine);
@@ -161,6 +171,7 @@ function toPlan(goalNode: Node, goal: NonNullable<Goal>): Plan {
     if (chain[i]!.viaReverse) return { steps, terminal: 'reverse', lost: false };
     steps.push(chain[i]!.step);
   }
+  if (goal.kind === 'station' && goal.pass) return { steps, terminal: 'continue', lost: false };
   return { steps, terminal: goal.kind === 'depot' ? 'depot' : 'stop', lost: false };
 }
 

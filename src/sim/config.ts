@@ -8,6 +8,7 @@ export const START_MONEY = ECONOMY.startMoney;
 export const CLEAR_ROUGH_COST = C.clearRough;
 export const TRACK_COST = C.trackPiece;
 export const STATION_TILE_COST = C.stationTile;
+export const WAYPOINT_COST = C.waypoint;
 export const HOUSE_DEMOLISH_COST = C.demolishHouse;
 export const ROAD_REMOVE_COST = C.removeRoad;
 export const CATENARY_COST = C.catenaryTile;

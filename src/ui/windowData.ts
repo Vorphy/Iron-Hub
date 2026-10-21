@@ -4,6 +4,7 @@ import {
   engineTradeIn,
   oneEngineTradeIn,
   lineHeadway,
+  passesOrder,
   replaceCost,
   resaleValue,
   trainById,
@@ -48,7 +49,7 @@ function trainStatus(sim: Simulation, t: Train): string {
   const target = t.orders[t.currentOrder];
   if (target === undefined) return 'Jedzie (brak rozkładu)';
   if (sim.planner.isLost(t.id)) return `Nie może dojechać do: ${stationName(sim, target)}`;
-  return `Jedzie do: ${stationName(sim, target)}`;
+  return `${passesOrder(sim.state, t, t.currentOrder) ? 'Jedzie przez' : 'Jedzie do'}: ${stationName(sim, target)}`;
 }
 
 function trainLoad(t: Train): { cargo: Cargo; amount: number; capacity: number }[] {
@@ -161,6 +162,7 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
       kind: 'station',
       stationId: st.id,
       name: st.name,
+      waypoint: st.waypoint,
       platforms: st.tiles.length,
       cargo: CARGOS.filter((c) => st.cargo[c]).map((c) => ({
         cargo: c,
@@ -231,6 +233,8 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
       name: stationName(sim, id),
       fullLoad: t.fullLoad[i] === true,
       waitDays: t.waitDays[i] ?? 0,
+      nonStop: t.nonStop[i] === true,
+      waypoint: state.stations.some((s) => s.id === id && s.waypoint),
     })),
     spacing: t.spacing,
     headwayDays: lineHeadway(state, t) > 0 ? Math.round((lineHeadway(state, t) / TICKS_PER_DAY) * 10) / 10 : null,

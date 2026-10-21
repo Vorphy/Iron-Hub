@@ -91,7 +91,7 @@ Jedna kolejka, w kolejności, która najszybciej poprawia granie. Maglevy, kolej
 9. **Tory na zboczach z fundamentami** – łuki i rozjazdy na zboczu, wyraźnie droższe od zwykłych torów.
 10. **Szablony budowy** – gotowe do wklejenia układy, np. bezkolizyjne skrzyżowanie łączące cztery dwutorowe linie.
 11. **Super stacja** – ulepszenie stacji w mieście za ~100× ceny peronu: druga kondygnacja peronów (4 tory zamiast 2 na tym samym obszarze), zjazdy jak portale tuneli, 2-torowy wjazd w głowicy (szczegóły w Pomysłach).
-12. **„Jedź bez zatrzymania” i punkty kontrolne** (wymuszenie trasy przez dany tor) – przewidzieć w modelu rozkładu już przy punkcie 5.
+12. ~~**„Jedź bez zatrzymania” i punkty kontrolne**~~ ✅ (2026-10-21) – ptaszek „bez zatrzymania” przy pozycji rozkładu; punkt kontrolny na prostym torze (narzędzie Stacja) wymusza trasę.
 13. **Badania (na co wydawać pieniądze)** – żeby kasa nie leżała odłogiem, tylko była dalej inwestowana: drogie, stopniowe ulepszenia kupowane za pieniądze i czas, np. **+10% ładowności wagonów**, **+10% prędkości pociągów**, kolejne pomysły do dopisania (szybszy załadunek, tańsze utrzymanie, wyższa ocena stacji, wcześniejszy dostęp do nowych lokomotyw). Każdy poziom droższy od poprzedniego.
 14. **Wersja na telefon** – większy refaktor interfejsu: sterowanie dotykiem (przesuwanie palcem, zoom dwoma palcami, przytrzymanie zamiast prawego przycisku), panele i okna dopasowane do wąskiego ekranu (pasek narzędzi na dole, okna na cały ekran, większe przyciski), czytelne podpisy i minimapa na małym ekranie.
 15. **Awarie i serwis** – niezawodność spada z wiekiem, nieserwisowane pociągi psują się częściej i stają, serwis w zajezdni; możliwość wyłączenia przy nowej grze.

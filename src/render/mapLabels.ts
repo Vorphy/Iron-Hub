@@ -4,11 +4,12 @@ import type { GameState } from '../sim/state';
 import type { Rect } from './camera';
 import { tileCenter, tileToWorld } from './iso';
 
-type Kind = 'station' | 'town' | 'industry' | 'depot';
+type Kind = 'station' | 'waypoint' | 'town' | 'industry' | 'depot';
 
 const STYLES: Record<Kind, { size: number; fill: number; border: number | null; bg: number; bold: boolean }> = {
   town: { size: 14, fill: 0xffffff, border: null, bg: 0x1b1f24, bold: true },
   station: { size: 12, fill: 0xffffff, border: 0xffe066, bg: 0x1b1f24, bold: false },
+  waypoint: { size: 10, fill: 0xffffff, border: null, bg: 0x2f5f90, bold: false },
   industry: { size: 11, fill: 0xd8d4c8, border: null, bg: 0x2a2620, bold: false },
   depot: { size: 10, fill: 0xffffff, border: null, bg: 0x6b3a2a, bold: true },
 };
@@ -41,7 +42,7 @@ export class MapLabels {
         sx += c.x;
         top = Math.min(top, c.y);
       }
-      this.add('station', st.name, sx / st.tiles.length, top - 6);
+      this.add(st.waypoint ? 'waypoint' : 'station', st.name, sx / st.tiles.length, top - (st.waypoint ? 16 : 6));
     }
   }
 

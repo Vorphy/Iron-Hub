@@ -3,7 +3,7 @@ import { LOAN_MAX, LOAN_STEP, spend } from './economy/finance';
 import { buildDepot, depotAt, removeDepot } from './depot/depot';
 import { dropOrphanSignals, placeSignal, removeSignal, type SignalMode } from './signals/signals';
 import type { GameState } from './state';
-import { buildStation, removeStationTile, type StationAxis } from './station/station';
+import { buildStation, buildWaypoint, removeStationTile, type StationAxis } from './station/station';
 import { buildTrack, removeTrack } from './track/build';
 import { buildCatenary, dropOrphanCatenary } from './track/catenary';
 import { attachWagon, buyWagon, detachWagon, sellEngine, sellSpareWagon, setEngineCount } from './trains/consist';
@@ -22,6 +22,7 @@ import {
   setSpacing,
   setWaitDays,
   toggleFullLoad,
+  toggleNonStop,
   startTrain,
   stopTrain,
   trainsInDepot,
@@ -38,6 +39,8 @@ export type Command =
   | { type: 'removeTrack'; pieces: TrackPiece[] }
   /** Peron obok istniejącej stacji ją rozbudowuje; `separate` – osobna stacja. */
   | { type: 'buildStation'; x0: number; y0: number; x1: number; y1: number; axis: StationAxis; separate?: boolean }
+  /** Punkt kontrolny na istniejącym prostym torze. */
+  | { type: 'buildWaypoint'; x: number; y: number }
   | { type: 'buildDepot'; x: number; y: number; side: Side }
   /** `engineCount` – 2 lokomotywy (podwójna trakcja); domyślnie 1. */
   | { type: 'buyTrain'; depotId: number; engine: string; wagons: string[]; engineCount?: number }
@@ -65,7 +68,9 @@ export type Command =
   | { type: 'reverseTrain'; trainId: number }
   /** Wymiana lokomotywy na inną (null – anulowanie zamówionej wymiany). */
   | { type: 'replaceEngine'; trainId: number; engine: string | null }
-  | { type: 'setOrders'; trainId: number; orders: number[]; fullLoad?: boolean[]; waitDays?: number[] }
+  | { type: 'setOrders'; trainId: number; orders: number[]; fullLoad?: boolean[]; waitDays?: number[]; nonStop?: boolean[] }
+  /** „Bez zatrzymania” przy pozycji rozkładu. */
+  | { type: 'toggleNonStop'; trainId: number; index: number }
   /** Rozkład czasowy: dodatkowy postój przy pozycji rozkładu i równe odstępy na linii. */
   | { type: 'setWaitDays'; trainId: number; index: number; days: number }
   | { type: 'setSpacing'; trainId: number; on: boolean }
@@ -160,6 +165,8 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
       return removeTrack(state, cmd.pieces, events);
     case 'buildStation':
       return buildStation(state, cmd.x0, cmd.y0, cmd.x1, cmd.y1, cmd.axis, events, cmd.separate === true);
+    case 'buildWaypoint':
+      return buildWaypoint(state, cmd.x, cmd.y, events);
     case 'buildDepot':
       return buildDepot(state, cmd.x, cmd.y, cmd.side, events);
     case 'buyTrain':
@@ -201,7 +208,9 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
     case 'reverseTrain':
       return requestReverse(state, cmd.trainId);
     case 'setOrders':
-      return setOrders(state, cmd.trainId, cmd.orders, cmd.fullLoad, cmd.waitDays);
+      return setOrders(state, cmd.trainId, cmd.orders, cmd.fullLoad, cmd.waitDays, cmd.nonStop);
+    case 'toggleNonStop':
+      return toggleNonStop(state, cmd.trainId, cmd.index);
     case 'setWaitDays':
       return setWaitDays(state, cmd.trainId, cmd.index, cmd.days);
     case 'setSpacing':

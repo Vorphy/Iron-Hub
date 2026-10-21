@@ -150,6 +150,8 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
       '**Pełny ładunek** (ptaszek przy stacji w rozkładzie): pociąg nie odjedzie, dopóki nie napełni wagonów na ładunek, który ta stacja zbiera (status „Czeka na pełny ładunek”). Dobre przy kopalniach – zamiast wozić pół pustych wagonów. Inne pociągi omijają taki peron, jeśli mają wolny.',
       'Rada: przy pełnym ładunku daj stacji co najmniej jeden peron więcej niż pociągów czekających na ładunek. Wagony na inny ładunek nie wstrzymują odjazdu; „■ Stop” albo „Zawróć” przerywa czekanie.',
       'Pociąg sam wybiera trasę (najkrótszą, omijając zajęte perony) i zawraca na końcu toru albo na stacji, gdy następny cel jest za nim.',
+      '**Bez zatrzymania** (ptaszek przy stacji): pociąg przejeżdża przez stację i jedzie dalej – nie ładuje, nie wysiada nikt.',
+      '**Punkt kontrolny**: narzędzie Stacja → „Punkt kontrolny”, klik na prosty tor (500 zł). Dodany do rozkładu jak stacja wymusza trasę przez ten tor (np. wybraną mijankę albo objazd); pociąg się na nim nie zatrzymuje. Buldożer usuwa sam znacznik, tor zostaje.',
       'Status „Nie może dojechać” – do celu nie ma toru (albo lokomotywa elektryczna nie ma sieci trakcyjnej).',
       'Bez rozkładu pociąg jeździ przed siebie i zawraca na końcach toru.',
     ],

@@ -1,5 +1,5 @@
 import type { SimEvent } from '../commands';
-import { catchment, type Station, type StationCargo } from '../station/station';
+import { catchment, platformStations, type Station, type StationCargo } from '../station/station';
 import type { GameState } from '../state';
 import { ECONOMY } from '../../data/economy';
 import { DAYS_PER_MONTH, TICKS_PER_DAY } from '../time';
@@ -79,7 +79,7 @@ export function deliveryPayment(cargo: Cargo, amount: number, distanceTiles: num
 /** Kafelek → stacje, które go obejmują zasięgiem (liczone raz dziennie). */
 function catchmentIndex(state: GameState): Map<number, Station[]> {
   const index = new Map<number, Station[]>();
-  for (const st of state.stations) {
+  for (const st of platformStations(state)) {
     for (const i of catchment(state.map, st.tiles)) {
       const list = index.get(i);
       if (list) list.push(st);

@@ -17,7 +17,7 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
   {
     title: 'Postaw dwie stacje',
     hint: 'Stacja (P): przeciągnij prostokąt na końcach toru. Niebieski zasięg musi objąć domy lub zakład.',
-    done: (s) => s.stations.length >= 2,
+    done: (s) => s.stations.filter((st) => !st.waypoint).length >= 2,
   },
   {
     title: 'Postaw zajezdnię',

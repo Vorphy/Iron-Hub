@@ -22,6 +22,8 @@ export const ECONOMY = {
     trackPiece: 100,
     /** Kafelek peronu (razem z torem). */
     stationTile: 300,
+    /** Punkt kontrolny na istniejącym torze. */
+    waypoint: 500,
     depot: 1000,
     signal: 200,
     /** Kafelek mostu (przyczółki i pomost). */

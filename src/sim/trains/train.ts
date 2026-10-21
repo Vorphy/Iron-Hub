@@ -70,6 +70,8 @@ export interface Train {
   orders: number[];
   /** Przy której pozycji rozkładu czekać na pełny ładunek (ta sama długość co `orders`). */
   fullLoad: boolean[];
+  /** Pozycja rozkładu „bez zatrzymania” – pociąg przejeżdża przez stację (ta sama długość co `orders`). */
+  nonStop: boolean[];
   currentOrder: number;
   goToDepot: boolean;
   /** Może zawrócić w miejscu przy ruszaniu (np. po postoju na stacji). */
@@ -151,6 +153,7 @@ export function buyTrain(
     stopped: true,
     orders: [],
     fullLoad: [],
+    nonStop: [],
     currentOrder: 0,
     goToDepot: false,
     mayReverse: false,
@@ -380,6 +383,7 @@ export function cloneTrain(state: GameState, trainId: number, events: SimEvent[]
   const copy = state.trains[state.trains.length - 1]!;
   copy.orders = [...train.orders];
   copy.fullLoad = [...train.fullLoad];
+  copy.nonStop = [...train.nonStop];
   copy.waitDays = [...train.waitDays];
   copy.spacing = train.spacing;
   copy.groupId = train.groupId;
@@ -413,8 +417,8 @@ function cloneDepot(state: GameState, train: Train) {
 }
 
 /**
- * Nowy rozkład. `fullLoad` – ptaszki „pełny ładunek” dla pozycji; bez niego zostają ptaszki
- * dotychczasowych pozycji (dopisanie stacji na końcu ich nie rusza), nowe – bez ptaszka.
+ * Nowy rozkład. `fullLoad` / `nonStop` / `waitDays` – ustawienia pozycji; bez nich zostają ustawienia
+ * dotychczasowych pozycji (dopisanie stacji na końcu ich nie rusza), nowe – domyślne.
  */
 export function setOrders(
   state: GameState,
@@ -422,14 +426,17 @@ export function setOrders(
   orders: readonly number[],
   fullLoad?: readonly boolean[],
   waitDays?: readonly number[],
+  nonStop?: readonly boolean[],
 ): CommandResult {
   const train = trainById(state, trainId);
   if (!train || orders.some((id) => !state.stations.some((s) => s.id === id))) return { ok: false, reason: 'blocked' };
   const flags = orders.map((_, i) => (fullLoad ? fullLoad[i] === true : train.fullLoad[i] === true));
+  const passes = orders.map((_, i) => (nonStop ? nonStop[i] === true : train.nonStop[i] === true));
   const waits = orders.map((_, i) => clampWait(waitDays ? waitDays[i] : train.waitDays[i]));
   // Wspólny rozkład: ta sama zmiana dla całej linii.
   for (const t of sharedTrains(state, train)) {
     t.fullLoad = [...flags];
+    t.nonStop = [...passes];
     t.waitDays = [...waits];
     t.orders = [...orders];
     if (t.currentOrder >= t.orders.length) t.currentOrder = 0;
@@ -445,6 +452,7 @@ export function dropStationFromOrders(state: GameState, stationId: number): void
     const i = t.orders.indexOf(stationId);
     if (i < 0) continue;
     t.fullLoad = t.fullLoad.filter((_, j) => t.orders[j] !== stationId);
+    t.nonStop = t.nonStop.filter((_, j) => t.orders[j] !== stationId);
     t.waitDays = t.waitDays.filter((_, j) => t.orders[j] !== stationId);
     t.orders = t.orders.filter((id) => id !== stationId);
     if (i < t.currentOrder) t.currentOrder--;
@@ -460,6 +468,25 @@ export function toggleFullLoad(state: GameState, trainId: number, index: number)
   const on = !train.fullLoad[index];
   for (const t of sharedTrains(state, train)) t.fullLoad[index] = on;
   return { ok: true };
+}
+
+/** Przełącza „bez zatrzymania” dla pozycji rozkładu (całej linii). */
+export function toggleNonStop(state: GameState, trainId: number, index: number): CommandResult {
+  const train = trainById(state, trainId);
+  if (!train || index < 0 || index >= train.orders.length) return { ok: false, reason: 'blocked' };
+  const on = !train.nonStop[index];
+  for (const t of sharedTrains(state, train)) {
+    t.nonStop[index] = on;
+    t.resTerminal = null;
+  }
+  return { ok: true };
+}
+
+/** Pozycja rozkładu, przez którą pociąg tylko przejeżdża: „bez zatrzymania” albo punkt kontrolny. */
+export function passesOrder(state: GameState, train: Train, index: number): boolean {
+  if (train.nonStop[index]) return true;
+  const id = train.orders[index];
+  return id !== undefined && state.stations.some((s) => s.id === id && s.waypoint);
 }
 
 /** Pociągi dzielące rozkład z danym (z nim samym); bez wspólnego rozkładu – tylko on. */

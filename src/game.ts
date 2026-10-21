@@ -98,6 +98,7 @@ export class Game {
       () => this.sim.state.depots,
       () => this.sim.state.bridges,
       () => this.sim.state.tunnels,
+      () => this.sim.state.stations,
     );
     world.addChild(
       this.mapRenderer.container,
@@ -443,6 +444,7 @@ export class Game {
       prev.trackMode === t.trackMode &&
       prev.catenaryMode === t.catenaryMode &&
       prev.stationSeparate === t.stationSeparate &&
+      prev.stationKind === t.stationKind &&
       prev.terrainMode === t.terrainMode
       ? prev
       : {
@@ -453,6 +455,7 @@ export class Game {
           trackMode: t.trackMode,
           catenaryMode: t.catenaryMode,
           stationSeparate: t.stationSeparate,
+          stationKind: t.stationKind,
           terrainMode: t.terrainMode,
         };
   }

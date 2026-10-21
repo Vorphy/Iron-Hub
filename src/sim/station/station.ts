@@ -5,6 +5,7 @@ import {
   STATION_MAX_PLATFORMS,
   STATION_TILE_COST,
   TRACK_REFUND_RATE,
+  WAYPOINT_COST,
 } from '../config';
 import { spend } from '../economy/finance';
 import type { CommandResult, SimEvent } from '../commands';
@@ -36,6 +37,11 @@ export interface Station {
   /** Indeksy kafelków peronów (y * width + x), rosnąco. */
   tiles: number[];
   cargo: Partial<Record<Cargo, StationCargo>>;
+  /**
+   * Punkt kontrolny: jeden kafelek na zwykłym torze, bez peronu i zasięgu. Pociąg z nim w rozkładzie
+   * jedzie przez ten tor i nie zatrzymuje się.
+   */
+  waypoint: boolean;
 }
 
 /** Nazwy stacji z dala od miast. */
@@ -109,7 +115,8 @@ function adjacentStation(state: GameState, minX: number, minY: number, maxX: num
   const check = (x: number, y: number) => {
     if (!inBounds(map, x, y)) return;
     const id = map.station[y * map.width + x]!;
-    if (id && (!best || id < best)) best = id;
+    // Punkt kontrolny to nie peron – nowej stacji do niego nie dołączamy.
+    if (id && (!best || id < best) && !state.stations.find((s) => s.id === id)?.waypoint) best = id;
   };
   for (let x = minX; x <= maxX; x++) {
     check(x, minY - 1);
@@ -212,33 +219,85 @@ export function buildStation(
     plan.join.tiles = [...plan.join.tiles, ...tiles].sort((a, b) => a - b);
   } else {
     tiles.sort((a, b) => a - b);
-    state.stations.push({ id, name: stationNameFor(state, tiles), axis, tiles, cargo: {} });
+    state.stations.push({ id, name: stationNameFor(state, tiles), axis, tiles, cargo: {}, waypoint: false });
   }
   spend(state, 'construction', plan.cost);
   events.push({ type: 'stationsChanged' });
   return { ok: true };
 }
 
-/** Usuwa jeden kafelek peronu (razem z torem); pusta stacja znika. */
+/** Usuwa jeden kafelek peronu (razem z torem); pusta stacja znika. Punkt kontrolny – sam znacznik, tor zostaje. */
 export function removeStationTile(state: GameState, x: number, y: number, events: SimEvent[]): CommandResult {
   const station = stationAt(state, x, y);
   if (!station) return { ok: false, reason: 'nothingToClear' };
   const { map } = state;
   const i = y * map.width + x;
   map.station[i] = 0;
-  map.track[i] = 0;
+  if (!station.waypoint) map.track[i] = 0;
   station.tiles = station.tiles.filter((t) => t !== i);
   if (station.tiles.length === 0) {
     state.stations = state.stations.filter((s) => s !== station);
     dropStationFromOrders(state, station.id);
   }
-  spend(state, 'construction', -stationTileRefund());
+  spend(state, 'construction', -stationTileRefund(station));
   events.push({ type: 'tileChanged', x, y }, { type: 'stationsChanged' });
   return { ok: true };
 }
 
-export function stationTileRefund(): number {
-  return Math.round(STATION_TILE_COST * TRACK_REFUND_RATE);
+export function stationTileRefund(station?: Station): number {
+  return Math.round((station?.waypoint ? WAYPOINT_COST : STATION_TILE_COST) * TRACK_REFUND_RATE);
+}
+
+/** Punkt kontrolny: tylko na płaskim kafelku z jednym prostym torem (bez stacji, zajezdni, mostu, tunelu, drogi, semafora). */
+export function planWaypoint(state: GameState, x: number, y: number): { cost: number; result: CommandResult } {
+  const { map } = state;
+  const cost = WAYPOINT_COST;
+  if (!inBounds(map, x, y)) return { cost, result: { ok: false, reason: 'outOfBounds' } };
+  const i = y * map.width + x;
+  const bits = getTrackBits(map, x, y);
+  if (!bits) return { cost, result: { ok: false, reason: 'noTrack' } };
+  const blocked =
+    (bits !== Track.X && bits !== Track.Y) ||
+    map.station[i] ||
+    map.depot[i] ||
+    map.bridge[i] ||
+    map.tunnel[i] ||
+    map.road[i] ||
+    !isFlat(map, x, y) ||
+    state.signals.some((s) => s.x === x && s.y === y);
+  if (blocked) return { cost, result: { ok: false, reason: 'blocked' } };
+  if (cost > state.money) return { cost, result: { ok: false, reason: 'noMoney' } };
+  return { cost, result: { ok: true } };
+}
+
+export function buildWaypoint(state: GameState, x: number, y: number, events: SimEvent[]): CommandResult {
+  const plan = planWaypoint(state, x, y);
+  if (!plan.result.ok) return plan.result;
+  const { map } = state;
+  const i = y * map.width + x;
+  const id = state.nextStationId++;
+  map.station[i] = id;
+  state.stations.push({
+    id,
+    name: waypointName(state),
+    axis: getTrackBits(map, x, y) === Track.X ? 'x' : 'y',
+    tiles: [i],
+    cargo: {},
+    waypoint: true,
+  });
+  spend(state, 'construction', plan.cost);
+  events.push({ type: 'tileChanged', x, y }, { type: 'stationsChanged' });
+  return { ok: true };
+}
+
+function waypointName(state: GameState): string {
+  const taken = new Set(state.stations.map((s) => s.name));
+  for (let n = 1; ; n++) if (!taken.has(`Punkt ${n}`)) return `Punkt ${n}`;
+}
+
+/** Stacje z peronami (bez punktów kontrolnych) – zasięg, ładunek, wzrost miast. */
+export function platformStations(state: GameState): Station[] {
+  return state.stations.filter((s) => !s.waypoint);
 }
 
 /** Kafelki w zasięgu stacji (promień Czebyszewa od każdego peronu), rosnąco. */

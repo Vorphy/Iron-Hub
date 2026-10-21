@@ -1,9 +1,10 @@
 import { Container, Graphics, Rectangle, Sprite, Texture, type Renderer } from 'pixi.js';
 import type { Depot } from '../sim/depot/depot';
+import type { Station } from '../sim/station/station';
 import { axisTrack, bridgeRole, type Bridge } from '../sim/track/bridge';
 import { tunnelRole, type Tunnel } from '../sim/track/tunnel';
 import { isHeadAxisTrack } from './bridges';
-import { getTrackBits, tracksOn } from '../sim/track/track';
+import { getTrackBits, Track, tracksOn } from '../sim/track/track';
 import { getTerrain, Terrain, type WorldMap } from '../sim/world/map';
 import type { Rect } from './camera';
 import { cornerHeights, MAX_HEIGHT } from '../sim/world/height';
@@ -75,6 +76,7 @@ export class MapRenderer {
     private readonly getDepots: () => readonly Depot[],
     private readonly getBridges: () => readonly Bridge[],
     private readonly getTunnels: () => readonly Tunnel[],
+    private readonly getStations: () => readonly Station[],
   ) {
     this.container.addChild(this.terrainLayer, this.trackLayer, this.farLayer);
     this.chunksX = Math.ceil(map.width / CHUNK);
@@ -236,7 +238,9 @@ export class MapRenderer {
         const y = d - x;
         const t = getTerrain(this.map, x, y);
         const h = tileHash(x, y);
-        if (this.map.station[y * this.map.width + x]) {
+        const stationId = this.map.station[y * this.map.width + x];
+        const waypoint = stationId ? this.getStations().find((s) => s.id === stationId)?.waypoint === true : false;
+        if (stationId && !waypoint) {
           g.poly(tileDiamond(x, y))
             .fill(PLATFORM[h & 3]!)
             .stroke({ width: 1, color: PLATFORM_EDGE, alpha: 0.6 });
@@ -259,6 +263,7 @@ export class MapRenderer {
           if (portal && track === axisTrack(portal.axis)) continue; // tor wjazdu rysuje tunel
           drawTrackPiece(tracksG, x, y, track, TRACK_STYLE);
         }
+        if (waypoint) drawWaypoint(tracksG, x, y, getTrackBits(this.map, x, y) === Track.X);
         if (this.map.electric[y * this.map.width + x]) drawCatenary(tracksG, x, y, tileTracks);
         const house = this.map.house[y * this.map.width + x]!;
         if (house) drawHouse(tracksG, x, y, house, h);
@@ -269,6 +274,26 @@ export class MapRenderer {
         }
       }
     }
+  }
+}
+
+/** Punkt kontrolny: dwa biało-niebieskie słupki po bokach toru. */
+function drawWaypoint(g: Graphics, x: number, y: number, alongX: boolean): void {
+  const posts = alongX
+    ? [
+        [x + 0.5, y + 0.15],
+        [x + 0.5, y + 0.85],
+      ]
+    : [
+        [x + 0.15, y + 0.5],
+        [x + 0.85, y + 0.5],
+      ];
+  for (const [px, py] of posts) {
+    const p = tileToWorld(px!, py!);
+    g.rect(p.x - 1, p.y - 9, 2, 9).fill(0xf2f2f2);
+    g.rect(p.x - 2.5, p.y - 12, 5, 4)
+      .fill(0x2f7fd0)
+      .stroke({ width: 1, color: 0x0b2a48, alpha: 0.7 });
   }
 }
 

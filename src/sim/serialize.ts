@@ -15,7 +15,7 @@ import { engineDef, wagonDef } from './trains/vehicles';
 import { MAX_HEIGHT } from './world/height';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 20;
+export const SAVE_VERSION = 21;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -239,6 +239,12 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     mapTrains((t) => ({ ...t, engineCount: 1 }));
     d.version = 20;
   }
+  if (d.version === 20) {
+    // v21: „bez zatrzymania” w rozkładzie i punkty kontrolne
+    mapTrains((t) => ({ ...t, nonStop: Array.isArray(t.orders) ? t.orders.map(() => false) : [] }));
+    if (Array.isArray(d.stations)) d.stations = d.stations.map((s: Record<string, unknown>) => ({ ...s, waypoint: false }));
+    d.version = 21;
+  }
   return d as Partial<SerializedState>;
 }
 
@@ -406,6 +412,9 @@ function isTrain(v: unknown): v is Train {
     Array.isArray(t.fullLoad) &&
     t.fullLoad.length === t.orders.length &&
     t.fullLoad.every((f) => typeof f === 'boolean') &&
+    Array.isArray(t.nonStop) &&
+    t.nonStop.length === t.orders.length &&
+    t.nonStop.every((f) => typeof f === 'boolean') &&
     isInt(t.currentOrder) &&
     typeof t.goToDepot === 'boolean' &&
     typeof t.mayReverse === 'boolean' &&
@@ -477,6 +486,7 @@ function isStation(v: unknown): v is Station {
     (st.axis === 'x' || st.axis === 'y') &&
     Array.isArray(st.tiles) &&
     st.tiles.every(isInt) &&
+    typeof st.waypoint === 'boolean' &&
     isCargoRecord(st.cargo, (c) => isObj(c) && isNum(c.waiting) && isInt(c.lastPickup))
   );
 }

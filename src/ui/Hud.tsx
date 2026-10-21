@@ -1,4 +1,4 @@
-import { TERRAFORM_COST } from '../sim/config';
+import { TERRAFORM_COST, WAYPOINT_COST } from '../sim/config';
 import { useEffect, useState } from 'preact/hooks';
 import { SPEEDS, type Speed } from '../loop';
 import { Side } from '../sim/track/track';
@@ -39,7 +39,7 @@ const TOOL_HELP: Record<Tool, string> = {
   track:
     'Buduj: przeciągnij wzdłuż osi lub ukośnie; pozycja kursora w kafelku wybiera łuk. Usuń: klik – jeden element pod kursorem, przeciągnięcie – odcinek. Prawy przycisk – przesuwanie mapy · Esc – anuluj',
   station:
-    'Przeciągnij prostokąt: dłuższy bok to długość peronu, krótszy – liczba torów. Peron obok stacji ją rozbudowuje (Ctrl / Shift – osobna stacja). R – obrót przy kwadracie. Niebieskie pole to zasięg stacji',
+    'Przeciągnij prostokąt: dłuższy bok to długość peronu, krótszy – liczba torów. Peron obok stacji ją rozbudowuje (Ctrl / Shift – osobna stacja). R – obrót przy kwadracie. Niebieskie pole to zasięg stacji. Punkt kontrolny (panel): klik na prosty tor – w rozkładzie wymusza jazdę tym torem',
   depot: 'Klik stawia zajezdnię (1000 zł). Kierunek wjazdu wybierz w panelu obok (lub R); Auto – w stronę sąsiedniego toru',
   signal:
     'Klik na tor stawia semafor ścieżkowy (200 zł); kolejne kliknięcia zmieniają kierunek. Pociąg może stanąć tylko przed semaforem, na końcu peronu lub toru · V – podgląd rezerwacji',
@@ -50,7 +50,7 @@ const TOOL_HELP: Record<Tool, string> = {
     'Przeciągnij od przyczółka do przyczółka (wzdłuż osi, max 14 kafelków). Przyczółki płaskie lub wznoszące się w stronę mostu, na tej samej wysokości; pod mostem teren co najmniej poziom niżej. 400 zł za kafelek',
   tunnel:
     'Klik na zbocze (w osi X lub Y) – tunel w głąb wzniesienia do zbocza po drugiej stronie na tej samej wysokości. Nad tunelem teren co najmniej poziom wyżej, max 20 kafelków, 600 zł za kafelek',
-  orders: 'Klikaj stacje, aby dopisać je do rozkładu pociągu · Esc – koniec',
+  orders: 'Klikaj stacje lub punkty kontrolne, aby dopisać je do rozkładu pociągu · Esc – koniec',
   bulldozer:
     'Klik – usuń element toru pod kursorem, most (przyczółek), tunel (wejście), zajezdnię, kafelek stacji, dom lub oczyść nieużytek · przeciągnięcie – rozbierz odcinek toru (zwrot 25%)',
 };
@@ -290,6 +290,22 @@ function ToolOptions({ tool, options, actions }: { tool: Tool; options: HudState
   if (tool === 'station') {
     return (
       <div class="panel tool-options">
+        <div class="section-title">Buduj</div>
+        <button
+          class={options.stationKind === 'platform' ? 'active' : ''}
+          title="Perony stacji – przeciągnij prostokąt"
+          onClick={() => actions.setStationKind('platform')}
+        >
+          Peron
+        </button>
+        <button
+          class={options.stationKind === 'waypoint' ? 'active' : ''}
+          title="Punkt kontrolny na prostym torze – w rozkładzie wymusza jazdę tym torem, bez zatrzymania"
+          onClick={() => actions.setStationKind('waypoint')}
+        >
+          Punkt kontrolny
+        </button>
+        {options.stationKind === 'waypoint' && <div class="muted small">Klik na prosty tor · {formatMoney(WAYPOINT_COST)}</div>}
         <div class="section-title">Perony</div>
         <div class="dir-grid">
           <button
