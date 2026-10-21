@@ -85,6 +85,7 @@ Jedna kolejka, w kolejności, która najszybciej poprawia granie. Maglevy, kolej
 5. ~~**Wspólne rozkłady**~~ ✅ (2026-10-21) – kopia pociągu może dzielić rozkład z oryginałem: zmiana w jednym zmienia wszystkie na linii.
 6. ~~**Rozkład czasowy**~~ ✅ (2026-10-21) – postój X dni na stacji i **równe odstępy**: na wspólnym rozkładzie wyrównuje pociągi linii (czas obiegu / liczba pociągów) i wypuszcza je w odpowiednich odstępach.
 7. **Etap 5 – test „czy to jest fajne”** – granie z kilkoma osobami, strojenie `src/data/economy.ts` i `vehicles.json`.
+   - *Przydatne do testów:* **statystyki graczy** (pomysł niżej) – kto wchodził, jak długo grał, na jakiej mapie.
 
 ### Wydajność – wrócić przed testami na dużych mapach
 - **Audyt wydajności** – lista poprawek z pomiarami w [06-audyt-wydajnosci](06-audyt-wydajnosci.md). Najpierw: autozapis bez zamrożeń (~0,6 s co 2 min na mapie 1024), liczenie zasięgu stacji bez przeglądania całej mapy, dzienny ładunek (~90 ms na 1024 przy 40 stacjach), okna odświeżane 4–5×/s. Potem profil gry w przeglądarce przy 8× i decyzja o pamiętaniu tras pociągów.
@@ -120,4 +121,10 @@ Kredyt i bankructwo · minimapa · pierwsze kroki · lokomotywy z biegiem lat i 
 - ~~historia zmian na stronie w menu~~ ✅ (Menu → Co nowego; `src/data/changelog.ts`, kropka przy Menu przy nowościach – 2026-10-21)
 - ~~samouczek + mini wiki jak co działą jak rosnie miasto fabryka.~~ ✅ (Pomoc – H / „?”: 16 tematów, liczby z plików danych, linki „?” w oknach; `src/data/help.ts` – 2026-10-21)
 - **Super stacja** (pomysł 2026-10-21): ulepszenie istniejącej stacji za ~100× ceny peronu – druga kondygnacja peronów pod spodem (4 tory zamiast 2 na tym samym obszarze), zjazdy na dolny poziom jak portale tuneli, dolne tory jako osobna warstwa (bez kolizji z górnymi). Żeby nie było zatorów: osobne tory zjazdów w głowicy (wymóg 2-torowego wjazdu), wybór peronu przez obecny planer. Warunek: stacja w mieście (np. ≥ 2000 mieszkańców w zasięgu). Prostsza alternatywa: „dworzec główny” – 2× szybszy załadunek, wyższa ocena, większy zasięg. Po etapie 5.
+- **Statystyki graczy** (pomysł 2026-10-21): kto wchodził, czy grał i jak długo – przyda się przy etapie 5. Gra jest statyczną stroną (GitHub Pages, bez serwera), więc do wyboru:
+  - *Prosto, bez serwera:* lekki licznik odwiedzin szanujący prywatność (np. GoatCounter, Plausible) + własne zdarzenia z gry: start nowej gry (rozmiar mapy), czas grania co kilka minut, osiągnięte kroki samouczka. Bez kont – widać liczby, nie konkretne osoby.
+  - *„Kto” konkretnie:* opcjonalny nick przy pierwszym uruchomieniu albo kod testera w linku (np. `?tester=ania`) dołączany do zdarzeń – wystarczy na testy z kilkoma osobami.
+  - *Własny backend:* razem z etapem 8 (zapis w chmurze, rankingi) – wtedy pełne logi sesji.
+  - Lokalnie w grze: łączny czas grania i liczba sesji w Menu (tylko dla tego gracza, bez wysyłania).
+  - Pamiętać o RODO: krótka informacja w grze, co jest zbierane; bez danych osobowych, jeśli się da.
 - 
