@@ -3,7 +3,8 @@ import { MAX_HEIGHT } from '../sim/world/height';
 import type { Rect } from './camera';
 import { HEIGHT_PX, tileToWorldFlat } from './iso';
 import { industryDef, type Industry } from '../sim/economy/industry';
-import { darken, drawBox, drawChimney, drawGableRoof, drawPile, drawTree, lighten } from './shapes';
+import { darken, drawBox, drawChimney, drawGableRoof, drawPile, drawTree, lighten, tileHash } from './shapes';
+import { inBounds, type WorldMap } from '../sim/world/map';
 
 // Placeholder – proste bryły do czasu podpięcia grafiki.
 const WALLS = [0xe8dcc0, 0xd9b38c, 0xc9c2b8, 0xe0c9a6];
@@ -22,6 +23,33 @@ export function drawHouse(g: Graphics, x: number, y: number, level: number, hash
   }
 }
 
+/** Głębokość domu do sortowania z pojazdami (środek kafelka, x + y). */
+export const houseDepth = (map: WorldMap, i: number) => (i % map.width) + Math.floor(i / map.width) + 1;
+
+/**
+ * Domy, które na ekranie mogą zasłaniać punkt (fx, fy): leżą przed nim (większe x + y) i blisko
+ * w poziomie. Pojazdy są rysowane nad mapą, więc takie domy dorysowujemy jeszcze raz przed nimi.
+ */
+export function housesInFront(map: WorldMap, fx: number, fy: number, out: Set<number>): void {
+  const x0 = Math.floor(fx);
+  const y0 = Math.floor(fy);
+  for (let dy = 0; dy <= 3; dy++) {
+    for (let dx = 0; dx <= 3; dx++) {
+      const x = x0 + dx;
+      const y = y0 + dy;
+      if (!inBounds(map, x, y)) continue;
+      const i = y * map.width + x;
+      if (map.house[i] && x + y + 1 > fx + fy) out.add(i);
+    }
+  }
+}
+
+export function redrawHouse(g: Graphics, map: WorldMap, i: number): void {
+  const x = i % map.width;
+  const y = Math.floor(i / map.width);
+  drawHouse(g, x, y, map.house[i]!, tileHash(x, y));
+}
+
 /** Wszystkie zakłady w jednej warstwie (jest ich kilkanaście – rysowane raz, odświeżane po zmianach). */
 export class IndustryRenderer {
   /** Kontener do dodania do świata (każdy zakład to osobna grafika – ukrywana poza ekranem). */
@@ -29,7 +57,7 @@ export class IndustryRenderer {
   private items: { g: Graphics; bounds: Rect }[] = [];
 
   draw(industries: readonly Industry[]): void {
-    for (const child of this.gfx.removeChildren()) child.destroy();
+    for (const child of this.gfx.removeChildren()) child.destroy({ context: true });
     this.items = [];
     // Od tyłu do przodu (mniejsze x + y wcześniej).
     for (const ind of [...industries].sort((a, b) => a.x + a.y - (b.x + b.y))) {

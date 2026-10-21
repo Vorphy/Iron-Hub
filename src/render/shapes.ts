@@ -92,3 +92,10 @@ export function lighten(color: number, k: number): number {
   const c = (v: number) => Math.min(255, Math.round(v * k));
   return (c((color >> 16) & 255) << 16) | (c((color >> 8) & 255) << 8) | c(color & 255);
 }
+
+/** Stały „szum” wizualny per kafelek – tylko kosmetyka, poza symulacją. */
+export function tileHash(x: number, y: number): number {
+  let h = Math.imul(x, 73856093) ^ Math.imul(y, 19349663);
+  h = Math.imul(h ^ (h >>> 13), 0x5bd1e995);
+  return (h ^ (h >>> 15)) >>> 0;
+}

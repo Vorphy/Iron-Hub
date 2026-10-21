@@ -1,23 +1,32 @@
 import { Graphics } from 'pixi.js';
+import { industryDef } from '../sim/economy/industry';
 import { townPopulation, TOWN_EXTENT, type Town } from '../sim/economy/town';
 import type { GameState } from '../sim/state';
 import { inBounds, type WorldMap } from '../sim/world/map';
 import type { Rect } from './camera';
 import { tileCenter, tileToWorld, type Point } from './iso';
 import { darken, hull } from './trains';
+import { houseDepth, housesInFront, redrawHouse } from './buildings';
 
 /**
  * Ruch uliczny w miastach – czysta dekoracja: nie należy do symulacji ani zapisu, losowość
- * z Math.random. Auta i autobusy błądzą po drogach prawą stroną, tylko w miastach przy widoku.
+ * z Math.random. Auta, autobusy i ciężarówki błądzą po drogach prawą stroną, tylko w miastach przy widoku.
  */
 
+type Kind = 'car' | 'bus' | 'truck';
+
 /** Prędkość w kafelkach na sekundę gry przy prędkości 1×. */
-const CAR_SPEED = 1.1;
-const BUS_SPEED = 0.8;
+const SPEED: Record<Kind, number> = { car: 1.1, bus: 0.8, truck: 0.75 };
 /** Przesunięcie na prawy pas (ułamek kafelka). */
 const LANE = 0.11;
 const CAR = { len: 0.17, half: 0.05, h: 4 };
 const BUS = { len: 0.3, half: 0.06, h: 6 };
+/** Ciężarówka: kabina z przodu (ułamek długości) i skrzynia. */
+const TRUCK = { len: 0.28, half: 0.06, h: 6, cab: 0.3 };
+const TRUCK_CABS = [0xc0392b, 0x2e6fb7, 0xe8e8e8, 0x3f8f4a];
+const TRUCK_BOX = 0x9a8f7a;
+/** Zakład w takiej odległości od rynku (kafelki) przysyła ciężarówki do miasta. */
+const INDUSTRY_REACH = TOWN_EXTENT + 8;
 const BUS_COLOR = 0xf2c230;
 const CAR_COLORS = [0xc0392b, 0x2e6fb7, 0xe8e8e8, 0x2b2b2b, 0x3f8f4a, 0x8e44ad, 0xd98236, 0x7f8c8d];
 /** Poniżej tego przybliżenia auta są za małe, żeby je rysować. */
@@ -33,7 +42,7 @@ const DIRS = [
 ] as const;
 
 interface Vehicle {
-  bus: boolean;
+  kind: Kind;
   color: number;
   /** Kafelki (indeksy): poprzedni, bieżący odcinek a→b i następny. */
   prev: number;
@@ -79,19 +88,26 @@ export class TrafficRenderer {
       this.refresh(state, view);
     }
     const { map } = state;
-    const drawn: { v: Vehicle; pose: Pose; depth: number }[] = [];
+    const drawn: ({ depth: number; v: Vehicle; pose: Pose } | { depth: number; house: number })[] = [];
+    const houses = new Set<number>();
     for (const tt of this.towns.values()) {
       for (const v of tt.vehicles) {
-        if (!this.advance(map, v, gameSeconds * (v.bus ? BUS_SPEED : CAR_SPEED))) {
+        if (!this.advance(map, v, gameSeconds * SPEED[v.kind])) {
           respawn(map, tt, v);
           continue;
         }
         const pose = vehiclePose(map, v);
         drawn.push({ v, pose, depth: pose.x + pose.y });
+        housesInFront(map, pose.x, pose.y, houses);
       }
     }
+    // Domy przed autami zasłaniają je – dorysowujemy je w kolejności głębokości.
+    for (const house of houses) drawn.push({ depth: houseDepth(map, house), house });
     drawn.sort((p, q) => p.depth - q.depth);
-    for (const d of drawn) drawCar(g, d.pose, d.v);
+    for (const d of drawn) {
+      if ('house' in d) redrawHouse(g, map, d.house);
+      else drawCar(g, d.pose, d.v);
+    }
   }
 
   /** Miasta przy widoku dostają ruch; dalsze go tracą. */
@@ -113,11 +129,18 @@ export class TrafficRenderer {
       const cars = roads.length < 2 ? 0 : Math.min(Math.round(roads.length / 3), Math.max(1, Math.min(12, Math.round(pop / 150))));
       // Więcej autobusów w mieście obsługiwanym przez kolej (dowożą pasażerów na stację).
       const buses = roads.length < 6 ? 0 : town.lastTransported > 0 ? 2 + Math.floor(pop / 1500) : pop > 400 ? 1 : 0;
-      const want = { car: cars, bus: buses };
-      for (const kind of ['car', 'bus'] as const) {
-        const list = tt.vehicles.filter((v) => v.bus === (kind === 'bus'));
+      // Ciężarówki dowożą do miasta z pobliskich zakładów (więcej z większych) i towary do dużych miast.
+      let trucks = pop > 800 ? 1 : 0;
+      for (const ind of state.industries) {
+        const [w, h] = industryDef(ind.type)!.size;
+        if (Math.abs(ind.x + w / 2 - town.x) + Math.abs(ind.y + h / 2 - town.y) <= INDUSTRY_REACH) trucks += ind.level >= 3 ? 2 : 1;
+      }
+      trucks = roads.length < 6 ? 0 : Math.min(4, trucks);
+      const want: Record<Kind, number> = { car: cars, bus: buses, truck: trucks };
+      for (const kind of ['car', 'bus', 'truck'] as const) {
+        const list = tt.vehicles.filter((v) => v.kind === kind);
         for (let n = list.length; n < want[kind]; n++) {
-          const v = spawn(state.map, tt, kind === 'bus');
+          const v = spawn(state.map, tt, kind);
           if (v) tt.vehicles.push(v);
         }
         for (const v of list.slice(want[kind])) tt.vehicles.splice(tt.vehicles.indexOf(v), 1);
@@ -172,10 +195,11 @@ function pickNext(map: WorldMap, a: number, b: number): number {
   return options.length ? options[Math.floor(Math.random() * options.length)]! : a;
 }
 
-function spawn(map: WorldMap, tt: TownTraffic, bus: boolean): Vehicle | null {
+function spawn(map: WorldMap, tt: TownTraffic, kind: Kind): Vehicle | null {
+  const pick = (list: number[]) => list[Math.floor(Math.random() * list.length)]!;
   const v: Vehicle = {
-    bus,
-    color: bus ? BUS_COLOR : CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)]!,
+    kind,
+    color: kind === 'bus' ? BUS_COLOR : kind === 'truck' ? pick(TRUCK_CABS) : pick(CAR_COLORS),
     prev: 0,
     a: 0,
     b: 0,
@@ -239,18 +263,31 @@ function vehiclePose(map: WorldMap, v: Vehicle): Pose {
 }
 
 function drawCar(g: Graphics, p: Pose, v: Vehicle): void {
-  const s = v.bus ? BUS : CAR;
-  const fx = (p.ux * s.len) / 2;
-  const fy = (p.uy * s.len) / 2;
-  const sx = -p.uy * s.half;
-  const sy = p.ux * s.half;
-  const ground: Point[] = [
-    tileToWorld(p.x + fx + sx, p.y + fy + sy),
-    tileToWorld(p.x + fx - sx, p.y + fy - sy),
-    tileToWorld(p.x - fx - sx, p.y - fy - sy),
-    tileToWorld(p.x - fx + sx, p.y - fy + sy),
-  ];
-  const top = ground.map((q) => ({ x: q.x, y: q.y - s.h }));
-  g.poly(hull([...ground, ...top]).flatMap((q) => [q.x, q.y])).fill(darken(v.color, 0.6));
-  g.poly(top.flatMap((q) => [q.x, q.y])).fill(v.color);
+  if (v.kind !== 'truck') {
+    const s = v.kind === 'bus' ? BUS : CAR;
+    drawBlock(g, p, -s.len / 2, s.len / 2, s.half, s.h, v.color);
+    return;
+  }
+  // Ciężarówka: skrzynia i kabina – najpierw część dalsza od widza.
+  const split = TRUCK.len / 2 - TRUCK.len * TRUCK.cab;
+  const box = () => drawBlock(g, p, -TRUCK.len / 2, split - 0.01, TRUCK.half, TRUCK.h, TRUCK_BOX);
+  const cab = () => drawBlock(g, p, split, TRUCK.len / 2, TRUCK.half * 0.9, TRUCK.h - 1, v.color);
+  if (p.ux + p.uy > 0) {
+    box();
+    cab();
+  } else {
+    cab();
+    box();
+  }
+}
+
+/** Prostopadłościan wzdłuż kierunku jazdy, od `a` do `b` (ułamki kafelka względem środka pojazdu). */
+function drawBlock(g: Graphics, p: Pose, a: number, b: number, half: number, h: number, color: number): void {
+  const sx = -p.uy * half;
+  const sy = p.ux * half;
+  const at = (k: number, side: number) => tileToWorld(p.x + p.ux * k + sx * side, p.y + p.uy * k + sy * side);
+  const ground: Point[] = [at(b, 1), at(b, -1), at(a, -1), at(a, 1)];
+  const top = ground.map((q) => ({ x: q.x, y: q.y - h }));
+  g.poly(hull([...ground, ...top]).flatMap((q) => [q.x, q.y])).fill(darken(color, 0.6));
+  g.poly(top.flatMap((q) => [q.x, q.y])).fill(color);
 }

@@ -143,7 +143,7 @@ Produkcja i zapotrzebowanie rosną liniowo z poziomem (1–5). Zakłady startuj�
 - **Nie mają związku z liczbą pasażerów ani ładunku** – te liczone są abstrakcyjnie przez zasięg stacji.
 - Nie uczestniczą w symulacji (żyją w `render/` lub w osobnym, niedeterministycznym module kosmetycznym), nie trafiają do zapisu gry.
 - Można je wyłączyć: Menu → „Ruch w miastach” (ustawienie zapamiętane w przeglądarce).
-- Obecnie: auta i autobusy błądzą po drogach miasta prawym pasem, w tempie gry (stoją w pauzie). Aut przybywa z liczbą mieszkańców (1–12), autobusy jeżdżą w miastach, z których kolej wozi pasażerów (2+, w dużych więcej), w pozostałych co najwyżej jeden. Ruch jest tylko w miastach przy widoku i przy przybliżeniu od 0,5×. Ciężarówek jeszcze nie ma.
+- Obecnie: auta i autobusy błądzą po drogach miasta prawym pasem, w tempie gry (stoją w pauzie). Aut przybywa z liczbą mieszkańców (1–12), autobusy jeżdżą w miastach, z których kolej wozi pasażerów (2+, w dużych więcej), w pozostałych co najwyżej jeden. Ciężarówki (kabina + skrzynia) jeżdżą w miastach, do których blisko jest zakład (1–2 na zakład, więcej z większych), i w dużych miastach; najwyżej 4 na miasto. Ruch jest tylko w miastach przy widoku i przy przybliżeniu od 0,5×. Domy przed pojazdami (także pociągami) zasłaniają je.
 
 ## Ekonomia gracza
 

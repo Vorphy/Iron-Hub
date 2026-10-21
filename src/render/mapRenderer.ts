@@ -8,7 +8,7 @@ import { getTerrain, Terrain, type WorldMap } from '../sim/world/map';
 import type { Rect } from './camera';
 import { cornerHeights, MAX_HEIGHT } from '../sim/world/height';
 import { HEIGHT_PX, TILE_H, TILE_W, tileDiamond, tileToWorld, tileToWorldFlat } from './iso';
-import { darken, lighten } from './shapes';
+import { darken, lighten, tileHash } from './shapes';
 import { drawHouse } from './buildings';
 import { drawRoad } from './roadDraw';
 import { drawDepot } from './depotDraw';
@@ -300,11 +300,4 @@ function drawTerrainTile(g: Graphics, map: WorldMap, x: number, y: number, color
     tri([t, b, l], zb - zl, zl - zt);
   }
   g.poly(tileDiamond(x, y)).stroke({ width: 1, color: 0x000000, alpha: 0.08 });
-}
-
-/** Stały „szum” wizualny per kafelek – tylko kosmetyka, poza symulacją. */
-function tileHash(x: number, y: number): number {
-  let h = Math.imul(x, 73856093) ^ Math.imul(y, 19349663);
-  h = Math.imul(h ^ (h >>> 13), 0x5bd1e995);
-  return (h ^ (h >>> 15)) >>> 0;
 }

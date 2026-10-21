@@ -2,6 +2,7 @@ import { Graphics } from 'pixi.js';
 import type { GameState } from '../sim/state';
 import { vehiclePoses, type Point3, type VehiclePose } from '../sim/trains/geometry';
 import { toWorld, type Point } from './iso';
+import { houseDepth, housesInFront, redrawHouse } from './buildings';
 
 const HALF_WIDTH = 0.13;
 const BODY_H = 7;
@@ -43,11 +44,25 @@ export class TrainRenderer {
         items.push({ trainId: t.id, pose, depth });
       }
     }
-    items.sort((a, b) => a.depth - b.depth);
-    this.hits = [];
+    // Domy przed pociągiem zasłaniają go – dorysowujemy je w kolejności głębokości.
+    const houses = new Set<number>();
     for (const it of items) {
-      const c = drawVehicle(g, it.pose, it.trainId === selectedId);
-      this.hits.push({ trainId: it.trainId, x: c.x, y: c.y });
+      const { front: f, back: b } = it.pose;
+      housesInFront(state.map, (f.x + b.x) / 2, (f.y + b.y) / 2, houses);
+    }
+    const order: ({ depth: number; item: Drawn } | { depth: number; house: number })[] = [
+      ...items.map((item) => ({ depth: item.depth, item })),
+      ...[...houses].map((house) => ({ depth: houseDepth(state.map, house), house })),
+    ];
+    order.sort((a, b) => a.depth - b.depth);
+    this.hits = [];
+    for (const o of order) {
+      if ('house' in o) {
+        redrawHouse(g, state.map, o.house);
+        continue;
+      }
+      const c = drawVehicle(g, o.item.pose, o.item.trainId === selectedId);
+      this.hits.push({ trainId: o.item.trainId, x: c.x, y: c.y });
     }
   }
 
