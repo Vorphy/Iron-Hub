@@ -84,10 +84,7 @@ export class Camera {
 
   apply(): void {
     this.world.scale.set(this.zoom);
-    this.world.position.set(
-      Math.round(this.viewW / 2 - this.cx * this.zoom),
-      Math.round(this.viewH / 2 - this.cy * this.zoom),
-    );
+    this.world.position.set(Math.round(this.viewW / 2 - this.cx * this.zoom), Math.round(this.viewH / 2 - this.cy * this.zoom));
   }
 
   private clamp(): void {

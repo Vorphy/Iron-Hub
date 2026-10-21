@@ -1,4 +1,4 @@
-import { Application, Container } from 'pixi.js';
+import { type Application, Container } from 'pixi.js';
 import { Input } from './input/input';
 import { GameLoop, SPEEDS, type Speed } from './loop';
 import { Camera } from './render/camera';
@@ -213,7 +213,7 @@ export class Game {
   /** Centruje kamerę na pociągu (na torze). */
   focusTrain(trainId: number): void {
     const t = trainById(this.sim.state, trainId);
-    const p = t && t.trail.length ? pointBehindHead(t, 0) : null;
+    const p = t?.trail.length ? pointBehindHead(t, 0) : null;
     if (p) this.camera.centerOn(tileCenter(p.x - 0.5, p.y - 0.5));
   }
 
@@ -281,10 +281,16 @@ export class Game {
     for (const ev of events) {
       if (ev.type === 'tileChanged') {
         // Drogi łączą się z sąsiadami – odświeżamy też sąsiednie kafelki (mogą być w innym kawałku).
-        for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]] as const) this.mapRenderer.markTileDirty(ev.x + dx, ev.y + dy);
+        for (const [dx, dy] of [
+          [0, 0],
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+        ] as const)
+          this.mapRenderer.markTileDirty(ev.x + dx, ev.y + dy);
         this.minimapDirty = true;
-      }
-      else if (ev.type === 'stationsChanged') this.labels.rebuild(this.sim.state);
+      } else if (ev.type === 'stationsChanged') this.labels.rebuild(this.sim.state);
       else if (ev.type === 'bridgesChanged') this.bridges.draw(this.sim.state);
       else if (ev.type === 'tunnelsChanged') this.tunnels.draw(this.sim.state);
       else if (ev.type === 'income') this.floaters.spawn(`+${formatMoney(ev.amount)}`, ev.x, ev.y);
@@ -294,8 +300,7 @@ export class Game {
             ? 'Ujemne saldo! Za miesiąc bankructwo – weź kredyt (Finanse) lub sprzedaj pociągi'
             : `Ujemne saldo! Bankructwo za ${ev.monthsLeft} mies. – weź kredyt (Finanse) lub sprzedaj pociągi`,
         );
-      }
-      else if (ev.type === 'commandFailed') {
+      } else if (ev.type === 'commandFailed') {
         showMessage(FAIL_MESSAGES[ev.reason]);
       }
     }
@@ -401,8 +406,7 @@ export class Game {
     const station = tile ? objectName(state, tile.x, tile.y) : null;
     const h = prev.hover;
     const hoverChanged =
-      !h !== !tile ||
-      (h && tile && (h.x !== tile.x || h.y !== tile.y || h.terrain !== terrain || h.station !== station));
+      !h !== !tile || (h && tile && (h.x !== tile.x || h.y !== tile.y || h.terrain !== terrain || h.station !== station));
     const label = this.tools.label && this.pointer ? { ...this.tools.label, ...this.pointer } : null;
     const pl = prev.cursorLabel;
     const labelChanged =
@@ -416,7 +420,9 @@ export class Game {
       toolOptions: this.toolOptions(prev.toolOptions),
       fps: Math.round(this.app.ticker.FPS),
       zoom: this.camera.zoom,
-      graphInfo: this.graphDebug.visible ? `${this.sim.graph.nodes.length} węzłów · ${this.sim.graph.edges.length} krawędzi` : null,
+      graphInfo: this.graphDebug.visible
+        ? `${this.sim.graph.nodes.length} węzłów · ${this.sim.graph.edges.length} krawędzi`
+        : null,
       hover: hoverChanged ? (tile && terrain !== null ? { ...tile, terrain, station } : null) : h,
       cursorLabel: labelChanged ? label : pl,
       bankrupt: state.finances.bankrupt,

@@ -1,13 +1,5 @@
 import type { GameState } from '../state';
-import {
-  axisTrack,
-  bridgeAt,
-  bridgeRole,
-  bridgeTrack,
-  headSpanSide,
-  isBridgeTrack,
-  sideHeight,
-} from '../track/bridge';
+import { axisTrack, bridgeAt, bridgeRole, bridgeTrack, headSpanSide, isBridgeTrack, sideHeight } from '../track/bridge';
 import { pieceLength, STRAIGHT_LENGTH } from '../track/graph';
 import { isTunnelTrack, portalInnerSide, tunnelAt, tunnelRole, tunnelTrack } from '../track/tunnel';
 import { heightAt } from '../world/height';

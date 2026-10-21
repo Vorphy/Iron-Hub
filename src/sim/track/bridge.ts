@@ -86,7 +86,11 @@ export interface BridgePlan {
   result: CommandResult;
 }
 
-function fail(reason: 'blocked' | 'tooBig' | 'bridgeHeads' | 'bridgeLow' | 'noMoney', bridge: BridgePlan['bridge'] = null, cost = 0): BridgePlan {
+function fail(
+  reason: 'blocked' | 'tooBig' | 'bridgeHeads' | 'bridgeLow' | 'noMoney',
+  bridge: BridgePlan['bridge'] = null,
+  cost = 0,
+): BridgePlan {
   return { bridge, cost, result: { ok: false, reason } };
 }
 
@@ -97,7 +101,14 @@ function fail(reason: 'blocked' | 'tooBig' | 'bridgeHeads' | 'bridgeLow' | 'noMo
 function headDeck(map: WorldMap, x: number, y: number, axis: 'x' | 'y', spanSide: Side): number | null {
   if (!inBounds(map, x, y)) return null;
   const i = y * map.width + x;
-  if (map.terrain[i] === Terrain.Water || map.station[i] || map.depot[i] || hasBuilding(map, i) || map.bridge[i] || map.tunnel[i]) {
+  if (
+    map.terrain[i] === Terrain.Water ||
+    map.station[i] ||
+    map.depot[i] ||
+    hasBuilding(map, i) ||
+    map.bridge[i] ||
+    map.tunnel[i]
+  ) {
     return null;
   }
   const bits = map.track[i]!;

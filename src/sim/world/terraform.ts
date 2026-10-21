@@ -118,7 +118,14 @@ export function terraformTargets(state: GameState, vx: number, vy: number, delta
 }
 
 /** Wyrównanie prostokąta narożników do wysokości `level`. */
-export function levelTargets(state: GameState, vx0: number, vy0: number, vx1: number, vy1: number, level: number): Map<number, number> {
+export function levelTargets(
+  state: GameState,
+  vx0: number,
+  vy0: number,
+  vx1: number,
+  vy1: number,
+  level: number,
+): Map<number, number> {
   const { map } = state;
   const out = new Map<number, number>();
   for (let vy = Math.max(0, Math.min(vy0, vy1)); vy <= Math.min(map.height, Math.max(vy0, vy1)); vy++) {

@@ -40,7 +40,9 @@ function drawPortals(g: Graphics, state: GameState, t: Tunnel): void {
     // Ściana portalu w płaszczyźnie wewnętrznej krawędzi: obudowa i otwór.
     const at = (k: number, z: number) => toWorld(p.x + ix + nx * k, p.y + iy + ny * k, z);
     const wallTop = Math.max(top, t.level + 1.2);
-    g.poly(poly([at(-HALF - 0.08, t.level), at(HALF + 0.08, t.level), at(HALF + 0.08, wallTop), at(-HALF - 0.08, wallTop)])).fill(STONE);
+    g.poly(poly([at(-HALF - 0.08, t.level), at(HALF + 0.08, t.level), at(HALF + 0.08, wallTop), at(-HALF - 0.08, wallTop)])).fill(
+      STONE,
+    );
     // Otwór: prostokąt z łukiem (przybliżony kilkoma punktami).
     const arch: Point[] = [at(-HALF + 0.05, t.level), at(HALF - 0.05, t.level)];
     for (let a = 0; a <= 8; a++) {
@@ -48,8 +50,13 @@ function drawPortals(g: Graphics, state: GameState, t: Tunnel): void {
       arch.push(at(Math.cos(ang) * (HALF - 0.05), t.level + 0.75 + Math.sin(ang) * 0.35));
     }
     g.poly(poly(arch)).fill(MOUTH);
-    g.poly(poly([at(-HALF - 0.08, wallTop), at(HALF + 0.08, wallTop), at(HALF + 0.08, wallTop + 0.15), at(-HALF - 0.08, wallTop + 0.15)])).fill(
-      STONE_DARK,
-    );
+    g.poly(
+      poly([
+        at(-HALF - 0.08, wallTop),
+        at(HALF + 0.08, wallTop),
+        at(HALF + 0.08, wallTop + 0.15),
+        at(-HALF - 0.08, wallTop + 0.15),
+      ]),
+    ).fill(STONE_DARK);
   }
 }

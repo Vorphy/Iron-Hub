@@ -13,6 +13,8 @@ npm install
 npm run dev        # serwer deweloperski: http://localhost:5173
 npm test           # testy symulacji (Vitest)
 npm run build      # typecheck + build produkcyjny do dist/
+npm run lint       # Biome: błędy w kodzie + formatowanie (sprawdzane też na GitHubie)
+npm run format     # Biome: poprawia formatowanie i proste błędy
 ```
 
 Gra wczytuje autozapis z przeglądarki; przy pierwszym wejściu pokazuje okno nowej gry (rozmiar mapy, ziarno). Parametr `?seed=123&size=256` w adresie wymusza nową grę na danej mapie.

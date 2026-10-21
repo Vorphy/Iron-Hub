@@ -81,13 +81,7 @@ const NEIGHBORS = [
  * Dokłada domy obok istniejącej zabudowy (poza ulicami). Wyższa zabudowa bliżej rynku.
  * `prefer` – opcjonalna waga kafelka (np. bliskość stacji), żeby miasto rosło w stronę kolei.
  */
-export function growTown(
-  state: GameState,
-  rng: Rng,
-  town: Town,
-  houses: number,
-  prefer?: (i: number) => number,
-): number {
+export function growTown(state: GameState, rng: Rng, town: Town, houses: number, prefer?: (i: number) => number): number {
   const { map } = state;
   let built = 0;
   for (let h = 0; h < houses; h++) {
@@ -114,7 +108,14 @@ export function growTown(
         }
       }
     }
-    if (!any) for (const [dx, dy] of [[1, 1], [-1, 1], [1, -1], [-1, -1]] as const) consider(town.x + dx, town.y + dy);
+    if (!any)
+      for (const [dx, dy] of [
+        [1, 1],
+        [-1, 1],
+        [1, -1],
+        [-1, -1],
+      ] as const)
+        consider(town.x + dx, town.y + dy);
     if (candidates.length === 0) break;
     const i = candidates[pickWeighted(rng, weights)]!;
     const x = i % map.width;

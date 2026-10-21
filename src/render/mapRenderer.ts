@@ -236,14 +236,18 @@ export class MapRenderer {
         const t = getTerrain(this.map, x, y);
         const h = tileHash(x, y);
         if (this.map.station[y * this.map.width + x]) {
-          g.poly(tileDiamond(x, y)).fill(PLATFORM[h & 3]!).stroke({ width: 1, color: PLATFORM_EDGE, alpha: 0.6 });
+          g.poly(tileDiamond(x, y))
+            .fill(PLATFORM[h & 3]!)
+            .stroke({ width: 1, color: PLATFORM_EDGE, alpha: 0.6 });
         } else {
           drawTerrainTile(g, this.map, x, y, COLORS[t][h & 3]!);
           if (t === Terrain.Rough) drawRoughDots(g, x, y, h);
         }
         // Droga pod torem (przejazd) – najpierw droga, tor nad nią.
         if (this.map.road[y * this.map.width + x]) drawRoad(tracksG, this.map, x, y);
-        const bridge = this.map.bridge[y * this.map.width + x] ? this.getBridges().find((b) => b.id === this.map.bridge[y * this.map.width + x]) : undefined;
+        const bridge = this.map.bridge[y * this.map.width + x]
+          ? this.getBridges().find((b) => b.id === this.map.bridge[y * this.map.width + x])
+          : undefined;
         const head = bridge && bridgeRole(bridge, x, y) !== 'span' ? bridge : undefined;
         const tunnelId = this.map.tunnel[y * this.map.width + x];
         const tunnel = tunnelId ? this.getTunnels().find((t) => t.id === tunnelId) : undefined;

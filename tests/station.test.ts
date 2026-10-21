@@ -54,7 +54,13 @@ describe('budowa stacji', () => {
 
   it('nie wolno stawiać na torze w innej osi, łuku, wodzie ani innej stacji', () => {
     const sim = flatSim();
-    sim.enqueue({ type: 'buildTrack', pieces: [{ x: 2, y: 2, track: Track.Y }, { x: 8, y: 2, track: Track.Upper }] });
+    sim.enqueue({
+      type: 'buildTrack',
+      pieces: [
+        { x: 2, y: 2, track: Track.Y },
+        { x: 8, y: 2, track: Track.Upper },
+      ],
+    });
     setTerrain(sim.state.map, 14, 2, Terrain.Water);
     sim.enqueue({ type: 'buildStation', x0: 1, y0: 2, x1: 3, y1: 2, axis: 'x' });
     sim.enqueue({ type: 'buildStation', x0: 7, y0: 2, x1: 9, y1: 2, axis: 'x' });

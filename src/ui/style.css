@@ -6,7 +6,7 @@
   --muted: #9aa0a8;
   --accent: #ffe066;
   --money: #9fdc7c;
-  --font: ui-monospace, 'Cascadia Mono', 'Consolas', monospace;
+  --font: ui-monospace, "Cascadia Mono", "Consolas", monospace;
 }
 
 * {
@@ -317,6 +317,14 @@ body {
   color: #fff;
   border: 1px solid rgba(0, 0, 0, 0.5);
   cursor: pointer;
+}
+
+/* Wagon w składzie to przycisk (klik usuwa) – wygląda jak etykieta. */
+.panel button.chip {
+  padding: 1px 6px;
+  font-size: 11px;
+  color: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.5);
 }
 
 .chip.engine {

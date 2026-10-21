@@ -69,7 +69,12 @@ export class MapLabels {
     for (const child of this.container.children) {
       child.scale.set(1 / zoom);
       const { x, y } = child.position;
-      child.visible = (zoom >= 0.25 || child.label === 'town') && x > view.x - margin && x < view.x + view.w + margin && y > view.y - margin && y < view.y + view.h + margin;
+      child.visible =
+        (zoom >= 0.25 || child.label === 'town') &&
+        x > view.x - margin &&
+        x < view.x + view.w + margin &&
+        y > view.y - margin &&
+        y < view.y + view.h + margin;
     }
   }
 }

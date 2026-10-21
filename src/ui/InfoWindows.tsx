@@ -43,8 +43,8 @@ export function TownWindow({ data: t, actions }: { data: TownWindowData; actions
         </span>
       </div>
       <div class="muted small">
-        Poprzedni miesiąc: przewieziono {percent(t.lastTransported)} pasażerów. Miasto rośnie szybciej, gdy obsługują
-        je pociągi – nowe domy pojawiają się w pobliżu stacji.
+        Poprzedni miesiąc: przewieziono {percent(t.lastTransported)} pasażerów. Miasto rośnie szybciej, gdy obsługują je pociągi –
+        nowe domy pojawiają się w pobliżu stacji.
       </div>
     </div>
   );
@@ -62,7 +62,13 @@ export function IndustryWindow({ data: d, actions }: { data: IndustryWindowData;
         </b>
       </div>
       <div class="level-bar" title="Punkty rozwoju: +12 – poziom w górę, −12 – w dół">
-        <span class="level-fill" style={{ width: `${Math.min(100, Math.abs(d.growth) / 12 * 100)}%`, background: d.growth >= 0 ? '#9fdc7c' : '#ff9a85' }} />
+        <span
+          class="level-fill"
+          style={{
+            width: `${Math.min(100, (Math.abs(d.growth) / 12) * 100)}%`,
+            background: d.growth >= 0 ? '#9fdc7c' : '#ff9a85',
+          }}
+        />
       </div>
       <div class="muted small">
         Rozwój: {d.growth > 0 ? '+' : ''}
@@ -227,8 +233,8 @@ export function FinanceWindow({ data: d, money, actions }: { data: FinanceWindow
       </div>
       {d.debtMonths > 0 ? (
         <div class="warning">
-          Saldo ujemne na koniec miesiąca już {d.debtMonths}× z rzędu. Jeśli tak będzie {d.bankruptcyMonths}× – bankructwo
-          i koniec gry. Weź kredyt, sprzedaj pociągi albo ogranicz koszty.
+          Saldo ujemne na koniec miesiąca już {d.debtMonths}× z rzędu. Jeśli tak będzie {d.bankruptcyMonths}× – bankructwo i
+          koniec gry. Weź kredyt, sprzedaj pociągi albo ogranicz koszty.
         </div>
       ) : (
         <div class="muted small">

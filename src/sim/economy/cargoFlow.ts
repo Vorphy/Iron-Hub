@@ -94,9 +94,7 @@ function catchmentIndex(state: GameState): Map<number, Station[]> {
  * Trafia na nie ułamek równy najlepszej ocenie – reszta przepada. Zwraca ilość, która trafiła na stacje.
  */
 function distribute(state: GameState, stations: readonly Station[], cargo: Cargo, amount: number): number {
-  const rated = stations
-    .map((st) => ({ st, r: stationRating(state, st.cargo[cargo]) }))
-    .filter((x) => x.r > 0);
+  const rated = stations.map((st) => ({ st, r: stationRating(state, st.cargo[cargo]) })).filter((x) => x.r > 0);
   if (rated.length === 0 || amount <= 0) return 0;
   const best = Math.max(...rated.map((x) => x.r));
   const total = rated.reduce((s, x) => s + x.r, 0);

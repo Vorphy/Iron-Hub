@@ -9,7 +9,13 @@ describe('pierwsze kroki', () => {
     const s = createGame({ width: 64, height: 64, seed: 1, empty: true });
     const sim = new Simulation(s);
     expect(tutorialProgress(s, sim.graph).some(Boolean)).toBe(false);
-    sim.enqueue({ type: 'buildTrack', pieces: [{ x: 10, y: 10, track: Track.X }, { x: 11, y: 10, track: Track.X }] });
+    sim.enqueue({
+      type: 'buildTrack',
+      pieces: [
+        { x: 10, y: 10, track: Track.X },
+        { x: 11, y: 10, track: Track.X },
+      ],
+    });
     sim.step();
     expect(tutorialProgress(s, sim.graph)[0]).toBe(true);
   });

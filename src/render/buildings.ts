@@ -94,7 +94,13 @@ function drawIndustry(g: Graphics, ind: Industry): void {
         for (let j = 0; j < h * 3; j++) {
           const jx = ((i * 7 + j * 13) % 5) / 20;
           const jy = ((i * 11 + j * 3) % 5) / 20;
-          drawTree(g, x + (i + 0.5) / 3 + jx - 0.1, y + (j + 0.5) / 3 + jy - 0.1, 10 + ((i + j) % 3) * 2, i % 2 ? color : lighten(color, 1.15));
+          drawTree(
+            g,
+            x + (i + 0.5) / 3 + jx - 0.1,
+            y + (j + 0.5) / 3 + jy - 0.1,
+            10 + ((i + j) % 3) * 2,
+            i % 2 ? color : lighten(color, 1.15),
+          );
         }
       }
       return;
@@ -134,7 +140,11 @@ function drawIndustry(g: Graphics, ind: Industry): void {
         [1.8, 2.3],
         [2.5, 1.2],
       ] as const) {
-        drawBox(g, x + dx - 0.3, y + dy - 0.2, x + dx + 0.3, y + dy + 0.2, 7, { left: 0x8c7a5a, right: 0x6f5f45, roof: 0xa58f6a });
+        drawBox(g, x + dx - 0.3, y + dy - 0.2, x + dx + 0.3, y + dy + 0.2, 7, {
+          left: 0x8c7a5a,
+          right: 0x6f5f45,
+          roof: 0xa58f6a,
+        });
       }
       return;
     }

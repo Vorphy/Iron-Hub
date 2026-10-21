@@ -4,18 +4,11 @@ import { CLEAR_ROUGH_COST, SIGNAL_COST } from './sim/config';
 import { CARGO_DEFS, type Cargo } from './sim/economy/cargo';
 import { catchmentCargo } from './sim/economy/cargoFlow';
 import { autoDepotSide, depotAt, depotRefund, planDepot } from './sim/depot/depot';
-import {
-  catchment,
-  planStation,
-  stationAt,
-  stationAxis,
-  stationTileRefund,
-  type StationAxis,
-} from './sim/station/station';
+import { catchment, planStation, stationAt, stationAxis, stationTileRefund, type StationAxis } from './sim/station/station';
 import { planTrackLine } from './sim/track/autorail';
 import { planBuildTrack, planRemoveTrack, type TrackPlan } from './sim/track/build';
 import { nextSignalState } from './sim/signals/signals';
-import { getTrackBits, Side, Track, TRACK_SIDES, tracksOn, type TrackPiece } from './sim/track/track';
+import { getTrackBits, Side, type Track, TRACK_SIDES, tracksOn, type TrackPiece } from './sim/track/track';
 import type { Simulation } from './sim/simulation';
 import { getTerrain, inBounds, Terrain } from './sim/world/map';
 import { levelTargets, planTerraform, terraformTargets } from './sim/world/terraform';
@@ -24,17 +17,7 @@ import { planTunnel, tunnelTileCoords } from './sim/track/tunnel';
 import type { Point } from './render/iso';
 
 /** 'orders' – wskazywanie stacji do rozkładu pociągu `ordersTrain` (z okna pociągu). */
-export type Tool =
-  | 'cursor'
-  | 'track'
-  | 'station'
-  | 'depot'
-  | 'signal'
-  | 'terrain'
-  | 'bridge'
-  | 'tunnel'
-  | 'bulldozer'
-  | 'orders';
+export type Tool = 'cursor' | 'track' | 'station' | 'depot' | 'signal' | 'terrain' | 'bridge' | 'tunnel' | 'bulldozer' | 'orders';
 
 /** Narzędzie Teren: podnieś / obniż narożnik albo wyrównaj obszar. */
 export type TerrainMode = 'raise' | 'lower' | 'level';
@@ -213,7 +196,12 @@ export class Tools {
       if (!this.dragStart || !tile) return;
       const [x0, y0, x1, y1] = bridgeEnds(start, p);
       const plan = planBridge(this.sim.state, x0, y0, x1, y1);
-      const tiles = bridgeTileCoords({ x: Math.min(x0, x1), y: Math.min(y0, y1), axis: x0 !== x1 ? 'x' : 'y', length: Math.abs(x1 - x0) + Math.abs(y1 - y0) + 1 })
+      const tiles = bridgeTileCoords({
+        x: Math.min(x0, x1),
+        y: Math.min(y0, y1),
+        axis: x0 !== x1 ? 'x' : 'y',
+        length: Math.abs(x1 - x0) + Math.abs(y1 - y0) + 1,
+      })
         .filter((t) => inBounds(map, t.x, t.y))
         .map((t) => t.y * map.width + t.x);
       this.overlay.setTerrainPreview(tiles, map.width, plan.result.ok, null);

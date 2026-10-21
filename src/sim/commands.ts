@@ -189,7 +189,12 @@ function clearTile(state: GameState, x: number, y: number, events: SimEvent[]): 
     return removeDepot(state, depot, events);
   }
   const bits = getTrackBits(map, x, y);
-  if (bits) return removeTrack(state, tracksOn(bits).map((track) => ({ x, y, track })), events);
+  if (bits)
+    return removeTrack(
+      state,
+      tracksOn(bits).map((track) => ({ x, y, track })),
+      events,
+    );
   if (map.road[i]) {
     if (state.money < ROAD_REMOVE_COST) return { ok: false, reason: 'noMoney' };
     spend(state, 'construction', ROAD_REMOVE_COST);

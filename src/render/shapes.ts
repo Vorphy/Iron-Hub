@@ -33,7 +33,9 @@ export function drawBox(
   g.poly(poly([b, cc, up(cc), up(b)])).fill({ color: c.right, alpha });
   g.poly(poly([cc, d, up(d), up(cc)])).fill({ color: c.left, alpha });
   const roof = [up(a), up(b), up(cc), up(d)];
-  g.poly(poly(roof)).fill({ color: c.roof, alpha }).stroke({ width: 1, color: 0x000000, alpha: 0.3 * alpha });
+  g.poly(poly(roof))
+    .fill({ color: c.roof, alpha })
+    .stroke({ width: 1, color: 0x000000, alpha: 0.3 * alpha });
   return roof;
 }
 
@@ -63,7 +65,9 @@ export function drawGableRoof(
 /** Komin: cienki walec (prostokąt) od podstawy w punkcie logicznym. */
 export function drawChimney(g: Graphics, lx: number, ly: number, base: number, h: number, w: number, color: number): void {
   const p = tileToWorld(lx, ly);
-  g.rect(p.x - w / 2, p.y - base - h, w, h).fill(color).stroke({ width: 1, color: 0x000000, alpha: 0.35 });
+  g.rect(p.x - w / 2, p.y - base - h, w, h)
+    .fill(color)
+    .stroke({ width: 1, color: 0x000000, alpha: 0.35 });
   g.ellipse(p.x, p.y - base - h, w / 2, w / 4).fill(0x1b1b1b);
 }
 

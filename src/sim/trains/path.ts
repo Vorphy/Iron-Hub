@@ -201,4 +201,3 @@ class MinHeap {
 function less(a: Node, b: Node): boolean {
   return a.cost < b.cost || (a.cost === b.cost && a.seq < b.seq);
 }
-

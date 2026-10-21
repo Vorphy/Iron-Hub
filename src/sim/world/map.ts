@@ -110,7 +110,13 @@ function generateHeights(rng: Rng, width: number, height: number, terrain: Uint8
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       if (terrain[y * width + x] !== Terrain.Water) continue;
-      for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]] as const) heights[(y + dy) * vw + x + dx] = 0;
+      for (const [dx, dy] of [
+        [0, 0],
+        [1, 0],
+        [0, 1],
+        [1, 1],
+      ] as const)
+        heights[(y + dy) * vw + x + dx] = 0;
     }
   }
   relaxHeights(heights, vw, vh);
@@ -119,7 +125,10 @@ function generateHeights(rng: Rng, width: number, height: number, terrain: Uint8
 
 /** Po wygenerowaniu wysokości: woda dokładnie tam, gdzie teren leży na dnie. */
 function matchWaterToHeights(map: WorldMap): void {
-  syncWater(map, Array.from({ length: map.width * map.height }, (_, i) => i));
+  syncWater(
+    map,
+    Array.from({ length: map.width * map.height }, (_, i) => i),
+  );
 }
 
 function noiseField(rng: Rng, width: number, height: number, cell = NOISE_CELL): Float32Array {

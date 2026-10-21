@@ -75,7 +75,12 @@ export function TrainWindow({ data: t, actions }: { data: TrainWindowData; actio
           <button
             class="close"
             title="Usuń z rozkładu"
-            onClick={() => actions.setOrders(id, [...t.orders.map((x) => x.stationId)].filter((_, j) => j !== i))}
+            onClick={() =>
+              actions.setOrders(
+                id,
+                [...t.orders.map((x) => x.stationId)].filter((_, j) => j !== i),
+              )
+            }
           >
             ✕
           </button>

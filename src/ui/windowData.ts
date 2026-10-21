@@ -7,13 +7,7 @@ import { BANKRUPTCY_MONTHS, LOAN_INTEREST, LOAN_MAX, LOAN_STEP, monthlyInterest 
 import { tickToDate } from '../sim/time';
 
 const MONTH_NAMES = ['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'];
-import {
-  averageSupply,
-  industryDef,
-  MAX_INDUSTRY_LEVEL,
-  monthlyDemand,
-  monthlyProduction,
-} from '../sim/economy/industry';
+import { averageSupply, industryDef, MAX_INDUSTRY_LEVEL, monthlyDemand, monthlyProduction } from '../sim/economy/industry';
 import { townHouseCount, townPopulation } from '../sim/economy/town';
 import { CARGOS, type Cargo } from '../sim/economy/cargo';
 import { stationAccepts, stationRating } from '../sim/economy/cargoFlow';
@@ -95,7 +89,8 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
       bankruptcyMonths: BANKRUPTCY_MONTHS,
       infrastructurePerMonth: infrastructureCost(state),
       trainsPerMonth: Math.round(
-        state.trains.filter((t) => t.status !== 'depot').reduce((s, t) => s + consistStats(t.engine, t.wagons).runningCost, 0) / 12,
+        state.trains.filter((t) => t.status !== 'depot').reduce((s, t) => s + consistStats(t.engine, t.wagons).runningCost, 0) /
+          12,
       ),
     };
   }

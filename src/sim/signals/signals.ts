@@ -106,6 +106,8 @@ export function removeSignal(state: GameState, x: number, y: number, track: Trac
 /** Usuwa semafory z elementów toru, których już nie ma (po rozbiórce). */
 export function dropOrphanSignals(state: GameState, events: SimEvent[]): void {
   const before = state.signals.length;
-  state.signals = state.signals.filter((s) => hasTrack(state.map, s.x, s.y, s.track) && !state.map.station[s.y * state.map.width + s.x]);
+  state.signals = state.signals.filter(
+    (s) => hasTrack(state.map, s.x, s.y, s.track) && !state.map.station[s.y * state.map.width + s.x],
+  );
   if (state.signals.length !== before) events.push({ type: 'signalsChanged' });
 }

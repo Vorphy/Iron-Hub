@@ -29,6 +29,7 @@ export function emptyTownMonth(): TownMonth {
 }
 
 /** Fikcyjne nazwy miast. */
+// biome-ignore format: zwarta lista nazw
 export const TOWN_NAMES = [
   'Żelazowo', 'Stalówka', 'Kolejno', 'Węglewo', 'Parowice', 'Torzyce', 'Dymnik', 'Szynowo',
   'Rudawa', 'Iskrzyn', 'Kotłów', 'Wagonowo', 'Mostki', 'Zwrotniki', 'Gwizdowo', 'Semaforów',
@@ -56,9 +57,11 @@ export function townAt(state: GameState, x: number, y: number): Town | undefined
 export function townNear(state: GameState, x: number, y: number): Town | undefined {
   const direct = townAt(state, x, y);
   if (direct) return direct;
-  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-    const t = townAt(state, x + dx, y + dy);
-    if (t) return t;
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      const t = townAt(state, x + dx, y + dy);
+      if (t) return t;
+    }
   }
   return undefined;
 }

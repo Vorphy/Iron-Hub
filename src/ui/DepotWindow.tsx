@@ -89,7 +89,7 @@ export function DepotWindow({ data, money, actions }: { data: DepotWindowData; m
           {engineDef(engine)!.name}
         </span>
         {wagons.map((id, i) => (
-          <span
+          <button
             key={i}
             class="chip"
             style={{ background: wagonDef(id)!.color }}
@@ -97,12 +97,12 @@ export function DepotWindow({ data, money, actions }: { data: DepotWindowData; m
             onClick={() => setWagons(wagons.filter((_, j) => j !== i))}
           >
             {wagonDef(id)!.name.split(' ').pop()}
-          </span>
+          </button>
         ))}
       </div>
       <div class="muted small">
-        Długość {(stats.length / TILE_UNITS).toFixed(1)} kaf. · masa {stats.weight} t · max {stats.maxSpeed} km/h ·
-        utrzymanie {formatMoney(stats.runningCost)}/rok (trakcja {TRACTION_NAMES[engineDef(engine)!.traction]})
+        Długość {(stats.length / TILE_UNITS).toFixed(1)} kaf. · masa {stats.weight} t · max {stats.maxSpeed} km/h · utrzymanie{' '}
+        {formatMoney(stats.runningCost)}/rok (trakcja {TRACTION_NAMES[engineDef(engine)!.traction]})
       </div>
 
       <button

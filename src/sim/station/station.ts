@@ -40,9 +40,26 @@ export interface Station {
 
 /** Nazwy stacji z dala od miast. */
 const STATION_NAMES = [
-  'Żelazna Góra', 'Stalowo', 'Kolejowice', 'Parowiec', 'Węglin', 'Szynobrzeg', 'Dymno', 'Torzyn',
-  'Rudnik', 'Iskrzyca', 'Semaforowo', 'Wagonin', 'Mostowo', 'Zwrotnica', 'Kłębowo', 'Hamulec',
-  'Gwizdów', 'Przystań', 'Podkład', 'Kotłowo',
+  'Żelazna Góra',
+  'Stalowo',
+  'Kolejowice',
+  'Parowiec',
+  'Węglin',
+  'Szynobrzeg',
+  'Dymno',
+  'Torzyn',
+  'Rudnik',
+  'Iskrzyca',
+  'Semaforowo',
+  'Wagonin',
+  'Mostowo',
+  'Zwrotnica',
+  'Kłębowo',
+  'Hamulec',
+  'Gwizdów',
+  'Przystań',
+  'Podkład',
+  'Kotłowo',
 ];
 
 /** Dopiski do nazwy, gdy miasto ma już stację o tej nazwie. */
@@ -90,14 +107,7 @@ export function stationAxis(x0: number, y0: number, x1: number, y1: number, pref
   return w === h ? preferred : w > h ? 'x' : 'y';
 }
 
-export function planStation(
-  state: GameState,
-  x0: number,
-  y0: number,
-  x1: number,
-  y1: number,
-  axis: StationAxis,
-): StationPlan {
+export function planStation(state: GameState, x0: number, y0: number, x1: number, y1: number, axis: StationAxis): StationPlan {
   const { map } = state;
   const minX = Math.min(x0, x1);
   const maxX = Math.max(x0, x1);

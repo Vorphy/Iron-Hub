@@ -173,7 +173,11 @@ const actions: HudActions = {
 };
 
 async function start(): Promise<void> {
-  hudStore.set({ traffic: storedFlag(TRAFFIC_KEY), minimapOpen: storedFlag(MINIMAP_KEY), tutorialOpen: storedFlag(TUTORIAL_KEY) });
+  hudStore.set({
+    traffic: storedFlag(TRAFFIC_KEY),
+    minimapOpen: storedFlag(MINIMAP_KEY),
+    tutorialOpen: storedFlag(TUTORIAL_KEY),
+  });
   app = new Application();
   await app.init({
     resizeTo: window,

@@ -72,7 +72,13 @@ describe('kształtowanie terenu', () => {
     sim.enqueue({ type: 'terraform', vx: 13, vy: 10, delta: -1 });
     sim.step();
     expect(fails(sim)).toEqual([]);
-    for (const [x, y] of [[9, 9], [10, 9], [9, 10], [10, 10]] as const) expect(s.map.terrain[y * 20 + x]).toBe(Terrain.Grass);
+    for (const [x, y] of [
+      [9, 9],
+      [10, 9],
+      [9, 10],
+      [10, 10],
+    ] as const)
+      expect(s.map.terrain[y * 20 + x]).toBe(Terrain.Grass);
     expect(s.map.terrain[8 * 20 + 8]).toBe(Terrain.Water);
     expect(s.map.terrain[9 * 20 + 12]).toBe(Terrain.Water);
     expect(s.map.terrain[9 * 20 + 13]).toBe(Terrain.Grass);
@@ -82,7 +88,8 @@ describe('kształtowanie terenu', () => {
     const { sim, s } = flat();
     // Zbocze: teren rośnie z x.
     const vw = 21;
-    for (let vy = 0; vy <= 20; vy++) for (let vx = 0; vx <= 20; vx++) s.map.heights[vy * vw + vx] = Math.min(5, Math.max(0, vx - 5));
+    for (let vy = 0; vy <= 20; vy++)
+      for (let vx = 0; vx <= 20; vx++) s.map.heights[vy * vw + vx] = Math.min(5, Math.max(0, vx - 5));
     sim.enqueue({ type: 'buildStation', x0: 8, y0: 4, x1: 11, y1: 4, axis: 'x' });
     sim.step();
     expect(fails(sim)).toEqual(['blocked']);

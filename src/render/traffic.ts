@@ -126,14 +126,16 @@ export class TrafficRenderer {
       tt.roads = roads;
       this.towns.set(town.id, tt);
       const pop = townPopulation(state, town);
-      const cars = roads.length < 2 ? 0 : Math.min(Math.round(roads.length / 3), Math.max(1, Math.min(12, Math.round(pop / 150))));
+      const cars =
+        roads.length < 2 ? 0 : Math.min(Math.round(roads.length / 3), Math.max(1, Math.min(12, Math.round(pop / 150))));
       // Więcej autobusów w mieście obsługiwanym przez kolej (dowożą pasażerów na stację).
       const buses = roads.length < 6 ? 0 : town.lastTransported > 0 ? 2 + Math.floor(pop / 1500) : pop > 400 ? 1 : 0;
       // Ciężarówki dowożą do miasta z pobliskich zakładów (więcej z większych) i towary do dużych miast.
       let trucks = pop > 800 ? 1 : 0;
       for (const ind of state.industries) {
         const [w, h] = industryDef(ind.type)!.size;
-        if (Math.abs(ind.x + w / 2 - town.x) + Math.abs(ind.y + h / 2 - town.y) <= INDUSTRY_REACH) trucks += ind.level >= 3 ? 2 : 1;
+        if (Math.abs(ind.x + w / 2 - town.x) + Math.abs(ind.y + h / 2 - town.y) <= INDUSTRY_REACH)
+          trucks += ind.level >= 3 ? 2 : 1;
       }
       trucks = roads.length < 6 ? 0 : Math.min(4, trucks);
       const want: Record<Kind, number> = { car: cars, bus: buses, truck: trucks };

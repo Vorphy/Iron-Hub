@@ -104,7 +104,11 @@ function drawVehicle(g: Graphics, pose: VehiclePose, selected: boolean): Point {
 
   g.poly(hull([...ground, ...top]).flatMap((p) => [p.x, p.y])).fill(darken(color, 0.55));
   g.poly(top.flatMap((p) => [p.x, p.y])).fill(color);
-  g.poly(top.flatMap((p) => [p.x, p.y])).stroke({ width: selected ? 2 : 1, color: selected ? 0xffe066 : 0x000000, alpha: selected ? 1 : 0.4 });
+  g.poly(top.flatMap((p) => [p.x, p.y])).stroke({
+    width: selected ? 2 : 1,
+    color: selected ? 0xffe066 : 0x000000,
+    alpha: selected ? 1 : 0.4,
+  });
 
   if (pose.engine) {
     // Komin bliżej przodu parowozu.

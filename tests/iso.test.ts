@@ -12,7 +12,16 @@ describe('rzut izometryczny', () => {
   });
 
   it('punkty tuż wewnątrz narożników rombu należą do kafelka', () => {
-    const [tx, ty, rx, ry, bx, by, lx, ly] = tileDiamond(5, 7) as [number, number, number, number, number, number, number, number];
+    const [tx, ty, rx, ry, bx, by, lx, ly] = tileDiamond(5, 7) as [
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+    ];
     const e = 1;
     expect(worldToTile(tx, ty + e)).toEqual({ x: 5, y: 7 });
     expect(worldToTile(rx - e * 2, ry)).toEqual({ x: 5, y: 7 });

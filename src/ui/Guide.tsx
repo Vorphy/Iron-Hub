@@ -67,7 +67,11 @@ export function TutorialPanel({ steps, actions }: { steps: boolean[]; actions: H
           </li>
         ))}
       </ol>
-      {current === -1 && <div class="hint">Gotowe! Teraz rozbudowuj sieć: więcej pociągów, nowe linie, łańcuchy dostaw (węgiel → elektrownia).</div>}
+      {current === -1 && (
+        <div class="hint">
+          Gotowe! Teraz rozbudowuj sieć: więcej pociągów, nowe linie, łańcuchy dostaw (węgiel → elektrownia).
+        </div>
+      )}
       <div class="buttons">
         <button onClick={actions.newGame} title="Inny rozmiar mapy lub inne ziarno">
           Nowa gra…

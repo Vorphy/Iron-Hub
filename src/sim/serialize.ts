@@ -239,7 +239,16 @@ export function deserializeState(data: unknown): GameState {
 
 function isTunnel(v: unknown): v is Tunnel {
   const t = v as Tunnel;
-  return isObj(t) && isInt(t.id) && isInt(t.x) && isInt(t.y) && (t.axis === 'x' || t.axis === 'y') && isInt(t.length) && t.length >= 2 && isInt(t.level);
+  return (
+    isObj(t) &&
+    isInt(t.id) &&
+    isInt(t.x) &&
+    isInt(t.y) &&
+    (t.axis === 'x' || t.axis === 'y') &&
+    isInt(t.length) &&
+    t.length >= 2 &&
+    isInt(t.level)
+  );
 }
 
 function isBridge(v: unknown): v is Bridge {

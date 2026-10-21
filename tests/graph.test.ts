@@ -59,11 +59,7 @@ describe('graf torów', () => {
     const sw = g.nodes.find((n) => n.halves[0].length + n.halves[1].length === 3)!;
     // Z jednej strony zwrotnicy jedna krawędź, z drugiej dwie (prosto i w łuk).
     expect([sw.halves[0].length, sw.halves[1].length].sort()).toEqual([1, 2]);
-    expect(g.edges.map((e) => e.length).sort((a, b) => a - b)).toEqual([
-      CURVE_LENGTH,
-      3 * STRAIGHT_LENGTH,
-      4 * STRAIGHT_LENGTH,
-    ]);
+    expect(g.edges.map((e) => e.length).sort((a, b) => a - b)).toEqual([CURVE_LENGTH, 3 * STRAIGHT_LENGTH, 4 * STRAIGHT_LENGTH]);
     expectConsistent(g, 8);
   });
 

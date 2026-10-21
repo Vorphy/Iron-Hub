@@ -5,14 +5,7 @@ import { Simulation } from '../src/sim/simulation';
 import { createGame } from '../src/sim/state';
 import { pieceAt, planTrackLine } from '../src/sim/track/autorail';
 import { refund } from '../src/sim/track/build';
-import {
-  getTrackBits,
-  oppositeSide,
-  SIDE_DELTA,
-  Track,
-  TRACK_SIDES,
-  type TrackPiece,
-} from '../src/sim/track/track';
+import { getTrackBits, oppositeSide, SIDE_DELTA, Track, TRACK_SIDES, type TrackPiece } from '../src/sim/track/track';
 import { getTerrain, setTerrain, Terrain } from '../src/sim/world/map';
 
 /** Czy element b jest bezpośrednią kontynuacją elementu a. */

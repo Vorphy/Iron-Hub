@@ -64,4 +64,3 @@ export const OCCUPIED_PENALTY = 48;
 export const DEADLOCK_REVERSE_TICKS = 120;
 /** Czekający pociąg ponawia próbę rezerwacji co tyle ticków. */
 export const RESERVE_RETRY_TICKS = 10;
-

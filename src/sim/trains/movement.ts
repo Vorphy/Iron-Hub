@@ -40,7 +40,6 @@ export class Planner {
     if (lost) this.lost.add(trainId);
     else this.lost.delete(trainId);
   }
-
 }
 
 interface TickContext {

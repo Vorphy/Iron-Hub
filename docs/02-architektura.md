@@ -9,6 +9,7 @@
 | Rendering | **PixiJS v8** | Szybki renderer 2D/WebGL; pętlę gry i projekcję izometryczną mamy własną, więc pełny silnik (Phaser) nie jest potrzebny |
 | UI | **Preact** + CSS (Tailwind opcjonalnie) | Okna, listy pociągów, rozkłady, budżet – HTML nad canvasem, z zarządzaniem stanem |
 | Testy | **Vitest** | Testy jednostkowe symulacji bez przeglądarki |
+| Lint / format | **Biome** | Jedno szybkie narzędzie (bez zależności od API TypeScriptu – działa z TS 7); `npm run lint` / `npm run format`, sprawdzane w CI przed testami. Wyłączone reguły sprzeczne z projektem: `!` (przy `noUncheckedIndexedAccess`), `return f()` w funkcjach `void`, `??=` w wyrażeniu |
 | Zapis lokalny | **IndexedDB** + eksport/import pliku | Zapis gry u gracza od pierwszego etapu (`src/persistence/`, format w `sim/serialize.ts`) |
 | Backend (później) | do ustalenia (np. Node.js + PostgreSQL) | Zapis w chmurze, rankingi, zakupy dodatków |
 

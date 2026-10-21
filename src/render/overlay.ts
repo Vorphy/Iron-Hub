@@ -80,10 +80,7 @@ export class Overlay {
   setHover(tile: { x: number; y: number } | null, color = 0xffe066): void {
     this.hover.clear();
     if (!tile) return;
-    this.hover
-      .poly(tileDiamond(tile.x, tile.y))
-      .fill({ color: 0xffffff, alpha: 0.15 })
-      .stroke({ width: 2, color, alpha: 0.9 });
+    this.hover.poly(tileDiamond(tile.x, tile.y)).fill({ color: 0xffffff, alpha: 0.15 }).stroke({ width: 2, color, alpha: 0.9 });
   }
 
   /** Podgląd budowy (removal = rozbiórka – istniejące elementy na czerwono). */

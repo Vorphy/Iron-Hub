@@ -2,7 +2,7 @@ import { CLEAR_ROUGH_COST, DEPOT_COST, TRACK_REFUND_RATE } from '../config';
 import { spend } from '../economy/finance';
 import type { CommandResult, SimEvent } from '../commands';
 import type { GameState } from '../state';
-import { oppositeSide, Side, SIDE_DELTA, TRACK_SIDES, tracksOn } from '../track/track';
+import { oppositeSide, type Side, SIDE_DELTA, TRACK_SIDES, tracksOn } from '../track/track';
 import { isFlat } from '../world/height';
 import { getTerrain, hasBuilding, inBounds, setTerrain, Terrain, type WorldMap } from '../world/map';
 
@@ -86,4 +86,3 @@ export function removeDepot(state: GameState, depot: Depot, events: SimEvent[]):
 export function depotRefund(): number {
   return Math.round(DEPOT_COST * TRACK_REFUND_RATE);
 }
-

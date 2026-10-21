@@ -16,7 +16,17 @@ function emptyWorld(): GameState {
 
 function addIndustry(state: GameState, type: string, level = 1) {
   const def = industryDef(type)!;
-  const ind = { id: state.industries.length + 1, type, name: def.name, x: 5, y: 5, level, growth: 0, month: emptyIndustryMonth(), history: [] as number[] };
+  const ind = {
+    id: state.industries.length + 1,
+    type,
+    name: def.name,
+    x: 5,
+    y: 5,
+    level,
+    growth: 0,
+    month: emptyIndustryMonth(),
+    history: [] as number[],
+  };
   state.industries.push(ind);
   return ind;
 }

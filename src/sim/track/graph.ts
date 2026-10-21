@@ -192,4 +192,3 @@ export function buildTrackGraph(map: WorldMap, depots: readonly Depot[] = []): T
 
   return graph;
 }
-

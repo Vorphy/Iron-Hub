@@ -16,7 +16,8 @@ function addIndustry(state: GameState, type: string, x: number, y: number): void
   const def = industryDef(type)!;
   const id = state.industries.length + 1;
   state.industries.push({ id, type, name: def.name, x, y, level: 1, growth: 0, month: emptyIndustryMonth(), history: [] });
-  for (let dy = 0; dy < def.size[1]; dy++) for (let dx = 0; dx < def.size[0]; dx++) state.map.industry[(y + dy) * state.map.width + x + dx] = id;
+  for (let dy = 0; dy < def.size[1]; dy++)
+    for (let dx = 0; dx < def.size[0]; dx++) state.map.industry[(y + dy) * state.map.width + x + dx] = id;
 }
 
 function addTown(state: GameState, name: string, x: number, y: number, houses: [number, number][]): void {

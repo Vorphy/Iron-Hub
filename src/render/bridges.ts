@@ -82,10 +82,20 @@ function drawBridge(g: Graphics, state: GameState, b: Bridge): void {
     const corner = (p: { x: number; y: number }, k: number, z: number) => toWorld(p.x + nx * k, p.y + ny * k, z);
     // Bok pomostu (grubość) i nawierzchnia.
     g.poly(
-      poly([corner(a0, HALF_WIDTH, b.deck), corner(a1, HALF_WIDTH, b.deck), corner(a1, HALF_WIDTH, b.deck - 0.5), corner(a0, HALF_WIDTH, b.deck - 0.5)]),
+      poly([
+        corner(a0, HALF_WIDTH, b.deck),
+        corner(a1, HALF_WIDTH, b.deck),
+        corner(a1, HALF_WIDTH, b.deck - 0.5),
+        corner(a0, HALF_WIDTH, b.deck - 0.5),
+      ]),
     ).fill(darken(DECK, 0.7));
     g.poly(
-      poly([corner(a0, HALF_WIDTH, b.deck), corner(a1, HALF_WIDTH, b.deck), corner(a1, -HALF_WIDTH, b.deck), corner(a0, -HALF_WIDTH, b.deck)]),
+      poly([
+        corner(a0, HALF_WIDTH, b.deck),
+        corner(a1, HALF_WIDTH, b.deck),
+        corner(a1, -HALF_WIDTH, b.deck),
+        corner(a0, -HALF_WIDTH, b.deck),
+      ]),
     ).fill(DECK);
     drawTrackSegment(g, a0.x, a0.y, a1.x, a1.y, TRACK_STYLE, () => b.deck);
   }
@@ -107,4 +117,3 @@ function drawBridge(g: Graphics, state: GameState, b: Bridge): void {
 export function isHeadAxisTrack(b: Bridge, track: number): boolean {
   return track === axisTrack(b.axis);
 }
-

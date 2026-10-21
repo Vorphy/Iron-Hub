@@ -30,13 +30,13 @@ const TOOLS: { tool: Tool; icon: string; name: string; key: string }[] = [
 ];
 
 const TOOL_HELP: Record<Tool, string> = {
-  cursor: 'Klik na pociąg, stację, zajezdnię, miasto lub zakład – okno · przeciąganie / strzałki / WASD – przesuwanie · kółko – zoom · spacja – pauza · 1–4 – prędkość · G – graf torów · V – rezerwacje torów',
+  cursor:
+    'Klik na pociąg, stację, zajezdnię, miasto lub zakład – okno · przeciąganie / strzałki / WASD – przesuwanie · kółko – zoom · spacja – pauza · 1–4 – prędkość · G – graf torów · V – rezerwacje torów',
   track:
     'Buduj: przeciągnij wzdłuż osi lub ukośnie; pozycja kursora w kafelku wybiera łuk. Usuń: klik – jeden element pod kursorem, przeciągnięcie – odcinek. Prawy przycisk – przesuwanie mapy · Esc – anuluj',
   station:
     'Przeciągnij prostokąt: dłuższy bok to długość peronu, krótszy – liczba torów. R – obrót przy kwadracie. Niebieskie pole to zasięg stacji',
-  depot:
-    'Klik stawia zajezdnię (1000 zł). Kierunek wjazdu wybierz w panelu obok (lub R); Auto – w stronę sąsiedniego toru',
+  depot: 'Klik stawia zajezdnię (1000 zł). Kierunek wjazdu wybierz w panelu obok (lub R); Auto – w stronę sąsiedniego toru',
   signal:
     'Klik na tor stawia semafor ścieżkowy (200 zł); kolejne kliknięcia zmieniają kierunek. Pociąg może stanąć tylko przed semaforem, na końcu peronu lub toru · V – podgląd rezerwacji',
   terrain:
@@ -46,7 +46,8 @@ const TOOL_HELP: Record<Tool, string> = {
   tunnel:
     'Klik na zbocze (w osi X lub Y) – tunel w głąb wzniesienia do zbocza po drugiej stronie na tej samej wysokości. Nad tunelem teren co najmniej poziom wyżej, max 20 kafelków, 600 zł za kafelek',
   orders: 'Klikaj stacje, aby dopisać je do rozkładu pociągu · Esc – koniec',
-  bulldozer: 'Klik – usuń element toru pod kursorem, most (przyczółek), tunel (wejście), zajezdnię, kafelek stacji, dom lub oczyść nieużytek · przeciągnięcie – rozbierz odcinek toru (zwrot 25%)',
+  bulldozer:
+    'Klik – usuń element toru pod kursorem, most (przyczółek), tunel (wejście), zajezdnię, kafelek stacji, dom lub oczyść nieużytek · przeciągnięcie – rozbierz odcinek toru (zwrot 25%)',
 };
 
 const MESSAGE_MS = 2500;
@@ -121,9 +122,7 @@ export function Hud({ actions }: { actions: HudActions }) {
 
       <div class="panel statusbar">
         <span>
-          {s.hover
-            ? `Kafelek (${s.hover.x}, ${s.hover.y}) · ${s.hover.station ?? TERRAIN_NAMES[s.hover.terrain]}`
-            : '—'}
+          {s.hover ? `Kafelek (${s.hover.x}, ${s.hover.y}) · ${s.hover.station ?? TERRAIN_NAMES[s.hover.terrain]}` : '—'}
         </span>
         {s.graphInfo && (
           <>
@@ -191,7 +190,11 @@ function ToolOptions({ tool, options, actions }: { tool: Tool; options: HudState
       <div class="panel tool-options">
         <div class="section-title">Teren</div>
         {modes.map((m) => (
-          <button key={m.mode} class={options.terrainMode === m.mode ? 'active' : ''} onClick={() => actions.setTerrainMode(m.mode)}>
+          <button
+            key={m.mode}
+            class={options.terrainMode === m.mode ? 'active' : ''}
+            onClick={() => actions.setTerrainMode(m.mode)}
+          >
             {m.label}
           </button>
         ))}
@@ -242,10 +245,18 @@ function ToolOptions({ tool, options, actions }: { tool: Tool; options: HudState
       <div class="panel tool-options">
         <div class="section-title">Perony</div>
         <div class="dir-grid">
-          <button class={options.stationAxis === 'y' ? 'active' : ''} title="Perony w osi ↙↗" onClick={() => actions.setStationAxis('y')}>
+          <button
+            class={options.stationAxis === 'y' ? 'active' : ''}
+            title="Perony w osi ↙↗"
+            onClick={() => actions.setStationAxis('y')}
+          >
             ⟋
           </button>
-          <button class={options.stationAxis === 'x' ? 'active' : ''} title="Perony w osi ↖↘" onClick={() => actions.setStationAxis('x')}>
+          <button
+            class={options.stationAxis === 'x' ? 'active' : ''}
+            title="Perony w osi ↖↘"
+            onClick={() => actions.setStationAxis('x')}
+          >
             ⟍
           </button>
         </div>
@@ -290,7 +301,11 @@ function Menu({
           : 'Pociąg staje tylko przed semaforem, na końcu peronu lub toru. Semafory stawiasz sam (B).'}
       </div>
       <div class="menu-title">Widok</div>
-      <button class={traffic ? 'active' : ''} onClick={actions.toggleTraffic} title="Auta i autobusy w miastach – tylko dekoracja">
+      <button
+        class={traffic ? 'active' : ''}
+        onClick={actions.toggleTraffic}
+        title="Auta i autobusy w miastach – tylko dekoracja"
+      >
         Ruch w miastach: {traffic ? 'wł.' : 'wył.'}
       </button>
       <button onClick={actions.toggleTutorial}>Pierwsze kroki</button>
@@ -343,9 +358,7 @@ function BankruptDialog({ actions, hasQuickSave }: { actions: HudActions; hasQui
         <div class="window-head">
           <span class="window-title">Bankructwo</span>
         </div>
-        <div>
-          Firma zbyt długo miała ujemne saldo i ogłosiła upadłość. Wierzyciele przejęli majątek – to koniec tej gry.
-        </div>
+        <div>Firma zbyt długo miała ujemne saldo i ogłosiła upadłość. Wierzyciele przejęli majątek – to koniec tej gry.</div>
         <div class="buttons wrap">
           <button class="primary" onClick={actions.newGame}>
             Nowa gra…

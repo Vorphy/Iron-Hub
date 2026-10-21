@@ -54,7 +54,10 @@ export class SignalRenderer {
  */
 export function drawSignal(g: Graphics, sig: Signal, bit: 1 | 2, light: number, alpha = 1): void {
   const [a, b] = TRACK_SIDES[sig.track];
-  const step: Step = bit === 1 ? { x: sig.x, y: sig.y, track: sig.track, entry: a, exit: b } : { x: sig.x, y: sig.y, track: sig.track, entry: b, exit: a };
+  const step: Step =
+    bit === 1
+      ? { x: sig.x, y: sig.y, track: sig.track, entry: a, exit: b }
+      : { x: sig.x, y: sig.y, track: sig.track, entry: b, exit: a };
   const len = stepLength(step);
   const p0 = pointOnStep(step, len * 0.7);
   const p1 = pointOnStep(step, len * 0.9);
@@ -85,8 +88,12 @@ export function drawSignal(g: Graphics, sig: Signal, bit: 1 | 2, light: number, 
 
   // Słup po prawej stronie kierunku jazdy.
   const base = tileToWorld(p1.x + rx * 0.3, p1.y + ry * 0.3);
-  g.moveTo(base.x, base.y).lineTo(base.x, base.y - POST_H).stroke({ width: 2, color: 0x2b2b2b, alpha });
-  g.circle(base.x, base.y - POST_H, 3.5).fill({ color: light, alpha }).stroke({ width: 1, color: 0x000000, alpha });
+  g.moveTo(base.x, base.y)
+    .lineTo(base.x, base.y - POST_H)
+    .stroke({ width: 2, color: 0x2b2b2b, alpha });
+  g.circle(base.x, base.y - POST_H, 3.5)
+    .fill({ color: light, alpha })
+    .stroke({ width: 1, color: 0x000000, alpha });
 }
 
 function drawReservations(g: Graphics, state: GameState): void {
@@ -108,5 +115,3 @@ function drawReservations(g: Graphics, state: GameState): void {
     }
   }
 }
-
-

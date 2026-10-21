@@ -3,7 +3,7 @@
 Etapy są ułożone tak, żeby po każdym istniała działająca, testowalna wersja. Czas trwania celowo nie jest podany sztywno – projekt rozwijany po godzinach; realnie liczyć 2–3× więcej niż w pierwotnych szacunkach.
 
 ## Etap 0 – Fundament ✅ (2026-10-16)
-- Vite + TypeScript (strict) + PixiJS + Preact + Vitest (lint/format – do dodania później).
+- Vite + TypeScript (strict) + PixiJS + Preact + Vitest; lint/format – Biome (dodany 2026-10-21).
 - Szkielet `sim/` (stan, tick, komendy, seedowany RNG) oddzielony od `render/`.
 - Pętla z fixed timestep i akumulatorem; pauza / przyspieszanie.
 
@@ -82,7 +82,7 @@ Kolejność proponowana; zmieniamy według potrzeb. Punkty 1–4 przygotowują e
 3. ~~**Pierwsze kroki dla nowego gracza**~~ ✅ (2026-10-21) – panel z 7 celami (tor → stacje → zajezdnia → pociąg → rozkład → wyjazd → zarobek) zaliczanymi automatycznie, podpowiedź do bieżącego, przycisk Nowa gra; ukrywany, powrót przez Menu.
 4. **Poziomy pociągów i trakcje** (z pomysłów) – lokomotywy dostępne z upływem lat: parowa → spalinowa → elektryczna; elektryczna wymaga sieci trakcyjnej.
 5. **Etap 5 – test „czy to jest fajne”** – granie, strojenie `src/data/economy.ts`.
-6. Drobne: ciężarówki przy zakładach (dekoracja), auta chowające się za domami, lint/format (z etapu 0).
+6. ~~Drobne~~ ✅ (2026-10-21): ciężarówki w miastach przy zakładach, pojazdy chowają się za domami, lint/format (Biome, sprawdzany przy każdym pushu).
 7. **Etap 7** – grafika, dźwięki, retro UI, wydanie na itch.io.
 8. **Etap 8** – generator/edytor map, chmura, Web Worker, płatne dodatki.
 
