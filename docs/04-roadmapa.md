@@ -79,7 +79,7 @@ Jedna kolejka, w kolejności, która najszybciej poprawia granie. Maglevy, kolej
 
 ### Faza A – przed testami z ludźmi
 1. ~~**Droższe zmiany terenu**~~ ✅ (2026-10-21) – 150 zł za narożnik zamiast 30 zł (`terraformCorner`).
-2. **Nowa gra – tryb własny** – zamiast poziomów gęstości dokładne liczby: ile miast oraz ile zakładów każdego typu (kopalnie węgla, kopalnie rudy, lasy, elektrownie, huty, tartaki); położenie losowane z ziarna mapy (generator już liczy osobno każdy typ – `worldCounts`).
+2. ~~**Nowa gra – tryb własny**~~ ✅ (2026-10-21) – przełącznik „Gęstość / Własne”, dokładne liczby miast i zakładów każdego typu, położenie z ziarna mapy.
 3. **Lista pociągów** – okno z podglądem wszystkich pociągów: zysk w tym i zeszłym roku, sortowanie, oznaczenie nierentownych (i komunikat o nich raz w roku); filtry, w tym **grupy pociągów** (np. „Węgiel”, „Pasażerskie”).
 4. **Lepsza minimapa** – zoom, przenoszenie po ekranie i powiększanie; po wejściu w nią – jak w OpenTTD – filtr zakładów (np. tylko kopalnie węgla, tylko elektrownie) z legendą kolorów, żeby zaplanować start i rozbudowę sieci.
 5. **Wspólne rozkłady** – kopia pociągu może dzielić rozkład z oryginałem: zmiana w jednym zmienia wszystkie na linii.

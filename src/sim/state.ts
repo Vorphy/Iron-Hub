@@ -9,7 +9,7 @@ import type { Station } from './station/station';
 import type { Bridge } from './track/bridge';
 import type { Tunnel } from './track/tunnel';
 import type { Train } from './trains/train';
-import { DEFAULT_DENSITY, type Density, generateWorld } from './world/generate';
+import { type CustomCounts, DEFAULT_DENSITY, type Density, generateWorld } from './world/generate';
 import { generateMap, type WorldMap } from './world/map';
 
 /** Pełny stan gry. Wszystko, co tu jest, trafi do zapisu. */
@@ -53,6 +53,8 @@ export interface NewGameOptions {
   /** Przetwórnie (elektrownia, huta, tartak) i surowce (kopalnie, lasy) – osobno. */
   industry?: Density;
   resources?: Density;
+  /** Tryb własny: dokładne liczby miast i zakładów (zamiast gęstości). */
+  custom?: CustomCounts | null;
 }
 
 export function createGame({
@@ -64,6 +66,7 @@ export function createGame({
   towns = DEFAULT_DENSITY,
   industry = DEFAULT_DENSITY,
   resources = DEFAULT_DENSITY,
+  custom = null,
 }: NewGameOptions): GameState {
   const state: GameState = {
     version: 1,
@@ -90,6 +93,6 @@ export function createGame({
   };
   // Pusty świat (testy) jest płaski.
   if (empty) state.map.heights.fill(0);
-  else generateWorld(state, seed, towns, industry, resources);
+  else generateWorld(state, seed, towns, industry, resources, custom);
   return state;
 }

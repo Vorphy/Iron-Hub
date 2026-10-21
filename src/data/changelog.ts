@@ -12,6 +12,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-21',
+    title: 'Nowa gra – tryb własny',
+    items: [
+      'Przełącznik „Gęstość / Własne”: w trybie własnym podajesz dokładnie, ile ma być miast i zakładów każdego typu (np. 0 miast, 1 elektrownia, 10 kopalń węgla). Położenie losuje się z ziarna mapy.',
+      'Gdy czegoś nie da się zmieścić na mapie, gra mówi po starcie, ile się zmieściło.',
+    ],
+  },
+  {
+    date: '2026-10-21',
     title: 'Droższe kształtowanie terenu',
     items: [
       'Zmiana wysokości narożnika kosztuje 150 zł zamiast 30 zł – przekopywanie wzgórz i zasypywanie dolin to teraz odczuwalny wydatek; czasem taniej zbudować most albo tunel.',

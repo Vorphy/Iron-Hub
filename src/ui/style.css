@@ -700,3 +700,21 @@ input.seed {
 .spare .close {
   padding: 0 4px;
 }
+
+.custom-counts {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.count-field input {
+  width: 56px;
+  text-align: right;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+  font: inherit;
+  padding: 2px 4px;
+}
+.count-field button {
+  padding: 2px 8px;
+}

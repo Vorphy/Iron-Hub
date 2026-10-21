@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createGame } from '../src/sim/state';
-import { worldCounts } from '../src/sim/world/generate';
+import { customLimits, worldCounts } from '../src/sim/world/generate';
 
 describe('gęstość miast i przemysłu', () => {
   it('„dużo” to dotychczasowe mapy (128×128: 8 miast, 12 zakładów); niżej – mniej, „brak” – zero', () => {
@@ -32,5 +32,22 @@ describe('gęstość miast i przemysłu', () => {
     const none = createGame({ width: 64, height: 64, seed: 5, towns: 0, industry: 2 });
     expect(none.towns).toHaveLength(0);
     expect(none.industries.length).toBeGreaterThan(0);
+  });
+
+  it('tryb własny: dokładne liczby – np. bez miast, 1 elektrownia i 10 kopalń węgla', () => {
+    const s = createGame({
+      width: 128,
+      height: 128,
+      seed: 9,
+      custom: { towns: 0, industries: { coal_mine: 10, power_plant: 1 } },
+    });
+    expect(s.towns).toHaveLength(0);
+    const byType = (t: string) => s.industries.filter((i) => i.type === t).length;
+    expect(byType('coal_mine')).toBe(10);
+    expect(byType('power_plant')).toBe(1);
+    expect(s.industries).toHaveLength(11);
+    // Granice pól: 3× „dużo”, co najmniej 5.
+    expect(customLimits(128, 128).towns).toBe(24);
+    expect(customLimits(64, 64).industries.steel_mill).toBe(5);
   });
 });

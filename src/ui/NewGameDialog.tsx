@@ -1,6 +1,16 @@
 import { useState } from 'preact/hooks';
 import { START_YEAR, START_YEARS } from '../sim/time';
-import { DEFAULT_DENSITY, DENSITIES, DENSITY_NAMES, type Density, worldCounts } from '../sim/world/generate';
+import { INDUSTRY_DEFS } from '../sim/economy/industry';
+import {
+  type CustomCounts,
+  customCounts,
+  customLimits,
+  DEFAULT_DENSITY,
+  DENSITIES,
+  DENSITY_NAMES,
+  type Density,
+  worldCounts,
+} from '../sim/world/generate';
 import type { HudActions } from './hudStore';
 
 export const MAP_SIZES: { size: number; name: string; note: string; title?: string }[] = [
@@ -29,6 +39,33 @@ const YEAR_NOTES: Record<number, string> = {
   1975: 'Spalinowe i elektryczne do 160 km/h.',
   2000: 'Nowoczesne lokomotywy do 200 km/h, wkrótce 250 km/h.',
 };
+
+/** Pole liczby z przyciskami − / + (0 … max). */
+function CountField({
+  label,
+  value,
+  max,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  max: number;
+  onChange: (v: number) => void;
+}) {
+  const set = (v: number) => onChange(Math.max(0, Math.min(max, Math.floor(v) || 0)));
+  return (
+    <div class="row count-field">
+      <span class="grow">{label}</span>
+      <button onClick={() => set(value - 1)} disabled={value <= 0}>
+        −
+      </button>
+      <input type="number" min={0} max={max} value={value} onInput={(e) => set(Number((e.target as HTMLInputElement).value))} />
+      <button onClick={() => set(value + 1)} disabled={value >= max}>
+        +
+      </button>
+    </div>
+  );
+}
 
 function DensityPicker({ value, onChange }: { value: Density; onChange: (d: Density) => void }) {
   return (
@@ -62,7 +99,16 @@ export function NewGameDialog({ actions, canCancel }: { actions: HudActions; can
   const [towns, setTowns] = useState<Density>(DEFAULT_DENSITY);
   const [industry, setIndustry] = useState<Density>(DEFAULT_DENSITY);
   const [resources, setResources] = useState<Density>(DEFAULT_DENSITY);
-  const counts = worldCounts(size, size, towns, industry, resources);
+  // Tryb własny: dokładne liczby (null – według gęstości).
+  const [custom, setCustom] = useState<CustomCounts | null>(null);
+  const densityCounts = worldCounts(size, size, towns, industry, resources);
+  const counts = custom ? customCounts(custom) : densityCounts;
+  const limits = customLimits(size, size);
+  const startCustom = () =>
+    setCustom({
+      towns: densityCounts.towns,
+      industries: Object.fromEntries(densityCounts.perType.map((t) => [t.def.id, t.count])),
+    });
 
   return (
     <div class="modal-backdrop">
@@ -96,12 +142,46 @@ export function NewGameDialog({ actions, canCancel }: { actions: HudActions; can
         </div>
         <div class="muted small">{YEAR_NOTES[year]}</div>
 
-        <div class="section-title">Miasta</div>
-        <DensityPicker value={towns} onChange={setTowns} />
-        <div class="section-title">Kopalnie i lasy</div>
-        <DensityPicker value={resources} onChange={setResources} />
-        <div class="section-title">Przemysł (elektrownie, huty, tartaki)</div>
-        <DensityPicker value={industry} onChange={setIndustry} />
+        <div class="section-title">Miasta i przemysł</div>
+        <div class="buttons wrap">
+          <button class={custom ? '' : 'active'} onClick={() => setCustom(null)} title="Poziomy: brak / mało / normalnie / dużo">
+            Gęstość
+          </button>
+          <button class={custom ? 'active' : ''} onClick={() => custom ?? startCustom()} title="Dokładne liczby miast i zakładów">
+            Własne
+          </button>
+        </div>
+        {custom ? (
+          <div class="custom-counts">
+            <CountField
+              label="Miasta"
+              value={custom.towns}
+              max={limits.towns}
+              onChange={(v) => setCustom({ ...custom, towns: v })}
+            />
+            {INDUSTRY_DEFS.map((def) => (
+              <CountField
+                key={def.id}
+                label={def.name}
+                value={custom.industries[def.id] ?? 0}
+                max={limits.industries[def.id] ?? 5}
+                onChange={(v) => setCustom({ ...custom, industries: { ...custom.industries, [def.id]: v } })}
+              />
+            ))}
+            <div class="muted small">
+              Położenie losowane z ziarna mapy. Jeśli czegoś nie da się zmieścić, gra powie po starcie.
+            </div>
+          </div>
+        ) : (
+          <>
+            <div class="muted small">Miasta</div>
+            <DensityPicker value={towns} onChange={setTowns} />
+            <div class="muted small">Kopalnie i lasy</div>
+            <DensityPicker value={resources} onChange={setResources} />
+            <div class="muted small">Przemysł (elektrownie, huty, tartaki)</div>
+            <DensityPicker value={industry} onChange={setIndustry} />
+          </>
+        )}
         <div class="muted small">
           Na tej mapie: {counts.towns} {plural(counts.towns, 'miasto', 'miasta', 'miast')}, {counts.mines}{' '}
           {plural(counts.mines, 'kopalnia/las', 'kopalnie/lasy', 'kopalń/lasów')}, {counts.factories}{' '}
@@ -126,7 +206,10 @@ export function NewGameDialog({ actions, canCancel }: { actions: HudActions; can
         </div>
         <div class="muted small">Ta sama liczba i rozmiar dają zawsze tę samą mapę.</div>
 
-        <button class="primary" onClick={() => actions.startNewGame(size, seed, year, towns, industry, resources)}>
+        <button
+          class="primary"
+          onClick={() => actions.startNewGame(size, seed, { startYear: year, towns, industry, resources, custom })}
+        >
           Rozpocznij
         </button>
         {canCancel && <div class="muted small">Bieżąca gra zostanie zastąpiona (autozapis też).</div>}

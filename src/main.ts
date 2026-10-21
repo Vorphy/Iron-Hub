@@ -1,4 +1,4 @@
-import { DEFAULT_DENSITY, type Density, isDensity } from './sim/world/generate';
+import { customCounts, DEFAULT_DENSITY, isDensity } from './sim/world/generate';
 import { LATEST_CHANGELOG } from './ui/HelpWindows';
 import { START_YEAR, START_YEARS } from './sim/time';
 import { Application } from 'pixi.js';
@@ -17,6 +17,7 @@ import {
 } from './persistence/saves';
 import { createGame, type GameState } from './sim/state';
 import { Hud } from './ui/Hud';
+import type { NewWorldSettings } from './ui/hudStore';
 import { hudStore, showMessage, type HudActions } from './ui/hudStore';
 
 /** Domyślny rozmiar mapy (okno nowej gry pozwala wybrać inny). */
@@ -79,15 +80,19 @@ function startGame(state: GameState, view: ViewState | null = null): void {
   hudStore.set({ menuOpen: false });
 }
 
-function newGame(
-  seed: number,
-  size = DEFAULT_MAP_SIZE,
-  startYear = START_YEAR,
-  towns: Density = DEFAULT_DENSITY,
-  industry: Density = DEFAULT_DENSITY,
-  resources: Density = DEFAULT_DENSITY,
-): void {
-  startGame(createGame({ width: size, height: size, seed, startYear, towns, industry, resources }));
+function newGame(seed: number, size = DEFAULT_MAP_SIZE, settings: Partial<NewWorldSettings> = {}): void {
+  const state = createGame({ width: size, height: size, seed, ...settings });
+  startGame(state);
+  // Tryb własny: na mapie mogło się nie zmieścić wszystko, o co prosił gracz.
+  const custom = settings.custom;
+  if (custom) {
+    const wanted = customCounts(custom);
+    if (state.towns.length < wanted.towns || state.industries.length < wanted.industries) {
+      showMessage(
+        `Zmieściło się ${state.towns.length} z ${wanted.towns} miast i ${state.industries.length} z ${wanted.industries} zakładów – większa mapa pomieści więcej`,
+      );
+    }
+  }
 }
 
 async function refreshSaveInfo(): Promise<void> {
@@ -211,9 +216,9 @@ const actions: HudActions = {
   focusTrain: (trainId) => game?.focusTrain(trainId),
   newGame: () => hudStore.set({ newGameOpen: true, menuOpen: false }),
   closeNewGame: () => hudStore.set({ newGameOpen: false }),
-  startNewGame: (size, seed, startYear, towns, industry, resources) => {
+  startNewGame: (size, seed, settings) => {
     hudStore.set({ newGameOpen: false });
-    newGame(seed, size, startYear, towns, industry, resources);
+    newGame(seed, size, settings);
     void saveTo('auto', true);
   },
 };
@@ -248,8 +253,14 @@ async function start(): Promise<void> {
     const v = Number(params.get(name) ?? DEFAULT_DENSITY);
     return isDensity(v) ? v : DEFAULT_DENSITY;
   };
-  if (seedParam) newGame(seedParam, size, year, density('towns'), density('industry'), density('resources'));
-  else if (await loadFrom('auto')) showMessage('Wczytano autozapis');
+  if (seedParam) {
+    newGame(seedParam, size, {
+      startYear: year,
+      towns: density('towns'),
+      industry: density('industry'),
+      resources: density('resources'),
+    });
+  } else if (await loadFrom('auto')) showMessage('Wczytano autozapis');
   else {
     newGame(1);
     hudStore.set({ newGameOpen: true });

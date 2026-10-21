@@ -47,6 +47,34 @@ export function worldCounts(width: number, height: number, towns: Density, indus
   };
 }
 
+/** Tryb własny nowej gry: dokładne liczby miast i zakładów każdego typu (id z industries.json). */
+export interface CustomCounts {
+  towns: number;
+  industries: Record<string, number>;
+}
+
+/** Górna granica pól trybu własnego: 3× „dużo” (i co najmniej 5) – więcej i tak się nie zmieści. */
+export function customLimits(width: number, height: number): CustomCounts {
+  const full = worldCounts(width, height, 3, 3, 3);
+  return {
+    towns: Math.max(5, full.towns * 3),
+    industries: Object.fromEntries(full.perType.map((t) => [t.def.id, Math.max(5, t.count * 3)])),
+  };
+}
+
+/** Liczby trybu własnego w tej samej postaci co z poziomów gęstości. */
+export function customCounts(custom: CustomCounts) {
+  const perType = INDUSTRY_DEFS.map((def) => ({ def, count: Math.max(0, Math.floor(custom.industries[def.id] ?? 0)) }));
+  const sum = (primary: boolean) => perType.filter((t) => isPrimary(t.def) === primary).reduce((s, t) => s + t.count, 0);
+  return {
+    towns: Math.max(0, Math.floor(custom.towns)),
+    perType,
+    industries: sum(false) + sum(true),
+    factories: sum(false),
+    mines: sum(true),
+  };
+}
+
 /** Rozmieszcza miasta i przemysł na świeżej mapie (osobny PRNG z ziarna mapy – determinizm). */
 export function generateWorld(
   state: GameState,
@@ -54,9 +82,10 @@ export function generateWorld(
   towns: Density = DEFAULT_DENSITY,
   industry: Density = DEFAULT_DENSITY,
   resources: Density = DEFAULT_DENSITY,
+  custom: CustomCounts | null = null,
 ): void {
   const rng = createRng((seed ^ 0x9e3779b9) >>> 0);
-  const counts = worldCounts(state.map.width, state.map.height, towns, industry, resources);
+  const counts = custom ? customCounts(custom) : worldCounts(state.map.width, state.map.height, towns, industry, resources);
   placeTowns(state, rng, seed, counts.towns);
   for (const { def, count } of counts.perType) {
     for (let i = 0; i < count; i++) placeIndustry(state, rng, def);

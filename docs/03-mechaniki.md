@@ -18,6 +18,7 @@ Wartości liczbowe w tym dokumencie są **startowe** – do strojenia w trakcie 
   | Testowa (wydajność) | 1024×1024 | 512 | 768 |
 
 - **Gęstość** – osobno miast, kopalń i lasów (surowce) oraz przemysłu (elektrownie, huty, tartaki): brak / mało (30%) / normalnie (60%) / dużo (100% – liczby w tabeli, domyślnie). Przy gęstości innej niż „brak” każdy typ jest na mapie co najmniej raz. Okno pokazuje, co powstanie. Adres: `&towns=0..3&resources=0..3&industry=0..3`.
+- **Tryb własny** (przełącznik „Gęstość / Własne”): dokładna liczba miast i zakładów każdego typu (0 … 3× „dużo”, co najmniej 5); położenie losowane z ziarna. Czego nie da się zmieścić (brak miejsca spełniającego odstępy), tego nie ma – gra mówi po starcie, ile się zmieściło.
 - Liczba miast i zakładów rośnie z powierzchnią. Symulacja jest lekka nawet dla największej mapy (miesiąc gry 512×512 ≈ 0,15 s obliczeń); ograniczeniem jest rysowanie i rozmiar autozapisu.
 - Adres `?seed=N&size=S` uruchamia nową grę na danej mapie (S: 64, 128, 256, 512, 1024).
 - Na dużych mapach autozapis jest rzadszy: 512 – co minutę, 1024 – co 2 minuty.

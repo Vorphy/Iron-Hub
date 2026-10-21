@@ -1,4 +1,14 @@
-import type { Density } from '../sim/world/generate';
+import type { CustomCounts, Density } from '../sim/world/generate';
+
+/** Ustawienia świata z okna nowej gry. */
+export interface NewWorldSettings {
+  startYear: number;
+  towns: Density;
+  industry: Density;
+  resources: Density;
+  /** Tryb własny – dokładne liczby (null – według gęstości). */
+  custom: CustomCounts | null;
+}
 import type { Speed } from '../loop';
 import type { Terrain } from '../sim/world/map';
 import type { Cargo } from '../sim/economy/cargo';
@@ -266,7 +276,7 @@ export interface HudActions {
   /** Otwiera okno nowej gry. */
   newGame(): void;
   closeNewGame(): void;
-  startNewGame(size: number, seed: number, startYear: number, towns: Density, industry: Density, resources: Density): void;
+  startNewGame(size: number, seed: number, settings: NewWorldSettings): void;
   closeWindow(): void;
   buyTrain(depotId: number, engine: string, wagons: string[]): void;
   sellTrain(trainId: number): void;
