@@ -70,6 +70,7 @@ Etapy są ułożone tak, żeby po każdym istniała działająca, testowalna wer
 ## Etap 8 – Później
 - ~~Wysokości terenu, zbocza, mosty, tunele.~~ ✅ (zrobione wcześniej – 2026-10-18)
 - Backend: zapis w chmurze, rankingi.
+  - *Kandydat (2026-10-21):* Cloudflare Workers + D1 (baza SQLite) – bez własnego serwera do utrzymania, darmowy próg wystarcza na testy, strona zostaje na GitHub Pages. Pierwszy krok: statystyki graczy (nazwa firmy, identyfikator z przeglądarki, czas grania), potem zapis w chmurze i rankingi na tej samej bazie. Alternatywy: Supabase (Postgres + logowanie), mały VPS z SQLite (najwięcej kontroli, ale trzeba go utrzymywać).
 - Płatne dodatki (pakiety pojazdów) – wymaga backendu i systemu płatności.
 - Symulacja w Web Workerze, ewentualnie multiplayer.
 
