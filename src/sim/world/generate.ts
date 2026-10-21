@@ -144,6 +144,16 @@ const NEIGHBORS = [
   [0, -1],
 ] as const;
 
+/** Najszerszy pas ulic i torów (kafelki), przez który miasto przechodzi z zabudową – np. podwójny skośny tor. */
+const MAX_CROSSING = 4;
+
+/** Kafelek, nad którym zabudowa „przeskakuje”: ulica albo tor (bez stacji i zajezdni). */
+function crossable(map: WorldMap, town: Town, x: number, y: number): boolean {
+  if (!inBounds(map, x, y)) return false;
+  const i = y * map.width + x;
+  return isStreet(town, x, y) || (!!map.track[i] && !map.station[i] && !map.depot[i]);
+}
+
 /**
  * Dokłada domy obok istniejącej zabudowy (poza ulicami). Wyższa zabudowa bliżej rynku.
  * `prefer` – opcjonalna waga kafelka (np. bliskość stacji), żeby miasto rosło w stronę kolei.
@@ -168,10 +178,13 @@ export function growTown(state: GameState, rng: Rng, town: Town, houses: number,
       for (let x = town.x - R; x <= town.x + R; x++) {
         if (!inBounds(map, x, y) || map.town[y * map.width + x] !== town.id) continue;
         any = true;
-        // Przez ulicę też można przejść – kwartały po drugiej stronie.
+        // Przez ulicę i tory też można przejść – kwartały po drugiej stronie (skośny tor to
+        // „schodki” z kafelków, więc bez tego zamykałby miastu drogę).
         for (const [dx, dy] of NEIGHBORS) {
           consider(x + dx, y + dy);
-          if (isStreet(town, x + dx, y + dy)) consider(x + 2 * dx, y + 2 * dy);
+          let k = 1;
+          while (k <= MAX_CROSSING && crossable(map, town, x + k * dx, y + k * dy)) k++;
+          if (k > 1) consider(x + k * dx, y + k * dy);
         }
       }
     }

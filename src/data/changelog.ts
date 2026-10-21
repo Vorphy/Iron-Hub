@@ -12,6 +12,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-21',
+    title: 'Poprawka: miasta za torami',
+    items: [
+      'Miasta rozrastają się za torami – także za skośnymi i podwójnymi liniami. Dotąd tor (zwłaszcza skośny) zamykał zabudowie drogę.',
+    ],
+  },
+  {
+    date: '2026-10-21',
     title: 'Bez zatrzymania i punkty kontrolne',
     items: [
       'W rozkładzie przy każdej stacji ptaszek „bez zatrzymania”: pociąg przejeżdża przez stację i jedzie do następnej pozycji. Status: „Jedzie przez”.',
