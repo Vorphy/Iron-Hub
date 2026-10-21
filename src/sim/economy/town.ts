@@ -1,5 +1,6 @@
 import { ECONOMY } from '../../data/economy';
 import type { GameState } from '../state';
+import { createRng, nextFloat, nextInt } from '../rng';
 import { inBounds } from '../world/map';
 
 /** Mieszkańcy domu w zależności od poziomu zabudowy (1–4). */
@@ -36,15 +37,70 @@ export const TOWN_NAMES = [
   'Podkładowo', 'Hamulce', 'Przystanki', 'Nastawnia', 'Sieciechów', 'Kółkowo', 'Bocznica', 'Rozjazdy',
 ];
 
-/** Dopiski do nazw, gdy podstawowa lista się skończy (duże mapy). */
-const NAME_SUFFIXES = ['Zdrój', 'Kolonia', 'Osada', 'Wieś', 'Huta', 'Młyn', 'Las', 'Pole', 'Brzeg', 'Port'];
+// --- Generator nazw (duże mapy): rdzeń + końcówka, czasem przymiotnik albo rzeka ---
 
-/** Lista nazw dla mapy: najpierw podstawowe, potem z dopiskami, na końcu numerowane. */
-export function townNamePool(count: number): string[] {
-  const out = [...TOWN_NAMES];
-  for (const suffix of NAME_SUFFIXES) for (const base of TOWN_NAMES) out.push(`${base} ${suffix}`);
-  for (let i = 1; out.length < count; i++) out.push(`Osiedle ${i}`);
-  return out;
+type Gender = 'm' | 'f' | 'n' | 'pl';
+
+// biome-ignore format: zwarta lista rdzeni
+const NAME_ROOTS = [
+  'Dęb', 'Lip', 'Grab', 'Brzez', 'Sosn', 'Olsz', 'Wierzb', 'Jawor', 'Buk', 'Jasion', 'Klon', 'Bor',
+  'Gaj', 'Kruk', 'Sok', 'Wilk', 'Lis', 'Bobr', 'Rud', 'Węgl', 'Kol', 'Młyn', 'Hut', 'Kuźn',
+  'Glin', 'Piask', 'Kamion', 'Strzel', 'Rak', 'Bogusz', 'Jarosz', 'Mir', 'Sław', 'Dobrosz', 'Krzyż', 'Wit',
+  'Wojn', 'Ziel', 'Czarn', 'Bystrz', 'Złot', 'Srebr', 'Miedz', 'Sol', 'Kras', 'Brod', 'Przewoz', 'Grodz',
+  'Zamk', 'Dwor', 'Jabłon', 'Grusz', 'Orzech', 'Trzcin', 'Łoz', 'Mszan', 'Kozł', 'Jastrzęb', 'Gołęb', 'Wrzos',
+];
+
+const NAME_ENDINGS: readonly [string, Gender][] = [
+  ['owo', 'n'],
+  ['ice', 'pl'],
+  ['ów', 'm'],
+  ['owice', 'pl'],
+  ['any', 'pl'],
+  ['ówka', 'f'],
+  ['ec', 'm'],
+  ['ki', 'pl'],
+];
+
+/** Przymiotnik w formie dla rodzaju (m, f, n, pl) i czy stoi przed nazwą („Nowy Dębów”) czy po („Dębów Górny”). */
+const NAME_ADJECTIVES: readonly { forms: Record<Gender, string>; before: boolean }[] = [
+  { forms: { m: 'Nowy', f: 'Nowa', n: 'Nowe', pl: 'Nowe' }, before: true },
+  { forms: { m: 'Stary', f: 'Stara', n: 'Stare', pl: 'Stare' }, before: true },
+  { forms: { m: 'Wielki', f: 'Wielka', n: 'Wielkie', pl: 'Wielkie' }, before: true },
+  { forms: { m: 'Górny', f: 'Górna', n: 'Górne', pl: 'Górne' }, before: false },
+  { forms: { m: 'Dolny', f: 'Dolna', n: 'Dolne', pl: 'Dolne' }, before: false },
+  { forms: { m: 'Mały', f: 'Mała', n: 'Małe', pl: 'Małe' }, before: false },
+];
+
+const NAME_RIVERS = ['nad Bystrą', 'nad Czarną', 'nad Rudawą', 'nad Srebrną', 'nad Białką', 'nad Wilgą'];
+
+/**
+ * Generator kolejnych, niepowtarzalnych nazw miast (deterministyczny – własny strumień losowy,
+ * żeby nazwy nie zmieniały reszty mapy). `taken` – nazwy już użyte.
+ */
+export function townNameGenerator(seed: number, taken: Iterable<string>): () => string {
+  const rng = createRng((seed ^ 0x51ed270b) >>> 0);
+  const used = new Set(taken);
+  const pick = <T>(list: readonly T[]): T => list[nextInt(rng, 0, list.length)]!;
+  let fallback = 0;
+  return () => {
+    for (let attempt = 0; attempt < 100; attempt++) {
+      const [ending, gender] = pick(NAME_ENDINGS);
+      const base = pick(NAME_ROOTS) + ending;
+      const r = nextFloat(rng);
+      let name = base;
+      if (r < 0.3) {
+        const adj = pick(NAME_ADJECTIVES);
+        name = adj.before ? `${adj.forms[gender]} ${base}` : `${base} ${adj.forms[gender]}`;
+      } else if (r < 0.4) {
+        name = `${base} ${pick(NAME_RIVERS)}`;
+      }
+      if (!used.has(name)) {
+        used.add(name);
+        return name;
+      }
+    }
+    return `Osiedle ${++fallback}`;
+  };
 }
 
 export function townAt(state: GameState, x: number, y: number): Town | undefined {

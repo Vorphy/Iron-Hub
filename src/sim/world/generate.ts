@@ -1,5 +1,5 @@
 import { emptyIndustryMonth, INDUSTRY_DEFS, type IndustryDef } from '../economy/industry';
-import { emptyTownMonth, isStreet, MAX_HOUSE_LEVEL, TOWN_NAMES, townNamePool, type Town } from '../economy/town';
+import { emptyTownMonth, isStreet, MAX_HOUSE_LEVEL, TOWN_NAMES, townNameGenerator, type Town } from '../economy/town';
 import { createRng, nextFloat, nextInt, type Rng } from '../rng';
 import type { GameState } from '../state';
 import { isFlat, tileBaseHeight } from './height';
@@ -18,7 +18,7 @@ const EDGE_MARGIN = 5;
 export function generateWorld(state: GameState, seed: number): void {
   const rng = createRng((seed ^ 0x9e3779b9) >>> 0);
   const scale = (state.map.width * state.map.height) / REFERENCE_AREA;
-  placeTowns(state, rng, Math.max(1, Math.round(TOWNS_PER_REFERENCE * scale)));
+  placeTowns(state, rng, seed, Math.max(1, Math.round(TOWNS_PER_REFERENCE * scale)));
   for (const def of INDUSTRY_DEFS) {
     const count = Math.max(def.perMap > 0 ? 1 : 0, Math.round(def.perMap * scale));
     for (let i = 0; i < count; i++) placeIndustry(state, rng, def);
@@ -37,18 +37,18 @@ function isFree(map: WorldMap, x: number, y: number): boolean {
   return !hasBuilding(map, i) && !map.track[i] && !map.station[i] && !map.depot[i] && !map.road[i];
 }
 
-function placeTowns(state: GameState, rng: Rng, count: number): void {
+function placeTowns(state: GameState, rng: Rng, seed: number, count: number): void {
   const { map } = state;
-  // Najpierw losowo spośród podstawowych nazw, potem kolejne z dopiskami.
+  // Najpierw losowo spośród podstawowych nazw, potem z generatora (duże mapy).
   const base = [...TOWN_NAMES];
-  const extra = townNamePool(count).slice(TOWN_NAMES.length);
+  const extra = townNameGenerator(seed, TOWN_NAMES);
   for (let n = 0; n < count; n++) {
     for (let attempt = 0; attempt < 300; attempt++) {
       const x = nextInt(rng, EDGE_MARGIN + 2, map.width - EDGE_MARGIN - 2);
       const y = nextInt(rng, EDGE_MARGIN + 2, map.height - EDGE_MARGIN - 2);
       if (!landAround(map, x, y, 3)) continue;
       if (state.towns.some((t) => Math.abs(t.x - x) + Math.abs(t.y - y) < MIN_TOWN_DISTANCE)) continue;
-      const name = base.length ? base.splice(nextInt(rng, 0, base.length), 1)[0]! : (extra.shift() ?? `Miasto ${n + 1}`);
+      const name = base.length ? base.splice(nextInt(rng, 0, base.length), 1)[0]! : extra();
       const town: Town = { id: state.towns.length + 1, name, x, y, month: emptyTownMonth(), lastTransported: 0 };
       state.towns.push(town);
       growTown(state, rng, town, nextInt(rng, 8, 30));

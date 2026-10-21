@@ -12,6 +12,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-21',
+    title: 'Więcej nazw miast',
+    items: [
+      'Duże mapy dostają polsko brzmiące nazwy z generatora (np. Gajice Dolne, Stara Wrzosówka, Boguszany nad Wilgą) zamiast „Osiedle 1, 2, 3…” – tysiące niepowtarzalnych nazw.',
+    ],
+  },
+  {
+    date: '2026-10-21',
     title: 'Pomoc i historia zmian',
     items: [
       'Pomoc (H albo „?” na górnym pasku): opis całej gry – od pierwszego toru po kredyt.',
