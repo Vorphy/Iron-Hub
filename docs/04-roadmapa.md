@@ -95,7 +95,7 @@ Jedna kolejka, w kolejności, która najszybciej poprawia granie. Maglevy, kolej
 - **Dodatkowy audyt – części jeszcze niesprawdzone.** Profil w DevTools (zakładka Performance) na mapie 1024 przy 8× z kilkudziesięcioma pociągami i sprawdzenie miejsc, których pierwszy audyt nie objął: ruch uliczny (`traffic.ts`), minimapa, podpisy na mapie, rysowanie przy dalekim zoomie, odświeżanie interfejsu (Preact), pamięć (wycieki, GC), generowanie mapy (~2 s na 1024). Wyniki dopisać do [06-audyt-wydajnosci](06-audyt-wydajnosci.md).
 
 ### Utrzymanie projektu
-- **Akcje GitHuba na Node 24** (2026-10-22) – w `.github/workflows/deploy.yml` podbić `actions/checkout` i `actions/setup-node` do wersji na Node 24 (GitHub wymusza je już na siłę i ostrzega przy każdym buildzie). Przy okazji sprawdzić build na Ubuntu 26 – `ubuntu-latest` przechodzi na nie od 2026-10-19.
+- ~~**Akcje GitHuba na Node 24**~~ ✅ (2026-10-22) – w `.github/workflows/deploy.yml`: checkout v7, setup-node v7, upload-pages-artifact v5, deploy-pages v5 (wszystkie na Node 24). Build na `ubuntu-latest` przechodzi.
 
 ### Faza B – głębia rozgrywki (po wnioskach z testów)
 9. ~~**Podwójna trakcja**~~ ✅ (2026-10-21) – 2 takie same lokomotywy w składzie: 2× moc i przyczepność (ciężkie pociągi pod górę).
@@ -135,4 +135,5 @@ Kredyt i bankructwo · minimapa · pierwsze kroki · lokomotywy z biegiem lat i 
   - *Własny backend:* razem z etapem 8 (zapis w chmurze, rankingi) – wtedy pełne logi sesji.
   - Lokalnie w grze: łączny czas grania i liczba sesji w Menu (tylko dla tego gracza, bez wysyłania).
   - Pamiętać o RODO: krótka informacja w grze, co jest zbierane; bez danych osobowych, jeśli się da.
-- 
+- ~~menu górna przesuwalne i możliwość minimalizacji, to samo menu budowania. te podpowiedzi na dole po prawej możliwość wyłączenia minimalizacji i przesuwania~~ ✅ (2026-10-22) – uchwyt ⠿ i zwijanie w górnym pasku, menu budowania (z panelem opcji) i podpowiedziach, położenie w przeglądarce (`src/ui/layout.ts`); Menu → Widok: podpowiedzi wł./wył., „Przywróć układ paneli”.
+-

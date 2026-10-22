@@ -12,6 +12,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-22',
+    title: 'Przesuwane i zwijane panele',
+    items: [
+      'Górny pasek, menu budowania i podpowiedzi przeciągasz za uchwyt ⠿ – układ zostaje zapamiętany.',
+      'Zwijanie: pasek do samej daty i kwoty, menu budowania do samych ikon, podpowiedzi do małej zakładki.',
+      'Podpowiedzi można wyłączyć (krzyżyk albo Menu → Widok); tam też „Przywróć układ paneli”.',
+    ],
+  },
+  {
+    date: '2026-10-22',
     title: 'Równe łączenia torów',
     items: [
       'Tory na zakrętach (prosta przechodząca w ukos) łączą się teraz bez szczelin i przesunięć – szyny i podsypka schodzą się na styku, także przy wjeździe na most i do tunelu.',

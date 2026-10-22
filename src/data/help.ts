@@ -69,6 +69,10 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
               'minimapa: nagłówek / − + / ☰ / ⛶',
               'przeciągnij – przenieś; zoom; legenda z filtrami zakładów; duża mapa (Esc zamyka)',
             ],
+            [
+              'panele: ⠿ / ◂ « ▾',
+              'górny pasek, menu budowania i podpowiedzi: przeciągnij za ⠿ – przenieś; zwiń (pasek – sama data i kwota, menu – same ikony)',
+            ],
             ['spacja / 1–4', 'pauza / prędkość 1×, 2×, 4×, 8×'],
             ['Esc', 'anuluj, zamknij okno, kursor'],
             ['T, P, Z, E, L, M, N, X', 'Tory, Stacja, Zajezdnia, Trakcja, Teren, Most, Tunel, Rozbiórka'],
@@ -82,6 +86,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
         },
       },
       'Klik kursorem na pociąg, stację, zajezdnię, miasto lub zakład otwiera jego okno. Klik na kwotę na górnym pasku – finanse.',
+      'Układ paneli zapamiętuje przeglądarka. Podpowiedzi wyłączysz krzyżykiem albo w Menu → Widok; tam też „Przywróć układ paneli”, gdy coś odjedzie za daleko.',
     ],
   },
   {

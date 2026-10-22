@@ -101,10 +101,38 @@ body {
   color: #1b1f24;
 }
 
-.toolbar {
+.grip {
+  cursor: grab;
+  color: var(--muted);
+  padding: 0 2px;
+  user-select: none;
+  touch-action: none;
+}
+.grip:active {
+  cursor: grabbing;
+}
+.panel button.collapse {
+  padding: 0 6px;
+  color: var(--muted);
+}
+
+/* Menu budowania z panelem opcji – przesuwane razem. */
+.build-dock {
+  position: absolute;
   top: 50%;
   left: 8px;
   transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+.build-dock > .panel {
+  position: static;
+  transform: none;
+}
+
+.toolbar {
   flex-direction: column;
   align-items: stretch;
   gap: 4px;
@@ -135,10 +163,24 @@ body {
   color: #1b1f24;
 }
 
+.toolbar .panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.toolbar .panel-head button {
+  display: inline-block;
+  padding: 0 6px;
+}
+.toolbar.compact .name,
+.toolbar.compact kbd {
+  display: none;
+}
+.toolbar.compact button {
+  grid-template-columns: 18px;
+}
+
 .tool-options {
-  top: 50%;
-  left: 170px;
-  transform: translateY(-50%);
   flex-direction: column;
   align-items: stretch;
   gap: 4px;
@@ -478,6 +520,9 @@ input.seed {
   white-space: normal;
   max-width: 520px;
 }
+.help .help-text {
+  flex: 1;
+}
 
 .toast {
   bottom: 56px;
@@ -495,9 +540,6 @@ input.seed {
   }
   .toolbar .name {
     display: none;
-  }
-  .tool-options {
-    left: 70px;
   }
   .toolbar button {
     grid-template-columns: 18px auto;

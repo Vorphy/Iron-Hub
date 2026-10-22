@@ -12,6 +12,7 @@ import { FinanceWindow, IndustryWindow, StationWindow, TownWindow } from './Info
 import { TrainWindow } from './TrainWindow';
 import { TrainsWindow } from './TrainsWindow';
 import { hudStore, type HudActions, type HudState } from './hudStore';
+import { layoutStore, resetLayout, setHints, useFloatingPanel } from './layout';
 import { useStore } from './store';
 
 const TERRAIN_NAMES: Record<Terrain, string> = {
@@ -63,10 +64,15 @@ function speedLabel(s: Speed): string {
 
 export function Hud({ actions }: { actions: HudActions }) {
   const s = useStore(hudStore);
+  const top = useFloatingPanel('topbar');
+  const build = useFloatingPanel('build');
 
   return (
     <>
-      <div class="panel topbar">
+      <div class="panel topbar" ref={top.ref} style={top.style}>
+        <span class="grip" title="Przeciągnij, aby przenieść pasek" {...top.grip}>
+          ⠿
+        </span>
         <span class="title">IRON HUB</span>
         <span class="sep" />
         <span>{s.date}</span>
@@ -74,39 +80,14 @@ export function Hud({ actions }: { actions: HudActions }) {
         <button class={`money link ${s.money < 0 ? 'negative' : ''}`} title="Finanse i kredyt" onClick={actions.openFinance}>
           {formatMoney(s.money)}
         </button>
-        <span class="sep" />
-        <span class="buttons">
-          {SPEEDS.map((sp) => (
-            <button
-              key={sp}
-              class={sp === s.speed ? 'active' : ''}
-              title={sp === 0 ? 'Pauza (spacja)' : `Prędkość ${sp}×`}
-              onClick={() => actions.setSpeed(sp)}
-            >
-              {speedLabel(sp)}
-            </button>
-          ))}
-        </span>
-        <span class="sep" />
-        <span class="buttons">
-          <button
-            class={s.window?.kind === 'trains' ? 'active' : ''}
-            title="Lista pociągów – zyski, grupy (K)"
-            onClick={() => (s.window?.kind === 'trains' ? actions.closeWindow() : actions.openTrains())}
-          >
-            🚆 Pociągi
-          </button>
-          <button
-            class={s.helpTopic ? 'active' : ''}
-            title="Pomoc (H)"
-            onClick={() => (s.helpTopic ? actions.closeHelp() : actions.openHelp())}
-          >
-            ?
-          </button>
-          <button class={s.menuOpen ? 'active' : ''} title="Menu gry" onClick={actions.toggleMenu}>
-            ☰ Menu{s.changelogUnseen && <span class="dot" title="Nowości w „Co nowego”" />}
-          </button>
-        </span>
+        {!top.collapsed && <TopbarControls s={s} actions={actions} />}
+        <button
+          class="collapse"
+          title={top.collapsed ? 'Rozwiń pasek' : 'Zwiń pasek (zostaje data i kwota)'}
+          onClick={top.toggleCollapsed}
+        >
+          {top.collapsed ? '▸' : '◂'}
+        </button>
       </div>
 
       <MinimapPanel open={s.minimapOpen} settings={s.minimap} actions={actions} />
@@ -133,22 +114,36 @@ export function Hud({ actions }: { actions: HudActions }) {
       {s.windowData?.kind === 'finance' && <FinanceWindow data={s.windowData} money={s.money} actions={actions} />}
       {s.windowData?.kind === 'industry' && <IndustryWindow data={s.windowData} actions={actions} />}
 
-      <div class="panel toolbar">
-        {TOOLS.filter((t) => t.tool !== 'signal' || s.signalMode === 'manual').map((t) => (
-          <button
-            key={t.tool}
-            class={t.tool === s.tool ? 'active' : ''}
-            title={`${t.name} (${t.key})`}
-            onClick={() => actions.setTool(t.tool)}
-          >
-            <span class="icon">{t.icon}</span>
-            <span class="name">{t.name}</span>
-            <kbd>{t.key}</kbd>
-          </button>
-        ))}
-      </div>
+      <div class="build-dock" ref={build.ref} style={build.style}>
+        <div class={`panel toolbar ${build.collapsed ? 'compact' : ''}`}>
+          <div class="panel-head">
+            <span class="grip" title="Przeciągnij, aby przenieść menu budowania" {...build.grip}>
+              ⠿
+            </span>
+            <button
+              class="collapse"
+              title={build.collapsed ? 'Pokaż nazwy narzędzi' : 'Zwiń do samych ikon'}
+              onClick={build.toggleCollapsed}
+            >
+              {build.collapsed ? '»' : '«'}
+            </button>
+          </div>
+          {TOOLS.filter((t) => t.tool !== 'signal' || s.signalMode === 'manual').map((t) => (
+            <button
+              key={t.tool}
+              class={t.tool === s.tool ? 'active' : ''}
+              title={`${t.name} (${t.key})`}
+              onClick={() => actions.setTool(t.tool)}
+            >
+              <span class="icon">{t.icon}</span>
+              <span class="name">{t.name}</span>
+              <kbd>{t.key}</kbd>
+            </button>
+          ))}
+        </div>
 
-      <ToolOptions tool={s.tool} options={s.toolOptions} actions={actions} />
+        <ToolOptions tool={s.tool} options={s.toolOptions} actions={actions} />
+      </div>
 
       <div class="panel statusbar">
         <span>
@@ -166,11 +161,75 @@ export function Hud({ actions }: { actions: HudActions }) {
         <span>{s.fps} FPS</span>
       </div>
 
-      <div class="panel help">{TOOL_HELP[s.tool]}</div>
+      <Hints text={TOOL_HELP[s.tool]} />
 
       <CursorLabel label={s.cursorLabel} />
       <Toast message={s.message} />
     </>
+  );
+}
+
+/** Prędkość gry, lista pociągów, pomoc i menu – chowane razem ze zwinięciem paska. */
+function TopbarControls({ s, actions }: { s: HudState; actions: HudActions }) {
+  return (
+    <>
+      <span class="sep" />
+      <span class="buttons">
+        {SPEEDS.map((sp) => (
+          <button
+            key={sp}
+            class={sp === s.speed ? 'active' : ''}
+            title={sp === 0 ? 'Pauza (spacja)' : `Prędkość ${sp}×`}
+            onClick={() => actions.setSpeed(sp)}
+          >
+            {speedLabel(sp)}
+          </button>
+        ))}
+      </span>
+      <span class="sep" />
+      <span class="buttons">
+        <button
+          class={s.window?.kind === 'trains' ? 'active' : ''}
+          title="Lista pociągów – zyski, grupy (K)"
+          onClick={() => (s.window?.kind === 'trains' ? actions.closeWindow() : actions.openTrains())}
+        >
+          🚆 Pociągi
+        </button>
+        <button
+          class={s.helpTopic ? 'active' : ''}
+          title="Pomoc (H)"
+          onClick={() => (s.helpTopic ? actions.closeHelp() : actions.openHelp())}
+        >
+          ?
+        </button>
+        <button class={s.menuOpen ? 'active' : ''} title="Menu gry" onClick={actions.toggleMenu}>
+          ☰ Menu{s.changelogUnseen && <span class="dot" title="Nowości w „Co nowego”" />}
+        </button>
+      </span>
+    </>
+  );
+}
+
+/** Podpowiedzi do narzędzia: przesuwane, zwijane, wyłączane (Menu → Widok). */
+function Hints({ text }: { text: string }) {
+  const on = useStore(layoutStore).hints;
+  const p = useFloatingPanel('hints');
+  if (!on) return null;
+  return (
+    <div class={`panel help ${p.collapsed ? 'collapsed' : ''}`} ref={p.ref} style={p.style}>
+      <span class="grip" title="Przeciągnij, aby przenieść podpowiedzi" {...p.grip}>
+        ⠿
+      </span>
+      {p.collapsed ? <span>Podpowiedzi</span> : <span class="help-text">{text}</span>}
+      <span class="buttons">
+        <button class="collapse" title={p.collapsed ? 'Rozwiń podpowiedzi' : 'Zwiń podpowiedzi'} onClick={p.toggleCollapsed}>
+          {p.collapsed ? '▴' : '▾'}
+        </button>
+        <button class="collapse" title="Wyłącz podpowiedzi (włączysz w Menu → Widok)" onClick={() => setHints(false)}>
+          ✕
+        </button>
+      </span>
+    </div>
   );
 }
 
@@ -365,6 +424,7 @@ function Menu({
   traffic: boolean;
   changelogUnseen: boolean;
 }) {
+  const hints = useStore(layoutStore).hints;
   return (
     <div class="panel menu">
       <div class="menu-title">Sygnalizacja</div>
@@ -388,6 +448,12 @@ function Menu({
         title="Auta i autobusy w miastach – tylko dekoracja"
       >
         Ruch w miastach: {traffic ? 'wł.' : 'wył.'}
+      </button>
+      <button class={hints ? 'active' : ''} onClick={() => setHints(!hints)} title="Podpowiedzi do narzędzi w rogu ekranu">
+        Podpowiedzi: {hints ? 'wł.' : 'wył.'}
+      </button>
+      <button onClick={resetLayout} title="Górny pasek, menu budowania i podpowiedzi wracają na swoje miejsca i rozwijają się">
+        Przywróć układ paneli
       </button>
       <button onClick={actions.toggleTutorial}>Pierwsze kroki</button>
       <button onClick={() => actions.openHelp()}>
