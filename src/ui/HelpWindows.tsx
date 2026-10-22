@@ -26,6 +26,13 @@ function Block({ block }: { block: HelpBlock }) {
       </ul>
     );
   }
+  if ('figure' in block) {
+    return (
+      <figure class="help-figure">
+        <img src={`${import.meta.env.BASE_URL}${block.figure}`} alt={block.alt} />
+      </figure>
+    );
+  }
   return (
     <table class="ledger help-table">
       <thead>

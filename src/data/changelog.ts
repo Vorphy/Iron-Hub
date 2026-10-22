@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    date: '2026-10-22',
+    title: 'Pomoc: semafory ścieżkowe a jednokierunkowe',
+    items: [
+      'W Pomocy (Sygnalizacja) jest tabela i schemat, czym różnią się semafory ścieżkowe od jednokierunkowych – i kiedy którego użyć.',
+    ],
+  },
+  {
     date: '2026-10-21',
     title: 'Przejazdy kolejowo-drogowe',
     items: [

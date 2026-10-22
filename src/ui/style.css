@@ -636,6 +636,15 @@ input.seed {
 .help-table {
   margin-bottom: 10px;
 }
+.help-figure {
+  margin: 0 0 10px;
+}
+.help-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--panel-border);
+}
 .changelog-entry {
   margin-bottom: 8px;
 }

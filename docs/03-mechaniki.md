@@ -106,6 +106,7 @@ Wartości liczbowe w tym dokumencie są **startowe** – do strojenia w trakcie 
 - Narzędzie Semafor (B, widoczne tylko w trybie Ekspert), 200 zł:
   - **ścieżkowy** – kolejne kliknięcia zmieniają kierunek: jeden → drugi → oba; od tyłu przejezdny,
   - **jednokierunkowy** – zabrania jazdy pod prąd,
+  - różnica wychodzi przy alternatywnych drogach: trasa omija zajęte tory, więc na linii dwutorowej ze ścieżkowymi pociąg może objechać zator torem przeciwnym; jednokierunkowe mu to blokują (schemat: `public/help/semafory.svg`, Pomoc → Sygnalizacja),
   - semafor zielony, gdy pociąg zarezerwował drogę przez niego,
   - **oznaczenie kierunku:** biała strzałka na torze wskazuje kierunek jazdy, którego semafor dotyczy; słup stoi **po prawej stronie toru patrząc w kierunku jazdy**. Semafor dwukierunkowy ma dwie strzałki i dwa słupy; jednokierunkowy – podwójną strzałkę,
   - przy narzędziu żółty podgląd pokazuje stan semafora po kliknięciu.

@@ -15,7 +15,12 @@ import {
 import { ENGINES, TRACTION_NAMES } from '../sim/trains/vehicles';
 import { ECONOMY } from './economy';
 
-export type HelpBlock = string | { list: string[] } | { table: { head: string[]; rows: string[][] } };
+/** `figure` – ścieżka obrazka w `public/` (bez wiodącego ukośnika). */
+export type HelpBlock =
+  | string
+  | { list: string[] }
+  | { table: { head: string[]; rows: string[][] } }
+  | { figure: string; alt: string };
 
 export interface HelpTopic {
   id: string;
@@ -163,6 +168,24 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
       'Pociąg wjeżdża tylko na tory, które zarezerwował – nie ma zderzeń. Tryb przełączasz w Menu.',
       '**Amator** (domyślny): nie stawiasz semaforów – pociągi same trzymają odstęp i nie stają na rozjazdach. Wystarczy na początek.',
       `**Ekspert**: pociąg staje tylko przed semaforem, na końcu peronu lub toru. Semafory (B, ${zl(E.construction.signal)}): ścieżkowy – kliknięcia zmieniają kierunek; jednokierunkowy – zakaz jazdy pod prąd. Strzałka na torze pokazuje kierunek, słup stoi po prawej stronie toru.`,
+      {
+        table: {
+          head: ['', 'Ścieżkowy', 'Jednokierunkowy'],
+          rows: [
+            ['Na torze', 'jedna strzałka (dwie przy „oba”)', 'podwójna strzałka'],
+            ['Kliknięcia', 'kierunek 1 → 2 → oba', 'kierunek 1 ↔ 2'],
+            ['Jazda w stronę strzałki', 'pociąg może przed nim stanąć', 'pociąg może przed nim stanąć'],
+            ['Jazda pod prąd', 'przejeżdża bez zatrzymania', 'zakazana – pociąg szuka innej drogi'],
+            ['Do czego', 'jednotorowe szlaki z mijankami, głowice stacji', 'linie dwutorowe – każdy tor w swoją stronę'],
+          ],
+        },
+      },
+      'Różnicę widać dopiero, gdy pociąg ma do wyboru kilka dróg. Pociąg omija tory zajęte przez inne pociągi – na linii dwutorowej z semaforami ścieżkowymi może więc objechać zator torem przeciwnym, pod prąd, i stanąć naprzeciw pociągu z przeciwka. Semafory jednokierunkowe zamykają mu tę drogę:',
+      {
+        figure: 'help/semafory.svg',
+        alt: 'Linia dwutorowa: na semaforach ścieżkowych pociąg objeżdża zator torem pod prąd, na jednokierunkowych czeka na swoim torze',
+      },
+      'Jeden jednokierunkowy wystarczy, by cały odcinek między rozjazdami stał się jednokierunkowy. Uwaga: postawiony na jedynym torze odcina ruch w drugą stronę (status „Nie może dojechać”).',
       'Odstęp od rozjazdu do semafora za nim powinien mieścić cały najdłuższy pociąg – inaczej pociąg staje przed semaforem z ogonem na zwrotnicy i blokuje inne drogi (zwłaszcza w głowicy stacji). Przed stacją postaw semafor kilka kafelków przed rozjazdem.',
       'Na jednym torze z ruchem w obie strony buduj mijanki. Gdy pociągi zablokują się naprzeciw siebie, po 3 dniach jeden sam zawróci; możesz też kliknąć „Zawróć”.',
       'Klawisz V pokazuje rezerwacje – widać, kto na kogo czeka.',
