@@ -94,6 +94,9 @@ Jedna kolejka, w kolejności, która najszybciej poprawia granie. Maglevy, kolej
 - **Audyt wydajności** – lista poprawek z pomiarami w [06-audyt-wydajnosci](06-audyt-wydajnosci.md). Najpierw: autozapis bez zamrożeń (~0,6 s co 2 min na mapie 1024), liczenie zasięgu stacji bez przeglądania całej mapy, dzienny ładunek (~90 ms na 1024 przy 40 stacjach), okna odświeżane 4–5×/s. Potem profil gry w przeglądarce przy 8× i decyzja o pamiętaniu tras pociągów.
 - **Dodatkowy audyt – części jeszcze niesprawdzone.** Profil w DevTools (zakładka Performance) na mapie 1024 przy 8× z kilkudziesięcioma pociągami i sprawdzenie miejsc, których pierwszy audyt nie objął: ruch uliczny (`traffic.ts`), minimapa, podpisy na mapie, rysowanie przy dalekim zoomie, odświeżanie interfejsu (Preact), pamięć (wycieki, GC), generowanie mapy (~2 s na 1024). Wyniki dopisać do [06-audyt-wydajnosci](06-audyt-wydajnosci.md).
 
+### Utrzymanie projektu
+- **Akcje GitHuba na Node 24** (2026-10-22) – w `.github/workflows/deploy.yml` podbić `actions/checkout` i `actions/setup-node` do wersji na Node 24 (GitHub wymusza je już na siłę i ostrzega przy każdym buildzie). Przy okazji sprawdzić build na Ubuntu 26 – `ubuntu-latest` przechodzi na nie od 2026-10-19.
+
 ### Faza B – głębia rozgrywki (po wnioskach z testów)
 9. ~~**Podwójna trakcja**~~ ✅ (2026-10-21) – 2 takie same lokomotywy w składzie: 2× moc i przyczepność (ciężkie pociągi pod górę).
 10. **Tory na zboczach z fundamentami** – łuki i rozjazdy na zboczu, wyraźnie droższe od zwykłych torów.
