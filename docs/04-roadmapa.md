@@ -86,7 +86,8 @@ Jedna kolejka, w kolejności, która najszybciej poprawia granie. Maglevy, kolej
 4. ~~**Lepsza minimapa**~~ ✅ (2026-10-21) – zoom, przenoszenie po ekranie i powiększanie; po wejściu w nią – jak w OpenTTD – filtr zakładów (np. tylko kopalnie węgla, tylko elektrownie) z legendą kolorów, żeby zaplanować start i rozbudowę sieci.
 5. ~~**Wspólne rozkłady**~~ ✅ (2026-10-21) – kopia pociągu może dzielić rozkład z oryginałem: zmiana w jednym zmienia wszystkie na linii.
 6. ~~**Rozkład czasowy**~~ ✅ (2026-10-21) – postój X dni na stacji i **równe odstępy**: na wspólnym rozkładzie wyrównuje pociągi linii (czas obiegu / liczba pociągów) i wypuszcza je w odpowiednich odstępach.
-7. **Etap 5 – test „czy to jest fajne”** – granie z kilkoma osobami, strojenie `src/data/economy.ts` i `vehicles.json`.
+7. **Łączenia torów** (2026-10-22) – tory na stykach elementów (prosty z ukosem, ukos z ukosem, zwrotnice, wjazdy na perony i mosty) nie zawsze do siebie pasują. Poprawić geometrię w `src/render/trackDraw.ts` przed testami z ludźmi – nowa grafika z etapu 7 korzysta z tej samej geometrii, więc sama tego nie naprawi.
+8. **Etap 5 – test „czy to jest fajne”** – granie z kilkoma osobami, strojenie `src/data/economy.ts` i `vehicles.json`.
    - *Przydatne do testów:* **statystyki graczy** (pomysł niżej) – kto wchodził, jak długo grał, na jakiej mapie.
 
 ### Wydajność – wrócić przed testami na dużych mapach
@@ -94,18 +95,18 @@ Jedna kolejka, w kolejności, która najszybciej poprawia granie. Maglevy, kolej
 - **Dodatkowy audyt – części jeszcze niesprawdzone.** Profil w DevTools (zakładka Performance) na mapie 1024 przy 8× z kilkudziesięcioma pociągami i sprawdzenie miejsc, których pierwszy audyt nie objął: ruch uliczny (`traffic.ts`), minimapa, podpisy na mapie, rysowanie przy dalekim zoomie, odświeżanie interfejsu (Preact), pamięć (wycieki, GC), generowanie mapy (~2 s na 1024). Wyniki dopisać do [06-audyt-wydajnosci](06-audyt-wydajnosci.md).
 
 ### Faza B – głębia rozgrywki (po wnioskach z testów)
-8. ~~**Podwójna trakcja**~~ ✅ (2026-10-21) – 2 takie same lokomotywy w składzie: 2× moc i przyczepność (ciężkie pociągi pod górę).
-9. **Tory na zboczach z fundamentami** – łuki i rozjazdy na zboczu, wyraźnie droższe od zwykłych torów.
-10. **Szablony budowy** – gotowe do wklejenia układy, np. bezkolizyjne skrzyżowanie łączące cztery dwutorowe linie.
-11. **Super stacja** – ulepszenie stacji w mieście za ~100× ceny peronu: druga kondygnacja peronów (4 tory zamiast 2 na tym samym obszarze), zjazdy jak portale tuneli, 2-torowy wjazd w głowicy (szczegóły w Pomysłach).
-12. ~~**„Jedź bez zatrzymania” i punkty kontrolne**~~ ✅ (2026-10-21) – ptaszek „bez zatrzymania” przy pozycji rozkładu; punkt kontrolny na prostym torze (narzędzie Stacja) wymusza trasę.
-13. **Badania (na co wydawać pieniądze)** – żeby kasa nie leżała odłogiem, tylko była dalej inwestowana: drogie, stopniowe ulepszenia kupowane za pieniądze i czas, np. **+10% ładowności wagonów**, **+10% prędkości pociągów**, kolejne pomysły do dopisania (szybszy załadunek, tańsze utrzymanie, wyższa ocena stacji, wcześniejszy dostęp do nowych lokomotyw). Każdy poziom droższy od poprzedniego.
-14. **Wersja na telefon** – większy refaktor interfejsu: sterowanie dotykiem (przesuwanie palcem, zoom dwoma palcami, przytrzymanie zamiast prawego przycisku), panele i okna dopasowane do wąskiego ekranu (pasek narzędzi na dole, okna na cały ekran, większe przyciski), czytelne podpisy i minimapa na małym ekranie.
-15. **Awarie i serwis** – niezawodność spada z wiekiem, nieserwisowane pociągi psują się częściej i stają, serwis w zajezdni; możliwość wyłączenia przy nowej grze.
+9. ~~**Podwójna trakcja**~~ ✅ (2026-10-21) – 2 takie same lokomotywy w składzie: 2× moc i przyczepność (ciężkie pociągi pod górę).
+10. **Tory na zboczach z fundamentami** – łuki i rozjazdy na zboczu, wyraźnie droższe od zwykłych torów.
+11. **Szablony budowy** – gotowe do wklejenia układy, np. bezkolizyjne skrzyżowanie łączące cztery dwutorowe linie.
+12. **Super stacja** – ulepszenie stacji w mieście za ~100× ceny peronu: druga kondygnacja peronów (4 tory zamiast 2 na tym samym obszarze), zjazdy jak portale tuneli, 2-torowy wjazd w głowicy (szczegóły w Pomysłach).
+13. ~~**„Jedź bez zatrzymania” i punkty kontrolne**~~ ✅ (2026-10-21) – ptaszek „bez zatrzymania” przy pozycji rozkładu; punkt kontrolny na prostym torze (narzędzie Stacja) wymusza trasę.
+14. **Badania (na co wydawać pieniądze)** – żeby kasa nie leżała odłogiem, tylko była dalej inwestowana: drogie, stopniowe ulepszenia kupowane za pieniądze i czas, np. **+10% ładowności wagonów**, **+10% prędkości pociągów**, kolejne pomysły do dopisania (szybszy załadunek, tańsze utrzymanie, wyższa ocena stacji, wcześniejszy dostęp do nowych lokomotyw). Każdy poziom droższy od poprzedniego.
+15. **Wersja na telefon** – większy refaktor interfejsu: sterowanie dotykiem (przesuwanie palcem, zoom dwoma palcami, przytrzymanie zamiast prawego przycisku), panele i okna dopasowane do wąskiego ekranu (pasek narzędzi na dole, okna na cały ekran, większe przyciski), czytelne podpisy i minimapa na małym ekranie.
+16. **Awarie i serwis** – niezawodność spada z wiekiem, nieserwisowane pociągi psują się częściej i stają, serwis w zajezdni; możliwość wyłączenia przy nowej grze.
 
 ### Faza C
-16. **Etap 7** – grafika, dźwięki, retro UI, wydanie na itch.io.
-17. **Etap 8** – generator/edytor map, chmura, Web Worker, płatne dodatki.
+17. **Etap 7** – grafika, dźwięki, retro UI, wydanie na itch.io.
+18. **Etap 8** – generator/edytor map, chmura, Web Worker, płatne dodatki.
 
 ### Zrobione z wcześniejszej kolejki (2026-10-21)
 Kredyt i bankructwo · minimapa · pierwsze kroki · lokomotywy z biegiem lat i sieć trakcyjna · ciężarówki, chowanie pojazdów za domami, lint/format · wymiana lokomotyw · pomoc i historia zmian · nazwy miast · kopiowanie pociągów · pełny ładunek · magazyn wagonów · rozbudowa stacji · gęstość miast, kopalń i przemysłu · numery zajezdni.
