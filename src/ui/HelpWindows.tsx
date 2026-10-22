@@ -29,7 +29,7 @@ function Block({ block }: { block: HelpBlock }) {
   if ('figure' in block) {
     return (
       <figure class="help-figure">
-        <img src={`${import.meta.env.BASE_URL}${block.figure}`} alt={block.alt} />
+        <img src={block.figure} alt={block.alt} />
       </figure>
     );
   }

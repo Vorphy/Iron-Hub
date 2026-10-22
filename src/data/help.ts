@@ -13,9 +13,11 @@ import {
   STATION_MAX_PLATFORMS,
 } from '../sim/config';
 import { ENGINES, TRACTION_NAMES } from '../sim/trains/vehicles';
+import mijankaSvg from '../assets/help/mijanka.svg';
+import semaforySvg from '../assets/help/semafory.svg';
 import { ECONOMY } from './economy';
 
-/** `figure` – ścieżka obrazka w `public/` (bez wiodącego ukośnika). */
+/** `figure` – adres obrazka z importu (Vite dokleja hash, więc zmiana rysunku omija cache). */
 export type HelpBlock =
   | string
   | { list: string[] }
@@ -182,12 +184,12 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
       },
       'Na torze używanym w obie strony (jednotor z mijankami, głowica stacji) stawiaj ścieżkowe – zatrzymują pociąg przed wjazdem na jednotor, a z przeciwka przepuszczają:',
       {
-        figure: 'help/mijanka.svg',
+        figure: mijankaSvg,
         alt: 'Mijanka: pociąg czeka przed semaforem na wyjeździe, pociąg z przeciwka mija semafor drugiego toru od tyłu',
       },
       'Na linii dwutorowej oba rodzaje działają, ale inaczej. Pociąg omija tory zajęte przez inne pociągi, więc ze ścieżkowymi może wyprzedzić stojący pociąg torem przeciwnym – a ruch z przeciwka w tym czasie czeka. Jednokierunkowe trzymają każdy pociąg na swoim torze:',
       {
-        figure: 'help/semafory.svg',
+        figure: semaforySvg,
         alt: 'Linia dwutorowa: na semaforach ścieżkowych pociąg wyprzedza torem przeciwnym, na jednokierunkowych czeka na swoim torze',
       },
       'Jeden jednokierunkowy wystarczy, by cały odcinek między rozjazdami stał się jednokierunkowy. Uwaga: postawiony na jedynym torze odcina ruch w drugą stronę (status „Nie może dojechać”).',
