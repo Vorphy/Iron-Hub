@@ -14,7 +14,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
     date: '2026-10-22',
     title: 'Pomoc: semafory ścieżkowe a jednokierunkowe',
     items: [
-      'W Pomocy (Sygnalizacja) jest tabela i schemat, czym różnią się semafory ścieżkowe od jednokierunkowych – i kiedy którego użyć.',
+      'W Pomocy (Sygnalizacja) jest tabela i schematy, czym różnią się semafory ścieżkowe od jednokierunkowych – i kiedy którego użyć (mijanka, linia dwutorowa).',
     ],
   },
   {

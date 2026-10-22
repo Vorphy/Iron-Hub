@@ -180,10 +180,15 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
           ],
         },
       },
-      'Różnicę widać dopiero, gdy pociąg ma do wyboru kilka dróg. Pociąg omija tory zajęte przez inne pociągi – na linii dwutorowej z semaforami ścieżkowymi może więc objechać zator torem przeciwnym, pod prąd, i stanąć naprzeciw pociągu z przeciwka. Semafory jednokierunkowe zamykają mu tę drogę:',
+      'Na torze używanym w obie strony (jednotor z mijankami, głowica stacji) stawiaj ścieżkowe – zatrzymują pociąg przed wjazdem na jednotor, a z przeciwka przepuszczają:',
+      {
+        figure: 'help/mijanka.svg',
+        alt: 'Mijanka: pociąg czeka przed semaforem na wyjeździe, pociąg z przeciwka mija semafor drugiego toru od tyłu',
+      },
+      'Na linii dwutorowej oba rodzaje działają, ale inaczej. Pociąg omija tory zajęte przez inne pociągi, więc ze ścieżkowymi może wyprzedzić stojący pociąg torem przeciwnym – a ruch z przeciwka w tym czasie czeka. Jednokierunkowe trzymają każdy pociąg na swoim torze:',
       {
         figure: 'help/semafory.svg',
-        alt: 'Linia dwutorowa: na semaforach ścieżkowych pociąg objeżdża zator torem pod prąd, na jednokierunkowych czeka na swoim torze',
+        alt: 'Linia dwutorowa: na semaforach ścieżkowych pociąg wyprzedza torem przeciwnym, na jednokierunkowych czeka na swoim torze',
       },
       'Jeden jednokierunkowy wystarczy, by cały odcinek między rozjazdami stał się jednokierunkowy. Uwaga: postawiony na jedynym torze odcina ruch w drugą stronę (status „Nie może dojechać”).',
       'Odstęp od rozjazdu do semafora za nim powinien mieścić cały najdłuższy pociąg – inaczej pociąg staje przed semaforem z ogonem na zwrotnicy i blokuje inne drogi (zwłaszcza w głowicy stacji). Przed stacją postaw semafor kilka kafelków przed rozjazdem.',

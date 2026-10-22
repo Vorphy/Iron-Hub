@@ -42,8 +42,9 @@
       <line x1="560" y1="125" x2="610" y2="60"/>
     </g>
 
-    <!-- Objazd B pod prąd -->
-    <polyline points="135,60 200,60 250,125 615,125" fill="none" stroke="#ff9f43" stroke-width="3" stroke-dasharray="7 5"/>
+    <!-- B wyprzedza A torem przeciwnym i wraca na swój tor -->
+    <polyline points="135,60 200,60 250,125 560,125 610,60 755,60" fill="none" stroke="#ff9f43" stroke-width="3" stroke-dasharray="7 5"/>
+    <path d="M766 60 L754 53 L754 67 Z" fill="#ff9f43"/>
 
     <!-- Semafory: górny tor w prawo, dolny w lewo -->
     <use href="#sigPath" xlink:href="#sigPath" x="165" y="60" color="#9fdc7c"/>
@@ -58,17 +59,14 @@
     <use href="#train" xlink:href="#train" x="130" y="60" color="#ffe066"/>
     <text x="98" y="64" text-anchor="middle" font-weight="bold" fill="#111">B</text>
 
-    <use href="#train" xlink:href="#train" transform="translate(690 125) rotate(180)" color="#9fdc7c"/>
-    <text x="722" y="129" text-anchor="middle" font-weight="bold" fill="#111">C</text>
+    <use href="#train" xlink:href="#train" transform="translate(674 125) rotate(180)" color="#9fdc7c"/>
+    <text x="706" y="129" text-anchor="middle" font-weight="bold" fill="#111">C</text>
+    <text x="706" y="105" text-anchor="middle" fill="#e8e4d8">czeka</text>
 
-    <text x="300" y="150" fill="#ff9f43">B objeżdża A dolnym torem pod prąd</text>
-    <g transform="translate(625 125)" stroke="#ff6b5a" stroke-width="4" stroke-linecap="round">
-      <line x1="-8" y1="-8" x2="8" y2="8"/><line x1="-8" y1="8" x2="8" y2="-8"/>
-    </g>
-    <text x="612" y="104" fill="#ff6b5a" text-anchor="middle" font-weight="bold">zator!</text>
+    <text x="300" y="150" fill="#ff9f43">B wyprzedza A torem przeciwnym i wraca na swój tor</text>
 
     <text x="30" y="178" fill="#e8e4d8">Ścieżkowy zatrzymuje tylko pociągi jadące w stronę strzałki – od tyłu jest przejezdny.</text>
-    <text x="30" y="195" fill="#e8e4d8">Gdy A blokuje górny tor, B wybiera objazd torem przeciwnym i staje czołowo naprzeciw C.</text>
+    <text x="30" y="195" fill="#e8e4d8">B objeżdża stojącego A po torze przeciwnym, ale w tym czasie C musi czekać na swój tor.</text>
   </g>
 
   <line x1="20" y1="258" x2="780" y2="258" stroke="#4a5260"/>
@@ -110,6 +108,6 @@
     <text x="510" y="150" fill="#9fdc7c">C jedzie dalej</text>
 
     <text x="30" y="178" fill="#e8e4d8">Jednokierunkowy też zatrzymuje w stronę strzałki, ale dodatkowo zakazuje jazdy pod prąd.</text>
-    <text x="30" y="195" fill="#e8e4d8">B nie ma objazdu – czeka za A na swoim torze, a ruch w drugą stronę płynie bez przeszkód.</text>
+    <text x="30" y="195" fill="#e8e4d8">B nie wyprzedzi – czeka za A na swoim torze, za to ruch w drugą stronę płynie bez przerw.</text>
   </g>
 </svg>
