@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { jointMiter, SIDE_MID, startMiter } from '../src/render/trackDraw';
+import { jointClipped, jointMiter, SIDE_MID, startMiter } from '../src/render/trackDraw';
 import { oppositeSide, type Side, SIDE_DELTA, Track, TRACK_SIDES } from '../src/sim/track/track';
 import { generateMap } from '../src/sim/world/map';
 
@@ -45,13 +45,18 @@ describe('jointMiter', () => {
     expect(b[0] * ux + b[1] * uy).toBeCloseTo(1);
   });
 
-  it('prosta w prostą i rozjazd – koniec prostopadły', () => {
+  it('prosta w prostą i rozjazd – koniec prostopadły, przy rozjeździe przycięty do kafelka', () => {
     const map = emptyMap();
     map.track[2 * 8 + 2] = Track.X;
     map.track[2 * 8 + 3] = Track.X;
-    expect(jointMiter(map, 2, 2, Track.X, TRACK_SIDES[Track.X][1])).toBeNull();
+    const se = TRACK_SIDES[Track.X][1];
+    expect(jointMiter(map, 2, 2, Track.X, se)).toBeNull();
+    expect(jointClipped(map, 2, 2, se)).toBe(false);
     map.track[2 * 8 + 3] = Track.X | Track.Upper;
-    expect(jointMiter(map, 2, 2, Track.X, TRACK_SIDES[Track.X][1])).toBeNull();
+    expect(jointMiter(map, 2, 2, Track.X, se)).toBeNull();
+    // Po obu stronach styku z rozjazdem – symetrycznie.
+    expect(jointClipped(map, 2, 2, se)).toBe(true);
+    expect(jointClipped(map, 3, 2, oppositeSide(se))).toBe(true);
   });
 
   it('rampa rysowana od boku (most, tunel) – przekrój względem kierunku odcinka', () => {

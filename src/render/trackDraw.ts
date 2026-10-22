@@ -59,7 +59,7 @@ function soleTrackAt(map: WorldMap, x: number, y: number, side: Side): Track | n
 /**
  * Przekrój na styku elementu z sąsiadem za bokiem `side`: ukos (dwusieczna), żeby szyny i podsypka
  * obu elementów spotkały się w tych samych punktach. Tylko gdy po obu stronach styku jest dokładnie
- * jeden element – przy rozjazdach koniec zostaje prostopadły (jak u sąsiada). Wynik względem
+ * jeden element – przy rozjazdach koniec zostaje prostopadły (patrz `jointClipped`). Wynik względem
  * kierunku elementu wg `TRACK_SIDES`.
  */
 export function jointMiter(map: WorldMap, x: number, y: number, track: Track, side: Side): Miter {
@@ -80,6 +80,74 @@ export function jointMiter(map: WorldMap, x: number, y: number, track: Track, si
   const [a] = TRACK_SIDES[track];
   const sign = side === a ? -1 : 1;
   return [((n1x + n2x) / d) * sign, ((n1y + n2y) / d) * sign];
+}
+
+/**
+ * Styk z rozjazdem (po którejś stronie boku jest więcej niż jeden element): koniec przycinamy do
+ * krawędzi kafelka – inaczej podsypka łuku wystaje na sąsiedni kafelek i zasłania jego szyny, gdy
+ * ten był narysowany wcześniej.
+ */
+export function jointClipped(map: WorldMap, x: number, y: number, side: Side): boolean {
+  const [dx, dy] = SIDE_DELTA[side];
+  const count = (tx: number, ty: number, s: Side) =>
+    inBounds(map, tx, ty) ? bitCount(getTrackBits(map, tx, ty) & SIDE_TRACKS[s]) : 0;
+  return count(x, y, side) > 1 || count(x + dx, y + dy, oppositeSide(side)) > 1;
+}
+
+/** Półpłaszczyzna a·x + b·y ≤ c (układ logiczny). */
+export type HalfPlane = readonly [number, number, number];
+
+/** Wnętrze kafelka po stronie boku `side`. */
+function tileSidePlane(x: number, y: number, side: Side): HalfPlane {
+  switch (side) {
+    case Side.NE:
+      return [0, -1, -y];
+    case Side.SE:
+      return [1, 0, x + 1];
+    case Side.SW:
+      return [0, 1, y + 1];
+    default:
+      return [-1, 0, -x];
+  }
+}
+
+type Pt = readonly [number, number];
+const outside = (h: HalfPlane, q: Pt) => h[0] * q[0] + h[1] * q[1] - h[2];
+const cut = (h: HalfPlane, a: Pt, b: Pt): Pt => {
+  const t = outside(h, a) / (outside(h, a) - outside(h, b));
+  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+};
+
+/** Wielokąt wypukły przycięty półpłaszczyznami (Sutherland–Hodgman). */
+function clipPolygon(pts: Pt[], planes: readonly HalfPlane[]): Pt[] {
+  let out = pts;
+  for (const h of planes) {
+    const src = out;
+    out = [];
+    for (let i = 0; i < src.length; i++) {
+      const a = src[i]!;
+      const b = src[(i + 1) % src.length]!;
+      const ina = outside(h, a) <= 1e-9;
+      const inb = outside(h, b) <= 1e-9;
+      if (ina) out.push(a);
+      if (ina !== inb) out.push(cut(h, a, b));
+    }
+  }
+  return out;
+}
+
+/** Odcinek przycięty półpłaszczyznami; `null`, gdy cały poza. */
+function clipSegment(a: Pt, b: Pt, planes: readonly HalfPlane[]): [Pt, Pt] | null {
+  let p = a;
+  let q = b;
+  for (const h of planes) {
+    const inp = outside(h, p) <= 1e-9;
+    const inq = outside(h, q) <= 1e-9;
+    if (!inp && !inq) return null;
+    if (!inp) p = cut(h, p, q);
+    else if (!inq) q = cut(h, p, q);
+  }
+  return [p, q];
 }
 
 /** Jak `jointMiter`, ale dla odcinka rysowanego od boku `start` (rampa mostu, wjazd do tunelu). */
@@ -110,7 +178,8 @@ export function drawTrackPiece(
   const [ax, ay] = SIDE_MID[sa];
   const [bx, by] = SIDE_MID[sb];
   const miters: [Miter, Miter] = map ? [jointMiter(map, x, y, track, sa), jointMiter(map, x, y, track, sb)] : [null, null];
-  drawTrackSegment(g, x + ax, y + ay, x + bx, y + by, style, undefined, miters, layers);
+  const clips = map ? [sa, sb].filter((side) => jointClipped(map, x, y, side)).map((side) => tileSidePlane(x, y, side)) : [];
+  drawTrackSegment(g, x + ax, y + ay, x + bx, y + by, style, undefined, miters, layers, clips);
 }
 
 /** Wszystkie elementy toru na kafelku: najpierw podsypka, potem podkłady, na wierzchu szyny (rozjazdy). */
@@ -143,6 +212,8 @@ export function drawTrackSegment(
   /** Przekroje na początku i końcu (patrz `Miter`). */
   miters: readonly [Miter, Miter] = [null, null],
   layers: number = TrackLayer.All,
+  /** Przycięcie do kafelka przy rozjazdach (patrz `jointClipped`). */
+  clips: readonly HalfPlane[] = [],
 ): void {
   const len = Math.hypot(x1 - x0, y1 - y0);
   const px = -(y1 - y0) / len;
@@ -153,16 +224,21 @@ export function drawTrackSegment(
     const t = Math.abs(x1 - x0) > Math.abs(y1 - y0) ? (lx - x0) / (x1 - x0) : (ly - y0) / (y1 - y0);
     return Math.min(1, Math.max(0, t));
   };
-  const p = (lx: number, ly: number) => (zAlong ? toWorld(lx, ly, zAlong(along(lx, ly))) : tileToWorld(lx, ly));
-  const off = (lx: number, ly: number, k: number) => p(lx + px * k, ly + py * k);
+  const p = ([lx, ly]: Pt) => (zAlong ? toWorld(lx, ly, zAlong(along(lx, ly))) : tileToWorld(lx, ly));
   const [m0x, m0y] = miters[0] ?? [px, py];
   const [m1x, m1y] = miters[1] ?? [px, py];
-  const start = (k: number) => p(x0 + m0x * k, y0 + m0y * k);
-  const end = (k: number) => p(x1 + m1x * k, y1 + m1y * k);
+  const start = (k: number): Pt => [x0 + m0x * k, y0 + m0y * k];
+  const end = (k: number): Pt => [x1 + m1x * k, y1 + m1y * k];
+  const line = (a: Pt, b: Pt) => {
+    const s = clipSegment(a, b, clips);
+    if (!s) return;
+    const [u, v] = [p(s[0]), p(s[1])];
+    g.moveTo(u.x, u.y).lineTo(v.x, v.y);
+  };
 
   if (layers & TrackLayer.Ballast) {
-    const q = [start(BALLAST_HALF), end(BALLAST_HALF), end(-BALLAST_HALF), start(-BALLAST_HALF)];
-    g.poly(q.flatMap((v) => [v.x, v.y])).fill({ color: style.ballast, alpha: style.alpha });
+    const q = clipPolygon([start(BALLAST_HALF), end(BALLAST_HALF), end(-BALLAST_HALF), start(-BALLAST_HALF)], clips);
+    if (q.length >= 3) g.poly(q.map(p).flatMap((v) => [v.x, v.y])).fill({ color: style.ballast, alpha: style.alpha });
   }
 
   if (layers & TrackLayer.Sleepers) {
@@ -171,19 +247,13 @@ export function drawTrackSegment(
       const t = (i + 0.5) / sleepers;
       const cx = x0 + (x1 - x0) * t;
       const cy = y0 + (y1 - y0) * t;
-      const a = off(cx, cy, SLEEPER_HALF);
-      const b = off(cx, cy, -SLEEPER_HALF);
-      g.moveTo(a.x, a.y).lineTo(b.x, b.y);
+      line([cx + px * SLEEPER_HALF, cy + py * SLEEPER_HALF], [cx - px * SLEEPER_HALF, cy - py * SLEEPER_HALF]);
     }
     g.stroke({ width: 2, color: style.sleeper, alpha: style.alpha });
   }
 
   if (layers & TrackLayer.Rails) {
-    for (const k of [RAIL_HALF, -RAIL_HALF]) {
-      const a = start(k);
-      const b = end(k);
-      g.moveTo(a.x, a.y).lineTo(b.x, b.y);
-    }
+    for (const k of [RAIL_HALF, -RAIL_HALF]) line(start(k), end(k));
     g.stroke({ width: 1.5, color: style.rail, alpha: style.alpha });
   }
 }
