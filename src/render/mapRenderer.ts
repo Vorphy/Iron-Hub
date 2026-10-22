@@ -14,7 +14,7 @@ import { drawHouse } from './buildings';
 import { drawRoad } from './roadDraw';
 import { drawCatenary } from './catenaryDraw';
 import { drawDepot } from './depotDraw';
-import { drawTrackPiece, TRACK_STYLE } from './trackDraw';
+import { drawTrackTile, TRACK_STYLE } from './trackDraw';
 
 const CHUNK = 16;
 /** Ile nowych kawałków mapy rysować na klatkę (płynność przy przewijaniu). */
@@ -258,11 +258,12 @@ export class MapRenderer {
         const tunnel = tunnelId ? this.getTunnels().find((t) => t.id === tunnelId) : undefined;
         const portal = tunnel && tunnelRole(tunnel, x, y) !== 'inside' ? tunnel : undefined;
         const tileTracks = tracksOn(getTrackBits(this.map, x, y));
-        for (const track of tileTracks) {
-          if (head && isHeadAxisTrack(head, track)) continue; // rampę rysuje most
-          if (portal && track === axisTrack(portal.axis)) continue; // tor wjazdu rysuje tunel
-          drawTrackPiece(tracksG, x, y, track, TRACK_STYLE, this.map);
-        }
+        const drawn = tileTracks.filter(
+          (track) =>
+            !(head && isHeadAxisTrack(head, track)) && // rampę rysuje most
+            !(portal && track === axisTrack(portal.axis)), // tor wjazdu rysuje tunel
+        );
+        if (drawn.length) drawTrackTile(tracksG, x, y, drawn, TRACK_STYLE, this.map);
         if (waypoint) drawWaypoint(tracksG, x, y, getTrackBits(this.map, x, y) === Track.X);
         if (this.map.electric[y * this.map.width + x]) drawCatenary(tracksG, x, y, tileTracks);
         const house = this.map.house[y * this.map.width + x]!;

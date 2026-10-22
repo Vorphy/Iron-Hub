@@ -15,6 +15,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
     title: 'Równe łączenia torów',
     items: [
       'Tory na zakrętach (prosta przechodząca w ukos) łączą się teraz bez szczelin i przesunięć – szyny i podsypka schodzą się na styku, także przy wjeździe na most i do tunelu.',
+      'Na rozjazdach szyny obu torów leżą na wspólnej podsypce – odgałęzienie nie zasłania już szyn toru głównego.',
     ],
   },
   {

@@ -89,17 +89,45 @@ export function startMiter(map: WorldMap, x: number, y: number, track: Track, st
   return start === TRACK_SIDES[track][0] ? m : [-m[0], -m[1]];
 }
 
+/** Warstwy toru (maska bitów) – na rozjeździe rysowane osobno, żeby podsypka nie zasłaniała szyn. */
+export const TrackLayer = { Ballast: 1, Sleepers: 2, Rails: 4, All: 7 } as const;
+
 /**
  * Element toru liczony w układzie logicznym (odcinek między środkami boków), dopiero potem
  * rzutowany – dzięki temu szerokości i podkłady są poprawnie „spłaszczone” w izometrii.
  * Z mapą końce dopasowują się do sąsiednich elementów (patrz `jointMiter`).
  */
-export function drawTrackPiece(g: Graphics, x: number, y: number, track: Track, style: TrackStyle, map?: WorldMap): void {
+export function drawTrackPiece(
+  g: Graphics,
+  x: number,
+  y: number,
+  track: Track,
+  style: TrackStyle,
+  map?: WorldMap,
+  layers: number = TrackLayer.All,
+): void {
   const [sa, sb] = TRACK_SIDES[track];
   const [ax, ay] = SIDE_MID[sa];
   const [bx, by] = SIDE_MID[sb];
   const miters: [Miter, Miter] = map ? [jointMiter(map, x, y, track, sa), jointMiter(map, x, y, track, sb)] : [null, null];
-  drawTrackSegment(g, x + ax, y + ay, x + bx, y + by, style, undefined, miters);
+  drawTrackSegment(g, x + ax, y + ay, x + bx, y + by, style, undefined, miters, layers);
+}
+
+/** Wszystkie elementy toru na kafelku: najpierw podsypka, potem podkłady, na wierzchu szyny (rozjazdy). */
+export function drawTrackTile(
+  g: Graphics,
+  x: number,
+  y: number,
+  tracks: readonly Track[],
+  style: TrackStyle,
+  map: WorldMap,
+): void {
+  if (tracks.length === 1) {
+    drawTrackPiece(g, x, y, tracks[0]!, style, map);
+    return;
+  }
+  for (const layer of [TrackLayer.Ballast, TrackLayer.Sleepers, TrackLayer.Rails])
+    for (const track of tracks) drawTrackPiece(g, x, y, track, style, map, layer);
 }
 
 /** Odcinek toru między dwoma punktami w układzie logicznym. */
@@ -114,6 +142,7 @@ export function drawTrackSegment(
   zAlong?: (t: number) => number,
   /** Przekroje na początku i końcu (patrz `Miter`). */
   miters: readonly [Miter, Miter] = [null, null],
+  layers: number = TrackLayer.All,
 ): void {
   const len = Math.hypot(x1 - x0, y1 - y0);
   const px = -(y1 - y0) / len;
@@ -131,24 +160,30 @@ export function drawTrackSegment(
   const start = (k: number) => p(x0 + m0x * k, y0 + m0y * k);
   const end = (k: number) => p(x1 + m1x * k, y1 + m1y * k);
 
-  const q = [start(BALLAST_HALF), end(BALLAST_HALF), end(-BALLAST_HALF), start(-BALLAST_HALF)];
-  g.poly(q.flatMap((v) => [v.x, v.y])).fill({ color: style.ballast, alpha: style.alpha });
-
-  const sleepers = Math.max(2, Math.round(len * 4));
-  for (let i = 0; i < sleepers; i++) {
-    const t = (i + 0.5) / sleepers;
-    const cx = x0 + (x1 - x0) * t;
-    const cy = y0 + (y1 - y0) * t;
-    const a = off(cx, cy, SLEEPER_HALF);
-    const b = off(cx, cy, -SLEEPER_HALF);
-    g.moveTo(a.x, a.y).lineTo(b.x, b.y);
+  if (layers & TrackLayer.Ballast) {
+    const q = [start(BALLAST_HALF), end(BALLAST_HALF), end(-BALLAST_HALF), start(-BALLAST_HALF)];
+    g.poly(q.flatMap((v) => [v.x, v.y])).fill({ color: style.ballast, alpha: style.alpha });
   }
-  g.stroke({ width: 2, color: style.sleeper, alpha: style.alpha });
 
-  for (const k of [RAIL_HALF, -RAIL_HALF]) {
-    const a = start(k);
-    const b = end(k);
-    g.moveTo(a.x, a.y).lineTo(b.x, b.y);
+  if (layers & TrackLayer.Sleepers) {
+    const sleepers = Math.max(2, Math.round(len * 4));
+    for (let i = 0; i < sleepers; i++) {
+      const t = (i + 0.5) / sleepers;
+      const cx = x0 + (x1 - x0) * t;
+      const cy = y0 + (y1 - y0) * t;
+      const a = off(cx, cy, SLEEPER_HALF);
+      const b = off(cx, cy, -SLEEPER_HALF);
+      g.moveTo(a.x, a.y).lineTo(b.x, b.y);
+    }
+    g.stroke({ width: 2, color: style.sleeper, alpha: style.alpha });
   }
-  g.stroke({ width: 1.5, color: style.rail, alpha: style.alpha });
+
+  if (layers & TrackLayer.Rails) {
+    for (const k of [RAIL_HALF, -RAIL_HALF]) {
+      const a = start(k);
+      const b = end(k);
+      g.moveTo(a.x, a.y).lineTo(b.x, b.y);
+    }
+    g.stroke({ width: 1.5, color: style.rail, alpha: style.alpha });
+  }
 }
