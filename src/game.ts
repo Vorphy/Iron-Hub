@@ -310,6 +310,7 @@ export class Game {
 
     const events = this.sim.drainEvents();
     let bridgesDirty = false;
+    let tunnelsDirty = false;
     for (const ev of events) {
       if (ev.type === 'tileChanged') {
         // Drogi łączą się z sąsiadami – odświeżamy też sąsiednie kafelki (mogą być w innym kawałku).
@@ -322,8 +323,21 @@ export class Game {
         ] as const)
           this.mapRenderer.markTileDirty(ev.x + dx, ev.y + dy);
         this.minimapDirty = true;
-        // Tor pod mostem zmienia wygląd mostu (filary).
-        if (this.sim.state.map.bridge[ev.y * this.sim.state.map.width + ev.x]) bridgesDirty = true;
+        const { map } = this.sim.state;
+        // Tor pod mostem zmienia wygląd mostu (filary); tor obok przyczółka lub portalu – styk rampy.
+        for (const [dx, dy] of [
+          [0, 0],
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+        ] as const) {
+          const x = ev.x + dx;
+          const y = ev.y + dy;
+          if (!inBounds(map, x, y)) continue;
+          if (map.bridge[y * map.width + x]) bridgesDirty = true;
+          if (map.tunnel[y * map.width + x]) tunnelsDirty = true;
+        }
       } else if (ev.type === 'stationsChanged' || ev.type === 'depotsChanged') this.labels.rebuild(this.sim.state);
       else if (ev.type === 'bridgesChanged') this.bridges.draw(this.sim.state);
       else if (ev.type === 'tunnelsChanged') this.tunnels.draw(this.sim.state);
@@ -362,6 +376,7 @@ export class Game {
       }
     }
     if (bridgesDirty) this.bridges.draw(this.sim.state);
+    if (tunnelsDirty) this.tunnels.draw(this.sim.state);
     if (events.length) {
       this.tools.invalidate();
       if (this.graphDebug.visible) this.graphDebug.draw(this.sim.graph);

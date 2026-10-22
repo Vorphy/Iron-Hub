@@ -1,10 +1,10 @@
 import { Graphics } from 'pixi.js';
 import type { GameState } from '../sim/state';
-import { sideHeight } from '../sim/track/bridge';
+import { axisTrack, sideHeight } from '../sim/track/bridge';
 import { oppositeSide } from '../sim/track/track';
 import { portalInnerSide, tunnelTileCoords, type Tunnel } from '../sim/track/tunnel';
 import { toWorld, type Point } from './iso';
-import { drawTrackSegment, SIDE_MID, TRACK_STYLE } from './trackDraw';
+import { drawTrackSegment, SIDE_MID, startMiter, TRACK_STYLE } from './trackDraw';
 
 const STONE = 0x8d877c;
 const STONE_DARK = 0x6a655d;
@@ -36,7 +36,8 @@ function drawPortals(g: Graphics, state: GameState, t: Tunnel): void {
     const [ox, oy] = SIDE_MID[outer];
     const top = sideHeight(state.map, p.x, p.y, inner);
     // Tor na poziomie tunelu, od dolnej krawędzi do ściany portalu.
-    drawTrackSegment(g, p.x + ox, p.y + oy, p.x + ix, p.y + iy, TRACK_STYLE, () => t.level);
+    const miter = startMiter(state.map, p.x, p.y, axisTrack(t.axis), outer);
+    drawTrackSegment(g, p.x + ox, p.y + oy, p.x + ix, p.y + iy, TRACK_STYLE, () => t.level, [miter, null]);
     // Ściana portalu w płaszczyźnie wewnętrznej krawędzi: obudowa i otwór.
     const at = (k: number, z: number) => toWorld(p.x + ix + nx * k, p.y + iy + ny * k, z);
     const wallTop = Math.max(top, t.level + 1.2);

@@ -86,7 +86,7 @@ Jedna kolejka, w kolejności, która najszybciej poprawia granie. Maglevy, kolej
 4. ~~**Lepsza minimapa**~~ ✅ (2026-10-21) – zoom, przenoszenie po ekranie i powiększanie; po wejściu w nią – jak w OpenTTD – filtr zakładów (np. tylko kopalnie węgla, tylko elektrownie) z legendą kolorów, żeby zaplanować start i rozbudowę sieci.
 5. ~~**Wspólne rozkłady**~~ ✅ (2026-10-21) – kopia pociągu może dzielić rozkład z oryginałem: zmiana w jednym zmienia wszystkie na linii.
 6. ~~**Rozkład czasowy**~~ ✅ (2026-10-21) – postój X dni na stacji i **równe odstępy**: na wspólnym rozkładzie wyrównuje pociągi linii (czas obiegu / liczba pociągów) i wypuszcza je w odpowiednich odstępach.
-7. **Łączenia torów** (2026-10-22) – tory na stykach elementów (prosty z ukosem, ukos z ukosem, zwrotnice, wjazdy na perony i mosty) nie zawsze do siebie pasują. Poprawić geometrię w `src/render/trackDraw.ts` przed testami z ludźmi – nowa grafika z etapu 7 korzysta z tej samej geometrii, więc sama tego nie naprawi.
+7. ~~**Łączenia torów**~~ ✅ (2026-10-22) – styk prostej z ukosem ścięty na ukos (dwusieczna), więc szyny i podsypka obu elementów spotykają się w tych samych punktach; tak samo przy rampach mostów i wjazdach do tuneli (`jointMiter` w `src/render/trackDraw.ts`). Na rozjazdach końce zostają prostopadłe.
 8. **Etap 5 – test „czy to jest fajne”** – granie z kilkoma osobami, strojenie `src/data/economy.ts` i `vehicles.json`.
    - *Przydatne do testów:* **statystyki graczy** (pomysł niżej) – kto wchodził, jak długo grał, na jakiej mapie.
 

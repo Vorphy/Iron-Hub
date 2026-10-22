@@ -5,7 +5,7 @@ import { oppositeSide } from '../sim/track/track';
 import { heightAt } from '../sim/world/height';
 import { toWorld, type Point } from './iso';
 import { darken } from './shapes';
-import { drawTrackSegment, SIDE_MID, TRACK_STYLE } from './trackDraw';
+import { drawTrackSegment, SIDE_MID, startMiter, TRACK_STYLE } from './trackDraw';
 
 const DECK = 0x5d4a3a;
 const STONE = 0x8d877c;
@@ -62,7 +62,11 @@ export function drawBridge(g: Graphics, state: GameState, b: Bridge): void {
         at(ox - nx * off, oy - ny * off, outerZ),
       ]),
     ).fill(darken(STONE, 0.85));
-    drawTrackSegment(g, t.x + ox, t.y + oy, t.x + sx, t.y + sy, TRACK_STYLE, (k) => outerZ + (b.deck - outerZ) * k);
+    const miter = startMiter(map, t.x, t.y, axisTrack(b.axis), outer);
+    drawTrackSegment(g, t.x + ox, t.y + oy, t.x + sx, t.y + sy, TRACK_STYLE, (k) => outerZ + (b.deck - outerZ) * k, [
+      miter,
+      null,
+    ]);
   }
 
   // Pomost nad kafelkami pośrodku.

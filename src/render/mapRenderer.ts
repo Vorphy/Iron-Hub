@@ -261,7 +261,7 @@ export class MapRenderer {
         for (const track of tileTracks) {
           if (head && isHeadAxisTrack(head, track)) continue; // rampę rysuje most
           if (portal && track === axisTrack(portal.axis)) continue; // tor wjazdu rysuje tunel
-          drawTrackPiece(tracksG, x, y, track, TRACK_STYLE);
+          drawTrackPiece(tracksG, x, y, track, TRACK_STYLE, this.map);
         }
         if (waypoint) drawWaypoint(tracksG, x, y, getTrackBits(this.map, x, y) === Track.X);
         if (this.map.electric[y * this.map.width + x]) drawCatenary(tracksG, x, y, tileTracks);

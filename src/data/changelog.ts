@@ -12,6 +12,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-22',
+    title: 'Równe łączenia torów',
+    items: [
+      'Tory na zakrętach (prosta przechodząca w ukos) łączą się teraz bez szczelin i przesunięć – szyny i podsypka schodzą się na styku, także przy wjeździe na most i do tunelu.',
+    ],
+  },
+  {
+    date: '2026-10-22',
     title: 'Pomoc: semafory ścieżkowe a jednokierunkowe',
     items: [
       'W Pomocy (Sygnalizacja) jest tabela i schematy, czym różnią się semafory ścieżkowe od jednokierunkowych – i kiedy którego użyć (mijanka, linia dwutorowa).',
