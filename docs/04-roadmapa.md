@@ -130,10 +130,21 @@ Jedna kolejka, w kolejności, która najszybciej poprawia granie. Maglevy, kolej
     - *Limit przeszukiwania:* zamiast błąkania się – jazda do węzła najbliżej celu (jak `GetBestNode` w YAPF).
     - *Później:* zawracanie w zajezdni jako manewr (+50 kafelków), kara za przejazd przez drogę (+3).
     - *Testy scenariuszy:* obwodnica obok stacji, wybór peronu wg długości, dwutorówka z semaforami ścieżkowymi, pociąg daleko na trasie nie zmienia wyboru. Determinizm bez zmian (wszystko ze stanu gry).
+20. **Grafika miast z OpenGFX** (analiza 2026-10-25, do zrobienia). Dziś rysujemy tylko domy 1×1 z mieszkańcami, bez kościołów – 22 z 31 typów klimatu umiarkowanego (`levels()` w `src/render/gfx/tiles.ts`, lista z `parse_houses` w `tools/opengfx/build_atlas.py`, dane z `src/table/town_land.h` OpenTTD). Po podziale na 4 poziomy i lata w danym roku zostaje 2–4 budynki na poziom – stąd monotonia. Kolejność:
+    - *Ozdoby:* kościoły i budynki bez mieszkańców (parki, pomniki, fontanny – typy 09–0C) – rzadko, bliżej rynku.
+    - *Etapy budowy:* nowy dom przez kilka dni pokazuje 3 etapy z OpenGFX (wykop, rusztowanie, stan surowy) – indeks `house << 4 | wariant << 2 | etap` w `_town_draw_tile_data`; dziś bierzemy tylko etap 3 (gotowy). Miasto widać, że żyje i gdzie rośnie.
+    - *Domy subarktyczne spod linii śniegu:* 57 dodatkowych domów 1×1 z innych klimatów; subarktyczne bez śniegu wyglądają jak zwykłe kamienice i domki – dorzucić do puli (pustynne nie pasują).
+    - *Budynki wielokafelkowe:* 2 stadiony 2×2, blok 1×2 (140 mieszk., od 1959), duży budynek 2×2 (180 mieszk., od 1983) – wymaga domu zajmującego kilka kafelków (większa zmiana w mieście, wzroście i rozbiórce).
+    - *Później:* zestawy NewGRF z budynkami (setki typów; każdy z własną licencją, trzeba czytać definicje domów z NewGRF) – osobny projekt; wszystko to grafika zastępcza wg ADR 13.
+21. **Nowe zakłady i ładunki z OpenTTD** (pomysł 2026-10-25). Grafiki są w OpenGFX: **farma** (zboże i żywiec) → **fabryka** (+ stal) → towary; **szyby naftowe** i **platforma wiertnicza** → **rafineria** → towary; **bank** (kosztowności, wagon pancerny). Nowe ładunki, wagony i łańcuchy dostaw; dane produkcji z `src/table/build_industry.h`.
+22. **Mechaniki z OpenTTD do rozważenia** (pomysł 2026-10-25):
+    - *Cargodist:* pasażerowie i ładunki z celem podróży – łączy się z dzielnicami i ruchem miejskim (punkt 17), ruch między dzielnicami powstaje sam.
+    - *Ocena stacji jak w OpenTTD:* prędkość i wiek ostatniego pociągu, dni od ostatniego odbioru, ile czeka (`station_cmd.cpp`, UpdateStationRating); dziś liczy się głównie częstotliwość.
+    - *Animacje:* animowana paleta (woda, latarnia, ogień w hucie, światła) i animowane budynki (fontanny) – kolory animowanej palety są już przygotowane w `build_atlas.py`.
 
 ### Faza C
-20. **Etap 7** – grafika, dźwięki, retro UI, wydanie na itch.io.
-21. **Etap 8** – generator/edytor map, chmura, Web Worker, płatne dodatki.
+23. **Etap 7** – grafika, dźwięki, retro UI, wydanie na itch.io.
+24. **Etap 8** – generator/edytor map, chmura, Web Worker, płatne dodatki.
 
 ### Zrobione z wcześniejszej kolejki (2026-10-21)
 Kredyt i bankructwo · minimapa · pierwsze kroki · lokomotywy z biegiem lat i sieć trakcyjna · ciężarówki, chowanie pojazdów za domami, lint/format · wymiana lokomotyw · pomoc i historia zmian · nazwy miast · kopiowanie pociągów · pełny ładunek · magazyn wagonów · rozbudowa stacji · gęstość miast, kopalń i przemysłu · numery zajezdni.
