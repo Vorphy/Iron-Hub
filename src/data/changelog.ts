@@ -12,6 +12,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-25',
+    title: 'Pomoc uzupełniona',
+    items: [
+      'Nowy temat w Pomocy (H): Metro (poziom −1) – tory, zjazdy, stacje, przesiadki, semafory i zapotrzebowanie miast w jednym miejscu.',
+      'Sterowanie: klawisze Q (metro), J (zjazd), U (widok bez budynków) i Y (badania). Uzupełnione też tematy o ładunku (kolejka na stacji), sygnalizacji i finansach.',
+    ],
+  },
+  {
+    date: '2026-10-25',
     title: 'Metro: semafory, minimapa, duże miasta',
     items: [
       'Semafory pod ziemią: na poziomie −1 narzędzie Semafor stawia je na torach i peronach metra (w widoku −1 widać tylko semafory metra, na powierzchni – tylko te z góry).',

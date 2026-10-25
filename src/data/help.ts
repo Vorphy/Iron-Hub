@@ -78,6 +78,9 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
             ['Esc', 'anuluj, zamknij okno, kursor'],
             ['T, P, Z, E, L, M, N, X', 'Tory, Stacja, Zajezdnia, Trakcja, Teren, Most, Tunel, Rozbiórka'],
             ['B', 'Semafor (tylko w trybie Ekspert)'],
+            ['Q / J', 'metro: przełącz poziom −1 / narzędzie Zjazd'],
+            ['U', 'widok bez budynków (domy, zakłady, drzewa) – też 🏠 na górnym pasku'],
+            ['Y', 'Badania'],
             ['R', 'obrót stacji / wjazdu zajezdni'],
             ['V', 'podgląd rezerwacji torów'],
             ['G', 'podgląd grafu torów (dla ciekawych)'],
@@ -99,8 +102,28 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
       `Usuwanie: Tory → Usuń albo Rozbiórka (X). Klik – jeden element pod kursorem, przeciągnięcie – odcinek. Zwrot ${pct(E.refunds.demolition)}. Toru pod pociągiem nie rozbierzesz.`,
       `**Most** (M): przeciągnij od przyczółka do przyczółka, do ${MAX_BRIDGE_LENGTH} kafelków, ${zl(E.construction.bridgeTile)} za kafelek. Przyczółki na tej samej wysokości, pod mostem teren niżej (woda, inne tory).`,
       `**Tunel** (N): kliknij zbocze – tunel biegnie prosto do zbocza po drugiej stronie na tej samej wysokości. Do ${MAX_TUNNEL_LENGTH} kafelków, ${zl(E.construction.tunnelTile)} za kafelek.`,
-      `**Metro – poziom −1** (Q): przełącznik nad narzędziami budowy. Pod ziemią powierzchnia jest przyciemniona (jej obrysy pomagają się zlokalizować), a Tory i Rozbiórka budują i rozbierają **tory metra** – ${zl(E.construction.metroTrackPiece)} za element, także pod wodą i pod miastem. Pociągi wjeżdżają do metra przez **zjazd** (J, ${zl(E.construction.metroRamp)}): płaski kafelek, na którym tor schodzi pod ziemię w stronę strzałki (kierunek dobiera się sam, R – obrót). Pod ziemią jeździ każda lokomotywa, także elektryczna (trzecia szyna). **Stacje metra**: narzędzie Stacja na poziomie −1 stawia perony pod ziemią (${zl(E.construction.stationTile + E.construction.metroStationExtra)} za kafelek) – pod miastem, bez burzenia domów; w rozkładzie wskazujesz je w widoku −1. **Przesiadka**: peron metra postawiony w zasięgu stacji na powierzchni (albo peron na powierzchni w zasięgu stacji metra) dołącza do niej – jedna stacja, wspólny ładunek i zasięg, pasażerów i towary odbierają pociągi na obu poziomach. Przełącznik „osobna stacja” (albo Ctrl / Shift) – osobna stacja mimo zasięgu. **Semafory** stawiasz pod ziemią tym samym narzędziem (w widoku −1 widać tylko semafory metra). Zajezdnie zostają na powierzchni – pociąg zjeżdża pod ziemię zjazdem. Duże miasta **domagają się metra** (patrz Miasta).`,
+      'Pod ziemią (poziom −1) też budujesz tory – patrz **Metro**.',
       `**Teren** (L): podnieś / obniż narożnik albo wyrównaj prostokąt; ${zl(E.construction.terraformCorner)} za narożnik. Pod torami, budynkami i drogami terenu nie zmienisz. Woda jest tylko na najniższym poziomie – podniesienie dna zamienia ją w ląd.`,
+    ],
+  },
+  {
+    id: 'metro',
+    title: 'Metro (poziom −1)',
+    blocks: [
+      'Metro to druga warstwa mapy pod powierzchnią: tory i stacje pod miastem, wodą i wzgórzami, bez burzenia domów. Przełączasz się przyciskiem nad narzędziami budowy albo klawiszem **Q** – pod ziemią powierzchnia jest przyciemniona, ale jej obrysy zostają widoczne.',
+      {
+        list: [
+          `**Tory metra**: narzędzie Tory na poziomie −1, ${zl(E.construction.metroTrackPiece)} za element. Rozbiórka działa tak samo.`,
+          `**Zjazd** (J, ${zl(E.construction.metroRamp)}): płaski kafelek, na którym tor schodzi pod ziemię w stronę strzałki (kierunek dobiera się sam, R – obrót). Tylko tędy pociągi wjeżdżają do metra i wyjeżdżają na powierzchnię.`,
+          `**Stacje metra**: narzędzie Stacja na poziomie −1, ${zl(E.construction.stationTile + E.construction.metroStationExtra)} za kafelek. Zasięg jak zwykła stacja, nazwa „… Metro”.`,
+          '**Przesiadka**: peron metra w zasięgu stacji na powierzchni (albo odwrotnie) dołącza do niej – jedna stacja, wspólny ładunek i zasięg, pociągi na obu poziomach odbierają pasażerów i towary. „Osobna stacja” (albo Ctrl / Shift) – osobna mimo zasięgu.',
+          '**Semafory** (tryb Ekspert): narzędzie Semafor na poziomie −1 stawia je na torach i peronach metra. W widoku −1 widać tylko semafory metra, na powierzchni – tylko te z góry.',
+          '**Zajezdnie** są tylko na powierzchni – pociąg kupujesz na górze i zjeżdża do metra zjazdem.',
+        ],
+      },
+      'Pod ziemią jeździ każda lokomotywa, także elektryczna (trzecia szyna – bez sieci trakcyjnej). Pociąg w metrze widać tylko w widoku −1; tam też klikasz stacje metra (okno stacji, dodawanie do rozkładu). Pociągi same wybierają trasę przez metro, jeśli jest krótsza.',
+      'Utrzymanie torów i peronów metra jest dwa razy droższe niż na powierzchni. Na minimapie metro jest niebieskie.',
+      `**Duże miasta chcą metra**: od ${E.town.metroDemandPop.toLocaleString('pl-PL')} mieszkańców metro przyspiesza wzrost miasta, a bez niego miasto powyżej ${E.town.metroRequiredPop.toLocaleString('pl-PL')} mieszkańców stoi (patrz Miasta).`,
     ],
   },
   {
@@ -123,6 +146,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
       `**Ocena stacji** mówi, jaka część produkcji trafia na stację: ${pct(E.station.ratingMax)} przy kursach co ${E.station.frequentDays} dni lub częściej, spada do ${pct(E.station.ratingMin)} przy kursach co ${E.station.serviceDays} dni. Gdy czeka ponad ${E.station.crowdedAmount} jednostek – kara ${pct(E.station.crowdedPenalty)}. Na stacji czeka najwyżej ${E.station.maxWaiting} jednostek.`,
       'Kilka stacji przy jednym zakładzie dzieli się produkcją według ocen. Wniosek: częste kursy = więcej ładunku.',
       'Na stacji pociąg najpierw rozładowuje to, co stacja przyjmuje, potem ładuje czekający ładunek.',
+      '**Kolejka**: kto pierwszy przyjechał, ten pierwszy się ładuje. Pociąg, który dojechał później, nie podbiera ładunku temu, który już czeka (np. na pełny ładunek) – pierwszy zapełnia się i odjeżdża pierwszy.',
     ],
   },
   {
@@ -176,7 +200,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     blocks: [
       'Pociąg wjeżdża tylko na tory, które zarezerwował – nie ma zderzeń. Tryb przełączasz w Menu.',
       '**Amator** (domyślny): nie stawiasz semaforów – pociągi same trzymają odstęp i nie stają na rozjazdach. Wystarczy na początek.',
-      `**Ekspert**: pociąg staje tylko przed semaforem, na końcu peronu lub toru. Semafory (B, ${zl(E.construction.signal)}): ścieżkowy – kliknięcia zmieniają kierunek; jednokierunkowy – zakaz jazdy pod prąd. Strzałka na torze pokazuje kierunek, słup stoi po prawej stronie toru.`,
+      `**Ekspert**: pociąg staje tylko przed semaforem, na końcu peronu lub toru. Semafory (B, ${zl(E.construction.signal)}): ścieżkowy – kliknięcia zmieniają kierunek; jednokierunkowy – zakaz jazdy pod prąd. Strzałka na torze pokazuje kierunek, słup stoi po prawej stronie toru. W grafice TTD światła semafora patrzą na pociąg, który przed nim staje. Semafory działają też w metrze (patrz Metro).`,
       {
         table: {
           head: ['', 'Ścieżkowy', 'Jednokierunkowy'],
@@ -288,7 +312,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     title: 'Finanse, kredyt, bankructwo',
     blocks: [
       `Start: ${zl(E.startMoney)}. Okno Finanse (klik na kwotę): przychody i koszty z ostatnich miesięcy.`,
-      `Koszty co miesiąc: utrzymanie pociągów w trasie (patrz Pociągi), torów (${zl(E.maintenance.trackPiece)} za element), peronów (${zl(E.maintenance.stationTile)} za kafelek), zajezdni (${zl(E.maintenance.depot)}), semaforów i sieci trakcyjnej.`,
+      `Koszty co miesiąc: utrzymanie pociągów w trasie (patrz Pociągi), torów (${zl(E.maintenance.trackPiece)} za element), peronów (${zl(E.maintenance.stationTile)} za kafelek), zajezdni (${zl(E.maintenance.depot)}), semaforów i sieci trakcyjnej. Tory i perony metra – dwa razy więcej niż na powierzchni. Badanie „Tańsze utrzymanie” obniża te koszty.`,
       `**Kredyt**: do ${zl(E.loan.max)}, po ${zl(E.loan.step)}, odsetki ${pct(E.loan.yearlyInterest)} rocznie (co miesiąc). Spłacasz, gdy masz gotówkę.`,
       `**Bankructwo**: ujemne saldo na koniec miesiąca ${E.loan.bankruptcyMonths} razy z rzędu kończy grę. Wcześniej gra ostrzega – weź kredyt, sprzedaj nierentowne pociągi albo zatrzymaj je w zajezdni (tam nie kosztują).`,
     ],
