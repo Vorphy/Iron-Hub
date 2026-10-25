@@ -4,6 +4,7 @@ import { FULL_LOAD_PENALTY, OCCUPIED_PENALTY } from '../src/sim/config';
 import { fullLoadingTrains, occupancyPenalty } from '../src/sim/trains/path';
 import { buildTaken } from '../src/sim/trains/reservation';
 import { emptyIndustryMonth } from '../src/sim/economy/industry';
+import { serveTrainAtStation } from '../src/sim/economy/cargoFlow';
 import { deserializeState, serializeState } from '../src/sim/serialize';
 import { Simulation } from '../src/sim/simulation';
 import { createGame } from '../src/sim/state';
@@ -110,5 +111,34 @@ describe('czekaj na pełny ładunek', () => {
     data.version = 13;
     for (const t of data.trains) delete t.fullLoad;
     expect(deserializeState(data).trains[0]!.fullLoad).toEqual([false, false]);
+  });
+});
+
+describe('kolejka załadunku', () => {
+  it('kto pierwszy przyjechał, ten pierwszy ładuje – późniejszy pociąg nie podbiera ładunku', () => {
+    const sim = line(true);
+    const { state } = sim;
+    const first = state.trains[0]!;
+    for (let i = 0; i < 20_000 && first.status !== 'loading'; i++) sim.step();
+    expect(first.status).toBe('loading');
+    const st = state.stations[0]!;
+    // Drugi pociąg „stoi” na tej samej stacji, przyjechał później.
+    const second = structuredClone(first);
+    second.id = 2;
+    second.arrivedTick = (first.arrivedTick ?? 0) + 100;
+    second.loads = second.loads.map(() => ({ amount: 0, source: 0, loadedTick: 0 }));
+    state.trains.push(second);
+    first.loads = first.loads.map(() => ({ amount: 0, source: 0, loadedTick: 0 }));
+    st.cargo.coal = { waiting: 40, lastPickup: state.tick };
+
+    serveTrainAtStation(state, second, st, [], false);
+    expect(second.loads[0]!.amount + second.loads[1]!.amount).toBe(0);
+    serveTrainAtStation(state, first, st, [], false);
+    expect(first.loads[0]!.amount + first.loads[1]!.amount).toBe(40);
+    // Gdy pierwszy odjedzie, kolej na drugi.
+    first.status = 'running';
+    st.cargo.coal.waiting = 25;
+    serveTrainAtStation(state, second, st, [], false);
+    expect(second.loads[0]!.amount + second.loads[1]!.amount).toBe(25);
   });
 });

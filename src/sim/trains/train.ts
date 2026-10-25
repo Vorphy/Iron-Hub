@@ -66,6 +66,8 @@ export interface Train {
   holding: boolean;
   /** Zatrzymany przez gracza. */
   stopped: boolean;
+  /** Tick przyjazdu na stację, przy której teraz stoi – kolejka załadunku (kto pierwszy, ten ładuje). */
+  arrivedTick?: number;
   /** Rozkład: id stacji. */
   orders: number[];
   /** Przy której pozycji rozkładu czekać na pełny ładunek (ta sama długość co `orders`). */

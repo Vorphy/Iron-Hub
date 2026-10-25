@@ -1,4 +1,5 @@
 import type { SimEvent } from '../commands';
+import { stationLayer } from '../track/metro';
 import { allTiles, catchment, platformStations, type Station, type StationCargo } from '../station/station';
 import type { GameState } from '../state';
 import { ECONOMY } from '../../data/economy';
@@ -149,6 +150,7 @@ function sortById(stations: Station[]): Station[] {
  */
 export function serveTrainAtStation(state: GameState, train: Train, st: Station, events: SimEvent[], unload: boolean): void {
   const pos = stationCenter(state, st);
+  const queued = cargoQueuedAhead(state, train, st);
   const accepts = unload ? stationAccepts(state, st) : new Set<Cargo>();
   let income = 0;
 
@@ -171,6 +173,8 @@ export function serveTrainAtStation(state: GameState, train: Train, st: Station,
 
     // Nie mieszamy ładunku z różnych stacji w jednym wagonie.
     if (load.amount > 0 && load.source !== st.id) return;
+    // Kto pierwszy przyjechał, ten pierwszy ładuje: ładunek, na który czeka wcześniejszy pociąg, zostaje dla niego.
+    if (queued.has(def.cargo)) return;
     const take = Math.min(def.capacity - load.amount, Math.floor(sc.waiting));
     if (take <= 0) return;
     if (load.amount === 0) load.loadedTick = state.tick;
@@ -185,6 +189,28 @@ export function serveTrainAtStation(state: GameState, train: Train, st: Station,
     const head = train.trail[0]!;
     events.push({ type: 'income', amount: income, x: head.x + 0.5, y: head.y + 0.5 });
   }
+}
+
+/**
+ * Ładunki, na które na tej samej stacji czekają pociągi, które przyjechały wcześniej (mają jeszcze
+ * niepełne wagony na ten ładunek). Przy równym czasie przyjazdu pierwszeństwo ma niższy numer.
+ */
+function cargoQueuedAhead(state: GameState, train: Train, st: Station): Set<Cargo> {
+  const out = new Set<Cargo>();
+  const mine = train.arrivedTick ?? -1;
+  for (const other of state.trains) {
+    if (other === train || other.status !== 'loading') continue;
+    const at = other.arrivedTick ?? -1;
+    if (at > mine || (at === mine && other.id > train.id)) continue;
+    const h = other.trail[0];
+    if (!h || stationLayer(state.map, h.track)[h.y * state.map.width + h.x] !== st.id) continue;
+    other.wagons.forEach((id, k) => {
+      const def = wagonDef(id)!;
+      const load = other.loads[k]!;
+      if (load.amount < def.capacity && (load.amount === 0 || load.source === st.id)) out.add(def.cargo);
+    });
+  }
+  return out;
 }
 
 /** Surowiec dowieziony na stację trafia do zakładów w jej zasięgu, które go przyjmują. */

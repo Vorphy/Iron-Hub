@@ -135,8 +135,8 @@ export const ECONOMY = {
     /** Mieszkańcy domu według poziomu zabudowy (indeks = poziom 0–4). */
     housePopulation: [0, 20, 45, 80, 140],
     /** Pasażerowie na miesiąc = mieszkańcy / passengerDivisor; poczta = mieszkańcy / mailDivisor. */
-    passengerDivisor: 4,
-    mailDivisor: 16,
+    passengerDivisor: 8,
+    mailDivisor: 32,
     /** Mieszkańców w zasięgu stacji potrzebnych, by przyjmowała dany ładunek. */
     acceptance: { passengers: 1, mail: 100, goods: 200 } satisfies Partial<Record<Cargo, number>>,
     /** Nowe domy na miesiąc w obsługiwanym mieście: 1 + round(growthMaxExtra × odsetek przewiezionych pasażerów). */

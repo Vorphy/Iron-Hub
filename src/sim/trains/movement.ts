@@ -392,6 +392,7 @@ function arrive(ctx: TickContext, train: Train): void {
   switch (terminal) {
     case 'stop': {
       train.status = 'loading';
+      train.arrivedTick = state.tick;
       const st = stationUnderHead(state, train);
       // Za krótki peron: postój dłuższy proporcjonalnie do tego, ile pociągu wystaje (najwyżej 2×).
       train.waitTicks = Math.round(STATION_WAIT_TICKS * (st ? platformPenalty(state, train) : 1));

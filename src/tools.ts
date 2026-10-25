@@ -363,7 +363,7 @@ export class Tools {
       const existing = this.sim.state.signals.find((s) => s.x === piece.x && s.y === piece.y && s.track === piece.track);
       const after =
         this.signalKind === 'remove' ? null : { ...piece, ...nextSignalState(existing, this.signalKind === 'oneway') };
-      this.overlay.setPieceHighlight(piece.x, piece.y, piece.track, after);
+      this.overlay.setPieceHighlight(piece.x, piece.y, piece.track, after, map);
       this.label =
         this.signalKind === 'remove'
           ? existing

@@ -12,6 +12,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-25',
+    title: 'Poprawki: załadunek, semafory, mniej pasażerów',
+    items: [
+      'Kolejka na stacji: kto pierwszy przyjechał, ten pierwszy się ładuje. Pociąg, który dojechał później, nie podbiera ładunku temu, który już czeka (np. na pełny ładunek) – pierwszy zapełnia się i odjeżdża pierwszy.',
+      'Semafory w grafice TTD stoją teraz właściwie – światła patrzą na nadjeżdżający pociąg (wcześniej były odwrócone). Podgląd w narzędziu Semafor pokazuje ten sam obrazek.',
+      'Miasta dają o połowę mniej pasażerów i poczty – na stacjach nie zbierają się już dziesiątki tysięcy czekających.',
+    ],
+  },
+  {
+    date: '2026-10-25',
     title: 'Metro: przesiadki',
     items: [
       'Peron metra postawiony w zasięgu stacji na powierzchni dołącza do niej (i odwrotnie) – jedna stacja, wspólny ładunek, pasażerów i towary odbierają pociągi na obu poziomach.',

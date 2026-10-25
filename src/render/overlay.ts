@@ -4,7 +4,9 @@ import type { TrackPlan } from '../sim/track/build';
 import type { Side, Track } from '../sim/track/track';
 import type { Signal } from '../sim/signals/signals';
 import { drawDepot } from './depotDraw';
-import { drawSignal } from './signals';
+import { drawSignal, drawSignalSprite } from './signals';
+import { gfxOn } from './gfx/gfx';
+import type { WorldMap } from '../sim/world/map';
 import { tileDiamond, tileToWorld } from './iso';
 import { drawTrackPiece, type TrackStyle } from './trackDraw';
 
@@ -58,11 +60,16 @@ export class Overlay {
   }
 
   /** Podświetlenie elementu toru i podgląd semafora po kliknięciu (narzędzie Semafor). */
-  setPieceHighlight(x: number, y: number, track: number, signal: Signal | null = null): void {
+  setPieceHighlight(x: number, y: number, track: number, signal: Signal | null = null, map: WorldMap | null = null): void {
     this.preview.clear();
     drawTrackPiece(this.preview, x, y, track as Track, PREVIEW_OK);
     if (!signal) return;
-    for (const bit of [1, 2] as const) if (signal.dirs & bit) drawSignal(this.preview, signal, bit, 0xffe066, 0.85);
+    for (const bit of [1, 2] as const) {
+      if (!(signal.dirs & bit)) continue;
+      // Z grafiką OpenGFX – podgląd tym samym obrazkiem co postawiony semafor.
+      if (map && gfxOn()) drawSignalSprite(this.preview, map, signal, bit, true);
+      else drawSignal(this.preview, signal, bit, 0xffe066, 0.85);
+    }
   }
 
   /** Kafelki zmieniane przez kształtowanie terenu i wskazany narożnik. */

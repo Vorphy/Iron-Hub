@@ -1,4 +1,5 @@
 import { Graphics } from 'pixi.js';
+import type { WorldMap } from '../sim/world/map';
 import { dirBit, type Signal } from '../sim/signals/signals';
 import type { GameState } from '../sim/state';
 import { Track, TRACK_SIDES } from '../sim/track/track';
@@ -45,7 +46,7 @@ export class SignalRenderer {
       for (const bit of [1, 2] as const) {
         if (!(sig.dirs & bit)) continue;
         const green = passing.has(`${sig.y * W + sig.x}:${sig.track}:${bit}`);
-        if (sprites) drawSignalSprite(g, state, sig, bit, green);
+        if (sprites) drawSignalSprite(g, state.map, sig, bit, green);
         else drawSignal(g, sig, bit, green ? GREEN : RED);
       }
     }
@@ -101,16 +102,18 @@ export function drawSignal(g: Graphics, sig: Signal, bit: 1 | 2, light: number, 
 }
 
 /**
- * Położenie i obraz semafora jak w OpenTTD (DrawSignals): [pozycja, kierunek obrazka] dla elementu toru
- * i kierunku jazdy. Pozycje – semafory po prawej stronie toru; obrazek: SW=0, NE=1, SE=2, NW=3, E=4, W=5, S=6, N=7.
+ * Położenie i obraz semafora jak w OpenTTD (DrawSignals): [pozycja, obrazek] dla elementu toru i kierunku
+ * jazdy (pary pozycja–obrazek jak w OpenTTD; semafory po prawej stronie toru). Obrazek to strona, w którą
+ * patrzą światła: SW=0, NE=1, SE=2, NW=3, E=4, W=5, S=6, N=7 – semafor patrzy na nadjeżdżający pociąg,
+ * więc dla jazdy na SW obrazek NE itd.
  */
 const SIGNAL_SLOTS: Record<number, Record<1 | 2, [number, number]>> = {
-  [Track.Y]: { 1: [8, 0], 2: [9, 1] },
-  [Track.X]: { 1: [10, 2], 2: [11, 3] },
-  [Track.Upper]: { 1: [5, 4], 2: [4, 5] },
-  [Track.Lower]: { 1: [6, 5], 2: [7, 4] },
-  [Track.Left]: { 1: [0, 7], 2: [1, 6] },
-  [Track.Right]: { 1: [3, 6], 2: [2, 7] },
+  [Track.Y]: { 1: [9, 1], 2: [8, 0] },
+  [Track.X]: { 1: [11, 3], 2: [10, 2] },
+  [Track.Upper]: { 1: [4, 5], 2: [5, 4] },
+  [Track.Lower]: { 1: [7, 4], 2: [6, 5] },
+  [Track.Left]: { 1: [1, 6], 2: [0, 7] },
+  [Track.Right]: { 1: [2, 7], 2: [3, 6] },
 };
 /** SignalPositions[prawa strona] z OpenTTD, w 1/16 kafelka (osie OpenTTD). */
 const SIGNAL_POS: [number, number][] = [
@@ -129,13 +132,13 @@ const SIGNAL_POS: [number, number][] = [
 ];
 
 /** Semafor ścieżkowy z grafiki OpenGFX (jednokierunkowy – z tabliczką). */
-function drawSignalSprite(g: Graphics, state: GameState, sig: Signal, bit: 1 | 2, green: boolean): void {
+export function drawSignalSprite(g: Graphics, map: WorldMap, sig: Signal, bit: 1 | 2, green: boolean): void {
   const [pos, image] = SIGNAL_SLOTS[sig.track]![bit];
   const [px, py] = SIGNAL_POS[pos]!;
   // Oś x OpenTTD = nasza oś y.
   const fx = sig.x + py / 16;
   const fy = sig.y + px / 16;
-  const p = toWorld(fx, fy, heightAt(state.map, fx, fy));
+  const p = toWorld(fx, fy, heightAt(map, fx, fy));
   drawSprite(g, `PRE_SIGNAL_SEMAPHORE_PBS:${(sig.oneWay ? 128 : 112) + image * 2 + (green ? 1 : 0)}`, p.x, p.y);
 }
 
