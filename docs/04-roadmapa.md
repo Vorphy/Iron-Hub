@@ -120,10 +120,20 @@ Jedna kolejka, w kolejności, która najszybciej poprawia granie. Maglevy, kolej
     - *Wymóg:* np. pracownicy na miesiąc = X × poziom (do strojenia w `src/data/economy.ts`); spełniony próg daje punkty rozwoju jak dziś wywóz / dostawy, brak pracowników cofa zakład na poziom 5.
     - *W oknie zakładu:* pracownicy w tym miesiącu (dowiezieni / potrzebni) i informacja, że zakład chce pracowników.
     - *Dla gracza:* nowy powód do wożenia ludzi z miast do zakładów; dobrze łączy się z dzielnicami (punkt 17).
+19. **Wyszukiwanie tras jak w OpenTTD (YAPF)** (analiza 2026-10-25, do zrobienia). Dziś: Dijkstra po elementach toru (`src/sim/trains/path.ts`, limit 50 tys. kroków), kary w `src/sim/config.ts` (1 kafelek = 16 jednostek): zawrócenie 64, łuk 2, zajęty element 48 (na całej trasie, za każdy element), pełny ładunek 4096. Jadący pociąg liczy trasę od nowa przy każdym dołożeniu rezerwacji (co kilka ticków). Wzór: OpenTTD `src/pathfinder/yapf/yapf_costrail.hpp`, `yapf_rail.cpp`, `yapf_destrail.hpp`, domyślne kary w `src/table/settings/pathfinding_settings.ini`.
+    - *Kara za przejazd przez nie swoją stację* (OpenTTD: 10 kafelków za kafelek peronu, u celu odejmowana) – pociągi omijają zatłoczone stacje obwodnicą.
+    - *Dopasowanie peronu do długości pociągu* u celu (OpenTTD: za krótki +40 kafelków, za długi +8) – długi skład bierze długi peron.
+    - *Semafor ścieżkowy pod prąd* (OpenTTD: +15 kafelków) – koniec wyprzedzania torem przeciwnym na dwutorówce (dziś opisane w pomocy jako wada).
+    - *Zajętość tylko blisko pociągu* (OpenTTD: kary za rezerwacje tylko w zasięgu kilku pierwszych semaforów; 3 kafelki za skrzyżowanie z rezerwacją, 8 za kafelek zajętego peronu) – bez objazdów z powodu pociągu, który stoi daleko i zaraz odjedzie.
+    - *Łuki i podjazdy:* łuk 45° ok. 1 kafelka (dziś 1/8) plus kara za utratę prędkości zależna od prędkości pociągu (szybkie wybierają proste); pod górę 2 kafelki za kafelek wzniesienia (ciężkie składy wybierają płaską trasę).
+    - *Wydajność:* **A\*** z oszacowaniem odległości do celu (octile) zamiast Dijkstry; dalej **segmenty** (odcinki między zwrotnicami, mamy `src/sim/track/graph.ts`) z pamięcią kosztów, kasowaną przy zmianie torów.
+    - *Limit przeszukiwania:* zamiast błąkania się – jazda do węzła najbliżej celu (jak `GetBestNode` w YAPF).
+    - *Później:* zawracanie w zajezdni jako manewr (+50 kafelków), kara za przejazd przez drogę (+3).
+    - *Testy scenariuszy:* obwodnica obok stacji, wybór peronu wg długości, dwutorówka z semaforami ścieżkowymi, pociąg daleko na trasie nie zmienia wyboru. Determinizm bez zmian (wszystko ze stanu gry).
 
 ### Faza C
-19. **Etap 7** – grafika, dźwięki, retro UI, wydanie na itch.io.
-20. **Etap 8** – generator/edytor map, chmura, Web Worker, płatne dodatki.
+20. **Etap 7** – grafika, dźwięki, retro UI, wydanie na itch.io.
+21. **Etap 8** – generator/edytor map, chmura, Web Worker, płatne dodatki.
 
 ### Zrobione z wcześniejszej kolejki (2026-10-21)
 Kredyt i bankructwo · minimapa · pierwsze kroki · lokomotywy z biegiem lat i sieć trakcyjna · ciężarówki, chowanie pojazdów za domami, lint/format · wymiana lokomotyw · pomoc i historia zmian · nazwy miast · kopiowanie pociągów · pełny ładunek · magazyn wagonów · rozbudowa stacji · gęstość miast, kopalń i przemysłu · numery zajezdni.
