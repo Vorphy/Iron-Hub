@@ -62,8 +62,9 @@ export function blockerOf(state: GameState, taken: Taken, s: Step, trainId: numb
  * Ekspert: tylko przed semaforem skierowanym w stronę jazdy.
  */
 export function isSafeStop(state: GameState, s: Step, signals: SignalIndex): boolean {
-  // Metro: semaforów pod ziemią (jeszcze) nie ma – postój jak w trybie Amator, na kafelku bez zwrotnicy.
+  // Metro: Ekspert – przed semaforem metra; Amator – na kafelku bez zwrotnicy.
   if (isUnderTrack(s.track)) {
+    if (state.signalMode === 'manual') return !!signals.facing(s);
     const bits = state.map.under[s.y * state.map.width + s.x]!;
     return (bits & (bits - 1)) === 0;
   }

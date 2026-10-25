@@ -260,10 +260,10 @@ export class Tools {
       return;
     }
     // Pod ziemią (metro): tory, perony, zjazdy, rozkład i rozbiórka.
-    const underTools: Tool[] = ['track', 'bulldozer', 'station', 'orders'];
+    const underTools: Tool[] = ['track', 'bulldozer', 'station', 'orders', 'signal'];
     if (this.under && (!underTools.includes(this.tool) || (this.tool === 'station' && this.stationKind === 'waypoint'))) {
       this.overlay.setHover(tile, 0x9aa0a8);
-      this.label = { text: 'Pod ziemią: tory, perony metra, zjazdy i rozbiórka (Q – powierzchnia)', ok: false };
+      this.label = { text: 'Pod ziemią: tory, perony, semafory, zjazdy i rozbiórka (Q – powierzchnia)', ok: false };
       return;
     }
     if (this.under && this.tool === 'bulldozer' && sameTile(start, p) && tile && map.stationUnder[tile.y * map.width + tile.x]) {
@@ -354,13 +354,15 @@ export class Tools {
     }
 
     if (this.tool === 'signal') {
-      const piece = tile && nearestPiece(this.sim, p);
+      const piece = tile && nearestPiece(this.sim, p, this.under);
       this.overlay.setHover(tile, 0x9aa0a8);
       if (!piece) {
         this.label = { text: 'Wskaż tor', ok: false };
         return;
       }
-      const existing = this.sim.state.signals.find((s) => s.x === piece.x && s.y === piece.y && s.track === piece.track);
+      const existing = this.sim.state.signals.find(
+        (s) => s.x === piece.x && s.y === piece.y && s.track === piece.track && !!s.under === this.under,
+      );
       const after =
         this.signalKind === 'remove' ? null : { ...piece, ...nextSignalState(existing, this.signalKind === 'oneway') };
       this.overlay.setPieceHighlight(piece.x, piece.y, piece.track, after, map);
@@ -506,6 +508,9 @@ export class Tools {
   }
 
   private commandFor(start: Point, end: Point): Command | null {
+    // Pod ziemią działają tylko narzędzia metra (pozostałe budowałyby na powierzchni).
+    const metroTools: Tool[] = ['track', 'bulldozer', 'station', 'orders', 'signal', 'ramp'];
+    if (this.under && !metroTools.includes(this.tool)) return null;
     if (this.tool === 'tunnel') return { type: 'buildTunnel', x: Math.floor(end.x), y: Math.floor(end.y) };
     if (this.tool === 'bridge') {
       if (sameTile(start, end)) return null;
@@ -521,10 +526,11 @@ export class Tools {
       return { type: 'terraform', vx: v.x, vy: v.y, delta: this.terrainMode === 'raise' ? 1 : -1 };
     }
     if (this.tool === 'signal') {
-      const piece = nearestPiece(this.sim, end);
+      const piece = nearestPiece(this.sim, end, this.under);
       if (!piece) return null;
-      if (this.signalKind === 'remove') return { type: 'removeSignal', ...piece };
-      return { type: 'placeSignal', ...piece, oneWay: this.signalKind === 'oneway' };
+      const under = this.under ? { under: true } : {};
+      if (this.signalKind === 'remove') return { type: 'removeSignal', ...piece, ...under };
+      return { type: 'placeSignal', ...piece, oneWay: this.signalKind === 'oneway', ...under };
     }
     if (this.tool === 'catenary') {
       const tiles = catenaryTiles(start, end);

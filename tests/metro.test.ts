@@ -171,4 +171,37 @@ describe('metro (poziom −1)', () => {
     expect(st.tiles).toEqual([]);
     expect(st.underTiles).toEqual([5 * 32 + 11, 5 * 32 + 12, 5 * 32 + 13]);
   });
+
+  it('semafory w metrze (tryb Ekspert): stawiane na torze metra, pociąg przez nie przejeżdża', () => {
+    const sim = metroLine();
+    const { state } = sim;
+    sim.enqueue({ type: 'setSignalMode', mode: 'manual' });
+    sim.enqueue({ type: 'placeSignal', x: 14, y: 5, track: Track.X, oneWay: false, under: true });
+    // Na powierzchni nad metrem nie ma toru – zwykły semafor tu nie stanie.
+    sim.enqueue({ type: 'placeSignal', x: 15, y: 5, track: Track.X, oneWay: false });
+    sim.step();
+    expect(fails(sim)).toEqual(['blocked']);
+    expect(state.signals).toEqual([{ x: 14, y: 5, track: Track.X, dirs: 1, oneWay: false, under: true }]);
+
+    sim.enqueue({ type: 'buyTrain', depotId: 1, engine: 'iskra', wagons: ['osobowy'] });
+    sim.step();
+    const train = state.trains[0]!;
+    const [a, b] = state.stations;
+    sim.enqueue({ type: 'setOrders', trainId: train.id, orders: [a!.id, b!.id] });
+    sim.enqueue({ type: 'startTrain', trainId: train.id });
+    const visited: number[] = [];
+    for (let i = 0; i < 40 * 90 && visited.length < 3; i++) {
+      sim.step();
+      if (train.status === 'loading') {
+        const st = state.map.station[train.trail[0]!.y * 32 + train.trail[0]!.x];
+        if (st && visited[visited.length - 1] !== st) visited.push(st);
+      }
+    }
+    expect(visited).toEqual([a!.id, b!.id, a!.id]);
+    // Rozbiórka toru metra zabiera semafor.
+    sim.enqueue({ type: 'removeTrack', pieces: [{ x: 14, y: 5, track: Track.X }], under: true });
+    sim.step();
+    expect(fails(sim)).toEqual([]);
+    expect(state.signals).toEqual([]);
+  });
 });

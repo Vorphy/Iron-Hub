@@ -94,8 +94,8 @@ export type Command =
   | { type: 'setSpacing'; trainId: number; on: boolean }
   /** Ptaszek „czekaj na pełny ładunek” przy pozycji rozkładu. */
   | { type: 'toggleFullLoad'; trainId: number; index: number }
-  | { type: 'placeSignal'; x: number; y: number; track: Track; oneWay: boolean }
-  | { type: 'removeSignal'; x: number; y: number; track: Track }
+  | { type: 'placeSignal'; x: number; y: number; track: Track; oneWay: boolean; under?: boolean }
+  | { type: 'removeSignal'; x: number; y: number; track: Track; under?: boolean }
   | { type: 'setSignalMode'; mode: SignalMode }
   | { type: 'buildBridge'; x0: number; y0: number; x1: number; y1: number }
   | { type: 'buildTunnel'; x: number; y: number }
@@ -174,7 +174,10 @@ export function applyCommand(state: GameState, cmd: Command, events: SimEvent[])
   if (state.finances.bankrupt) return { ok: false, reason: 'bankrupt' };
   const result = apply(state, cmd, events);
   // Rozbiórka toru lub stacji mogła zostawić semafory bez toru.
-  if (result.ok && (cmd.type === 'removeTrack' || cmd.type === 'clearTile' || cmd.type === 'buildStation')) {
+  if (
+    result.ok &&
+    (cmd.type === 'removeTrack' || cmd.type === 'clearTile' || cmd.type === 'buildStation' || cmd.type === 'removeUnderStation')
+  ) {
     dropOrphanSignals(state, events);
     dropOrphanCatenary(state, events);
   }
@@ -253,9 +256,9 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
     case 'toggleFullLoad':
       return toggleFullLoad(state, cmd.trainId, cmd.index);
     case 'placeSignal':
-      return placeSignal(state, cmd.x, cmd.y, cmd.track, cmd.oneWay, events);
+      return placeSignal(state, cmd.x, cmd.y, cmd.track, cmd.oneWay, events, cmd.under === true);
     case 'removeSignal':
-      return removeSignal(state, cmd.x, cmd.y, cmd.track, events);
+      return removeSignal(state, cmd.x, cmd.y, cmd.track, events, cmd.under === true);
     case 'buildBridge':
       return buildBridge(state, cmd.x0, cmd.y0, cmd.x1, cmd.y1, events);
     case 'buildTunnel':

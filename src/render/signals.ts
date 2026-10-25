@@ -1,6 +1,7 @@
 import { Graphics } from 'pixi.js';
+import { isUnderTrack } from '../sim/track/metro';
 import type { WorldMap } from '../sim/world/map';
-import { dirBit, type Signal } from '../sim/signals/signals';
+import { dirBit, type Signal, signalCode } from '../sim/signals/signals';
 import type { GameState } from '../sim/state';
 import { Track, TRACK_SIDES } from '../sim/track/track';
 import { heightAt } from '../sim/world/height';
@@ -25,10 +26,11 @@ export class SignalRenderer {
   readonly gfx = new Graphics();
   showReservations = false;
 
-  draw(state: GameState): void {
+  /** `metro` – widok poziomu −1: tylko semafory metra (na powierzchni – tylko zwykłe). */
+  draw(state: GameState, metro = false): void {
     const g = this.gfx;
     g.clear();
-    if (this.showReservations) drawReservations(g, state);
+    if (this.showReservations && !metro) drawReservations(g, state);
     if (state.signalMode !== 'manual') return;
 
     // Odcinki, przez które jakiś pociąg ma zarezerwowany przejazd dalej (semafor „zielony”).
@@ -38,14 +40,15 @@ export class SignalRenderer {
       const path = [...t.trail].reverse().concat(t.reservedAhead);
       for (let i = 0; i + 1 < path.length; i++) {
         const s = path[i]!;
-        if (s.track && s.track <= 32) passing.add(`${s.y * W + s.x}:${s.track}:${dirBit(s)}`);
+        if ((s.track && s.track <= 32) || isUnderTrack(s.track)) passing.add(`${s.y * W + s.x}:${s.track}:${dirBit(s)}`);
       }
     }
     const sprites = gfxOn();
     for (const sig of state.signals) {
+      if (!!sig.under !== metro) continue;
       for (const bit of [1, 2] as const) {
         if (!(sig.dirs & bit)) continue;
-        const green = passing.has(`${sig.y * W + sig.x}:${sig.track}:${bit}`);
+        const green = passing.has(`${sig.y * W + sig.x}:${signalCode(sig)}:${bit}`);
         if (sprites) drawSignalSprite(g, state.map, sig, bit, green);
         else drawSignal(g, sig, bit, green ? GREEN : RED);
       }

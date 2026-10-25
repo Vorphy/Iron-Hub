@@ -501,7 +501,8 @@ function isSignal(v: unknown): v is Signal {
     isInt(s.y) &&
     ALL_TRACKS.includes(s.track) &&
     (s.dirs === 1 || s.dirs === 2 || s.dirs === 3) &&
-    typeof s.oneWay === 'boolean'
+    typeof s.oneWay === 'boolean' &&
+    (s.under === undefined || typeof s.under === 'boolean')
   );
 }
 

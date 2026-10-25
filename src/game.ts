@@ -191,7 +191,6 @@ export class Game {
     this.underground.visible = on;
     this.underground.markDirty();
     this.tools.setUnder(on);
-    this.signals.gfx.visible = !on;
     hudStore.set({ underground: on });
   }
 
@@ -449,7 +448,7 @@ export class Game {
     const cars = this.traffic.update(this.sim.state, deltaMs, gameSeconds, this.camera.viewRect(), this.camera.zoom);
     this.underground.update(this.sim.state);
     const win = hudStore.get().window;
-    this.signals.draw(this.sim.state);
+    this.signals.draw(this.sim.state, this.underground.visible);
     const metro = this.underground.visible;
     this.trains.draw(this.sim.state, this.loop.alpha, win?.kind === 'train' ? win.trainId : null, metro ? [] : cars, metro);
     if (this.tools.tool === 'signal' && this.sim.state.signalMode !== 'manual') this.setTool('cursor');
