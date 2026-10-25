@@ -110,7 +110,14 @@ export function placeSignal(
   return { ok: true };
 }
 
-export function removeSignal(state: GameState, x: number, y: number, track: Track, events: SimEvent[], under = false): CommandResult {
+export function removeSignal(
+  state: GameState,
+  x: number,
+  y: number,
+  track: Track,
+  events: SimEvent[],
+  under = false,
+): CommandResult {
   const before = state.signals.length;
   state.signals = state.signals.filter((s) => !(s.x === x && s.y === y && s.track === track && !!s.under === under));
   if (state.signals.length === before) return { ok: false, reason: 'nothingToRemove' };
@@ -125,7 +132,9 @@ export function dropOrphanSignals(state: GameState, events: SimEvent[]): void {
   const { map } = state;
   state.signals = state.signals.filter((s) => {
     const i = s.y * map.width + s.x;
-    return s.under ? (map.under[i]! & s.track) !== 0 && !map.stationUnder[i] : hasTrack(map, s.x, s.y, s.track) && !map.station[i];
+    return s.under
+      ? (map.under[i]! & s.track) !== 0 && !map.stationUnder[i]
+      : hasTrack(map, s.x, s.y, s.track) && !map.station[i];
   });
   if (state.signals.length !== before) events.push({ type: 'signalsChanged' });
 }
