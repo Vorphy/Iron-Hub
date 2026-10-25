@@ -55,6 +55,8 @@ export interface Frame {
 
 let data: GfxData | null = null;
 const frames = new Map<string, Frame>();
+/** Strony atlasu (adres i rozmiar) – do pokazywania sprite'ów w oknach interfejsu. */
+let pageInfo: { url: string; w: number; h: number }[] = [];
 let enabled = true;
 
 /** Wczytuje atlas; przy błędzie gra zostaje przy prostych kształtach. */
@@ -64,6 +66,7 @@ export async function loadGfx(base: string): Promise<boolean> {
     if (!res.ok) return false;
     const json = (await res.json()) as GfxData;
     const pages = await Promise.all(json.pages.map((p) => Assets.load<Texture>(`${base}${p}`)));
+    pageInfo = json.pages.map((p, k) => ({ url: `${base}${p}`, w: pages[k]!.width, h: pages[k]!.height }));
     for (const page of pages) {
       // Piksele bez rozmywania przy przybliżeniu (jak w TTD).
       page.source.scaleMode = 'nearest';
@@ -108,6 +111,26 @@ export function palKey(id: number, pal: number): string {
 export function ttdDirection(dx: number, dy: number): number {
   const angle = Math.atan2(dx, dy);
   return (((5 - Math.round(angle / (Math.PI / 4))) % 8) + 8) % 8;
+}
+
+/**
+ * Sprite jako tło elementu HTML (okna interfejsu), powiększony `scale` razy bez rozmywania.
+ * null – brak atlasu albo sprite'a.
+ */
+export function spriteStyle(key: string, scale = 2): Record<string, string> | null {
+  if (!gfxOn()) return null;
+  const f = data!.frames[key];
+  if (!f) return null;
+  const [p, x, y, w, h] = f;
+  const page = pageInfo[p]!;
+  return {
+    width: `${w * scale}px`,
+    height: `${h * scale}px`,
+    backgroundImage: `url(${page.url})`,
+    backgroundPosition: `-${x * scale}px -${y * scale}px`,
+    backgroundSize: `${page.w * scale}px ${page.h * scale}px`,
+    imageRendering: 'pixelated',
+  };
 }
 
 /** Rysuje sprite tak, by jego punkt zaczepienia wypadł w (wx, wy). Zwraca false, gdy sprite'a nie ma. */

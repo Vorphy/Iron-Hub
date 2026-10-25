@@ -899,3 +899,102 @@ input.seed {
   white-space: normal;
   align-items: flex-start;
 }
+
+/* Zajezdnia jak w OpenTTD: rzędy pociągów z pojazdami z boku, wolne wagony, kosz, „Nowe pojazdy”. */
+.depot-window {
+  width: 440px;
+}
+.depot-row {
+  border: 1px solid var(--panel-border);
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+}
+.depot-row.selected {
+  border-color: var(--accent);
+}
+.depot-row.drop,
+.depot-bin.drop {
+  border-color: var(--accent);
+  background: rgba(255, 214, 102, 0.12);
+}
+.spare-row {
+  cursor: default;
+  border-style: dashed;
+}
+.depot-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vehicle-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 2px;
+  min-height: 30px;
+}
+.panel button.veh,
+.veh {
+  display: inline-flex;
+  align-items: flex-end;
+  padding: 0;
+  background: none;
+  border: 1px solid transparent;
+  cursor: grab;
+}
+.panel button.veh:hover,
+.veh:hover {
+  border-color: var(--accent);
+}
+.veh-sprite {
+  display: inline-block;
+  flex: none;
+}
+.depot-bin {
+  margin-left: auto;
+  padding: 4px 10px;
+  border: 1px dashed var(--panel-border);
+  color: var(--muted);
+}
+.buy-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.buy-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.panel button.buy-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 2px 8px;
+}
+.buy-item small {
+  color: var(--muted);
+}
+.buy-item.active small {
+  color: #1b1f24;
+}
+.buy-icon {
+  display: inline-flex;
+  justify-content: center;
+  align-items: flex-end;
+  min-width: 64px;
+}
+.buy-detail {
+  border: 1px solid var(--panel-border);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}

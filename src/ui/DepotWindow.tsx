@@ -1,40 +1,103 @@
 import { useState } from 'preact/hooks';
-import { MAX_ENGINES, MAX_WAGONS } from '../sim/config';
 import type { Traction } from '../data/economy';
+import { MAX_ENGINES, MAX_WAGONS } from '../sim/config';
 import {
   availableEngines,
   CARGO_NAMES,
-  consistStats,
   engineDef,
   engineRunningCost,
   TRACTION_NAMES,
   WAGONS,
   wagonDef,
+  wagonRunningCost,
 } from '../sim/trains/vehicles';
 import { formatMoney } from '../tools';
-import type { DepotWindowData, HudActions } from './hudStore';
+import type { DepotWindowData, HudActions, TrainSummary } from './hudStore';
+import { VehicleIcon, vehiclePal } from './VehicleIcon';
 
-const TILE_UNITS = 16;
 const TRACTIONS: Traction[] = ['steam', 'diesel', 'electric'];
 const TRACTION_TITLES: Record<Traction, string> = { steam: 'Parowe', diesel: 'Spalinowe', electric: 'Elektryczne' };
 
+/** Przeciągany pojazd: wagon z pociągu, lokomotywa (k – która) albo wolny wagon. */
+type Drag =
+  | { from: 'wagon'; trainId: number; index: number }
+  | { from: 'engine'; trainId: number; k: number }
+  | { from: 'spare'; index: number };
+
+const DRAG_TYPE = 'application/x-ironhub-vehicle';
+
+function dragData(e: DragEvent): Drag | null {
+  try {
+    return JSON.parse(e.dataTransfer?.getData(DRAG_TYPE) ?? '') as Drag;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Zajezdnia jak w OpenTTD: pociągi w rzędach (lokomotywa i wagony z boku), rząd wolnych wagonów,
+ * przeciąganie pojazdów między nimi i do kosza oraz jedno miejsce zakupu – „Nowe pojazdy”.
+ */
 export function DepotWindow({ data, money, actions }: { data: DepotWindowData; money: number; actions: HudActions }) {
-  const engines = availableEngines(data.year);
-  const [picked, setEngine] = useState(engines[0]?.id ?? '');
-  // Wybrana lokomotywa mogła wyjść ze sprzedaży (nowy rok) – wtedy pierwsza dostępna.
-  const engine = engines.some((e) => e.id === picked) ? picked : engines[0]!.id;
-  const [wagons, setWagons] = useState<string[]>([]);
-  const [double, setDouble] = useState(false);
-  const engineCount = double ? MAX_ENGINES : 1;
   const [selected, setSelected] = useState<number | null>(null);
-  // Wybrany pociąg (do niego trafiają wagony z magazynu); domyślnie pierwszy w zajezdni.
-  const target = data.trains.find((t) => t.id === selected) ?? data.trains[0];
-  const stats = consistStats(engine, wagons, engineCount);
-  const canBuy = stats.cost <= money;
-  const electric = engineDef(engine)!.traction === 'electric';
+  const [buyOpen, setBuyOpen] = useState(data.trains.length === 0);
+  const [hover, setHover] = useState<string | null>(null);
+  const target = data.trains.find((t) => t.id === selected) ?? null;
+  const spareCount = data.spare.length;
+
+  /** Wagon z pociągu `from` do pociągu `to` (przez wolne wagony – dwa polecenia w kolejności). */
+  const moveWagon = (fromTrain: number, index: number, to: TrainSummary) => {
+    if (to.wagons.length >= MAX_WAGONS) return;
+    actions.detachWagon(fromTrain, index);
+    actions.attachWagon(to.id, spareCount);
+  };
+
+  const dropOnTrain = (e: DragEvent, t: TrainSummary) => {
+    e.preventDefault();
+    setHover(null);
+    const d = dragData(e);
+    if (!d) return;
+    if (d.from === 'spare' && t.wagons.length < MAX_WAGONS) actions.attachWagon(t.id, d.index);
+    if (d.from === 'wagon' && d.trainId !== t.id) moveWagon(d.trainId, d.index, t);
+  };
+  const dropOnSpare = (e: DragEvent) => {
+    e.preventDefault();
+    setHover(null);
+    const d = dragData(e);
+    if (d?.from === 'wagon') actions.detachWagon(d.trainId, d.index);
+  };
+  const dropOnBin = (e: DragEvent) => {
+    e.preventDefault();
+    setHover(null);
+    const d = dragData(e);
+    if (!d) return;
+    if (d.from === 'spare') actions.sellSpareWagon(data.depotId, d.index);
+    else if (d.from === 'wagon') {
+      actions.detachWagon(d.trainId, d.index);
+      actions.sellSpareWagon(data.depotId, spareCount);
+    } else {
+      const t = data.trains.find((x) => x.id === d.trainId);
+      if (!t) return;
+      if (d.k > 0) actions.setEngineCount(t.id, 1);
+      else if (t.wagons.length) actions.sellEngine(t.id);
+      else actions.sellTrain(t.id);
+    }
+  };
+  const dropZone = (key: string, onDrop: (e: DragEvent) => void) => ({
+    onDragOver: (e: DragEvent) => {
+      e.preventDefault();
+      if (hover !== key) setHover(key);
+    },
+    onDragLeave: () => setHover(null),
+    onDrop,
+  });
+  const startDrag = (d: Drag) => (e: DragEvent) => {
+    e.dataTransfer?.setData(DRAG_TYPE, JSON.stringify(d));
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+  };
 
   return (
-    <div class="panel window">
+    <div class="panel window depot-window">
       <div class="window-head">
         <span class="window-title">Zajezdnia #{data.depotId}</span>
         <button class="close" title="Pomoc: lokomotywy" onClick={() => actions.openHelp('engines')}>
@@ -45,223 +108,303 @@ export function DepotWindow({ data, money, actions }: { data: DepotWindowData; m
         </button>
       </div>
 
-      <div class="section-title">Pociągi w zajezdni</div>
-      {data.trains.length === 0 && (
-        <div class="muted">Brak – kup pierwszy pociąg poniżej (sama lokomotywa też jest pociągiem).</div>
-      )}
-      {data.trains.length > 0 && <div class="muted small">Klik na pociąg – wybór; klik na wagon – odepnij do magazynu.</div>}
-      {data.trains.map((t) => (
-        <div class={`depot-train ${t.id === target?.id ? 'selected' : ''}`} key={t.id}>
-          <div class="row">
-            <button
-              class="link grow train-pick"
-              onClick={() => setSelected(t.id)}
-              title="Wybierz – do tego pociągu trafią wagony z magazynu"
-            >
-              {t.id === target?.id ? '◉' : '○'} {t.name}
-            </button>
-            {t.stopped ? (
-              <button class="primary" onClick={() => actions.startTrain(t.id)} title="Wyjedź z zajezdni">
-                ▶
-              </button>
-            ) : (
-              <button
-                class="active"
-                onClick={() => actions.stopTrain(t.id)}
-                title="Pociąg czeka na wyjazd (wyjedzie, gdy wyjazd będzie wolny) – kliknij, aby anulować"
-              >
-                ■ Anuluj
-              </button>
-            )}
-            <button onClick={() => actions.openTrain(t.id)} title="Okno pociągu (rozkład jazdy, wymiana lokomotywy)">
-              Rozkład
-            </button>
-            <button onClick={() => actions.cloneTrain(t.id)} title="Kup taki sam pociąg ze wspólnym rozkładem">
-              ⧉
-            </button>
-          </div>
-          {!t.stopped && <div class="status small">{t.status}</div>}
-          <div class="consist">
-            {Array.from({ length: t.engineCount }, (_, k) => (
-              <span key={`e${k}`} class="chip engine" style={{ background: engineDef(t.engine)!.color }}>
-                {engineDef(t.engine)!.name}
-              </span>
-            ))}
-            {t.wagons.map((w, i) => (
-              <button
-                key={i}
-                class="chip"
-                style={{ background: wagonDef(w)!.color }}
-                title={`${wagonDef(w)!.name} – kliknij, aby odpiąć do magazynu`}
-                onClick={() => actions.detachWagon(t.id, i)}
-              >
-                {wagonDef(w)!.name.split(' ').pop()}
-              </button>
-            ))}
-          </div>
-          <div class="buttons wrap">
-            <button onClick={() => actions.sellTrain(t.id)} title="Sprzedaj cały pociąg">
-              Sprzedaj <small>+{formatMoney(t.resale)}</small>
-            </button>
-            {t.wagons.length > 0 && (
-              <button onClick={() => actions.sellEngine(t.id)} title="Sprzedaj tylko lokomotywę – wagony zostaną w magazynie">
-                Sprzedaj {t.engineCount > 1 ? 'lokomotywy' : 'lokomotywę'} <small>+{formatMoney(t.engineResale)}</small>
-              </button>
-            )}
-            {t.engineCount < MAX_ENGINES ? (
-              <button
-                disabled={!t.engineAvailable || engineDef(t.engine)!.cost > money}
-                onClick={() => actions.setEngineCount(t.id, t.engineCount + 1)}
-                title={
-                  t.engineAvailable
-                    ? 'Podwójna trakcja: druga taka sama lokomotywa – 2× moc i przyczepność (ciężkie składy pod górę), 2× utrzymanie'
-                    : 'Ta lokomotywa jest już wycofana ze sprzedaży'
-                }
-              >
-                + 2. lokomotywa <small>{formatMoney(engineDef(t.engine)!.cost)}</small>
-              </button>
-            ) : (
-              <button onClick={() => actions.setEngineCount(t.id, 1)} title="Sprzedaj drugą lokomotywę">
-                − 2. lokomotywa <small>+{formatMoney(t.oneEngineResale)}</small>
-              </button>
-            )}
-          </div>
-        </div>
-      ))}
-
-      <div class="section-title">Magazyn wagonów</div>
-      {data.spare.length === 0 ? (
-        <div class="muted small">Pusto. Odepnij wagon z pociągu albo kup wagon poniżej.</div>
-      ) : (
+      {data.trains.length === 0 && <div class="muted">Pusto – kup lokomotywę w „Nowe pojazdy”, to będzie nowy pociąg.</div>}
+      {data.trains.length > 0 && (
         <div class="muted small">
-          {target ? `Klik na wagon – doczep do: ${target.name}.` : 'Kup lokomotywę, żeby doczepić wagony.'} ✕ – sprzedaj.
+          Przeciągaj wagony między pociągami, do wolnych wagonów albo do kosza. Klik na rząd – wybór pociągu.
         </div>
       )}
-      <div class="consist">
-        {data.spare.map((w, i) => (
-          <span class="spare" key={i}>
-            <button
-              class="chip"
-              style={{ background: wagonDef(w.type)!.color }}
-              disabled={!target || target.wagons.length >= MAX_WAGONS}
-              title={`${wagonDef(w.type)!.name}${w.amount ? ` (ładunek ${w.amount})` : ''} – doczep do wybranego pociągu`}
-              onClick={() => target && actions.attachWagon(target.id, i)}
-            >
-              {wagonDef(w.type)!.name.split(' ').pop()}
-            </button>
-            <button
-              class="close"
-              title={`Sprzedaj (+${formatMoney(w.resale)})`}
-              onClick={() => actions.sellSpareWagon(data.depotId, i)}
-            >
-              ✕
-            </button>
-          </span>
-        ))}
-      </div>
-      <div class="muted small">Kup wagon do magazynu:</div>
-      <div class="wagon-grid">
-        {WAGONS.map((w) => (
-          <button
-            key={w.id}
-            disabled={w.cost > money}
-            onClick={() => actions.buyWagon(data.depotId, w.id)}
-            title={`${w.name}: ${w.capacity} (${CARGO_NAMES[w.cargo]})`}
-          >
-            <span class="swatch" style={{ background: w.color }} />
-            {w.name} <small>{formatMoney(w.cost)}</small>
-          </button>
-        ))}
-      </div>
-
-      <div class="section-title">Kup nowy pociąg</div>
-      {TRACTIONS.map((traction) => {
-        const list = engines.filter((e) => e.traction === traction);
-        if (!list.length) return null;
+      {data.trains.map((t) => {
+        const pal = vehiclePal(t.engine);
         return (
-          <div class="choices" key={traction}>
-            <div class="muted small">{TRACTION_TITLES[traction]}</div>
-            {list.map((e) => (
+          <div
+            key={t.id}
+            class={`depot-row ${t.id === selected ? 'selected' : ''} ${hover === `t${t.id}` ? 'drop' : ''}`}
+            onClick={() => setSelected(t.id === selected ? null : t.id)}
+            {...dropZone(`t${t.id}`, (e) => dropOnTrain(e, t))}
+          >
+            <div class="row">
+              {t.stopped ? (
+                <button
+                  class="primary"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    actions.startTrain(t.id);
+                  }}
+                  title="Wyjedź z zajezdni"
+                >
+                  ▶
+                </button>
+              ) : (
+                <button
+                  class="active"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    actions.stopTrain(t.id);
+                  }}
+                  title="Pociąg czeka na wyjazd (wyjedzie, gdy wyjazd będzie wolny) – kliknij, aby anulować"
+                >
+                  ■
+                </button>
+              )}
+              <span class="grow depot-name">
+                {t.name}
+                {!t.stopped && <span class="status small"> · {t.status}</span>}
+              </span>
               <button
-                key={e.id}
-                class={e.id === engine ? 'active' : ''}
-                onClick={() => setEngine(e.id)}
-                title={`${e.description} · od ${e.year}${e.retire ? ` do ${e.retire - 1}` : ''} · utrzymanie ${formatMoney(engineRunningCost(e))}/rok`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  actions.openTrain(t.id);
+                }}
+                title="Okno pociągu (rozkład jazdy, wymiana lokomotywy)"
               >
-                <span class="swatch" style={{ background: e.color }} />
-                <span class="grow">
-                  {e.name}
-                  {data.year - e.year <= 1 && <span class="badge">nowość</span>}
-                  {e.retire !== undefined && e.retire - data.year <= 2 && <span class="badge old">wkrótce wycofana</span>}
-                </span>
-                <small>
-                  {e.maxSpeed} km/h · {e.power} kW · {formatMoney(e.cost)}
-                </small>
+                Rozkład
               </button>
-            ))}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  actions.cloneTrain(t.id);
+                }}
+                title="Kup taki sam pociąg ze wspólnym rozkładem"
+              >
+                ⧉
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  actions.sellTrain(t.id);
+                }}
+                title={`Sprzedaj cały pociąg (+${formatMoney(t.resale)})`}
+              >
+                Sprzedaj
+              </button>
+            </div>
+            <div class="vehicle-strip">
+              {Array.from({ length: t.engineCount }, (_, k) => (
+                <span
+                  key={`e${k}`}
+                  class="veh"
+                  draggable
+                  onDragStart={startDrag({ from: 'engine', trainId: t.id, k })}
+                  title={`${engineDef(t.engine)!.name}${k > 0 ? ' (druga – przeciągnij do kosza, by sprzedać)' : ' – przeciągnij do kosza, by sprzedać lokomotywę'}`}
+                >
+                  <VehicleIcon type={t.engine} engine pal={pal} />
+                </span>
+              ))}
+              {t.wagons.map((w, i) => (
+                <button
+                  key={i}
+                  class="veh"
+                  draggable
+                  onDragStart={startDrag({ from: 'wagon', trainId: t.id, index: i })}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    actions.detachWagon(t.id, i);
+                  }}
+                  title={`${wagonDef(w)!.name} – klik: odepnij do wolnych wagonów; albo przeciągnij`}
+                >
+                  <VehicleIcon type={w} engine={false} pal={pal} />
+                </button>
+              ))}
+            </div>
           </div>
         );
       })}
-      {electric && (
-        <div class={data.electrified ? 'muted small' : 'warning'}>
-          {data.electrified
-            ? 'Lokomotywa elektryczna – jeździ tylko pod siecią trakcyjną.'
-            : 'Ta zajezdnia nie ma sieci trakcyjnej – pociąg elektryczny z niej nie wyjedzie. Zbuduj sieć narzędziem Trakcja (E).'}
+
+      <div class={`depot-row spare-row ${hover === 'spare' ? 'drop' : ''}`} {...dropZone('spare', dropOnSpare)}>
+        <div class="muted small">
+          Wolne wagony
+          {spareCount > 0 && (target ? ` – klik: doczep do ${target.name}` : ' – wybierz pociąg albo przeciągnij na niego')}
         </div>
+        <div class="vehicle-strip">
+          {spareCount === 0 && <span class="muted small">brak</span>}
+          {data.spare.map((w, i) => (
+            <button
+              key={i}
+              class="veh"
+              draggable
+              disabled={!!target && target.wagons.length >= MAX_WAGONS}
+              onDragStart={startDrag({ from: 'spare', index: i })}
+              onClick={() => target && actions.attachWagon(target.id, i)}
+              title={`${wagonDef(w.type)!.name}${w.amount ? ` (ładunek ${w.amount})` : ''} · zwrot ${formatMoney(w.resale)}`}
+            >
+              <VehicleIcon type={w.type} engine={false} pal={vehiclePal(target?.engine)} loaded={w.amount > 0} />
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div class="buttons">
+        <button class={buyOpen ? 'active' : 'primary'} onClick={() => setBuyOpen(!buyOpen)}>
+          {buyOpen ? '▾ Nowe pojazdy' : '▸ Nowe pojazdy'}
+        </button>
+        <span
+          class={`depot-bin ${hover === 'bin' ? 'drop' : ''}`}
+          {...dropZone('bin', dropOnBin)}
+          title="Przeciągnij tu pojazd, aby go sprzedać"
+        >
+          🗑 Sprzedaj
+        </span>
+      </div>
+
+      {buyOpen && <BuyVehicles data={data} money={money} actions={actions} target={target} />}
+    </div>
+  );
+}
+
+/** Lista pojazdów do kupienia (jak okno „Nowe pojazdy” w OpenTTD) – lokomotywy i wagony w jednym miejscu. */
+function BuyVehicles({
+  data,
+  money,
+  actions,
+  target,
+}: {
+  data: DepotWindowData;
+  money: number;
+  actions: HudActions;
+  target: TrainSummary | null;
+}) {
+  const engines = availableEngines(data.year);
+  const [tab, setTab] = useState<'engines' | 'wagons'>('engines');
+  const [pickedEngine, setEngine] = useState(engines[0]?.id ?? '');
+  const [pickedWagon, setWagon] = useState(WAGONS[0]!.id);
+  // Wybrana lokomotywa mogła wyjść ze sprzedaży (nowy rok) – wtedy pierwsza dostępna.
+  const engine = engines.find((e) => e.id === pickedEngine) ?? engines[0]!;
+  const wagon = wagonDef(pickedWagon)!;
+  const pal = vehiclePal(engine.id);
+
+  return (
+    <div class="buy-panel">
+      <div class="buttons">
+        <button class={tab === 'engines' ? 'active' : ''} onClick={() => setTab('engines')}>
+          Lokomotywy
+        </button>
+        <button class={tab === 'wagons' ? 'active' : ''} onClick={() => setTab('wagons')}>
+          Wagony
+        </button>
+      </div>
+
+      {tab === 'engines' && (
+        <>
+          <div class="buy-list">
+            {TRACTIONS.map((traction) => {
+              const list = engines.filter((e) => e.traction === traction);
+              if (!list.length) return null;
+              return (
+                <div key={traction}>
+                  <div class="muted small">{TRACTION_TITLES[traction]}</div>
+                  {list.map((e) => (
+                    <button key={e.id} class={`buy-item ${e.id === engine.id ? 'active' : ''}`} onClick={() => setEngine(e.id)}>
+                      <span class="buy-icon">
+                        <VehicleIcon type={e.id} engine pal={vehiclePal(e.id)} />
+                      </span>
+                      <span class="grow">
+                        {e.name}
+                        {data.year - e.year <= 1 && <span class="badge">nowość</span>}
+                        {e.retire !== undefined && e.retire - data.year <= 2 && <span class="badge old">wkrótce wycofana</span>}
+                      </span>
+                      <small>{formatMoney(e.cost)}</small>
+                    </button>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+          <div class="buy-detail">
+            <div class="row">
+              <VehicleIcon type={engine.id} engine pal={pal} />
+              <b class="grow">{engine.name}</b>
+            </div>
+            <div class="muted small">{engine.description}</div>
+            <div class="small">
+              {engine.maxSpeed} km/h · {engine.power} kW · {engine.weight} t · trakcja {TRACTION_NAMES[engine.traction]}
+            </div>
+            <div class="small">
+              Cena {formatMoney(engine.cost)} · utrzymanie {formatMoney(engineRunningCost(engine))}/rok · od {engine.year}
+              {engine.retire ? ` do ${engine.retire - 1}` : ''}
+            </div>
+            {engine.traction === 'electric' && (
+              <div class={data.electrified ? 'muted small' : 'warning'}>
+                {data.electrified
+                  ? 'Lokomotywa elektryczna – jeździ tylko pod siecią trakcyjną.'
+                  : 'Ta zajezdnia nie ma sieci trakcyjnej – pociąg elektryczny z niej nie wyjedzie. Zbuduj sieć narzędziem Trakcja (E).'}
+              </div>
+            )}
+            <div class="buttons wrap">
+              <button
+                class="primary"
+                disabled={engine.cost > money}
+                onClick={() => actions.buyTrain(data.depotId, engine.id, [], 1)}
+                title="Nowy pociąg w zajezdni – wagony doczepisz z wolnych albo kupisz w zakładce Wagony"
+              >
+                Kup – nowy pociąg
+              </button>
+              {target && target.engine === engine.id && target.engineCount < MAX_ENGINES && (
+                <button
+                  disabled={engine.cost > money}
+                  onClick={() => actions.setEngineCount(target.id, target.engineCount + 1)}
+                  title="Podwójna trakcja: druga taka sama lokomotywa – 2× moc i przyczepność (ciężkie składy pod górę), 2× utrzymanie"
+                >
+                  Kup jako 2. lokomotywę do {target.name}
+                </button>
+              )}
+            </div>
+          </div>
+        </>
       )}
 
-      <label class="full-load" title="Dwie takie same lokomotywy: 2× moc i przyczepność, 2× cena i utrzymanie">
-        <input type="checkbox" checked={double} onChange={() => setDouble(!double)} />
-        Podwójna trakcja (2 lokomotywy – ciężkie składy pod górę)
-      </label>
-
-      <div class="muted small">Dodaj wagony (max {MAX_WAGONS}):</div>
-      <div class="wagon-grid">
-        {WAGONS.map((w) => (
-          <button
-            key={w.id}
-            disabled={wagons.length >= MAX_WAGONS}
-            onClick={() => setWagons([...wagons, w.id])}
-            title={`${w.name}: ${w.capacity} (${CARGO_NAMES[w.cargo]}), ${formatMoney(w.cost)}`}
-          >
-            <span class="swatch" style={{ background: w.color }} />+ {w.name}
-          </button>
-        ))}
-      </div>
-
-      <div class="consist">
-        {Array.from({ length: engineCount }, (_, k) => (
-          <span key={`e${k}`} class="chip engine" style={{ background: engineDef(engine)!.color }}>
-            {engineDef(engine)!.name}
-          </span>
-        ))}
-        {wagons.map((id, i) => (
-          <button
-            key={i}
-            class="chip"
-            style={{ background: wagonDef(id)!.color }}
-            title="Kliknij, aby usunąć"
-            onClick={() => setWagons(wagons.filter((_, j) => j !== i))}
-          >
-            {wagonDef(id)!.name.split(' ').pop()}
-          </button>
-        ))}
-      </div>
-      <div class="muted small">
-        Długość {(stats.length / TILE_UNITS).toFixed(1)} kaf. · masa {stats.weight} t · {stats.power} kW · max {stats.maxSpeed}{' '}
-        km/h · utrzymanie {formatMoney(stats.runningCost)}/rok (trakcja {TRACTION_NAMES[engineDef(engine)!.traction]})
-      </div>
-
-      <button
-        class="primary"
-        disabled={!canBuy}
-        onClick={() => {
-          actions.buyTrain(data.depotId, engine, wagons, engineCount);
-          setWagons([]);
-        }}
-      >
-        Kup za {formatMoney(stats.cost)}
-      </button>
+      {tab === 'wagons' && (
+        <>
+          <div class="buy-list">
+            {WAGONS.map((w) => (
+              <button key={w.id} class={`buy-item ${w.id === wagon.id ? 'active' : ''}`} onClick={() => setWagon(w.id)}>
+                <span class="buy-icon">
+                  <VehicleIcon type={w.id} engine={false} pal={vehiclePal(target?.engine)} />
+                </span>
+                <span class="grow">{w.name}</span>
+                <small>{formatMoney(w.cost)}</small>
+              </button>
+            ))}
+          </div>
+          <div class="buy-detail">
+            <div class="row">
+              <VehicleIcon type={wagon.id} engine={false} pal={vehiclePal(target?.engine)} />
+              <b class="grow">{wagon.name}</b>
+            </div>
+            <div class="small">
+              Ładowność {wagon.capacity} ({CARGO_NAMES[wagon.cargo]}) · {wagon.weight} t
+            </div>
+            <div class="small">
+              Cena {formatMoney(wagon.cost)} · utrzymanie {formatMoney(wagonRunningCost(wagon))}/rok
+            </div>
+            <div class="buttons wrap">
+              {target && (
+                <button
+                  class="primary"
+                  disabled={wagon.cost > money || target.wagons.length >= MAX_WAGONS}
+                  onClick={() => {
+                    actions.buyWagon(data.depotId, wagon.id);
+                    actions.attachWagon(target.id, data.spare.length);
+                  }}
+                  title={target.wagons.length >= MAX_WAGONS ? `Najwyżej ${MAX_WAGONS} wagonów` : undefined}
+                >
+                  Kup i doczep do {target.name}
+                </button>
+              )}
+              <button
+                class={target ? '' : 'primary'}
+                disabled={wagon.cost > money}
+                onClick={() => actions.buyWagon(data.depotId, wagon.id)}
+              >
+                Kup do wolnych wagonów
+              </button>
+            </div>
+            {!target && (
+              <div class="muted small">Wybierz pociąg (klik na rząd), żeby kupowane wagony od razu się doczepiały.</div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

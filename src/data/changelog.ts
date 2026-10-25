@@ -12,6 +12,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-25',
+    title: 'Zajezdnia jak w OpenTTD',
+    items: [
+      'Pociągi w zajezdni to rzędy z lokomotywą i wagonami narysowanymi z boku; osobny rząd „Wolne wagony”.',
+      'Pojazdy przeciągasz myszą: wagon na inny pociąg, do wolnych wagonów albo do kosza (sprzedaż). Klik też działa.',
+      'Jedno miejsce zakupu – „Nowe pojazdy”: lista lokomotyw i wagonów z opisem. Lokomotywa to nowy pociąg, wagon trafia od razu do wybranego pociągu albo do wolnych. Druga lokomotywa (podwójna trakcja) – tam samo.',
+    ],
+  },
+  {
+    date: '2026-10-25',
     title: 'Ukośne tory na zboczach',
     items: [
       'Ukośny tor można położyć na zboczu, jeśli biegnie poziomo – np. wzdłuż płaskiej połówki kafelka z jednym podniesionym narożnikiem. Wcześniej ukosy szły tylko po płaskim.',
