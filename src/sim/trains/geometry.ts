@@ -11,16 +11,28 @@ export interface VehicleSlot {
   length: number;
   color: string;
   engine: boolean;
+  /** Id lokomotywy lub wagonu z vehicles.json. */
+  type: string;
+  /** Wagon z ładunkiem (do grafiki pełnego wagonu). */
+  loaded: boolean;
 }
 
 /** Pojazdy w kolejności jazdy (od czoła); po zawróceniu lokomotywy są na końcu. */
 export function vehiclesInOrder(train: Train): VehicleSlot[] {
   const e = engineDef(train.engine)!;
   const list: VehicleSlot[] = [
-    ...Array.from({ length: train.engineCount }, (_, k) => ({ index: k, length: e.length, color: e.color, engine: true })),
+    ...Array.from({ length: train.engineCount }, (_, k) => ({
+      index: k,
+      length: e.length,
+      color: e.color,
+      engine: true,
+      type: train.engine,
+      loaded: false,
+    })),
     ...train.wagons.map((id, i) => {
       const w = wagonDef(id)!;
-      return { index: train.engineCount + i, length: w.length, color: w.color, engine: false };
+      const loaded = (train.loads[i]?.amount ?? 0) > 0;
+      return { index: train.engineCount + i, length: w.length, color: w.color, engine: false, type: id, loaded };
     }),
   ];
   return train.reversed ? list.reverse() : list;
@@ -70,6 +82,8 @@ export interface VehiclePose {
   index: number;
   color: string;
   engine: boolean;
+  type: string;
+  loaded: boolean;
   front: Point3;
   back: Point3;
 }
@@ -82,7 +96,8 @@ export function vehiclePoses(state: GameState, train: Train): VehiclePose[] {
   for (const v of vehiclesInOrder(train)) {
     const front = pointBehindHeadZ(state, train, offset);
     const back = pointBehindHeadZ(state, train, offset + v.length);
-    if (front && back) out.push({ index: v.index, color: v.color, engine: v.engine, front, back });
+    if (front && back)
+      out.push({ index: v.index, color: v.color, engine: v.engine, type: v.type, loaded: v.loaded, front, back });
     offset += v.length + VEHICLE_GAP;
   }
   return out;

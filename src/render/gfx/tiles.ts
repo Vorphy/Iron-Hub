@@ -1,0 +1,394 @@
+import type { Graphics } from 'pixi.js';
+import type { Depot } from '../../sim/depot/depot';
+import type { Station } from '../../sim/station/station';
+import { Side, Track, TRACK_SIDES, tracksOn } from '../../sim/track/track';
+import { cornerHeights } from '../../sim/world/height';
+import { getTerrain, Terrain, type WorldMap } from '../../sim/world/map';
+import { toWorld } from '../iso';
+import { tileHash } from '../shapes';
+import { drawSprite, gfxData, type HouseDef, palKey } from './gfx';
+
+// Numery sprite'ów TTD (table/sprites.h w OpenTTD).
+const SPR_FLAT_GRASS = 3981;
+const SPR_FLAT_ROUGH = 4000;
+const SPR_ROUGH_VARIANTS = [4019, 4020, 4021, 4022];
+const SPR_WATER = 4061;
+const SPR_RAIL_TRACK_Y = 1011;
+const SPR_RAIL_TRACK_N_S = 1035;
+const SPR_RAIL_TRACK_BASE = 1018;
+const SPR_ROAD_Y = 1332;
+const SPR_CROSSING_OFF_X = 1370;
+const NUM_SLOPES = 19;
+
+/**
+ * Zbocze kafelka w kodowaniu TTD: bity podniesionych narożników W=1 (lewy), S=2 (dolny), E=4 (prawy),
+ * N=8 (górny), 16 – strome (jeden narożnik o 2 poziomy wyżej). `z` – wysokość najniższego narożnika.
+ */
+export function tileSlope(map: WorldMap, x: number, y: number): { slope: number; z: number } {
+  const [n, e, s, w] = cornerHeights(map, x, y);
+  const z = Math.min(n, e, s, w);
+  const max = Math.max(n, e, s, w);
+  let slope = (w > z ? 1 : 0) | (s > z ? 2 : 0) | (e > z ? 4 : 0) | (n > z ? 8 : 0);
+  if (max - z >= 2) slope |= 16;
+  return { slope, z };
+}
+
+/** Indeks sprite'a terenu w grupie 19 zboczy (SlopeToSpriteOffset w OpenTTD). */
+export function slopeOffset(slope: number): number {
+  if (slope < 16) return slope === 15 ? 0 : slope;
+  switch (slope) {
+    case 29:
+      return 15; // strome N
+    case 23:
+      return 16; // strome S
+    case 27:
+      return 17; // strome W
+    case 30:
+      return 18; // strome E
+    default:
+      return 0;
+  }
+}
+
+/** Punkt zaczepienia sprite'a kafelka: górny narożnik na wysokości najniższego narożnika. */
+function tileOrigin(x: number, y: number, z: number) {
+  return toWorld(x, y, z);
+}
+
+/** Punkt w kafelku podany w 1/16 kafelka w osiach OpenTTD (x OpenTTD = nasze y). */
+function subTile(x: number, y: number, z: number, ox: number, oy: number) {
+  return toWorld(x + oy / 16, y + ox / 16, z);
+}
+
+/** Teren pod kafelkiem: trawa, nieużytek, woda albo brzeg. */
+export function drawGround(g: Graphics, map: WorldMap, x: number, y: number): void {
+  const { slope, z } = tileSlope(map, x, y);
+  const o = tileOrigin(x, y, z);
+  const t = getTerrain(map, x, y);
+  if (t === Terrain.Water) {
+    drawSprite(g, SPR_WATER, o.x, o.y);
+    return;
+  }
+  // Brzeg: ląd z narożnikiem na poziomie wody.
+  if (z === 0 && slope !== 0) {
+    drawSprite(g, `SHORE:${slopeOffset(slope)}`, o.x, o.y);
+    return;
+  }
+  if (t === Terrain.Rough) {
+    const key = slope === 0 ? SPR_ROUGH_VARIANTS[tileHash(x, y) & 3]! : SPR_FLAT_ROUGH + slopeOffset(slope);
+    drawSprite(g, key, o.x, o.y);
+    return;
+  }
+  drawSprite(g, SPR_FLAT_GRASS + slopeOffset(slope), o.x, o.y);
+}
+
+/** Tor na zboczu: przesunięcie od SPR_RAIL_TRACK_Y według zbocza (_track_sloped_sprites). */
+const TRACK_SLOPED: Record<number, number> = { 3: 22, 6: 21, 9: 23, 12: 20 };
+
+/** Elementy toru pojedynczo (skrzyżowania, rozjazdy) – nakładki na grunt. */
+const SINGLE: Record<number, number> = {
+  [Track.Y]: 1005,
+  [Track.X]: 1006,
+  [Track.Upper]: 1007,
+  [Track.Lower]: 1008,
+  [Track.Right]: 1009,
+  [Track.Left]: 1010,
+};
+
+/** Gotowe kafelki „tor + trawa” dla typowych układów. */
+const COMBINED: Record<number, number> = {
+  [Track.X]: SPR_RAIL_TRACK_Y,
+  [Track.Y]: SPR_RAIL_TRACK_Y + 1,
+  [Track.Upper]: SPR_RAIL_TRACK_Y + 2,
+  [Track.Lower]: SPR_RAIL_TRACK_Y + 3,
+  [Track.Right]: SPR_RAIL_TRACK_Y + 4,
+  [Track.Left]: SPR_RAIL_TRACK_Y + 5,
+  [Track.X | Track.Y]: SPR_RAIL_TRACK_Y + 6,
+  [Track.Upper | Track.Lower]: SPR_RAIL_TRACK_N_S,
+  [Track.Left | Track.Right]: SPR_RAIL_TRACK_N_S + 1,
+};
+
+function touches(bits: number, side: Side): boolean {
+  return tracksOn(bits).some((t) => TRACK_SIDES[t].includes(side));
+}
+
+/** Tory z gruntem pod nimi (jak DrawTrackBits w OpenTTD). `bits` – tylko elementy do narysowania. */
+export function drawTrackGround(g: Graphics, map: WorldMap, x: number, y: number, bits: number): void {
+  const { slope, z } = tileSlope(map, x, y);
+  const o = tileOrigin(x, y, z);
+  if (slope !== 0) {
+    const off = TRACK_SLOPED[slope];
+    if (off !== undefined) drawSprite(g, SPR_RAIL_TRACK_Y + off, o.x, o.y);
+    else drawGround(g, map, x, y);
+    return;
+  }
+  const combined = COMBINED[bits];
+  if (combined !== undefined) {
+    drawSprite(g, combined, o.x, o.y);
+    return;
+  }
+  // Rozjazd: grunt z tłuczniem tam, gdzie są tory, i każdy element osobno.
+  const ground = !touches(bits, Side.NE)
+    ? 0
+    : !touches(bits, Side.SW)
+      ? 1
+      : !touches(bits, Side.NW)
+        ? 2
+        : !touches(bits, Side.SE)
+          ? 3
+          : 4;
+  drawSprite(g, SPR_RAIL_TRACK_BASE + ground, o.x, o.y);
+  for (const t of tracksOn(bits)) drawSprite(g, SINGLE[t]!, o.x, o.y);
+}
+
+/** Bity drogi jak w OpenTTD: NW=1, SW=2, SE=4, NE=8. */
+const ROAD_BIT: Record<Side, number> = { [Side.NW]: 1, [Side.SW]: 2, [Side.SE]: 4, [Side.NE]: 8 };
+const ROAD_OFFSETS = [0, 18, 17, 7, 16, 0, 10, 5, 15, 8, 1, 4, 9, 3, 6, 2];
+const ROAD_SLOPED: Record<number, number> = { 12: 11, 6: 12, 3: 13, 9: 14 };
+
+/** Droga miejska z chodnikami (ramiona do sąsiednich dróg); z torem – przejazd kolejowy. */
+export function drawRoadGround(g: Graphics, map: WorldMap, x: number, y: number, arms: readonly Side[], trackBits: number): void {
+  const { slope, z } = tileSlope(map, x, y);
+  const o = tileOrigin(x, y, z);
+  if (trackBits) {
+    // Oś toru w OpenTTD: X = nasze Y.
+    const axis = trackBits & Track.Y ? 0 : 1;
+    drawSprite(g, SPR_CROSSING_OFF_X + axis + 4, o.x, o.y);
+    return;
+  }
+  let bits = 0;
+  for (const s of arms) bits |= ROAD_BIT[s];
+  const off = slope !== 0 ? (ROAD_SLOPED[slope] ?? 0) : ROAD_OFFSETS[bits]!;
+  drawSprite(g, SPR_ROAD_Y - NUM_SLOPES + off, o.x, o.y);
+}
+
+// ------------------------------------------------------------------ domy
+
+/** Domy TTD pogrupowane według poziomu naszego domu (1–4) – po populacji budynku. */
+let houseLevels: HouseDef[][] | null = null;
+
+function levels(): HouseDef[][] {
+  if (houseLevels) return houseLevels;
+  const all = gfxData().houses.filter((h) => h.pop > 0 && !h.church);
+  const band = (lo: number, hi: number) => all.filter((h) => h.pop > lo && h.pop <= hi);
+  houseLevels = [band(0, 35), band(35, 100), band(100, 150), band(150, 10000)];
+  return houseLevels;
+}
+
+/** Rok gry do wyboru wyglądu domów (ustawiany przez grę). */
+let year = 1950;
+
+export function setGfxYear(y: number): void {
+  year = y;
+}
+
+export function gfxYear(): number {
+  return year;
+}
+
+function houseVariant(x: number, y: number, level: number) {
+  const h = tileHash(x, y);
+  const band = levels()[Math.min(3, Math.max(0, level - 1))]!;
+  const fresh = band.filter((d) => d.min <= year && year <= d.max);
+  const list = fresh.length ? fresh : band;
+  const def = list[h % list.length]!;
+  return def.variants[(h >>> 8) & 3]!;
+}
+
+/** Dom na kafelku: grunt (warstwa terenu) i budynek (warstwa obiektów); wygląd zależy od poziomu i roku. */
+export function drawHouseTile(g: Graphics, objects: Graphics, map: WorldMap, x: number, y: number, level: number): void {
+  const v = houseVariant(x, y, level);
+  const { z } = tileSlope(map, x, y);
+  const o = tileOrigin(x, y, z);
+  drawSprite(g, v.ground, o.x, o.y);
+  drawHouseBuilding(objects, map, x, y, level);
+}
+
+/** Sam budynek domu (także do dorysowania przed pojazdem, który zasłania). */
+export function drawHouseBuilding(objects: Graphics, map: WorldMap, x: number, y: number, level: number): void {
+  const v = houseVariant(x, y, level);
+  const { z } = tileSlope(map, x, y);
+  const b = subTile(x, y, z, v.dx, v.dy);
+  drawSprite(objects, v.building, b.x, b.y);
+}
+
+// ------------------------------------------------------------------ drzewa
+
+/** Gęstość lasów: szum wartości na siatce 6×6 kafelków (stały dla mapy). */
+function treeNoise(x: number, y: number): number {
+  const cell = 6;
+  const gx = Math.floor(x / cell);
+  const gy = Math.floor(y / cell);
+  const fx = x / cell - gx;
+  const fy = y / cell - gy;
+  const v = (a: number, b: number) => (tileHash(a + 7919, b + 104729) & 0xffff) / 0xffff;
+  const sx = fx * fx * (3 - 2 * fx);
+  const sy = fy * fy * (3 - 2 * fy);
+  const top = v(gx, gy) * (1 - sx) + v(gx + 1, gy) * sx;
+  const bottom = v(gx, gy + 1) * (1 - sx) + v(gx + 1, gy + 1) * sx;
+  return top * (1 - sy) + bottom * sy;
+}
+
+/** Ile drzew rośnie na pustym kafelku (0 – żadne). Czysta dekoracja, poza symulacją. */
+export function treeCount(x: number, y: number): number {
+  const n = treeNoise(x, y);
+  const h = tileHash(x, y);
+  if (n < 0.62) return (h & 63) === 0 ? 1 : 0; // pojedyncze drzewa na łąkach
+  return 1 + Math.min(3, Math.floor((n - 0.62) * 12 + ((h >>> 6) & 1)));
+}
+
+/** Drzewa na kafelku (układ i gatunki jak w OpenTTD, gatunek zależny od okolicy). */
+export function drawTrees(objects: Graphics, map: WorldMap, x: number, y: number, count: number): void {
+  const { trees } = gfxData();
+  const h = tileHash(x, y);
+  const region = tileHash(Math.floor(x / 9), Math.floor(y / 9));
+  const type = (region + ((h >>> 12) & 1)) % 12;
+  const sprites = trees.layouts[type * 4 + (h & 3)]!;
+  const xy = trees.xy[(h >>> 2) & 3]!;
+  const { slope, z } = tileSlope(map, x, y);
+  const zt = z + (slope === 0 ? 0 : slope & 16 ? 1 : 0.5);
+  const list = Array.from({ length: count }, (_, i) => ({ base: sprites[i]!, ox: xy[i]![0], oy: xy[i]![1], i }));
+  list.sort((a, b) => a.ox + a.oy - (b.ox + b.oy));
+  for (const t of list) {
+    const stage = t.i === count - 1 ? 3 + ((h >>> 20) & 3) : 6;
+    const p = subTile(x, y, zt, t.ox, t.oy);
+    drawSprite(objects, t.base + stage, p.x, p.y);
+  }
+}
+
+// ------------------------------------------------------------------ stacje i zajezdnie
+
+const COMPANY = () => gfxData().company;
+
+interface SeqItem {
+  id: number;
+  dx: number;
+  dy: number;
+  dz: number;
+  glass?: boolean;
+}
+
+/** Układy peronów (station_land.h): [oś OpenTTD X][rodzaj]. Rodzaj: 0 – peron, 1 – budynek, 2/3 – dach A/B. */
+const PLATFORMS: SeqItem[][][] = [
+  [
+    [
+      { id: 1070, dx: 0, dy: 0, dz: 0 },
+      { id: 1072, dx: 0, dy: 11, dz: 0 },
+    ],
+    [
+      { id: 1073, dx: 0, dy: 0, dz: 0 },
+      { id: 1072, dx: 0, dy: 11, dz: 0 },
+    ],
+    [
+      { id: 1076, dx: 0, dy: 0, dz: 0 },
+      { id: 1072, dx: 0, dy: 11, dz: 0 },
+      { id: 1079, dx: 0, dy: 0, dz: 16 },
+      { id: 1083, dx: 0, dy: 0, dz: 16, glass: true },
+    ],
+    [
+      { id: 1070, dx: 0, dy: 0, dz: 0 },
+      { id: 1078, dx: 0, dy: 11, dz: 0 },
+      { id: 1081, dx: 0, dy: 0, dz: 16 },
+      { id: 1085, dx: 0, dy: 0, dz: 16, glass: true },
+    ],
+  ],
+  [
+    [
+      { id: 1071, dx: 0, dy: 0, dz: 0 },
+      { id: 1069, dx: 11, dy: 0, dz: 0 },
+    ],
+    [
+      { id: 1074, dx: 0, dy: 0, dz: 0 },
+      { id: 1069, dx: 11, dy: 0, dz: 0 },
+    ],
+    [
+      { id: 1077, dx: 0, dy: 0, dz: 0 },
+      { id: 1069, dx: 11, dy: 0, dz: 0 },
+      { id: 1080, dx: 0, dy: 0, dz: 16 },
+      { id: 1084, dx: 0, dy: 0, dz: 16, glass: true },
+    ],
+    [
+      { id: 1071, dx: 0, dy: 0, dz: 0 },
+      { id: 1075, dx: 11, dy: 0, dz: 0 },
+      { id: 1082, dx: 0, dy: 0, dz: 16 },
+      { id: 1086, dx: 0, dy: 0, dz: 16, glass: true },
+    ],
+  ],
+];
+
+/**
+ * Peron stacji: tor jako grunt, perony / budynek / zadaszenie jako obiekty. Rodzaj kafelka zależy
+ * od położenia w rzędzie peronów: budynek na środku, zadaszenie na przemian, zwykłe perony na końcach.
+ */
+export function drawStationTile(g: Graphics, objects: Graphics, map: WorldMap, x: number, y: number, station: Station): void {
+  const { z } = tileSlope(map, x, y);
+  const o = tileOrigin(x, y, z);
+  // Nasza oś x = oś Y OpenTTD.
+  const ottdX = station.axis === 'y';
+  drawSprite(g, ottdX ? SPR_RAIL_TRACK_Y + 1 : SPR_RAIL_TRACK_Y, o.x, o.y);
+  const w = map.width;
+  const along = (i: number) => (station.axis === 'x' ? i % w : Math.floor(i / w));
+  const across = (i: number) => (station.axis === 'x' ? Math.floor(i / w) : i % w);
+  const here = station.axis === 'x' ? y : x;
+  const row = station.tiles.filter((i) => across(i) === here).map(along);
+  const pos = (station.axis === 'x' ? x : y) - Math.min(...row);
+  const len = row.length;
+  let kind = 0;
+  if (len >= 3 && pos === Math.floor(len / 2)) kind = 1;
+  else if (len >= 3 && pos > 0 && pos < len - 1) kind = 2 + (pos & 1);
+  for (const it of PLATFORMS[ottdX ? 0 : 1]![kind]!) {
+    const p = subTile(x, y, z + it.dz / 8, it.dx, it.dy);
+    drawSprite(objects, it.glass ? `${it.id}@glass` : palKey(it.id, COMPANY()), p.x, p.y);
+  }
+}
+
+/** Zajezdnia (track_land.h): grunt i budynek w kolorze firmy, wjazd od strony `depot.side`. */
+export function drawDepotTile(g: Graphics, objects: Graphics, map: WorldMap, x: number, y: number, depot: Depot): void {
+  const { z } = tileSlope(map, x, y);
+  const o = tileOrigin(x, y, z);
+  const layouts: Record<Side, { ground: number; parts: [number, number, number][] }> = {
+    [Side.NE]: { ground: SPR_FLAT_GRASS, parts: [[1067, 2, 13]] },
+    [Side.SE]: {
+      ground: SPR_RAIL_TRACK_Y,
+      parts: [
+        [1063, 2, 2],
+        [1064, 13, 2],
+      ],
+    },
+    [Side.SW]: {
+      ground: SPR_RAIL_TRACK_Y + 1,
+      parts: [
+        [1065, 2, 2],
+        [1066, 2, 13],
+      ],
+    },
+    [Side.NW]: { ground: SPR_FLAT_GRASS, parts: [[1068, 13, 2]] },
+  };
+  const l = layouts[depot.side];
+  drawSprite(g, l.ground, o.x, o.y);
+  for (const [id, dx, dy] of l.parts) {
+    const p = subTile(x, y, z, dx, dy);
+    drawSprite(objects, palKey(id, COMPANY()), p.x, p.y);
+  }
+}
+
+// ------------------------------------------------------------------ zakłady
+
+/** Zakład z kafelków TTD (układ przygotowany przez build_atlas.py w naszym układzie osi). */
+export function drawIndustryTiles(g: Graphics, map: WorldMap, ix: number, iy: number, type: string): boolean {
+  const tiles = gfxData().industries[type];
+  if (!tiles) return false;
+  const sorted = [...tiles].sort((a, b) => a.x + a.y - (b.x + b.y));
+  // Najpierw cały grunt, potem budynki od tyłu do przodu.
+  for (const t of sorted) {
+    const { z } = tileSlope(map, ix + t.x, iy + t.y);
+    const o = tileOrigin(ix + t.x, iy + t.y, z);
+    drawSprite(g, t.ground, o.x, o.y);
+  }
+  for (const t of sorted) {
+    const { z } = tileSlope(map, ix + t.x, iy + t.y);
+    const p = subTile(ix + t.x, iy + t.y, z, t.dx, t.dy);
+    drawSprite(g, t.building, p.x, p.y);
+  }
+  return true;
+}

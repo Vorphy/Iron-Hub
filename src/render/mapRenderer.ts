@@ -11,7 +11,18 @@ import { cornerHeights, MAX_HEIGHT } from '../sim/world/height';
 import { HEIGHT_PX, TILE_H, TILE_W, tileDiamond, tileToWorld, tileToWorldFlat } from './iso';
 import { darken, lighten, tileHash } from './shapes';
 import { drawHouse } from './buildings';
-import { drawRoad } from './roadDraw';
+import { drawRoad, roadNeighbors } from './roadDraw';
+import { gfxOn } from './gfx/gfx';
+import {
+  drawDepotTile,
+  drawGround,
+  drawHouseTile,
+  drawRoadGround,
+  drawStationTile,
+  drawTrackGround,
+  drawTrees,
+  treeCount,
+} from './gfx/tiles';
 import { drawCatenary } from './catenaryDraw';
 import { drawDepot } from './depotDraw';
 import { drawTrackTile, TRACK_STYLE } from './trackDraw';
@@ -232,48 +243,89 @@ export class MapRenderer {
     const y0 = chunk.cy * CHUNK;
     const x1 = Math.min(x0 + CHUNK, this.map.width);
     const y1 = Math.min(y0 + CHUNK, this.map.height);
+    const sprites = gfxOn();
+    const stations = new Map(this.getStations().map((s) => [s.id, s]));
     // Po przekątnych x + y (od tyłu do przodu) – poprawne zasłanianie na wzgórzach.
     for (let d = x0 + y0; d <= x1 + y1 - 2; d++) {
       for (let x = Math.max(x0, d - y1 + 1); x <= Math.min(x1 - 1, d - y0); x++) {
         const y = d - x;
-        const t = getTerrain(this.map, x, y);
-        const h = tileHash(x, y);
-        const stationId = this.map.station[y * this.map.width + x];
-        const waypoint = stationId ? this.getStations().find((s) => s.id === stationId)?.waypoint === true : false;
-        if (stationId && !waypoint) {
-          g.poly(tileDiamond(x, y))
-            .fill(PLATFORM[h & 3]!)
-            .stroke({ width: 1, color: PLATFORM_EDGE, alpha: 0.6 });
-        } else {
-          drawTerrainTile(g, this.map, x, y, COLORS[t][h & 3]!);
-          if (t === Terrain.Rough) drawRoughDots(g, x, y, h);
-        }
-        // Droga pod torem (przejazd) – najpierw droga, tor nad nią.
-        if (this.map.road[y * this.map.width + x]) drawRoad(tracksG, this.map, x, y);
-        const bridge = this.map.bridge[y * this.map.width + x]
-          ? this.getBridges().find((b) => b.id === this.map.bridge[y * this.map.width + x])
-          : undefined;
-        const head = bridge && bridgeRole(bridge, x, y) !== 'span' ? bridge : undefined;
-        const tunnelId = this.map.tunnel[y * this.map.width + x];
-        const tunnel = tunnelId ? this.getTunnels().find((t) => t.id === tunnelId) : undefined;
-        const portal = tunnel && tunnelRole(tunnel, x, y) !== 'inside' ? tunnel : undefined;
-        const tileTracks = tracksOn(getTrackBits(this.map, x, y));
-        const drawn = tileTracks.filter(
-          (track) =>
-            !(head && isHeadAxisTrack(head, track)) && // rampę rysuje most
-            !(portal && track === axisTrack(portal.axis)), // tor wjazdu rysuje tunel
-        );
-        if (drawn.length) drawTrackTile(tracksG, x, y, drawn, TRACK_STYLE, this.map);
-        if (waypoint) drawWaypoint(tracksG, x, y, getTrackBits(this.map, x, y) === Track.X);
-        if (this.map.electric[y * this.map.width + x]) drawCatenary(tracksG, x, y, tileTracks);
-        const house = this.map.house[y * this.map.width + x]!;
-        if (house) drawHouse(tracksG, x, y, house, h);
-        const depotId = this.map.depot[y * this.map.width + x];
-        if (depotId) {
-          const depot = this.getDepots().find((d) => d.id === depotId);
-          if (depot) drawDepot(tracksG, x, y, depot.side);
-        }
+        if (sprites) this.drawTileSprites(g, tracksG, x, y, stations);
+        else this.drawTileShapes(g, tracksG, x, y, stations);
       }
+    }
+  }
+
+  /** Kafelek z grafiki OpenGFX: grunt (teren, tory, drogi) w warstwie terenu, budynki i drzewa nad nim. */
+  private drawTileSprites(g: Graphics, objects: Graphics, x: number, y: number, stations: Map<number, Station>): void {
+    const map = this.map;
+    const i = y * map.width + x;
+    const station = map.station[i] ? stations.get(map.station[i]!) : undefined;
+    const depotId = map.depot[i];
+    const depot = depotId ? this.getDepots().find((dp) => dp.id === depotId) : undefined;
+    const bridge = map.bridge[i] ? this.getBridges().find((b) => b.id === map.bridge[i]) : undefined;
+    const head = bridge && bridgeRole(bridge, x, y) !== 'span' ? bridge : undefined;
+    const tunnelId = map.tunnel[i];
+    const tunnel = tunnelId ? this.getTunnels().find((t) => t.id === tunnelId) : undefined;
+    const portal = tunnel && tunnelRole(tunnel, x, y) !== 'inside' ? tunnel : undefined;
+    const bits = getTrackBits(map, x, y);
+    // Rampę mostu i wjazd do tunelu rysują ich renderery – tu tylko pozostałe elementy toru.
+    let drawnBits = bits;
+    if (head) drawnBits &= ~axisTrack(head.axis);
+    if (portal) drawnBits &= ~axisTrack(portal.axis);
+
+    if (station && !station.waypoint) drawStationTile(g, objects, map, x, y, station);
+    else if (depot) drawDepotTile(g, objects, map, x, y, depot);
+    else if (map.road[i]) drawRoadGround(g, map, x, y, roadNeighbors(map, x, y), bits);
+    else if (map.house[i]) drawHouseTile(g, objects, map, x, y, map.house[i]!);
+    else if (drawnBits) drawTrackGround(g, map, x, y, drawnBits);
+    else {
+      drawGround(g, map, x, y);
+      const empty = !bits && !map.industry[i] && !map.bridge[i] && !portal && getTerrain(map, x, y) !== Terrain.Water;
+      const trees = empty ? treeCount(x, y) : 0;
+      if (trees) drawTrees(objects, map, x, y, trees);
+    }
+    if (station?.waypoint) drawWaypoint(objects, x, y, bits === Track.X);
+    if (map.electric[i]) drawCatenary(objects, x, y, tracksOn(bits));
+  }
+
+  /** Kafelek z prostych kształtów (bez atlasu grafiki). */
+  private drawTileShapes(g: Graphics, tracksG: Graphics, x: number, y: number, stations: Map<number, Station>): void {
+    const t = getTerrain(this.map, x, y);
+    const h = tileHash(x, y);
+    const stationId = this.map.station[y * this.map.width + x];
+    const waypoint = stationId ? stations.get(stationId)?.waypoint === true : false;
+    if (stationId && !waypoint) {
+      g.poly(tileDiamond(x, y))
+        .fill(PLATFORM[h & 3]!)
+        .stroke({ width: 1, color: PLATFORM_EDGE, alpha: 0.6 });
+    } else {
+      drawTerrainTile(g, this.map, x, y, COLORS[t][h & 3]!);
+      if (t === Terrain.Rough) drawRoughDots(g, x, y, h);
+    }
+    // Droga pod torem (przejazd) – najpierw droga, tor nad nią.
+    if (this.map.road[y * this.map.width + x]) drawRoad(tracksG, this.map, x, y);
+    const bridge = this.map.bridge[y * this.map.width + x]
+      ? this.getBridges().find((b) => b.id === this.map.bridge[y * this.map.width + x])
+      : undefined;
+    const head = bridge && bridgeRole(bridge, x, y) !== 'span' ? bridge : undefined;
+    const tunnelId = this.map.tunnel[y * this.map.width + x];
+    const tunnel = tunnelId ? this.getTunnels().find((t) => t.id === tunnelId) : undefined;
+    const portal = tunnel && tunnelRole(tunnel, x, y) !== 'inside' ? tunnel : undefined;
+    const tileTracks = tracksOn(getTrackBits(this.map, x, y));
+    const drawn = tileTracks.filter(
+      (track) =>
+        !(head && isHeadAxisTrack(head, track)) && // rampę rysuje most
+        !(portal && track === axisTrack(portal.axis)), // tor wjazdu rysuje tunel
+    );
+    if (drawn.length) drawTrackTile(tracksG, x, y, drawn, TRACK_STYLE, this.map);
+    if (waypoint) drawWaypoint(tracksG, x, y, getTrackBits(this.map, x, y) === Track.X);
+    if (this.map.electric[y * this.map.width + x]) drawCatenary(tracksG, x, y, tileTracks);
+    const house = this.map.house[y * this.map.width + x]!;
+    if (house) drawHouse(tracksG, x, y, house, h);
+    const depotId = this.map.depot[y * this.map.width + x];
+    if (depotId) {
+      const depot = this.getDepots().find((d) => d.id === depotId);
+      if (depot) drawDepot(tracksG, x, y, depot.side);
     }
   }
 }

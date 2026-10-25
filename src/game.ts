@@ -10,6 +10,7 @@ import { Overlay } from './render/overlay';
 import { BridgeRenderer } from './render/bridges';
 import { TunnelRenderer } from './render/tunnels';
 import { IndustryRenderer } from './render/buildings';
+import { setGfxYear } from './render/gfx/tiles';
 import { FloatingTexts } from './render/floatingText';
 import { MapLabels } from './render/mapLabels';
 import { SignalRenderer } from './render/signals';
@@ -115,7 +116,7 @@ export class Game {
     );
     this.loop.onBeforeStep = () => this.trains.capture(this.sim.state);
     this.labels.rebuild(state);
-    this.industries.draw(state.industries);
+    this.industries.draw(state.industries, state.map);
     this.bridges.draw(state);
     this.tunnels.draw(state);
     app.stage.addChild(world);
@@ -389,6 +390,7 @@ export class Game {
     if (this.pointer && cameraBefore !== `${this.camera.cx},${this.camera.cy},${this.camera.zoom}`) {
       this.tools.pointerMoved(this.tileF(this.pointer.x, this.pointer.y));
     }
+    setGfxYear(gameDate(this.sim.state).year);
     this.mapRenderer.cull(this.camera.viewRect(), this.camera.zoom);
     this.industries.cull(this.camera.viewRect());
     // Ruch uliczny w tempie gry (stoi w pauzie).

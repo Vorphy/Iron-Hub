@@ -7,6 +7,8 @@ import type { Rect } from './camera';
 import { tileCenter, tileToWorld, type Point } from './iso';
 import { darken, hull } from './trains';
 import { houseDepth, housesInFront, redrawHouse } from './buildings';
+import { drawSprite, gfxData, gfxOn, palKey, ttdDirection } from './gfx/gfx';
+import { gfxYear } from './gfx/tiles';
 
 /**
  * Ruch uliczny w miastach – czysta dekoracja: nie należy do symulacji ani zapisu, losowość
@@ -44,6 +46,8 @@ const DIRS = [
 interface Vehicle {
   kind: Kind;
   color: number;
+  /** Losowy wybór koloru w grafice OpenGFX. */
+  variant: number;
   /** Kafelki (indeksy): poprzedni, bieżący odcinek a→b i następny. */
   prev: number;
   a: number;
@@ -104,9 +108,10 @@ export class TrafficRenderer {
     // Domy przed autami zasłaniają je – dorysowujemy je w kolejności głębokości.
     for (const house of houses) drawn.push({ depth: houseDepth(map, house), house });
     drawn.sort((p, q) => p.depth - q.depth);
+    const sprites = gfxOn();
     for (const d of drawn) {
       if ('house' in d) redrawHouse(g, map, d.house);
-      else drawCar(g, d.pose, d.v);
+      else if (!sprites || !drawVehicleSprite(g, d.pose, d.v)) drawCar(g, d.pose, d.v);
     }
   }
 
@@ -202,6 +207,7 @@ function spawn(map: WorldMap, tt: TownTraffic, kind: Kind): Vehicle | null {
   const v: Vehicle = {
     kind,
     color: kind === 'bus' ? BUS_COLOR : kind === 'truck' ? pick(TRUCK_CABS) : pick(CAR_COLORS),
+    variant: Math.floor(Math.random() * 1000),
     prev: 0,
     a: 0,
     b: 0,
@@ -262,6 +268,16 @@ function vehiclePose(map: WorldMap, v: Vehicle): Pose {
   const ax = (v.a % map.width) + 0.5;
   const ay = Math.floor(v.a / map.width) + 0.5;
   return { x: ax + d[0] * v.t + rx * LANE, y: ay + d[1] * v.t + ry * LANE, ux: d[0], uy: d[1] };
+}
+
+/** Pojazd z grafiki OpenGFX: autobus, furgonetka (zamiast auta) lub ciężarówka z epoki gry. */
+function drawVehicleSprite(g: Graphics, p: Pose, v: Vehicle): boolean {
+  const def = gfxData().road[v.kind];
+  const year = gfxYear();
+  const base = def.eras[year < 1960 ? 0 : year < 1985 ? 1 : 2]!;
+  const pal = def.colours[v.variant % def.colours.length]!;
+  const at = tileToWorld(p.x, p.y);
+  return drawSprite(g, palKey(base + ttdDirection(p.ux, p.uy), pal), at.x, at.y);
 }
 
 function drawCar(g: Graphics, p: Pose, v: Vehicle): void {

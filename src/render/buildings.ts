@@ -5,6 +5,8 @@ import { HEIGHT_PX, tileToWorldFlat } from './iso';
 import { industryDef, type Industry } from '../sim/economy/industry';
 import { darken, drawBox, drawChimney, drawGableRoof, drawPile, drawTree, lighten, tileHash } from './shapes';
 import { inBounds, type WorldMap } from '../sim/world/map';
+import { gfxOn } from './gfx/gfx';
+import { drawHouseBuilding, drawIndustryTiles } from './gfx/tiles';
 
 // Placeholder – proste bryły do czasu podpięcia grafiki.
 const WALLS = [0xe8dcc0, 0xd9b38c, 0xc9c2b8, 0xe0c9a6];
@@ -47,7 +49,8 @@ export function housesInFront(map: WorldMap, fx: number, fy: number, out: Set<nu
 export function redrawHouse(g: Graphics, map: WorldMap, i: number): void {
   const x = i % map.width;
   const y = Math.floor(i / map.width);
-  drawHouse(g, x, y, map.house[i]!, tileHash(x, y));
+  if (gfxOn()) drawHouseBuilding(g, map, x, y, map.house[i]!);
+  else drawHouse(g, x, y, map.house[i]!, tileHash(x, y));
 }
 
 /** Wszystkie zakłady w jednej warstwie (jest ich kilkanaście – rysowane raz, odświeżane po zmianach). */
@@ -56,13 +59,13 @@ export class IndustryRenderer {
   readonly gfx = new Container();
   private items: { g: Graphics; bounds: Rect }[] = [];
 
-  draw(industries: readonly Industry[]): void {
+  draw(industries: readonly Industry[], map: WorldMap): void {
     for (const child of this.gfx.removeChildren()) child.destroy({ context: true });
     this.items = [];
     // Od tyłu do przodu (mniejsze x + y wcześniej).
     for (const ind of [...industries].sort((a, b) => a.x + a.y - (b.x + b.y))) {
       const g = new Graphics();
-      drawIndustry(g, ind);
+      if (!gfxOn() || !drawIndustryTiles(g, map, ind.x, ind.y, ind.type)) drawIndustry(g, ind);
       const [w, h] = industryDef(ind.type)!.size;
       const left = tileToWorldFlat(ind.x, ind.y + h).x;
       const right = tileToWorldFlat(ind.x + w, ind.y).x;

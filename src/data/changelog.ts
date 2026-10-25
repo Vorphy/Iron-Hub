@@ -11,6 +11,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    date: '2026-10-25',
+    title: 'Nowa grafika w stylu TTD',
+    items: [
+      'Mapa wygląda jak w klasycznym Transport Tycoon: trawa, zbocza, woda z brzegami, lasy i pojedyncze drzewa (grafika OpenGFX).',
+      'Miasta mają prawdziwe domy, biurowce i kościoły – ich wygląd zależy od wielkości domu i roku gry (bez wieżowców w 1900).',
+      'Tory, rozjazdy, skrzyżowania, perony z dachami i budynkiem stacji, zajezdnie i semafory w stylu TTD.',
+      'Kopalnie, elektrownie, huty, tartaki i lasy z oryginalnych kafelków; pociągi, autobusy, furgonetki i ciężarówki z prawdziwymi sylwetkami – lokomotywa i jej wagony mają wspólny kolor.',
+    ],
+  },
+  {
     date: '2026-10-22',
     title: 'Przesuwane i zwijane panele',
     items: [

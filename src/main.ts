@@ -4,6 +4,7 @@ import { START_YEAR, START_YEARS } from './sim/time';
 import { Application } from 'pixi.js';
 import { h, render } from 'preact';
 import { Game } from './game';
+import { loadGfx } from './render/gfx/gfx';
 import {
   describeError,
   downloadSave,
@@ -285,6 +286,8 @@ async function start(): Promise<void> {
     resolution: window.devicePixelRatio || 1,
   });
   document.getElementById('game')!.appendChild(app.canvas);
+  // Grafika OpenGFX; bez niej gra rysuje proste kształty.
+  await loadGfx(`${import.meta.env.BASE_URL}gfx/opengfx/`);
   render(h(Hud, { actions }), document.getElementById('ui')!);
 
   // ?seed=N[&size=S] wymusza nową grę na danej mapie; inaczej kontynuujemy autozapis.
@@ -327,5 +330,15 @@ async function start(): Promise<void> {
     if (document.visibilityState === 'hidden' && !game?.state.finances.bankrupt) void saveTo('auto', true);
   });
 }
+
+// Podgląd stanu gry w konsoli przeglądarki (tylko serwer deweloperski).
+if (import.meta.env.DEV)
+  Object.assign(window, {
+    ironhub: {
+      get game() {
+        return game;
+      },
+    },
+  });
 
 void start();

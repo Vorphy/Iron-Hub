@@ -2,6 +2,7 @@ import { Graphics } from 'pixi.js';
 import type { GameState } from '../sim/state';
 import { vehiclePoses, type Point3, type VehiclePose } from '../sim/trains/geometry';
 import { toWorld, type Point } from './iso';
+import { drawSprite, gfxData, gfxOn, palKey, ttdDirection } from './gfx/gfx';
 import { houseDepth, housesInFront, redrawHouse } from './buildings';
 import { bridgeAbove, drawBridge } from './bridges';
 import type { Bridge } from '../sim/track/bridge';
@@ -16,6 +17,9 @@ interface Drawn {
   trainId: number;
   pose: VehiclePose;
   depth: number;
+  /** Lokomotywa prowadząca składu (kolor całego pociągu w grafice OpenGFX). */
+  engine: string;
+  reversed: boolean;
 }
 
 /**
@@ -43,7 +47,7 @@ export class TrainRenderer {
         const prev = this.prev.get(`${t.id}:${cur.index}`);
         const pose = prev ? { ...cur, front: lerp(prev.front, cur.front, alpha), back: lerp(prev.back, cur.back, alpha) } : cur;
         const depth = (pose.front.x + pose.front.y + pose.back.x + pose.back.y) / 2;
-        items.push({ trainId: t.id, pose, depth });
+        items.push({ trainId: t.id, pose, depth, engine: t.engine, reversed: t.reversed });
       }
     }
     // Domy przed pociągiem zasłaniają go – dorysowujemy je w kolejności głębokości.
@@ -58,8 +62,10 @@ export class TrainRenderer {
     ];
     order.sort((a, b) => a.depth - b.depth);
     this.hits = [];
+    const sprites = gfxOn();
     const drawItem = (item: Drawn) => {
-      const c = drawVehicle(g, item.pose, item.trainId === selectedId);
+      const selected = item.trainId === selectedId;
+      const c = (sprites && drawVehicleSprite(g, item, selected)) || drawVehicle(g, item.pose, selected);
       this.hits.push({ trainId: item.trainId, x: c.x, y: c.y });
     };
     // Pojazdy na torze pod mostem: najpierw one, potem ten most nad nimi, na końcu reszta.
@@ -97,6 +103,32 @@ export class TrainRenderer {
     }
     return best;
   }
+}
+
+/**
+ * Pojazd z grafiki OpenGFX: jeden z 8 (lub 4 symetrycznych) widoków według kierunku jazdy,
+ * w kolorze lokomotywy prowadzącej. Zwraca środek w px albo null, gdy brak sprite'a.
+ */
+function drawVehicleSprite(g: Graphics, item: Drawn, selected: boolean): Point | null {
+  const { engines, wagons } = gfxData();
+  const { front: f, back: b } = item.pose;
+  let dir = ttdDirection(f.x - b.x, f.y - b.y);
+  const pal = engines[item.engine]?.pal ?? 0;
+  let id: number;
+  if (item.pose.engine) {
+    const e = engines[item.pose.type];
+    if (!e) return null;
+    // Po zawróceniu lokomotywa jedzie tyłem.
+    if (item.reversed) dir = (dir + 4) % 8;
+    id = e.base + (e.views === 8 ? dir : dir & 3);
+  } else {
+    const w = wagons[item.pose.type];
+    if (!w) return null;
+    id = (item.pose.loaded && w.full ? w.full : w.base) + (dir & 3);
+  }
+  const mid = toWorld((f.x + b.x) / 2, (f.y + b.y) / 2, (f.z + b.z) / 2);
+  if (!drawSprite(g, palKey(id, pal), mid.x, mid.y, selected ? 0xfff27a : 0xffffff)) return null;
+  return { x: mid.x, y: mid.y - 6 };
 }
 
 function lerp(a: Point3, b: Point3, t: number): Point3 {
