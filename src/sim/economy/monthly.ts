@@ -19,7 +19,7 @@ import {
   monthlyDemand,
   type Industry,
 } from './industry';
-import { emptyTownMonth, MAX_HOUSE_LEVEL, townTiles, type Town } from './town';
+import { emptyTownMonth, HOUSE_POPULATION, MAX_HOUSE_LEVEL, metroStatus, townTiles, type Town } from './town';
 
 // Reguły z pliku ekonomii (src/data/economy.ts).
 export const GROW_THRESHOLD = ECONOMY.industry.growThreshold;
@@ -31,6 +31,8 @@ const TOWN_GROWTH_MAX_EXTRA = ECONOMY.town.growthMaxExtra;
 const UNSERVED_GROWTH_CHANCE = ECONOMY.town.unservedGrowthChance;
 const UPGRADE_CHANCE = ECONOMY.town.upgradeChance;
 const STATION_PULL = ECONOMY.town.stationPull;
+const METRO_GROWTH_EXTRA = ECONOMY.town.metroGrowthExtra;
+const METRO_UPGRADE_CHANCE = ECONOMY.town.metroUpgradeChance;
 /** Utrzymanie toru i peronu metra względem zwykłego. */
 const METRO_MAINTENANCE = 2;
 
@@ -94,25 +96,43 @@ function closeTownMonth(state: GameState, town: Town, nearStations: Uint8Array, 
   const m = town.month;
   town.lastTransported = m.passengers > 0 ? Math.min(1, m.passengersTransported / m.passengers) : 0;
   const served = m.passengersTransported > 0;
+  const tiles = townTiles(state, town);
+  const metro = metroStatus(
+    state,
+    town,
+    tiles.reduce((pop, i) => pop + HOUSE_POPULATION[state.map.house[i]!]!, 0),
+  );
+  if ((metro === 'wanted' || metro === 'stalled') && !town.metroDemand) {
+    town.metroDemand = true;
+    events.push({ type: 'metroDemand', townId: town.id });
+  }
+
   let houses = 0;
   if (served) houses = 1 + Math.round(TOWN_GROWTH_MAX_EXTRA * town.lastTransported);
   else if (nextFloat(state.rng) < UNSERVED_GROWTH_CHANCE) houses = 1;
+  // Duże miasto: metro przyspiesza rozwój, bez metra powyżej progu miasto stoi.
+  if (metro === 'metro') houses += METRO_GROWTH_EXTRA;
+  else if (metro === 'stalled') houses = 0;
 
-  const before = new Set(townTiles(state, town));
+  const before = new Set(tiles);
   growTown(state, state.rng, town, houses, (i) => (nearStations[i] ? STATION_PULL : 1));
   for (const i of townTiles(state, town)) if (!before.has(i)) events.push(tileEvent(state, i));
   updateTownRoads(state, town, events);
 
-  // W obsługiwanym mieście część domów się rozbudowuje.
-  if (served && nextFloat(state.rng) < UPGRADE_CHANCE && before.size > 0) {
-    const list = [...before];
-    const i = list[nextInt(state.rng, 0, list.length)]!;
-    if (state.map.house[i]! < MAX_HOUSE_LEVEL) {
-      state.map.house[i]!++;
-      events.push(tileEvent(state, i));
-    }
+  // W obsługiwanym mieście część domów się rozbudowuje (z metrem – częściej).
+  if (metro !== 'stalled' && before.size > 0) {
+    if (served && nextFloat(state.rng) < UPGRADE_CHANCE) upgradeHouse(state, tiles, events);
+    if (metro === 'metro' && nextFloat(state.rng) < METRO_UPGRADE_CHANCE) upgradeHouse(state, tiles, events);
   }
   town.month = emptyTownMonth();
+}
+
+function upgradeHouse(state: GameState, tiles: number[], events: SimEvent[]): void {
+  const i = tiles[nextInt(state.rng, 0, tiles.length)]!;
+  if (state.map.house[i]! < MAX_HOUSE_LEVEL) {
+    state.map.house[i]!++;
+    events.push(tileEvent(state, i));
+  }
 }
 
 function tileEvent(state: GameState, i: number): SimEvent {

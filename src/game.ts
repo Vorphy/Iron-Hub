@@ -392,7 +392,11 @@ export class Game {
         this.underground.markDirty();
         this.minimapDirty = true;
       } else if (ev.type === 'income') this.floaters.spawn(`+${formatMoney(ev.amount)}`, ev.x, ev.y);
-      else if (ev.type === 'researchDone') {
+      else if (ev.type === 'metroDemand') {
+        const town = this.sim.state.towns.find((t) => t.id === ev.townId);
+        if (town)
+          showMessage(`${town.name} domaga się metra! Bez stacji metra miasto przestanie rosnąć powyżej 10 000 mieszkańców.`);
+      } else if (ev.type === 'researchDone') {
         const def = researchDef(ev.id);
         if (def) showMessage(`Badanie zakończone: ${def.name} – poziom ${researchLevel(this.sim.state, ev.id)}`);
       } else if (ev.type === 'newEngines') {

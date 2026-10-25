@@ -12,6 +12,16 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-25',
+    title: 'Metro: semafory, minimapa, duże miasta',
+    items: [
+      'Semafory pod ziemią: na poziomie −1 narzędzie Semafor stawia je na torach i peronach metra (w widoku −1 widać tylko semafory metra, na powierzchni – tylko te z góry).',
+      'Metro na minimapie – tory i stacje metra rysowane na niebiesko.',
+      'Duże miasta domagają się metra: od 5 000 mieszkańców pojawia się komunikat, a w oknie miasta napis o metrze. Stacja metra w mieście przyspiesza jego wzrost i rozbudowę domów; bez metra miasto powyżej 10 000 mieszkańców przestaje rosnąć.',
+      'Zajezdnie zostają na powierzchni – pociągi zjeżdżają do metra zjazdem.',
+    ],
+  },
+  {
+    date: '2026-10-25',
     title: 'Badania',
     items: [
       'Nowe okno Badania (🔬 na górnym pasku albo Y): ulepszenia za pieniądze i czas – większe wagony, szybsze pociągi, sprawny załadunek, tańsze utrzymanie, lepsza obsługa stacji i prototypy lokomotyw (nowe modele 2 lata wcześniej).',

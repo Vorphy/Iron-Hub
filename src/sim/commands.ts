@@ -155,6 +155,8 @@ export type SimEvent =
   | { type: 'researchDone'; id: ResearchId }
   /** Zmiana torów, zjazdów lub stacji metra (renderer poziomu −1 rysuje się od nowa). */
   | { type: 'undergroundChanged' }
+  /** Miasto urosło na tyle, że domaga się metra (raz na miasto). */
+  | { type: 'metroDemand'; townId: number }
   /** Zapłata za dostawę – (x, y) w układzie logicznym, do napisu nad pociągiem. */
   | { type: 'income'; amount: number; x: number; y: number }
   /** Zamknięcie miesiąca z ujemnym saldem: tyle miesięcy do bankructwa. */

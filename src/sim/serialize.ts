@@ -544,7 +544,8 @@ function isTown(v: unknown): v is Town {
     isInt(t.y) &&
     isObj(t.month) &&
     Object.values(t.month).every(isNum) &&
-    isNum(t.lastTransported)
+    isNum(t.lastTransported) &&
+    (t.metroDemand === undefined || typeof t.metroDemand === 'boolean')
   );
 }
 

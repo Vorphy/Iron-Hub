@@ -23,6 +23,8 @@ export interface Town {
   month: TownMonth;
   /** Odsetek przewiezionych pasażerów w poprzednim miesiącu (0–1). */
   lastTransported: number;
+  /** Miasto już ogłosiło, że chce metra (komunikat tylko raz). */
+  metroDemand?: boolean;
 }
 
 export function emptyTownMonth(): TownMonth {
@@ -145,6 +147,26 @@ export function townTiles(state: GameState, town: Town): number[] {
 
 export function townPopulation(state: GameState, town: Town): number {
   return townTiles(state, town).reduce((pop, i) => pop + HOUSE_POPULATION[state.map.house[i]!]!, 0);
+}
+
+/** Metro w mieście: stacja z peronem na poziomie −1 w obrębie miasta. */
+export function townHasMetro(state: GameState, town: Town): boolean {
+  const w = state.map.width;
+  return state.stations.some((st) =>
+    st.underTiles?.some((i) => Math.abs((i % w) - town.x) <= TOWN_EXTENT && Math.abs(Math.floor(i / w) - town.y) <= TOWN_EXTENT),
+  );
+}
+
+/**
+ * Metro a rozwój miasta: poniżej progu bez znaczenia ('small'); od progu metro przyspiesza wzrost
+ * ('metro'), a jego brak ('wanted') powyżej drugiego progu wstrzymuje rozwój ('stalled').
+ */
+export type MetroStatus = 'small' | 'metro' | 'wanted' | 'stalled';
+
+export function metroStatus(state: GameState, town: Town, population: number): MetroStatus {
+  if (population < ECONOMY.town.metroDemandPop) return 'small';
+  if (townHasMetro(state, town)) return 'metro';
+  return population > ECONOMY.town.metroRequiredPop ? 'stalled' : 'wanted';
 }
 
 export function townHouseCount(state: GameState, town: Town): number {

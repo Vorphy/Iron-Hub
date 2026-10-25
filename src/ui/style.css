@@ -295,6 +295,17 @@ body {
   color: var(--muted);
 }
 
+/* Okno miasta: metro w dużym mieście. */
+.metro-metro {
+  color: var(--money);
+}
+.metro-wanted {
+  color: var(--accent);
+}
+.metro-stalled {
+  color: #ff8a7a;
+}
+
 .small {
   font-size: 11px;
 }

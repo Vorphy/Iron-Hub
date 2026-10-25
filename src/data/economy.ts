@@ -147,6 +147,13 @@ export const ECONOMY = {
     upgradeChance: 0.4,
     /** Kafelki w zasięgu stacji są tyle razy chętniej wybierane pod nowy dom. */
     stationPull: 6,
+    /** Od tylu mieszkańców miasto domaga się metra (stacja na poziomie −1 w obrębie miasta). */
+    metroDemandPop: 5000,
+    /** Powyżej tylu mieszkańców miasto bez metra przestaje rosnąć. */
+    metroRequiredPop: 10000,
+    /** Miasto z metrem (od metroDemandPop): tyle domów więcej na miesiąc i dodatkowa szansa na rozbudowę. */
+    metroGrowthExtra: 2,
+    metroUpgradeChance: 0.6,
   },
 
   /** Zakłady przemysłowe – reguły rozwoju (docs/03-mechaniki.md). */

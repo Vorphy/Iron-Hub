@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { emptyTownMonth } from '../src/sim/economy/town';
+import type { SimEvent } from '../src/sim/commands';
+import { monthlyEconomy } from '../src/sim/economy/monthly';
+import { emptyTownMonth, metroStatus, townHouseCount, townPopulation } from '../src/sim/economy/town';
 import { createRng } from '../src/sim/rng';
 import { Simulation } from '../src/sim/simulation';
 import { createGame } from '../src/sim/state';
@@ -62,5 +64,49 @@ describe('wzrost miast przez tory', () => {
     // Miasto doszło do rzędu y = 28 (są tam drogi), a mimo to na torze wzdłuż ulicy drogi nie ma.
     expect([21, 22, 28, 29, 30].some((x) => road(x, 28))).toBe(true);
     for (let x = 25; x <= 27; x++) expect(road(x, 28)).toBe(false);
+  });
+});
+
+describe('miasta a metro', () => {
+  /** Miasto z rynkiem (32, 32): 120 domów na poziomie `level`. */
+  function bigTown(level: number) {
+    const state = createGame({ width: W, height: W, seed: 1, empty: true });
+    state.map.terrain.fill(Terrain.Grass);
+    state.money = 10_000_000;
+    state.towns.push({ id: 1, name: 'Metropolia', x: 32, y: 32, month: emptyTownMonth(), lastTransported: 0 });
+    const town = state.towns[0]!;
+    growTown(state, createRng(3), town, 120);
+    for (let i = 0; i < state.map.house.length; i++) if (state.map.house[i]) state.map.house[i] = level;
+    return { state, town, sim: new Simulation(state) };
+  }
+
+  it('progi: od 5 tys. miasto chce metra, powyżej 10 tys. bez metra stoi', () => {
+    const small = bigTown(1); // 120 × 20 mieszkańców
+    expect(metroStatus(small.state, small.town, townPopulation(small.state, small.town))).toBe('small');
+    const mid = bigTown(3); // 120 × 80
+    expect(metroStatus(mid.state, mid.town, townPopulation(mid.state, mid.town))).toBe('wanted');
+    const big = bigTown(4); // 120 × 140
+    expect(metroStatus(big.state, big.town, townPopulation(big.state, big.town))).toBe('stalled');
+  });
+
+  it('duże miasto bez metra nie rośnie i raz ogłasza, że chce metra', () => {
+    const { state, town } = bigTown(4);
+    const houses = townHouseCount(state, town);
+    const events: SimEvent[] = [];
+    for (let k = 0; k < 6; k++) monthlyEconomy(state, events);
+    expect(townHouseCount(state, town)).toBe(houses);
+    expect(events.filter((e) => e.type === 'metroDemand')).toHaveLength(1);
+  });
+
+  it('stacja metra w mieście przyspiesza wzrost', () => {
+    const { state, town, sim } = bigTown(4);
+    const pieces = Array.from({ length: 7 }, (_, i) => ({ x: 29 + i, y: 33, track: Track.X }));
+    sim.enqueue({ type: 'buildTrack', pieces, under: true });
+    sim.enqueue({ type: 'buildStation', x0: 31, y0: 33, x1: 33, y1: 33, axis: 'x', under: true });
+    sim.processCommands();
+    expect(metroStatus(state, town, townPopulation(state, town))).toBe('metro');
+    const houses = townHouseCount(state, town);
+    for (let k = 0; k < 3; k++) monthlyEconomy(state, []);
+    expect(townHouseCount(state, town)).toBeGreaterThanOrEqual(houses + 6);
   });
 });

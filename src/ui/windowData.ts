@@ -24,7 +24,7 @@ import { wagonResale } from '../sim/trains/consist';
 
 const MONTH_NAMES = ['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'];
 import { averageSupply, industryDef, MAX_INDUSTRY_LEVEL, monthlyDemand, monthlyProduction } from '../sim/economy/industry';
-import { townHouseCount, townPopulation } from '../sim/economy/town';
+import { metroStatus, townHouseCount, townPopulation } from '../sim/economy/town';
 import { CARGOS, type Cargo } from '../sim/economy/cargo';
 import { stationAccepts, stationRating } from '../sim/economy/cargoFlow';
 import { wagonDef } from '../sim/trains/vehicles';
@@ -205,17 +205,19 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
   if (ref.kind === 'town') {
     const town = state.towns.find((t) => t.id === ref.townId);
     if (!town) return null;
+    const population = townPopulation(state, town);
     return {
       kind: 'town',
       townId: town.id,
       name: town.name,
-      population: townPopulation(state, town),
+      population,
       houses: townHouseCount(state, town),
       passengers: Math.round(town.month.passengers),
       passengersTransported: Math.round(town.month.passengersTransported),
       mail: Math.round(town.month.mail),
       mailTransported: Math.round(town.month.mailTransported),
       lastTransported: town.lastTransported,
+      metro: metroStatus(state, town, population),
     };
   }
   if (ref.kind === 'industry') {

@@ -20,6 +20,13 @@ function Head({ title, help, actions }: { title: string; help: string; actions: 
   );
 }
 
+/** Metro w dużym mieście (od 5 000 mieszkańców). */
+const METRO_TEXT = {
+  metro: '🚇 Miasto ma metro – rośnie i rozbudowuje się szybciej.',
+  wanted: '🚇 Miasto domaga się metra. Bez stacji metra przestanie rosnąć powyżej 10 000 mieszkańców.',
+  stalled: '🚇 Rozwój wstrzymany – miasto powyżej 10 000 mieszkańców potrzebuje stacji metra.',
+} as const;
+
 export function TownWindow({ data: t, actions }: { data: TownWindowData; actions: HudActions }) {
   return (
     <div class="panel window">
@@ -49,6 +56,7 @@ export function TownWindow({ data: t, actions }: { data: TownWindowData; actions
         Poprzedni miesiąc: przewieziono {percent(t.lastTransported)} pasażerów. Miasto rośnie szybciej, gdy obsługują je pociągi –
         nowe domy pojawiają się w pobliżu stacji.
       </div>
+      {t.metro !== 'small' && <div class={`small metro-${t.metro}`}>{METRO_TEXT[t.metro]}</div>}
     </div>
   );
 }

@@ -27,6 +27,7 @@ export interface NewWorldSettings {
 import type { Speed } from '../loop';
 import type { Terrain } from '../sim/world/map';
 import type { Cargo } from '../sim/economy/cargo';
+import type { MetroStatus } from '../sim/economy/town';
 import type { StationAxis } from '../sim/station/station';
 import type { Side } from '../sim/track/track';
 import type { SignalMode } from '../sim/signals/signals';
@@ -160,6 +161,8 @@ export interface TownWindowData {
   mail: number;
   mailTransported: number;
   lastTransported: number;
+  /** Metro a rozwój miasta (patrz metroStatus). */
+  metro: MetroStatus;
 }
 
 export interface IndustryWindowData {
