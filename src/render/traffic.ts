@@ -102,7 +102,7 @@ export class TrafficRenderer {
         }
         const pose = vehiclePose(map, v);
         drawn.push({ v, pose, depth: pose.x + pose.y });
-        housesInFront(map, pose.x, pose.y, houses);
+        housesInFront(state, pose.x, pose.y, houses);
       }
     }
     // Domy przed autami zasłaniają je – dorysowujemy je w kolejności głębokości.
@@ -110,7 +110,7 @@ export class TrafficRenderer {
     drawn.sort((p, q) => p.depth - q.depth);
     const sprites = gfxOn();
     for (const d of drawn) {
-      if ('house' in d) redrawHouse(g, map, d.house);
+      if ('house' in d) redrawHouse(g, state, d.house);
       else if (!sprites || !drawVehicleSprite(g, d.pose, d.v)) drawCar(g, d.pose, d.v);
     }
   }

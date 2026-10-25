@@ -167,6 +167,15 @@ export class Game {
   }
 
   /** Ruch aut i autobusów w miastach (dekoracja, można wyłączyć na słabszym komputerze). */
+  /** Przerysowuje całą mapę i obiekty (np. po przełączeniu grafiki). */
+  redrawAll(): void {
+    const state = this.sim.state;
+    this.mapRenderer.markAllDirty();
+    this.industries.draw(state.industries, state.map);
+    this.bridges.draw(state);
+    this.tunnels.draw(state);
+  }
+
   set trafficEnabled(on: boolean) {
     this.traffic.enabled = on;
   }

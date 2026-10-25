@@ -5,6 +5,8 @@ import { oppositeSide } from '../sim/track/track';
 import { heightAt } from '../sim/world/height';
 import { toWorld, type Point } from './iso';
 import { darken } from './shapes';
+import { gfxOn } from './gfx/gfx';
+import { drawBridgeSprites } from './gfx/structures';
 import { drawTrackSegment, SIDE_MID, startMiter, TRACK_STYLE } from './trackDraw';
 
 const DECK = 0x5d4a3a;
@@ -28,6 +30,7 @@ export class BridgeRenderer {
 }
 
 export function drawBridge(g: Graphics, state: GameState, b: Bridge): void {
+  if (gfxOn()) return drawBridgeSprites(g, state, b);
   const { map } = state;
   const tiles = bridgeTileCoords(b);
   // Kierunek mostu (oś) i prostopadła „na zewnątrz” w stronę widza (SW dla osi x, SE dla osi y).

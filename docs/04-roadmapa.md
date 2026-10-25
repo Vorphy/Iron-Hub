@@ -64,6 +64,7 @@ Etapy są ułożone tak, żeby po każdym istniała działająca, testowalna wer
 
 ## Etap 7 – Oprawa i wydanie
 - Docelowa grafika izometryczna (patrz decyzja o licencji w [05-decyzje](05-decyzje.md)).
+  - *Placeholder OpenGFX ✅ (2026-10-25):* cała mapa z grafiki OpenGFX (GPL v2, zgodnie z ADR 13 tylko do testów) – teren ze zboczami i brzegami, drzewa, tory i rozjazdy, perony z dachami, zajezdnie, semafory, sieć trakcyjna, mosty kratownicowe, tunele, domy (wg poziomu i roku), zakłady, pociągi, autobusy i ciężarówki. Atlas buduje `tools/opengfx/build_atlas.py`; sprite'y mają numery jak w TTD, więc własną grafiką można je podmieniać kafelek po kafelku. Menu → Widok → Grafika: powrót do prostych kształtów.
 - Retro UI, dźwięki (koła, gwizdek), muzyka.
 - Wydanie na itch.io.
 
@@ -143,4 +144,6 @@ Kredyt i bankructwo · minimapa · pierwsze kroki · lokomotywy z biegiem lat i 
   - *Duże stacje:* pod stacją na powierzchni można zbudować drugą, podziemną; pasażerowie z tego samego zasięgu idą do obu (ewentualnie połączenie jako jeden węzeł przesiadkowy).
   - *Miasta domagają się metra:* od pewnej liczby mieszkańców (np. 2000+) miasto zgłasza zapotrzebowanie; metro w mieście podnosi ocenę / wzrost, a ruch wewnątrz miasta (pasażerowie między dzielnicami) daje dodatkowy zarobek.
   - *Do przemyślenia:* rysowanie dwóch warstw (przezroczystość, przełączanie), picking na poziomie −1, zapis (nowa wersja + migracja), podgląd na minimapie, tunele z powierzchni przecinające się z metrem.
--
+- Bugfix - przebudowa - Screenshot 2026-10-25 at 08-34-40 Iron Hub.png - tak jak w ottd, bez sensu kupowanie dwa razy w zajezdni, wszystko kupujemy dokładnie odtworzyć musimy tak jak jest w ottd. do rego na done rozjezdzają się napisy jedne na drugich leżą.Screenshot 2026-10-25 at 08-32-08 Iron Hub.png
+- bugfix Screenshot 2026-10-25 at 08-06-09 Iron Hub.png tory nie budują się w takiej sytuacji a przecież powinny mieszczą się.
+

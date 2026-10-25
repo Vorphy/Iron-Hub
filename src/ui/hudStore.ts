@@ -259,6 +259,9 @@ export interface HudState {
   tutorialSteps: boolean[];
   /** Ruch aut i autobusów w miastach. */
   traffic: boolean;
+  /** Grafika OpenGFX wczytana i włączona (wył. – proste kształty). */
+  gfxAvailable: boolean;
+  gfx: boolean;
   /** Okno nowej gry (rozmiar mapy, ziarno). */
   newGameOpen: boolean;
   window: WindowRef | null;
@@ -300,6 +303,8 @@ export const hudStore = new Store<HudState>({
   tutorialOpen: true,
   tutorialSteps: [],
   traffic: true,
+  gfxAvailable: false,
+  gfx: true,
   newGameOpen: false,
   window: null,
   windowData: null,
@@ -338,6 +343,7 @@ export interface HudActions {
   attachMinimap(canvas: HTMLCanvasElement | null): void;
   minimapGoto(u: number, v: number): void;
   toggleTraffic(): void;
+  toggleGfx(): void;
   openFinance(): void;
   /** Lista pociągów (K). */
   openTrains(): void;

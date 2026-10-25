@@ -4,7 +4,7 @@ import { START_YEAR, START_YEARS } from './sim/time';
 import { Application } from 'pixi.js';
 import { h, render } from 'preact';
 import { Game } from './game';
-import { loadGfx } from './render/gfx/gfx';
+import { loadGfx, setGfxEnabled } from './render/gfx/gfx';
 import {
   describeError,
   downloadSave,
@@ -26,6 +26,7 @@ const DEFAULT_MAP_SIZE = 128;
 const ALLOWED_SIZES = [64, 128, 256, 512, 1024];
 const AUTOSAVE_MS = 30_000;
 const TRAFFIC_KEY = 'ironhub.traffic';
+const GFX_KEY = 'ironhub.gfx';
 const MINIMAP_KEY = 'ironhub.minimap';
 const MINIMAP_SETTINGS_KEY = 'ironhub.minimapSettings';
 
@@ -161,6 +162,13 @@ const actions: HudActions = {
   setTerrainMode: (m) => game?.toolController.setTerrainMode(m),
   setSignalMode: (mode) => game?.command({ type: 'setSignalMode', mode }),
   toggleMenu: () => hudStore.set({ menuOpen: !hudStore.get().menuOpen }),
+  toggleGfx: () => {
+    const gfx = !hudStore.get().gfx;
+    hudStore.set({ gfx });
+    setGfxEnabled(gfx);
+    game?.redrawAll();
+    storeFlag(GFX_KEY, gfx);
+  },
   toggleTraffic: () => {
     const traffic = !hudStore.get().traffic;
     hudStore.set({ traffic });
@@ -287,7 +295,10 @@ async function start(): Promise<void> {
   });
   document.getElementById('game')!.appendChild(app.canvas);
   // Grafika OpenGFX; bez niej gra rysuje proste kształty.
-  await loadGfx(`${import.meta.env.BASE_URL}gfx/opengfx/`);
+  const gfxAvailable = await loadGfx(`${import.meta.env.BASE_URL}gfx/opengfx/`);
+  const gfx = storedFlag(GFX_KEY);
+  setGfxEnabled(gfx);
+  hudStore.set({ gfxAvailable, gfx });
   render(h(Hud, { actions }), document.getElementById('ui')!);
 
   // ?seed=N[&size=S] wymusza nową grę na danej mapie; inaczej kontynuujemy autozapis.

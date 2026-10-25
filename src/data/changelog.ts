@@ -18,6 +18,9 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
       'Miasta mają prawdziwe domy, biurowce i kościoły – ich wygląd zależy od wielkości domu i roku gry (bez wieżowców w 1900).',
       'Tory, rozjazdy, skrzyżowania, perony z dachami i budynkiem stacji, zajezdnie i semafory w stylu TTD.',
       'Kopalnie, elektrownie, huty, tartaki i lasy z oryginalnych kafelków; pociągi, autobusy, furgonetki i ciężarówki z prawdziwymi sylwetkami – lokomotywa i jej wagony mają wspólny kolor.',
+      'Stalowe mosty kratownicowe z filarami, wjazdy do tuneli w zboczu i sieć trakcyjna ze słupami jak w TTD.',
+      'Pociąg przy peronie chowa się pod zadaszeniem, a drzewa i domy przed nim go zasłaniają.',
+      'Menu → Widok → Grafika: powrót do prostych kształtów (np. na słabszym komputerze).',
     ],
   },
   {

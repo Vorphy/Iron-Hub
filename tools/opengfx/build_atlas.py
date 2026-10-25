@@ -477,6 +477,21 @@ def main() -> None:
                     atlas.add(full + d, pal)
         wagon_out[wid] = {'base': base, 'views': views, 'full': full}
 
+    # Most kratownicowy stalowy (girder): przęsło [spód z torem, barierka z przodu, filar] dla osi X/Y
+    # OpenTTD i przyczółki kolejowe (4 pochylone + 4 płaskie rampy, kolejność kierunków SW, SE, NE, NW).
+    btext = (ottd / 'bridge_land.h').read_text(encoding='utf-8')
+
+    def bridge_table(name: str) -> list[int]:
+        body = btext[btext.find(f'{name}[] = {{'):]
+        body = body[:body.find('};')]
+        return [c_value(v, consts) for v in re.findall(r'\{\s*([^,{}]+?)\s*,\s*[A-Z_]+\s*\}', body)]
+
+    middle = bridge_table('_bridge_sprite_table_girder_middle')
+    heads = bridge_table('_bridge_sprite_table_generic_oxide_heads')[:8]
+    bridge = {'middle': [middle[0:3], middle[4:7]], 'heads': heads}
+    for sid in middle[0:3] + middle[4:7] + heads:
+        atlas.add(sid)
+
     # Ruch uliczny (dekoracja): autobusy, furgonetki zamiast aut osobowych (TTD ich nie ma), ciężarówki;
     # trzy epoki (do 1960, do 1985, później), 8 kierunków, kilka kolorów.
     road = {
@@ -499,6 +514,7 @@ def main() -> None:
         'engines': engine_out,
         'wagons': wagon_out,
         'road': road,
+        'bridge': bridge,
     })
     (out / 'gfx.json').write_text(json.dumps(data, separators=(',', ':')), encoding='utf-8')
     print(f"{len(atlas.images)} sprite'ów na {len(data['pages'])} stronach; brak: {len(atlas.missing)}")

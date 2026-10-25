@@ -229,6 +229,14 @@ function treeNoise(x: number, y: number): number {
   return top * (1 - sy) + bottom * sy;
 }
 
+/** Drzewa rosną tylko na pustej trawie i nieużytkach (bez torów, budynków, dróg, mostów i tuneli). */
+export function tileTrees(map: WorldMap, x: number, y: number): number {
+  const i = y * map.width + x;
+  if (map.track[i] || map.station[i] || map.depot[i] || map.house[i] || map.industry[i] || map.road[i]) return 0;
+  if (map.bridge[i] || map.tunnel[i] || getTerrain(map, x, y) === Terrain.Water) return 0;
+  return treeCount(x, y);
+}
+
 /** Ile drzew rośnie na pustym kafelku (0 – żadne). Czysta dekoracja, poza symulacją. */
 export function treeCount(x: number, y: number): number {
   const n = treeNoise(x, y);
@@ -326,6 +334,12 @@ export function drawStationTile(g: Graphics, objects: Graphics, map: WorldMap, x
   // Nasza oś x = oś Y OpenTTD.
   const ottdX = station.axis === 'y';
   drawSprite(g, ottdX ? SPR_RAIL_TRACK_Y + 1 : SPR_RAIL_TRACK_Y, o.x, o.y);
+  const kind = stationKind(map, x, y, station);
+  drawStationParts(objects, x, y, z, ottdX, kind, 0);
+}
+
+/** Rodzaj kafelka peronu: budynek na środku rzędu, zadaszenie na przemian, zwykłe perony na końcach. */
+function stationKind(map: WorldMap, x: number, y: number, station: Station): number {
   const w = map.width;
   const along = (i: number) => (station.axis === 'x' ? i % w : Math.floor(i / w));
   const across = (i: number) => (station.axis === 'x' ? Math.floor(i / w) : i % w);
@@ -333,13 +347,23 @@ export function drawStationTile(g: Graphics, objects: Graphics, map: WorldMap, x
   const row = station.tiles.filter((i) => across(i) === here).map(along);
   const pos = (station.axis === 'x' ? x : y) - Math.min(...row);
   const len = row.length;
-  let kind = 0;
-  if (len >= 3 && pos === Math.floor(len / 2)) kind = 1;
-  else if (len >= 3 && pos > 0 && pos < len - 1) kind = 2 + (pos & 1);
-  for (const it of PLATFORMS[ottdX ? 0 : 1]![kind]!) {
+  if (len >= 3 && pos === Math.floor(len / 2)) return 1;
+  if (len >= 3 && pos > 0 && pos < len - 1) return 2 + (pos & 1);
+  return 0;
+}
+
+/** Części peronu od `from` (0 – całość; 1 – przednia krawędź i zadaszenie, zasłaniające pociąg). */
+function drawStationParts(objects: Graphics, x: number, y: number, z: number, ottdX: boolean, kind: number, from: number): void {
+  for (const it of PLATFORMS[ottdX ? 0 : 1]![kind]!.slice(from)) {
     const p = subTile(x, y, z + it.dz / 8, it.dx, it.dy);
     drawSprite(objects, it.glass ? `${it.id}@glass` : palKey(it.id, COMPANY()), p.x, p.y);
   }
+}
+
+/** Przednia krawędź peronu i zadaszenie – dorysowywane przed pociągiem stojącym przy peronie. */
+export function drawStationFront(objects: Graphics, map: WorldMap, x: number, y: number, station: Station): void {
+  const { z } = tileSlope(map, x, y);
+  drawStationParts(objects, x, y, z, station.axis === 'y', stationKind(map, x, y, station), 1);
 }
 
 /** Zajezdnia (track_land.h): grunt i budynek w kolorze firmy, wjazd od strony `depot.side`. */

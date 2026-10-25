@@ -6,7 +6,8 @@ import { industryDef, type Industry } from '../sim/economy/industry';
 import { darken, drawBox, drawChimney, drawGableRoof, drawPile, drawTree, lighten, tileHash } from './shapes';
 import { inBounds, type WorldMap } from '../sim/world/map';
 import { gfxOn } from './gfx/gfx';
-import { drawHouseBuilding, drawIndustryTiles } from './gfx/tiles';
+import { drawHouseBuilding, drawIndustryTiles, drawStationFront, drawTrees, tileTrees } from './gfx/tiles';
+import type { GameState } from '../sim/state';
 
 // Placeholder – proste bryły do czasu podpięcia grafiki.
 const WALLS = [0xe8dcc0, 0xd9b38c, 0xc9c2b8, 0xe0c9a6];
@@ -29,10 +30,13 @@ export function drawHouse(g: Graphics, x: number, y: number, level: number, hash
 export const houseDepth = (map: WorldMap, i: number) => (i % map.width) + Math.floor(i / map.width) + 1;
 
 /**
- * Domy, które na ekranie mogą zasłaniać punkt (fx, fy): leżą przed nim (większe x + y) i blisko
- * w poziomie. Pojazdy są rysowane nad mapą, więc takie domy dorysowujemy jeszcze raz przed nimi.
+ * Domy (a z grafiką OpenGFX także perony i drzewa), które na ekranie mogą zasłaniać punkt (fx, fy):
+ * leżą przed nim (większe x + y) i blisko w poziomie. Pojazdy są rysowane nad mapą, więc takie
+ * obiekty dorysowujemy jeszcze raz przed nimi.
  */
-export function housesInFront(map: WorldMap, fx: number, fy: number, out: Set<number>): void {
+export function housesInFront(state: GameState, fx: number, fy: number, out: Set<number>): void {
+  const { map } = state;
+  const sprites = gfxOn();
   const x0 = Math.floor(fx);
   const y0 = Math.floor(fy);
   for (let dy = 0; dy <= 3; dy++) {
@@ -41,16 +45,29 @@ export function housesInFront(map: WorldMap, fx: number, fy: number, out: Set<nu
       const y = y0 + dy;
       if (!inBounds(map, x, y)) continue;
       const i = y * map.width + x;
-      if (map.house[i] && x + y + 1 > fx + fy) out.add(i);
+      if (x + y + 1 <= fx + fy) continue;
+      if (map.house[i] || (sprites && (map.station[i] || tileTrees(map, x, y)))) out.add(i);
     }
   }
 }
 
-export function redrawHouse(g: Graphics, map: WorldMap, i: number): void {
+/** Dorysowuje obiekty kafelka zasłaniające pojazd: dom, przód peronu z zadaszeniem albo drzewa. */
+export function redrawHouse(g: Graphics, state: GameState, i: number): void {
+  const { map } = state;
   const x = i % map.width;
   const y = Math.floor(i / map.width);
-  if (gfxOn()) drawHouseBuilding(g, map, x, y, map.house[i]!);
-  else drawHouse(g, x, y, map.house[i]!, tileHash(x, y));
+  if (!gfxOn()) {
+    if (map.house[i]) drawHouse(g, x, y, map.house[i]!, tileHash(x, y));
+    return;
+  }
+  if (map.house[i]) return drawHouseBuilding(g, map, x, y, map.house[i]!);
+  if (map.station[i]) {
+    const station = state.stations.find((s) => s.id === map.station[i]);
+    if (station && !station.waypoint) drawStationFront(g, map, x, y, station);
+    return;
+  }
+  const trees = tileTrees(map, x, y);
+  if (trees) drawTrees(g, map, x, y, trees);
 }
 
 /** Wszystkie zakłady w jednej warstwie (jest ich kilkanaście – rysowane raz, odświeżane po zmianach). */

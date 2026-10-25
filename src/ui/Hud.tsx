@@ -103,6 +103,7 @@ export function Hud({ actions }: { actions: HudActions }) {
           saves={s.saves}
           signalMode={s.signalMode}
           traffic={s.traffic}
+          gfx={s.gfxAvailable ? s.gfx : null}
           changelogUnseen={s.changelogUnseen}
         />
       )}
@@ -416,12 +417,15 @@ function Menu({
   saves,
   signalMode,
   traffic,
+  gfx,
   changelogUnseen,
 }: {
   actions: HudActions;
   saves: HudState['saves'];
   signalMode: HudState['signalMode'];
   traffic: boolean;
+  /** null – atlas grafiki niedostępny. */
+  gfx: boolean | null;
   changelogUnseen: boolean;
 }) {
   const hints = useStore(layoutStore).hints;
@@ -449,6 +453,15 @@ function Menu({
       >
         Ruch w miastach: {traffic ? 'wł.' : 'wył.'}
       </button>
+      {gfx !== null && (
+        <button
+          class={gfx ? 'active' : ''}
+          onClick={actions.toggleGfx}
+          title="Grafika w stylu TTD (OpenGFX) albo proste kształty"
+        >
+          Grafika: {gfx ? 'OpenGFX' : 'prosta'}
+        </button>
+      )}
       <button class={hints ? 'active' : ''} onClick={() => setHints(!hints)} title="Podpowiedzi do narzędzi w rogu ekranu">
         Podpowiedzi: {hints ? 'wł.' : 'wył.'}
       </button>

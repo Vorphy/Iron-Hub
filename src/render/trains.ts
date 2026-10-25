@@ -54,7 +54,7 @@ export class TrainRenderer {
     const houses = new Set<number>();
     for (const it of items) {
       const { front: f, back: b } = it.pose;
-      housesInFront(state.map, (f.x + b.x) / 2, (f.y + b.y) / 2, houses);
+      housesInFront(state, (f.x + b.x) / 2, (f.y + b.y) / 2, houses);
     }
     const order: ({ depth: number; item: Drawn } | { depth: number; house: number })[] = [
       ...items.map((item) => ({ depth: item.depth, item })),
@@ -83,7 +83,7 @@ export class TrainRenderer {
     for (const br of [...bridges].sort((a, c) => a.x + a.y - (c.x + c.y))) drawBridge(g, state, br);
     for (const o of order) {
       if ('house' in o) {
-        redrawHouse(g, state.map, o.house);
+        redrawHouse(g, state, o.house);
         continue;
       }
       if (!under.has(o.item)) drawItem(o.item);

@@ -4,6 +4,7 @@ import { axisTrack, sideHeight } from '../sim/track/bridge';
 import { oppositeSide } from '../sim/track/track';
 import { portalInnerSide, tunnelTileCoords, type Tunnel } from '../sim/track/tunnel';
 import { toWorld, type Point } from './iso';
+import { gfxOn } from './gfx/gfx';
 import { drawTrackSegment, SIDE_MID, startMiter, TRACK_STYLE } from './trackDraw';
 
 const STONE = 0x8d877c;
@@ -20,6 +21,8 @@ export class TunnelRenderer {
   draw(state: GameState): void {
     const g = this.gfx;
     g.clear();
+    // Z grafiką OpenGFX portale rysuje mapa (grunt i sklepienie na kafelku wjazdu).
+    if (gfxOn()) return;
     for (const t of state.tunnels) drawPortals(g, state, t);
   }
 }

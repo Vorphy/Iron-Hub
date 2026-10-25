@@ -13,6 +13,8 @@ import { darken, lighten, tileHash } from './shapes';
 import { drawHouse } from './buildings';
 import { drawRoad, roadNeighbors } from './roadDraw';
 import { gfxOn } from './gfx/gfx';
+import { drawTunnelPortal } from './gfx/structures';
+import { drawCatenarySprites } from './gfx/catenary';
 import {
   drawDepotTile,
   drawGround,
@@ -21,7 +23,7 @@ import {
   drawStationTile,
   drawTrackGround,
   drawTrees,
-  treeCount,
+  tileTrees,
 } from './gfx/tiles';
 import { drawCatenary } from './catenaryDraw';
 import { drawDepot } from './depotDraw';
@@ -118,6 +120,13 @@ export class MapRenderer {
       this.terrainLayer.addChild(c.gfx);
       this.trackLayer.addChild(c.tracks);
       this.farLayer.addChild(c.far);
+    }
+  }
+
+  markAllDirty(): void {
+    for (const c of this.chunks) {
+      if (c.drawn) c.dirty = true;
+      if (c.farRes) c.farDirty = true;
     }
   }
 
@@ -273,19 +282,19 @@ export class MapRenderer {
     if (head) drawnBits &= ~axisTrack(head.axis);
     if (portal) drawnBits &= ~axisTrack(portal.axis);
 
-    if (station && !station.waypoint) drawStationTile(g, objects, map, x, y, station);
+    if (portal) drawTunnelPortal(g, objects, map, x, y, portal, tunnelRole(portal, x, y) as 'portalA' | 'portalB');
+    else if (station && !station.waypoint) drawStationTile(g, objects, map, x, y, station);
     else if (depot) drawDepotTile(g, objects, map, x, y, depot);
     else if (map.road[i]) drawRoadGround(g, map, x, y, roadNeighbors(map, x, y), bits);
     else if (map.house[i]) drawHouseTile(g, objects, map, x, y, map.house[i]!);
     else if (drawnBits) drawTrackGround(g, map, x, y, drawnBits);
     else {
       drawGround(g, map, x, y);
-      const empty = !bits && !map.industry[i] && !map.bridge[i] && !portal && getTerrain(map, x, y) !== Terrain.Water;
-      const trees = empty ? treeCount(x, y) : 0;
+      const trees = tileTrees(map, x, y);
       if (trees) drawTrees(objects, map, x, y, trees);
     }
     if (station?.waypoint) drawWaypoint(objects, x, y, bits === Track.X);
-    if (map.electric[i]) drawCatenary(objects, x, y, tracksOn(bits));
+    if (map.electric[i]) drawCatenarySprites(objects, map, x, y, bits);
   }
 
   /** Kafelek z prostych kształtów (bez atlasu grafiki). */
