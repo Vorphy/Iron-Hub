@@ -160,7 +160,8 @@ function MinimapLegend({ settings, actions }: { settings: MinimapSettings; actio
       <label class="full-load">
         <input type="checkbox" checked={f.rail} onChange={() => set({ rail: !f.rail })} />
         <span class="legend-swatch" style={{ background: '#3a3026' }} />
-        Tory i stacje
+        <span class="legend-swatch" style={{ background: '#6078e6' }} />
+        Tory, stacje i metro
       </label>
       <label class="full-load">
         <input type="checkbox" checked={f.trains} onChange={() => set({ trains: !f.trains })} />

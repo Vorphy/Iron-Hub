@@ -55,6 +55,9 @@ const HOUSE = [196, 98, 72];
 const ROAD = [150, 152, 156];
 const TRACK = [58, 48, 38];
 const STATION = [222, 216, 200];
+/** Metro (poziom −1): tory i perony pod ziemią – nad domami, żeby było widać trasę pod miastem. */
+const METRO = [96, 120, 230];
+const METRO_STATION = [170, 190, 255];
 
 /** Współrzędne na całej minimapie (0–1) punktu świata w pikselach (rzut płaski, bez wysokości). */
 export function worldToMinimap(state: GameState, wx: number, wy: number): { u: number; v: number } {
@@ -152,6 +155,8 @@ export class Minimap {
         let c: number[];
         if (rail && map.station[i]) c = STATION;
         else if (rail && (map.track[i] || map.bridge[i])) c = TRACK;
+        else if (rail && map.stationUnder[i]) c = METRO_STATION;
+        else if (rail && map.under[i]) c = METRO;
         else if (towns && map.house[i]) c = HOUSE;
         else if (towns && map.road[i]) c = ROAD;
         else if (map.terrain[i] === Terrain.Water) c = WATER;

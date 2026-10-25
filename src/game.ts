@@ -388,8 +388,10 @@ export class Game {
       } else if (ev.type === 'stationsChanged' || ev.type === 'depotsChanged') this.labels.rebuild(this.sim.state);
       else if (ev.type === 'bridgesChanged') this.bridges.draw(this.sim.state);
       else if (ev.type === 'tunnelsChanged') this.tunnels.draw(this.sim.state);
-      else if (ev.type === 'undergroundChanged') this.underground.markDirty();
-      else if (ev.type === 'income') this.floaters.spawn(`+${formatMoney(ev.amount)}`, ev.x, ev.y);
+      else if (ev.type === 'undergroundChanged') {
+        this.underground.markDirty();
+        this.minimapDirty = true;
+      } else if (ev.type === 'income') this.floaters.spawn(`+${formatMoney(ev.amount)}`, ev.x, ev.y);
       else if (ev.type === 'researchDone') {
         const def = researchDef(ev.id);
         if (def) showMessage(`Badanie zakończone: ${def.name} – poziom ${researchLevel(this.sim.state, ev.id)}`);
