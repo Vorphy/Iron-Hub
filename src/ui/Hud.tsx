@@ -198,6 +198,13 @@ function TopbarControls({ s, actions }: { s: HudState; actions: HudActions }) {
           🚆 Pociągi
         </button>
         <button
+          class={s.buildingsHidden ? 'active' : ''}
+          title={s.buildingsHidden ? 'Pokaż budynki (U)' : 'Ukryj budynki, drzewa i dachy peronów – widać tory pod nimi (U)'}
+          onClick={actions.toggleBuildings}
+        >
+          {s.buildingsHidden ? '🏚 Bez budynków' : '🏠'}
+        </button>
+        <button
           class={s.helpTopic ? 'active' : ''}
           title="Pomoc (H)"
           onClick={() => (s.helpTopic ? actions.closeHelp() : actions.openHelp())}
