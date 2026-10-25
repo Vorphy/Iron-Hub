@@ -1,6 +1,7 @@
 import type { Graphics } from 'pixi.js';
 import { Side, Track, TRACK_SIDES, tracksOn } from '../../sim/track/track';
 import { heightAt } from '../../sim/world/height';
+import { sideHeight } from '../../sim/track/bridge';
 import type { WorldMap } from '../../sim/world/map';
 import { HEIGHT_PX, toWorld } from '../iso';
 import { drawSprite } from './gfx';
@@ -82,7 +83,9 @@ export function drawCatenarySprites(g: Graphics, map: WorldMap, x: number, y: nu
   for (const track of tracksOn(bits)) {
     const w = wireFor(track, slope);
     if (!w) continue;
-    const p = at(w[1], w[2], z + w[3] / HEIGHT_PX);
+    // Ukos na zboczu leży na wysokości swoich końców.
+    const base = slope !== 0 && track !== Track.X && track !== Track.Y ? sideHeight(map, x, y, TRACK_SIDES[track][0]) : z;
+    const p = at(w[1], w[2], base + w[3] / HEIGHT_PX);
     drawSprite(g, `CATENARY:${w[0]}`, p.x, p.y);
   }
 }

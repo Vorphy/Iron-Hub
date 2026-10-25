@@ -4,7 +4,7 @@ import type { CommandResult, SimEvent } from '../commands';
 import type { GameState } from '../state';
 import { getTerrain, hasBuilding, inBounds, setTerrain, Terrain, type WorldMap } from '../world/map';
 import { occupiedTiles } from '../trains/train';
-import { tileSlope, type Slope } from '../world/height';
+import { cornerHeights, tileSlope, type Slope } from '../world/height';
 import { hasTrack, Track, type TrackPiece } from './track';
 
 export type PieceStatus = 'new' | 'exists' | 'blocked';
@@ -110,7 +110,7 @@ function buildable(map: WorldMap, { x, y, track }: TrackPiece): boolean {
   if (map.station[y * map.width + x]) return (track === Track.X || track === Track.Y) && hasTrack(map, x, y, track);
   // Przyczółek mostu: tylko istniejący tor w osi mostu.
   if (isBridgeHead(map, x, y)) return hasTrack(map, x, y, track);
-  return trackFitsSlope(tileSlope(map, x, y), track);
+  return trackFitsSlope(tileSlope(map, x, y), track) || levelDiagonal(map, x, y, track);
 }
 
 /** Tor na zboczu: tylko prosty, biegnący w górę zbocza (jak w TTD); łuki tylko na płaskim. */
@@ -118,6 +118,19 @@ export function trackFitsSlope(slope: Slope, track: number): boolean {
   if (slope === 'flat') return true;
   if (slope === 'x') return track === Track.X;
   if (slope === 'y') return track === Track.Y;
+  return false;
+}
+
+/**
+ * Ukos (łuk przy narożniku) na zboczu – wolno, gdy leży poziomo: oba jego końce (środki boków przy
+ * narożniku) są na tej samej wysokości, np. na płaskiej połówce kafelka z jednym podniesionym
+ * narożnikiem (jak w TTD). Bez stromych zboczy.
+ */
+export function levelDiagonal(map: WorldMap, x: number, y: number, track: number): boolean {
+  const [t, r, b, l] = cornerHeights(map, x, y);
+  if (Math.max(t, r, b, l) - Math.min(t, r, b, l) > 1) return false;
+  if (track === Track.Upper || track === Track.Lower) return l === r;
+  if (track === Track.Left || track === Track.Right) return t === b;
   return false;
 }
 

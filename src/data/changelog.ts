@@ -12,6 +12,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-25',
+    title: 'Ukośne tory na zboczach',
+    items: [
+      'Ukośny tor można położyć na zboczu, jeśli biegnie poziomo – np. wzdłuż płaskiej połówki kafelka z jednym podniesionym narożnikiem. Wcześniej ukosy szły tylko po płaskim.',
+      'W oknie pociągu opcje stacji w rozkładzie (bez zatrzymania, postój, pełny ładunek) są w drugiej linii – nie nachodzą już na nazwę stacji.',
+    ],
+  },
+  {
+    date: '2026-10-25',
     title: 'Nowa grafika w stylu TTD',
     items: [
       'Mapa wygląda jak w klasycznym Transport Tycoon: trawa, zbocza, woda z brzegami, lasy i pojedyncze drzewa (grafika OpenGFX).',

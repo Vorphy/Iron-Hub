@@ -3,6 +3,7 @@ import type { Depot } from '../../sim/depot/depot';
 import type { Station } from '../../sim/station/station';
 import { Side, Track, TRACK_SIDES, tracksOn } from '../../sim/track/track';
 import { cornerHeights } from '../../sim/world/height';
+import { sideHeight } from '../../sim/track/bridge';
 import { getTerrain, Terrain, type WorldMap } from '../../sim/world/map';
 import { toWorld } from '../iso';
 import { buildingsHidden } from '../visibility';
@@ -119,8 +120,16 @@ export function drawTrackGround(g: Graphics, map: WorldMap, x: number, y: number
   const o = tileOrigin(x, y, z);
   if (slope !== 0) {
     const off = TRACK_SLOPED[slope];
-    if (off !== undefined) drawSprite(g, SPR_RAIL_TRACK_Y + off, o.x, o.y);
-    else drawGround(g, map, x, y);
+    if (off !== undefined && (bits === Track.X || bits === Track.Y)) {
+      drawSprite(g, SPR_RAIL_TRACK_Y + off, o.x, o.y);
+      return;
+    }
+    // Poziome ukosy na zboczu: teren, a na nim tor na wysokości końców ukosu.
+    drawGround(g, map, x, y);
+    for (const t of tracksOn(bits)) {
+      const p = toWorld(x, y, sideHeight(map, x, y, TRACK_SIDES[t][0]));
+      drawSprite(g, SINGLE[t]!, p.x, p.y);
+    }
     return;
   }
   const combined = COMBINED[bits];

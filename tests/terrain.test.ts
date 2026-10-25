@@ -45,6 +45,24 @@ describe('zbocza', () => {
     expect(s.map.track[5 * 40 + 12]).toBe(Track.X);
   });
 
+  it('poziomy ukos na zboczu: na płaskiej połówce kafelka wolno, w poprzek zbocza nie', () => {
+    const s = createGame({ width: 12, height: 12, seed: 1, empty: true });
+    s.map.terrain.fill(Terrain.Grass);
+    s.map.heights.fill(1);
+    // Kafelek (5, 5): podniesiony tylko górny narożnik (N).
+    s.map.heights[5 * 13 + 5] = 2;
+    const sim = new Simulation(s);
+    // Lower (przy dolnym narożniku) leży na płaskiej połówce, Upper – poziomo na wysokości 1,5.
+    sim.enqueue({ type: 'buildTrack', pieces: [{ x: 5, y: 5, track: Track.Lower }] });
+    sim.enqueue({ type: 'buildTrack', pieces: [{ x: 5, y: 5, track: Track.Upper }] });
+    // Left biegnie od dolnego narożnika do górnego – pod górę, więc nie.
+    sim.enqueue({ type: 'buildTrack', pieces: [{ x: 5, y: 5, track: Track.Left }] });
+    sim.step();
+    const fails = sim.drainEvents().flatMap((e) => (e.type === 'commandFailed' ? [e.reason] : []));
+    expect(fails).toEqual(['blocked']);
+    expect(s.map.track[5 * 12 + 5]).toBe(Track.Upper | Track.Lower);
+  });
+
   it('stacja, zajezdnia tylko na płaskim (stacja na jednej wysokości)', () => {
     const s = rampWorld();
     const sim = new Simulation(s);

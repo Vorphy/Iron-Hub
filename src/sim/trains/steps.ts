@@ -3,7 +3,7 @@ import { axisTrack, bridgeAt, bridgeRole, bridgeTrack, headSpanSide, isBridgeTra
 import { pieceLength, STRAIGHT_LENGTH } from '../track/graph';
 import { isTunnelTrack, portalInnerSide, tunnelAt, tunnelRole, tunnelTrack } from '../track/tunnel';
 import { heightAt } from '../world/height';
-import { oppositeSide, Side, SIDE_DELTA, TRACK_SIDES, tracksOn, type Track } from '../track/track';
+import { oppositeSide, Side, SIDE_DELTA, Track, TRACK_SIDES, tracksOn } from '../track/track';
 import { inBounds } from '../world/map';
 import type { Step } from './train';
 
@@ -117,6 +117,11 @@ export function stepHeight(state: GameState, s: Step, d: number): number {
     return tunnel.level;
   }
   const bridge = bridgeAt(state, s.x, s.y);
+  // Ukos na zboczu leży poziomo – na wysokości swoich końców (środków boków kafelka).
+  if (s.track >= Track.Upper && s.track <= Track.Right) {
+    const e = pointOnStep(s, 0);
+    return heightAt(state.map, e.x, e.y);
+  }
   if (!bridge) return heightAt(state.map, p.x, p.y);
   if (isBridgeTrack(s.track)) return bridge.deck;
   const role = bridgeRole(bridge, s.x, s.y);
