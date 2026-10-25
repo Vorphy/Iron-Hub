@@ -5,6 +5,7 @@ import type { GameState } from '../state';
 import { occupiedTiles } from '../trains/train';
 import { isFlat } from '../world/height';
 import { getTerrain, hasBuilding, inBounds, Terrain, type WorldMap } from '../world/map';
+import type { TrackPlan } from './build';
 import { oppositeSide, Side, SIDE_DELTA, Track, TRACK_SIDES, tracksOn, type TrackPiece } from './track';
 
 /**
@@ -46,37 +47,81 @@ export function rampTrack(down: Side): Track {
 function underBuildable(map: WorldMap, p: TrackPiece): boolean {
   if (!inBounds(map, p.x, p.y)) return false;
   const i = p.y * map.width + p.x;
-  // Pod wodą i pod zjazdem (tam tor dopiero schodzi) metra nie kopiemy.
-  return getTerrain(map, p.x, p.y) !== Terrain.Water && !map.ramp[i];
+  // Także pod wodą (jak prawdziwe metro pod rzeką); tylko nie pod zjazdem – tam tor dopiero schodzi.
+  return !map.ramp[i];
+}
+
+function unique(pieces: readonly TrackPiece[]): TrackPiece[] {
+  const seen = new Set<string>();
+  return pieces.filter((p) => {
+    const key = `${p.x},${p.y},${p.track}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/** Plan budowy torów metra (bez zmiany stanu – też do podglądu). */
+export function planBuildUnderTrack(state: GameState, pieces: readonly TrackPiece[]): TrackPlan {
+  const { map } = state;
+  let cost = 0;
+  let blocked = false;
+  const out = unique(pieces).map((piece) => {
+    if (!underBuildable(map, piece)) {
+      blocked = true;
+      return { piece, status: 'blocked' as const };
+    }
+    if (map.under[piece.y * map.width + piece.x]! & piece.track) return { piece, status: 'exists' as const };
+    cost += METRO_TRACK_COST;
+    return { piece, status: 'new' as const };
+  });
+  const result: CommandResult = blocked
+    ? { ok: false, reason: 'blocked' }
+    : cost > state.money
+      ? { ok: false, reason: 'noMoney' }
+      : { ok: true };
+  return { pieces: out, cost, result };
 }
 
 /** Tory metra: dużo droższe od zwykłych (drążenie), bez ograniczeń terenu na powierzchni. */
 export function buildUnderTrack(state: GameState, pieces: readonly TrackPiece[], events: SimEvent[]): CommandResult {
+  const plan = planBuildUnderTrack(state, pieces);
+  if (!plan.result.ok) return plan.result;
   const { map } = state;
-  const fresh = pieces.filter((p) => !(map.under[p.y * map.width + p.x]! & p.track));
-  if (!fresh.length) return { ok: true };
-  if (!fresh.every((p) => underBuildable(map, p))) return { ok: false, reason: 'blocked' };
-  const cost = fresh.length * METRO_TRACK_COST;
-  if (state.money < cost) return { ok: false, reason: 'noMoney' };
-  spend(state, 'construction', cost);
-  for (const p of fresh) map.under[p.y * map.width + p.x]! |= p.track;
+  for (const { piece, status } of plan.pieces) if (status === 'new') map.under[piece.y * map.width + piece.x]! |= piece.track;
+  spend(state, 'construction', plan.cost);
   events.push({ type: 'undergroundChanged' });
   return { ok: true };
 }
 
-export function removeUnderTrack(state: GameState, pieces: readonly TrackPiece[], events: SimEvent[]): CommandResult {
+/** Plan rozbiórki torów metra (tylko istniejące elementy; zwrot części kosztu). */
+export function planRemoveUnderTrack(state: GameState, pieces: readonly TrackPiece[]): TrackPlan {
   const { map } = state;
-  const present = pieces.filter((p) => inBounds(map, p.x, p.y) && map.under[p.y * map.width + p.x]! & p.track);
-  if (!present.length) return { ok: true };
-  // Nie spod jadącego pociągu (zajęte kafelki – jak na powierzchni).
   const busy = occupiedTiles(state);
-  if (present.some((p) => busy.has(p.y * map.width + p.x))) return { ok: false, reason: 'trainInWay' };
-  for (const p of present) {
-    const i = p.y * map.width + p.x;
-    if (map.stationUnder[i]) continue; // tor peronu usuwa się razem ze stacją
-    map.under[i]! &= ~p.track;
-  }
-  spend(state, 'construction', -Math.round(present.length * METRO_TRACK_COST * TRACK_REFUND_RATE));
+  let count = 0;
+  let inWay = false;
+  const out = unique(pieces).map((piece) => {
+    const i = piece.y * map.width + piece.x;
+    const exists = inBounds(map, piece.x, piece.y) && !map.stationUnder[i] && (map.under[i]! & piece.track) !== 0;
+    if (!exists) return { piece, status: 'blocked' as const };
+    count++;
+    if (busy.has(i)) inWay = true;
+    return { piece, status: 'exists' as const };
+  });
+  const result: CommandResult = inWay
+    ? { ok: false, reason: 'trainInWay' }
+    : count
+      ? { ok: true }
+      : { ok: false, reason: 'nothingToRemove' };
+  return { pieces: out, cost: -Math.round(count * METRO_TRACK_COST * TRACK_REFUND_RATE), result };
+}
+
+export function removeUnderTrack(state: GameState, pieces: readonly TrackPiece[], events: SimEvent[]): CommandResult {
+  const plan = planRemoveUnderTrack(state, pieces);
+  if (!plan.result.ok) return plan.result;
+  const { map } = state;
+  for (const { piece, status } of plan.pieces) if (status === 'exists') map.under[piece.y * map.width + piece.x]! &= ~piece.track;
+  spend(state, 'construction', plan.cost);
   events.push({ type: 'undergroundChanged' });
   return { ok: true };
 }
@@ -86,14 +131,15 @@ export function removeUnderTrack(state: GameState, pieces: readonly TrackPiece[]
  * Kafelek płaski, bez budynku i innej infrastruktury (najwyżej tor w osi zjazdu); po stronie `down`
  * kafelek nie może być wodą.
  */
-export function buildRamp(state: GameState, x: number, y: number, down: Side, events: SimEvent[]): CommandResult {
+export function planRamp(state: GameState, x: number, y: number, down: Side): { cost: number; result: CommandResult } {
   const { map } = state;
-  if (!inBounds(map, x, y)) return { ok: false, reason: 'blocked' };
+  const cost = METRO_RAMP_COST;
+  if (!inBounds(map, x, y)) return { cost, result: { ok: false, reason: 'blocked' } };
   const i = y * map.width + x;
   const track = rampTrack(down);
   const [dx, dy] = SIDE_DELTA[down];
   const below = inBounds(map, x + dx, y + dy) ? (y + dy) * map.width + x + dx : -1;
-  if (
+  const blocked =
     map.ramp[i] ||
     !isFlat(map, x, y) ||
     getTerrain(map, x, y) === Terrain.Water ||
@@ -106,16 +152,41 @@ export function buildRamp(state: GameState, x: number, y: number, down: Side, ev
     map.under[i] ||
     (map.track[i] && map.track[i] !== track) ||
     below < 0 ||
-    map.terrain[below] === Terrain.Water
-  ) {
-    return { ok: false, reason: 'blocked' };
-  }
-  if (state.money < METRO_RAMP_COST) return { ok: false, reason: 'noMoney' };
-  spend(state, 'construction', METRO_RAMP_COST);
-  map.track[i] = track;
+    map.terrain[below] === Terrain.Water;
+  if (blocked) return { cost, result: { ok: false, reason: 'blocked' } };
+  if (state.money < cost) return { cost, result: { ok: false, reason: 'noMoney' } };
+  return { cost, result: { ok: true } };
+}
+
+export function buildRamp(state: GameState, x: number, y: number, down: Side, events: SimEvent[]): CommandResult {
+  const plan = planRamp(state, x, y, down);
+  if (!plan.result.ok) return plan.result;
+  const { map } = state;
+  const i = y * map.width + x;
+  spend(state, 'construction', plan.cost);
+  map.track[i] = rampTrack(down);
   map.ramp[i] = down + 1;
   events.push({ type: 'tileChanged', x, y }, { type: 'undergroundChanged' });
   return { ok: true };
+}
+
+/**
+ * Kierunek zjazdu dobrany do otoczenia: w dół w stronę toru metra obok, a jeśli go nie ma –
+ * w stronę przeciwną do toru na powierzchni, który do kafelka dochodzi. Inaczej `fallback`.
+ */
+export function autoRampDown(map: WorldMap, x: number, y: number, fallback: Side): Side {
+  const sides = [Side.NE, Side.SE, Side.SW, Side.NW] as const;
+  const touches = (bits: number, side: Side) => tracksOn(bits).some((t) => TRACK_SIDES[t].includes(side));
+  for (const s of sides) {
+    const [dx, dy] = SIDE_DELTA[s];
+    if (inBounds(map, x + dx, y + dy) && touches(map.under[(y + dy) * map.width + x + dx]!, oppositeSide(s))) return s;
+  }
+  for (const s of sides) {
+    const [dx, dy] = SIDE_DELTA[s];
+    if (inBounds(map, x + dx, y + dy) && touches(map.track[(y + dy) * map.width + x + dx]!, oppositeSide(s)))
+      return oppositeSide(s);
+  }
+  return fallback;
 }
 
 /** Rozbiórka zjazdu (razem z jego torem). */

@@ -264,6 +264,8 @@ export interface HudState {
   gfx: boolean;
   /** Widok bez budynków (U). */
   buildingsHidden: boolean;
+  /** Widok metra – poziom −1 (Q). */
+  underground: boolean;
   /** Okno nowej gry (rozmiar mapy, ziarno). */
   newGameOpen: boolean;
   window: WindowRef | null;
@@ -308,6 +310,7 @@ export const hudStore = new Store<HudState>({
   gfxAvailable: false,
   gfx: true,
   buildingsHidden: false,
+  underground: false,
   newGameOpen: false,
   window: null,
   windowData: null,
@@ -348,6 +351,7 @@ export interface HudActions {
   toggleTraffic(): void;
   toggleGfx(): void;
   toggleBuildings(): void;
+  toggleUnderground(): void;
   openFinance(): void;
   /** Lista pociągów (K). */
   openTrains(): void;

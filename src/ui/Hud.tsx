@@ -31,6 +31,7 @@ const TOOLS: { tool: Tool; icon: string; name: string; key: string }[] = [
   { tool: 'terrain', icon: '⛰', name: 'Teren', key: 'L' },
   { tool: 'bridge', icon: '⌒', name: 'Most', key: 'M' },
   { tool: 'tunnel', icon: '◠', name: 'Tunel', key: 'N' },
+  { tool: 'ramp', icon: 'Ⓜ', name: 'Zjazd metra', key: 'J' },
   { tool: 'bulldozer', icon: '✖', name: 'Rozbiórka', key: 'X' },
 ];
 
@@ -51,6 +52,7 @@ const TOOL_HELP: Record<Tool, string> = {
     'Przeciągnij od przyczółka do przyczółka (wzdłuż osi, max 14 kafelków). Przyczółki płaskie lub wznoszące się w stronę mostu, na tej samej wysokości; pod mostem teren co najmniej poziom niżej. 400 zł za kafelek',
   tunnel:
     'Klik na zbocze (w osi X lub Y) – tunel w głąb wzniesienia do zbocza po drugiej stronie na tej samej wysokości. Nad tunelem teren co najmniej poziom wyżej, max 20 kafelków, 600 zł za kafelek',
+  ramp: 'Zjazd do metra (3000 zł): klik na płaski kafelek – tor schodzi pod ziemię w stronę strzałki. Kierunek dobiera się sam (w stronę metra albo od toru na powierzchni), R – obrót. Tory metra budujesz na poziomie −1 (Q)',
   orders: 'Klikaj stacje lub punkty kontrolne, aby dopisać je do rozkładu pociągu · Esc – koniec',
   bulldozer:
     'Klik – usuń element toru pod kursorem, most (przyczółek), tunel (wejście), zajezdnię, kafelek stacji, dom lub oczyść nieużytek · przeciągnięcie – rozbierz odcinek toru (zwrot 25%)',
@@ -130,6 +132,15 @@ export function Hud({ actions }: { actions: HudActions }) {
               {build.collapsed ? '»' : '«'}
             </button>
           </div>
+          <button
+            class={`level-toggle ${s.underground ? 'active' : ''}`}
+            title={s.underground ? 'Wróć na powierzchnię (Q)' : 'Poziom −1: metro – tory pod ziemią (Q)'}
+            onClick={actions.toggleUnderground}
+          >
+            <span class="icon">{s.underground ? '▼' : '▲'}</span>
+            <span class="name">{s.underground ? 'Metro (−1)' : 'Powierzchnia'}</span>
+            <kbd>Q</kbd>
+          </button>
           {TOOLS.filter((t) => t.tool !== 'signal' || s.signalMode === 'manual').map((t) => (
             <button
               key={t.tool}

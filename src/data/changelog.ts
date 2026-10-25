@@ -12,6 +12,16 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-25',
+    title: 'Metro – poziom −1 (pierwsza wersja)',
+    items: [
+      'Przełącznik poziomu nad narzędziami budowy (albo Q): na poziomie −1 powierzchnia jest przyciemniona, ale jej obrysy zostają widoczne, więc łatwo się zlokalizować.',
+      'Pod ziemią narzędzie Tory buduje tory metra – pod miastem, pod jeziorem, bez oglądania się na teren. Rozbiórka działa tak samo.',
+      'Nowe narzędzie Zjazd metra (J): na płaskim kafelku tor schodzi do wykopu i dalej pod ziemię. Pociągi same wybierają trasę przez metro, jeśli jest krótsza.',
+      'Pociąg w metrze widać tylko w widoku −1. Stacje podziemne – w kolejnej wersji.',
+    ],
+  },
+  {
+    date: '2026-10-25',
     title: 'Zajezdnia jak w OpenTTD',
     items: [
       'Pociągi w zajezdni to rzędy z lokomotywą i wagonami narysowanymi z boku; osobny rząd „Wolne wagony”.',

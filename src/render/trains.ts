@@ -40,12 +40,14 @@ export class TrainRenderer {
   }
 
   /** Pociągi i auta (`cars` z ruchu ulicznego) w jednej kolejności z budynkami, które je zasłaniają. */
-  draw(state: GameState, alpha: number, selectedId: number | null, cars: readonly StreetVehicle[] = []): void {
+  draw(state: GameState, alpha: number, selectedId: number | null, cars: readonly StreetVehicle[] = [], metro = false): void {
     const g = this.gfx;
     g.clear();
     const items: Drawn[] = [];
     for (const t of state.trains) {
       for (const cur of vehiclePoses(state, t)) {
+        // Widok metra – tylko pociągi pod ziemią; widok powierzchni – tylko na powierzchni.
+        if (cur.under !== metro) continue;
         const prev = this.prev.get(`${t.id}:${cur.index}`);
         const pose = prev ? { ...cur, front: lerp(prev.front, cur.front, alpha), back: lerp(prev.back, cur.back, alpha) } : cur;
         const depth = (pose.front.x + pose.front.y + pose.back.x + pose.back.y) / 2;
@@ -54,7 +56,8 @@ export class TrainRenderer {
     }
     // Budynki przed pojazdami zasłaniają je – dorysowujemy je (z tym, co stoi przed nimi) w kolejności głębokości.
     const front = new FrontObjects(state);
-    for (const it of items) {
+    // W metrze nic pojazdów nie zasłania (budynki są na powierzchni, nad przyciemnieniem).
+    for (const it of metro ? [] : items) {
       const { front: f, back: b } = it.pose;
       front.addVehicle((f.x + b.x) / 2, (f.y + b.y) / 2);
     }
@@ -135,7 +138,9 @@ function drawVehicleSprite(g: Graphics, item: Drawn, selected: boolean): Point |
     if (!w) return null;
     id = (item.pose.loaded && w.full ? w.full : w.base) + (dir & 3);
   }
-  const mid = toWorld((f.x + b.x) / 2, (f.y + b.y) / 2, (f.z + b.z) / 2);
+  // Metro rysujemy w miejscu kafelków nad nim (tor metra leży poziom niżej).
+  const lift = item.pose.under ? 1 : 0;
+  const mid = toWorld((f.x + b.x) / 2, (f.y + b.y) / 2, (f.z + b.z) / 2 + lift);
   if (!drawSprite(g, palKey(id, pal), mid.x, mid.y, selected ? 0xfff27a : 0xffffff)) return null;
   return { x: mid.x, y: mid.y - 6 };
 }
@@ -146,7 +151,9 @@ function lerp(a: Point3, b: Point3, t: number): Point3 {
 
 /** Pojazd jako prostopadłościan: obrys (ciemny) + dach (kolor pojazdu). Zwraca środek w px. */
 function drawVehicle(g: Graphics, pose: VehiclePose, selected: boolean): Point {
-  const { front: f, back: b } = pose;
+  const lift = pose.under ? 1 : 0;
+  const f = { ...pose.front, z: pose.front.z + lift };
+  const b = { ...pose.back, z: pose.back.z + lift };
   const len = Math.hypot(f.x - b.x, f.y - b.y) || 1;
   const ux = (f.x - b.x) / len;
   const uy = (f.y - b.y) / len;

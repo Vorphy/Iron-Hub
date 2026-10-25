@@ -163,6 +163,7 @@ const actions: HudActions = {
   setSignalMode: (mode) => game?.command({ type: 'setSignalMode', mode }),
   toggleMenu: () => hudStore.set({ menuOpen: !hudStore.get().menuOpen }),
   toggleBuildings: () => game?.toggleBuildings(),
+  toggleUnderground: () => game?.toggleUnderground(),
   toggleGfx: () => {
     const gfx = !hudStore.get().gfx;
     hudStore.set({ gfx });

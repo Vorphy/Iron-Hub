@@ -998,3 +998,14 @@ input.seed {
   flex-direction: column;
   gap: 3px;
 }
+
+/* Przełącznik poziomu (powierzchnia / metro) nad narzędziami budowy. */
+.toolbar .level-toggle {
+  border-style: dashed;
+  margin-bottom: 4px;
+}
+.toolbar .level-toggle.active {
+  background: #3a5f8a;
+  border-color: #6fa8dc;
+  color: #fff;
+}

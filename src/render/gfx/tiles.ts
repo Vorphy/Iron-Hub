@@ -151,6 +151,34 @@ export function drawTrackGround(g: Graphics, map: WorldMap, x: number, y: number
   for (const t of tracksOn(bits)) drawSprite(g, SINGLE[t]!, o.x, o.y);
 }
 
+/** Same szyny (bez gruntu) – tory metra w widoku poziomu −1. */
+export function drawTrackOverlays(g: Graphics, ox: number, oy: number, bits: number): void {
+  for (const t of tracksOn(bits)) drawSprite(g, SINGLE[t]!, ox, oy);
+}
+
+/**
+ * Zjazd do metra na powierzchni: tor jak zwykle, a połowa kafelka od strony `down` to ciemny wykop
+ * z betonowymi ścianami po bokach (tor znika w nim pod ziemią).
+ */
+export function drawRampPit(g: Graphics, map: WorldMap, x: number, y: number, down: Side): void {
+  const { z } = tileSlope(map, x, y);
+  // a: 0 – bok od strony powierzchni, 1 – bok, którym tor schodzi pod ziemię; b: w poprzek toru.
+  const at = (a: number, b: number) => {
+    const u = down === Side.NW || down === Side.NE ? 1 - a : a;
+    return down === Side.SE || down === Side.NW ? toWorld(x + u, y + b, z) : toWorld(x + b, y + u, z);
+  };
+  const quad = (a0: number, a1: number, b0: number, b1: number) =>
+    [at(a0, b0), at(a1, b0), at(a1, b1), at(a0, b1)].flatMap((p) => [p.x, p.y]);
+  // Coraz ciemniej w stronę zejścia pod ziemię.
+  for (let k = 0; k < 5; k++) {
+    const a0 = 0.45 + k * 0.11;
+    g.poly(quad(a0, a0 + 0.11, 0.14, 0.86)).fill({ color: 0x0c0e11, alpha: 0.3 + k * 0.17 });
+  }
+  // Betonowe ściany wykopu po bokach.
+  g.poly(quad(0.45, 1, 0.08, 0.14)).fill(0xa9a49a);
+  g.poly(quad(0.45, 1, 0.86, 0.92)).fill(0x8d887f);
+}
+
 /** Bity drogi jak w OpenTTD: NW=1, SW=2, SE=4, NE=8. */
 const ROAD_BIT: Record<Side, number> = { [Side.NW]: 1, [Side.SW]: 2, [Side.SE]: 4, [Side.NE]: 8 };
 const ROAD_OFFSETS = [0, 18, 17, 7, 16, 0, 10, 5, 15, 8, 1, 4, 9, 3, 6, 2];

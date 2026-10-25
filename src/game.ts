@@ -11,6 +11,7 @@ import { BridgeRenderer } from './render/bridges';
 import { TunnelRenderer } from './render/tunnels';
 import { IndustryRenderer } from './render/buildings';
 import { setGfxYear } from './render/gfx/tiles';
+import { UndergroundRenderer } from './render/underground';
 import { buildingsHidden, setBuildingsHidden } from './render/visibility';
 import { FloatingTexts } from './render/floatingText';
 import { MapLabels } from './render/mapLabels';
@@ -47,6 +48,7 @@ const KEY_TOOLS: Record<string, Tool> = {
   KeyL: 'terrain',
   KeyM: 'bridge',
   KeyN: 'tunnel',
+  KeyJ: 'ramp',
   KeyX: 'bulldozer',
   Delete: 'bulldozer',
 };
@@ -57,6 +59,8 @@ export class Game {
   readonly loop: GameLoop;
   private readonly camera: Camera;
   private readonly mapRenderer: MapRenderer;
+  /** Widok poziomu −1 (metro). */
+  private readonly underground: UndergroundRenderer;
   private readonly overlay = new Overlay();
   private readonly graphDebug = new GraphDebug();
   private readonly labels = new MapLabels();
@@ -94,6 +98,7 @@ export class Game {
     this.tools = new Tools(this.sim, this.overlay);
 
     const world = this.world;
+    this.underground = new UndergroundRenderer(state.map.width, state.map.height);
     this.mapRenderer = new MapRenderer(
       app.renderer,
       state.map,
@@ -109,6 +114,7 @@ export class Game {
       this.bridges.gfx,
       this.tunnels.gfx,
       this.graphDebug.gfx,
+      this.underground.container,
       this.overlay.container,
       this.signals.gfx,
       this.trains.gfx,
@@ -175,6 +181,16 @@ export class Game {
     this.industries.draw(state.industries, state.map);
     this.bridges.draw(state);
     this.tunnels.draw(state);
+  }
+
+  /** Widok metra (poziom −1, Q): przyciemniona powierzchnia, tory i pociągi metra, budowa pod ziemią. */
+  toggleUnderground(): void {
+    const on = !this.underground.visible;
+    this.underground.visible = on;
+    this.underground.markDirty();
+    this.tools.setUnder(on);
+    this.signals.gfx.visible = !on;
+    hudStore.set({ underground: on });
   }
 
   /** Widok bez budynków (U) – żeby zobaczyć tory zasłonięte domami i zakładami. */
@@ -316,6 +332,7 @@ export class Game {
     // Semafory tylko w trybie Ekspert.
     if (tool && (tool !== 'signal' || this.sim.state.signalMode === 'manual')) this.setTool(tool);
     if (code === 'KeyU') this.toggleBuildings();
+    if (code === 'KeyQ') this.toggleUnderground();
     if (code === 'KeyV') this.signals.showReservations = !this.signals.showReservations;
     if (code === 'KeyR') this.tools.rotate();
     if (code === 'KeyG') {
@@ -362,6 +379,7 @@ export class Game {
       } else if (ev.type === 'stationsChanged' || ev.type === 'depotsChanged') this.labels.rebuild(this.sim.state);
       else if (ev.type === 'bridgesChanged') this.bridges.draw(this.sim.state);
       else if (ev.type === 'tunnelsChanged') this.tunnels.draw(this.sim.state);
+      else if (ev.type === 'undergroundChanged') this.underground.markDirty();
       else if (ev.type === 'income') this.floaters.spawn(`+${formatMoney(ev.amount)}`, ev.x, ev.y);
       else if (ev.type === 'newEngines') {
         const names = ev.engines.map((id) => {
@@ -416,9 +434,11 @@ export class Game {
     // Ruch uliczny w tempie gry (stoi w pauzie).
     const gameSeconds = (Math.min(deltaMs, 250) * this.loop.speed) / 1000;
     const cars = this.traffic.update(this.sim.state, deltaMs, gameSeconds, this.camera.viewRect(), this.camera.zoom);
+    this.underground.update(this.sim.state);
     const win = hudStore.get().window;
     this.signals.draw(this.sim.state);
-    this.trains.draw(this.sim.state, this.loop.alpha, win?.kind === 'train' ? win.trainId : null, cars);
+    const metro = this.underground.visible;
+    this.trains.draw(this.sim.state, this.loop.alpha, win?.kind === 'train' ? win.trainId : null, metro ? [] : cars, metro);
     if (this.tools.tool === 'signal' && this.sim.state.signalMode !== 'manual') this.setTool('cursor');
     this.tools.update();
     this.updateMinimap(deltaMs);

@@ -13,6 +13,7 @@ import { darken, lighten, tileHash } from './shapes';
 import { drawHouse } from './buildings';
 import { drawRoad, roadNeighbors } from './roadDraw';
 import { gfxOn } from './gfx/gfx';
+import { rampDown } from '../sim/track/metro';
 import { buildingsHidden } from './visibility';
 import { drawTunnelPortal } from './gfx/structures';
 import { drawCatenarySprites } from './gfx/catenary';
@@ -22,6 +23,7 @@ import {
   drawHouseTile,
   drawRoadGround,
   drawStationTile,
+  drawRampPit,
   drawTrackGround,
   drawTrees,
   tileTrees,
@@ -288,8 +290,11 @@ export class MapRenderer {
     else if (depot) drawDepotTile(g, objects, map, x, y, depot);
     else if (map.road[i]) drawRoadGround(g, map, x, y, roadNeighbors(map, x, y), bits);
     else if (map.house[i]) drawHouseTile(g, objects, map, x, y, map.house[i]!);
-    else if (drawnBits) drawTrackGround(g, map, x, y, drawnBits);
-    else {
+    else if (drawnBits) {
+      drawTrackGround(g, map, x, y, drawnBits);
+      const down = rampDown(map, x, y);
+      if (down !== null) drawRampPit(g, map, x, y, down);
+    } else {
       drawGround(g, map, x, y);
       const trees = buildingsHidden() ? 0 : tileTrees(map, x, y);
       if (trees) drawTrees(objects, map, x, y, trees);

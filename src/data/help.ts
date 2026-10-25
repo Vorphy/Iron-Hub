@@ -98,6 +98,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
       `Usuwanie: Tory → Usuń albo Rozbiórka (X). Klik – jeden element pod kursorem, przeciągnięcie – odcinek. Zwrot ${pct(E.refunds.demolition)}. Toru pod pociągiem nie rozbierzesz.`,
       `**Most** (M): przeciągnij od przyczółka do przyczółka, do ${MAX_BRIDGE_LENGTH} kafelków, ${zl(E.construction.bridgeTile)} za kafelek. Przyczółki na tej samej wysokości, pod mostem teren niżej (woda, inne tory).`,
       `**Tunel** (N): kliknij zbocze – tunel biegnie prosto do zbocza po drugiej stronie na tej samej wysokości. Do ${MAX_TUNNEL_LENGTH} kafelków, ${zl(E.construction.tunnelTile)} za kafelek.`,
+      `**Metro – poziom −1** (Q): przełącznik nad narzędziami budowy. Pod ziemią powierzchnia jest przyciemniona (jej obrysy pomagają się zlokalizować), a Tory i Rozbiórka budują i rozbierają **tory metra** – ${zl(E.construction.metroTrackPiece)} za element, także pod wodą i pod miastem. Pociągi wjeżdżają do metra przez **zjazd** (J, ${zl(E.construction.metroRamp)}): płaski kafelek, na którym tor schodzi pod ziemię w stronę strzałki (kierunek dobiera się sam, R – obrót). Pod ziemią jeździ każda lokomotywa, także elektryczna (trzecia szyna). Na razie metro to trasa pod ziemią między zjazdami – stacje podziemne wkrótce.`,
       `**Teren** (L): podnieś / obniż narożnik albo wyrównaj prostokąt; ${zl(E.construction.terraformCorner)} za narożnik. Pod torami, budynkami i drogami terenu nie zmienisz. Woda jest tylko na najniższym poziomie – podniesienie dna zamienia ją w ląd.`,
     ],
   },

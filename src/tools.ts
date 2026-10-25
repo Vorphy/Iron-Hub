@@ -23,6 +23,7 @@ import { getTerrain, inBounds, Terrain } from './sim/world/map';
 import { levelTargets, planTerraform, terraformTargets } from './sim/world/terraform';
 import { bridgeAt, bridgeRole, bridgeTileCoords, planBridge } from './sim/track/bridge';
 import { planTunnel, tunnelAt, tunnelRole, tunnelTileCoords } from './sim/track/tunnel';
+import { autoRampDown, planBuildUnderTrack, planRamp, planRemoveUnderTrack } from './sim/track/metro';
 import type { Point } from './render/iso';
 
 /** 'orders' – wskazywanie stacji do rozkładu pociągu `ordersTrain` (z okna pociągu). */
@@ -36,6 +37,7 @@ export type Tool =
   | 'terrain'
   | 'bridge'
   | 'tunnel'
+  | 'ramp'
   | 'bulldozer'
   | 'orders';
 
@@ -105,6 +107,10 @@ export class Tools {
   terrainMode: TerrainMode = 'raise';
   /** Pociąg, któremu dopisujemy stacje (narzędzie 'orders'). */
   ordersTrain: number | null = null;
+  /** Budowa na poziomie −1 (metro) – przełącznik widoku. */
+  under = false;
+  /** Zjazd do metra: bok, którym tor schodzi pod ziemię (gdy otoczenie go nie podpowiada). */
+  rampSide: Side = Side.SE;
   private dragStart: Point | null = null;
   private pointer: Point | null = null;
   private dirty = true;
@@ -145,9 +151,16 @@ export class Tools {
     if (cmd) this.sim.enqueue(cmd);
   }
 
-  /** Klawisz R: obrót stacji albo wjazdu zajezdni. */
+  /** Klawisz R: obrót stacji, wjazdu zajezdni albo zjazdu do metra. */
   rotate(): void {
-    if (this.tool === 'depot') this.setDepotSide(((this.depotSide + 1) & 3) as Side);
+    if (this.tool === 'ramp') {
+      const map = this.sim.state.map;
+      const p = this.pointer;
+      const cur = p ? autoRampDown(map, Math.floor(p.x), Math.floor(p.y), this.rampSide) : this.rampSide;
+      this.rampSide = ((cur + 1) & 3) as Side;
+      this.rampAuto = false;
+      this.dirty = true;
+    } else if (this.tool === 'depot') this.setDepotSide(((this.depotSide + 1) & 3) as Side);
     else this.setStationAxis(this.stationAxis === 'x' ? 'y' : 'x');
   }
 
@@ -159,6 +172,19 @@ export class Tools {
       this.depotAuto = false;
     }
     this.dirty = true;
+  }
+
+  /** Kierunek zjazdu: z otoczenia, dopóki gracz nie obróci go klawiszem R. */
+  private rampAuto = true;
+
+  setUnder(on: boolean): void {
+    this.under = on;
+    this.dragStart = null;
+    this.dirty = true;
+  }
+
+  private rampDownAt(x: number, y: number): Side {
+    return this.rampAuto ? autoRampDown(this.sim.state.map, x, y, this.rampSide) : this.rampSide;
   }
 
   setTerrainMode(mode: TerrainMode): void {
@@ -223,6 +249,40 @@ export class Tools {
     }
 
     const start = this.dragStart ?? p;
+    if (this.tool === 'ramp') {
+      if (!tile) return this.overlay.setHover(null);
+      const down = this.rampDownAt(tile.x, tile.y);
+      const plan = planRamp(this.sim.state, tile.x, tile.y, down);
+      this.overlay.setHover(tile, plan.result.ok ? 0x4cc9f0 : 0xe0503a);
+      this.overlay.setDepotPreview(tile.x, tile.y, down, plan.result.ok);
+      this.label = { ...planLabel(plan), text: `Zjazd ${SIDE_ARROWS[down]} · ${planLabel(plan).text} (R – obróć)` };
+      return;
+    }
+    // Pod ziemią (metro): tory, zjazdy i rozbiórka.
+    if (this.under && this.tool !== 'track' && this.tool !== 'bulldozer') {
+      this.overlay.setHover(tile, 0x9aa0a8);
+      this.label = { text: 'Pod ziemią: tory, zjazdy i rozbiórka (Q – powierzchnia)', ok: false };
+      return;
+    }
+    if (this.under) {
+      this.overlay.setHover(null);
+      if (this.tool === 'track' && this.trackMode === 'build') {
+        const plan = planBuildUnderTrack(this.sim.state, planTrackLine(start.x, start.y, p.x, p.y));
+        this.overlay.setTrackPreview(plan);
+        if (this.dragStart) this.label = planLabel(plan);
+        return;
+      }
+      const pieces = this.removalPieces(start, p);
+      if (!pieces.length) {
+        this.overlay.setHover(tile, 0xe0503a);
+        this.label = sameTile(start, p) ? { text: 'Wskaż tor metra', ok: false } : null;
+        return;
+      }
+      const plan = planRemoveUnderTrack(this.sim.state, pieces);
+      this.overlay.setTrackPreview(plan, true);
+      this.label = planLabel(plan);
+      return;
+    }
     if (this.tool === 'tunnel') {
       this.overlay.setHover(tile);
       if (!tile) return;
@@ -394,7 +454,7 @@ export class Tools {
   /** Elementy do rozbiórki: jeden pod kursorem (klik) albo linia (przeciągnięcie). */
   private removalPieces(start: Point, end: Point): TrackPiece[] {
     if (!sameTile(start, end)) return planTrackLine(start.x, start.y, end.x, end.y);
-    const piece = nearestPiece(this.sim, end);
+    const piece = nearestPiece(this.sim, end, this.under);
     return piece ? [piece] : [];
   }
 
@@ -454,6 +514,21 @@ export class Tools {
       const tiles = catenaryTiles(start, end);
       return { type: this.catenaryMode === 'remove' ? 'removeCatenary' : 'buildCatenary', tiles };
     }
+    if (this.tool === 'ramp') {
+      const x = Math.floor(end.x);
+      const y = Math.floor(end.y);
+      return { type: 'buildRamp', x, y, down: this.rampDownAt(x, y) };
+    }
+    if (this.under) {
+      if (this.tool === 'track' && this.trackMode === 'build') {
+        return { type: 'buildTrack', pieces: planTrackLine(start.x, start.y, end.x, end.y), under: true };
+      }
+      if (this.tool === 'track' || this.tool === 'bulldozer') {
+        const pieces = this.removalPieces(start, end);
+        return pieces.length ? { type: 'removeTrack', pieces, under: true } : null;
+      }
+      return null;
+    }
     if (this.tool === 'track') {
       if (this.trackMode === 'remove') {
         const pieces = this.removalPieces(start, end);
@@ -496,7 +571,8 @@ export class Tools {
       const i = y * map.width + x;
       // Zwykły tor: tylko wskazany element; stacja, zajezdnia, most (przyczółek), tunel (wejście),
       // dom, nieużytek – cały obiekt (rampa mostu i tor wjazdu do tunelu to nie „zwykły tor”).
-      const plainTrack = inBounds(map, x, y) && map.track[i] && !map.station[i] && !map.depot[i] && !structureAt(this.sim, x, y);
+      const plainTrack =
+        inBounds(map, x, y) && map.track[i] && !map.station[i] && !map.depot[i] && !map.ramp[i] && !structureAt(this.sim, x, y);
       if (sameTile(start, end) && !plainTrack) return { type: 'clearTile', x, y };
       const pieces = this.removalPieces(start, end);
       return pieces.length ? { type: 'removeTrack', pieces } : null;
@@ -504,6 +580,9 @@ export class Tools {
     return null;
   }
 }
+
+/** Strzałka kierunku na ekranie (rzut izometryczny) – zjazd schodzi pod ziemię w tę stronę. */
+const SIDE_ARROWS: Record<Side, string> = { [Side.NE]: '↗', [Side.SE]: '↘', [Side.SW]: '↙', [Side.NW]: '↖' };
 
 // Środki boków kafelka (do wyboru najbliższego elementu toru).
 const MID: Record<Side, readonly [number, number]> = {
@@ -514,7 +593,7 @@ const MID: Record<Side, readonly [number, number]> = {
 };
 
 /** Element toru na kafelku pod kursorem najbliższy kursorowi (do stawiania semaforów). */
-function nearestPiece(sim: Simulation, p: Point): { x: number; y: number; track: Track } | null {
+function nearestPiece(sim: Simulation, p: Point, under = false): { x: number; y: number; track: Track } | null {
   const x = Math.floor(p.x);
   const y = Math.floor(p.y);
   if (!inBounds(sim.state.map, x, y)) return null;
@@ -522,7 +601,8 @@ function nearestPiece(sim: Simulation, p: Point): { x: number; y: number; track:
   const fy = p.y - y;
   let best: Track | null = null;
   let bestD = Infinity;
-  for (const track of tracksOn(getTrackBits(sim.state.map, x, y))) {
+  const bits = under ? sim.state.map.under[y * sim.state.map.width + x]! : getTrackBits(sim.state.map, x, y);
+  for (const track of tracksOn(bits)) {
     const [a, b] = TRACK_SIDES[track];
     const d = distToSegment(fx, fy, MID[a], MID[b]);
     if (d < bestD) {

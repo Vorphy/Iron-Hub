@@ -1,5 +1,6 @@
 import { VEHICLE_GAP } from '../config';
 import type { GameState } from '../state';
+import { isUnderTrack } from '../track/metro';
 import { isTunnelTrack } from '../track/tunnel';
 import { pointOnStep, stepHeight, stepLength } from './steps';
 import type { Step, Train } from './train';
@@ -54,7 +55,7 @@ export function pointBehindHeadZ(state: GameState, train: Train, d: number): Poi
   const at = locateBehindHead(train, d);
   // We wnętrzu tunelu pojazdu nie widać.
   if (!at || isTunnelTrack(at.step.track)) return null;
-  return { ...pointOnStep(at.step, at.pos), z: stepHeight(state, at.step, at.pos) };
+  return { ...pointOnStep(at.step, at.pos), z: stepHeight(state, at.step, at.pos), under: isUnderTrack(at.step.track) };
 }
 
 function locateBehindHead(train: Train, d: number): { step: Step; pos: number } | null {
@@ -76,9 +77,13 @@ export interface Point3 {
   y: number;
   /** Wysokość toru w poziomach terenu. */
   z: number;
+  /** Punkt na torze metra. */
+  under?: boolean;
 }
 
 export interface VehiclePose {
+  /** Pojazd w metrze (poziom −1) – widoczny tylko w widoku metra. */
+  under: boolean;
   index: number;
   color: string;
   engine: boolean;
@@ -96,8 +101,10 @@ export function vehiclePoses(state: GameState, train: Train): VehiclePose[] {
   for (const v of vehiclesInOrder(train)) {
     const front = pointBehindHeadZ(state, train, offset);
     const back = pointBehindHeadZ(state, train, offset + v.length);
-    if (front && back)
-      out.push({ index: v.index, color: v.color, engine: v.engine, type: v.type, loaded: v.loaded, front, back });
+    if (front && back) {
+      const under = !!front.under;
+      out.push({ under, index: v.index, color: v.color, engine: v.engine, type: v.type, loaded: v.loaded, front, back });
+    }
     offset += v.length + VEHICLE_GAP;
   }
   return out;
