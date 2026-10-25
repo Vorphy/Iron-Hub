@@ -4,7 +4,7 @@ import { rampDown, rampTrack } from '../sim/track/metro';
 import { tracksOn } from '../sim/track/track';
 import { MAX_HEIGHT } from '../sim/world/height';
 import { gfxOn } from './gfx/gfx';
-import { drawTrackOverlays, tileSlope } from './gfx/tiles';
+import { drawTrackOverlays, drawUnderPlatform, tileSlope } from './gfx/tiles';
 import { HEIGHT_PX, TILE_H, TILE_W, tileDiamond, toWorld } from './iso';
 import { drawTrackTile, TRACK_STYLE } from './trackDraw';
 
@@ -54,6 +54,7 @@ export class UndergroundRenderer {
     g.clear();
     const { map } = state;
     const sprites = gfxOn();
+    const stations = new Map(state.stations.map((s) => [s.id, s]));
     for (let i = 0; i < map.under.length; i++) {
       const bits = map.under[i]!;
       const ramp = map.ramp[i]!;
@@ -65,6 +66,12 @@ export class UndergroundRenderer {
         .fill(ramp ? RAMP_FLOOR : FLOOR)
         .stroke({ width: 1, color: FLOOR_EDGE, alpha: 0.8 });
       const draw = ramp ? rampTrack(rampDown(map, x, y)!) : bits;
+      const station = map.stationUnder[i] ? stations.get(map.stationUnder[i]!) : undefined;
+      if (station && sprites) {
+        drawUnderPlatform(g, map, x, y, station.axis);
+        continue;
+      }
+      if (station) g.poly(tileDiamond(x, y)).fill({ color: 0xa9a49b, alpha: 0.9 });
       if (sprites) {
         const { z } = tileSlope(map, x, y);
         const o = toWorld(x, y, z);

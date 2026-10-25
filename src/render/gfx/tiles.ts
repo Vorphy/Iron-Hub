@@ -424,6 +424,15 @@ function drawStationParts(objects: Graphics, x: number, y: number, z: number, ot
   }
 }
 
+/** Peron metra (widok −1): tor i perony po obu stronach, bez budynku i dachu. */
+export function drawUnderPlatform(g: Graphics, map: WorldMap, x: number, y: number, axis: 'x' | 'y'): void {
+  const { z } = tileSlope(map, x, y);
+  const o = tileOrigin(x, y, z);
+  const ottdX = axis === 'y';
+  drawSprite(g, ottdX ? SPR_RAIL_TRACK_Y + 1 : SPR_RAIL_TRACK_Y, o.x, o.y);
+  drawStationParts(g, x, y, z, ottdX, 0, 0);
+}
+
 /** Przednia krawędź peronu i zadaszenie – dorysowywane przed pociągiem stojącym przy peronie. */
 export function drawStationFront(objects: Graphics, map: WorldMap, x: number, y: number, station: Station): void {
   const { z } = tileSlope(map, x, y);

@@ -1,5 +1,6 @@
 import { TICKS_PER_DAY } from '../time';
-import { getTrackBits, SIDE_DELTA } from '../track/track';
+import { baseTrack, levelTrackBits, stationLayer } from '../track/metro';
+import { SIDE_DELTA } from '../track/track';
 import { inBounds } from '../world/map';
 import { wagonDef } from './vehicles';
 import type { Station } from '../station/station';
@@ -153,13 +154,15 @@ export function platformTiles(state: GameState, train: Train): number {
   const { map } = state;
   const head = train.trail[0];
   if (!head) return 0;
-  const id = map.station[head.y * map.width + head.x];
+  const stations = stationLayer(map, head.track);
+  const id = stations[head.y * map.width + head.x];
   if (!id || head.entry === -1) return 0;
   const [dx, dy] = SIDE_DELTA[head.entry];
   let n = 0;
   let x = head.x;
   let y = head.y;
-  while (inBounds(map, x, y) && map.station[y * map.width + x] === id && getTrackBits(map, x, y) === head.track) {
+  const base = baseTrack(head.track);
+  while (inBounds(map, x, y) && stations[y * map.width + x] === id && levelTrackBits(map, x, y, head.track) === base) {
     n++;
     x += dx;
     y += dy;
@@ -419,7 +422,7 @@ function arrive(ctx: TickContext, train: Train): void {
 
 function stationUnderHead(state: GameState, train: Train) {
   const h = train.trail[0]!;
-  const id = state.map.station[h.y * state.map.width + h.x];
+  const id = stationLayer(state.map, h.track)[h.y * state.map.width + h.x];
   return id ? state.stations.find((s) => s.id === id) : undefined;
 }
 

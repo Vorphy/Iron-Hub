@@ -42,7 +42,19 @@ export type Command =
   /** Zjazd do metra: prosty tor schodzący pod ziemię bokiem `down`. */
   | { type: 'buildRamp'; x: number; y: number; down: Side }
   /** Peron obok istniejącej stacji ją rozbudowuje; `separate` – osobna stacja. */
-  | { type: 'buildStation'; x0: number; y0: number; x1: number; y1: number; axis: StationAxis; separate?: boolean }
+  | {
+      type: 'buildStation';
+      x0: number;
+      y0: number;
+      x1: number;
+      y1: number;
+      axis: StationAxis;
+      separate?: boolean;
+      /** Stacja metra (poziom −1). */
+      under?: boolean;
+    }
+  /** Rozbiórka kafelka peronu metra. */
+  | { type: 'removeUnderStation'; x: number; y: number }
   /** Punkt kontrolny na istniejącym prostym torze. */
   | { type: 'buildWaypoint'; x: number; y: number }
   | { type: 'buildDepot'; x: number; y: number; side: Side }
@@ -172,7 +184,10 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
     case 'buildRamp':
       return buildRamp(state, cmd.x, cmd.y, cmd.down, events);
     case 'buildStation':
-      return buildStation(state, cmd.x0, cmd.y0, cmd.x1, cmd.y1, cmd.axis, events, cmd.separate === true);
+      return buildStation(state, cmd.x0, cmd.y0, cmd.x1, cmd.y1, cmd.axis, events, cmd.separate === true, cmd.under === true);
+    case 'removeUnderStation':
+      if (occupiedTiles(state).has(cmd.y * state.map.width + cmd.x)) return { ok: false, reason: 'trainInWay' };
+      return removeStationTile(state, cmd.x, cmd.y, events, true);
     case 'buildWaypoint':
       return buildWaypoint(state, cmd.x, cmd.y, events);
     case 'buildDepot':

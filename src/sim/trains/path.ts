@@ -1,8 +1,8 @@
 import { BEND_PENALTY, FULL_LOAD_PENALTY, OCCUPIED_PENALTY, REVERSE_PENALTY } from '../config';
-import { isUnderTrack } from '../track/metro';
+import { baseTrack, isUnderTrack, levelTrackBits, stationLayer } from '../track/metro';
 import type { SignalIndex } from '../signals/signals';
 import type { GameState } from '../state';
-import { getTrackBits, SIDE_DELTA, Track } from '../track/track';
+import { SIDE_DELTA, Track } from '../track/track';
 import { inBounds } from '../world/map';
 import { isElectrified, needsCatenary } from '../track/catenary';
 import { blockerOf, type Taken } from './reservation';
@@ -46,14 +46,17 @@ export function trainGoal(state: GameState, train: Train): Goal {
 /** Czy odcinek kończy się na końcu peronu danej stacji (tam pociąg się zatrzymuje). */
 export function isPlatformEnd(state: GameState, s: Step, stationId: number): boolean {
   const { map } = state;
-  if (s.track !== Track.X && s.track !== Track.Y) return false;
-  if (map.station[s.y * map.width + s.x] !== stationId) return false;
+  const base = baseTrack(s.track);
+  if (base !== Track.X && base !== Track.Y) return false;
+  // Peron na poziomie odcinka: w metrze stacje i tory metra, na powierzchni – zwykłe.
+  const stations = stationLayer(map, s.track);
+  if (stations[s.y * map.width + s.x] !== stationId) return false;
   if (s.exit === -1) return false;
   const [dx, dy] = SIDE_DELTA[s.exit];
   const nx = s.x + dx;
   const ny = s.y + dy;
-  if (!inBounds(map, nx, ny) || map.station[ny * map.width + nx] !== stationId) return true;
-  return getTrackBits(map, nx, ny) !== s.track;
+  if (!inBounds(map, nx, ny) || stations[ny * map.width + nx] !== stationId) return true;
+  return levelTrackBits(map, nx, ny, s.track) !== base;
 }
 
 function goalTest(state: GameState, goal: NonNullable<Goal>): (s: Step) => boolean {

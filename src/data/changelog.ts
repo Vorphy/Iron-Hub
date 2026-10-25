@@ -17,7 +17,8 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
       'Przełącznik poziomu nad narzędziami budowy (albo Q): na poziomie −1 powierzchnia jest przyciemniona, ale jej obrysy zostają widoczne, więc łatwo się zlokalizować.',
       'Pod ziemią narzędzie Tory buduje tory metra – pod miastem, pod jeziorem, bez oglądania się na teren. Rozbiórka działa tak samo.',
       'Nowe narzędzie Zjazd metra (J): na płaskim kafelku tor schodzi do wykopu i dalej pod ziemię. Pociągi same wybierają trasę przez metro, jeśli jest krótsza.',
-      'Pociąg w metrze widać tylko w widoku −1. Stacje podziemne – w kolejnej wersji.',
+      'Stacje metra: na poziomie −1 narzędzie Stacja stawia perony pod ziemią – pod samym centrum miasta, bez burzenia domów. Mają zasięg jak zwykła stacja i nazwę „… Metro”.',
+      'Pociąg w metrze widać tylko w widoku −1; tam też klikasz stacje metra (okno stacji, rozkład jazdy).',
     ],
   },
   {

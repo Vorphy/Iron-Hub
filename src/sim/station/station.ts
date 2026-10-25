@@ -5,6 +5,7 @@ import {
   STATION_MAX_PLATFORMS,
   STATION_TILE_COST,
   TRACK_REFUND_RATE,
+  METRO_STATION_EXTRA,
   WAYPOINT_COST,
 } from '../config';
 import { spend } from '../economy/finance';
@@ -37,6 +38,8 @@ export interface Station {
   /** Indeksy kafelków peronów (y * width + x), rosnąco. */
   tiles: number[];
   cargo: Partial<Record<Cargo, StationCargo>>;
+  /** Stacja metra (poziom −1): kafelki w `map.stationUnder`, tor peronu w `map.under`. */
+  under?: boolean;
   /**
    * Punkt kontrolny: jeden kafelek na zwykłym torze, bez peronu i zasięgu. Pociąg z nim w rozkładzie
    * jedzie przez ten tor i nie zatrzymuje się.
@@ -72,15 +75,17 @@ const STATION_NAMES = [
 const SUFFIXES = ['Główna', 'Wschód', 'Zachód', 'Północ', 'Południe', 'Towarowa', 'Osiedle', 'Park'];
 
 /** Nazwa nowej stacji: od najbliższego miasta (z dopiskiem, gdy zajęta), inaczej z listy. */
-export function stationNameFor(state: GameState, tiles: readonly number[]): string {
+export function stationNameFor(state: GameState, tiles: readonly number[], under = false): string {
   const W = state.map.width;
   const cx = tiles.reduce((s, t) => s + (t % W), 0) / tiles.length;
   const cy = tiles.reduce((s, t) => s + Math.floor(t / W), 0) / tiles.length;
   const town = nearestTown(state, cx, cy, TOWN_NAME_RADIUS);
   const taken = new Set(state.stations.map((s) => s.name));
   if (town) {
-    for (const name of [town.name, ...SUFFIXES.map((s) => `${town.name} ${s}`)]) if (!taken.has(name)) return name;
+    const base = under ? `${town.name} Metro` : town.name;
+    for (const name of [base, ...SUFFIXES.map((s) => `${base} ${s}`)]) if (!taken.has(name)) return name;
   }
+  if (under) for (let i = 1; ; i++) if (!taken.has(`Metro ${i}`)) return `Metro ${i}`;
   for (let i = 0; ; i++) {
     const name = stationName(i);
     if (!taken.has(name)) return name;
@@ -93,9 +98,10 @@ export function stationName(index: number): string {
   return round === 0 ? base : `${base} ${round + 1}`;
 }
 
-export function stationAt(state: GameState, x: number, y: number): Station | undefined {
+/** Stacja na kafelku – na powierzchni albo (`under`) w metrze. */
+export function stationAt(state: GameState, x: number, y: number, under = false): Station | undefined {
   if (!inBounds(state.map, x, y)) return undefined;
-  const id = state.map.station[y * state.map.width + x];
+  const id = (under ? state.map.stationUnder : state.map.station)[y * state.map.width + x];
   return id ? state.stations.find((s) => s.id === id) : undefined;
 }
 
@@ -109,12 +115,20 @@ export interface StationPlan {
 }
 
 /** Stacja przylegająca bokiem do prostokąta (najniższy numer, gdy kilka) – do rozbudowy. */
-function adjacentStation(state: GameState, minX: number, minY: number, maxX: number, maxY: number): Station | null {
+function adjacentStation(
+  state: GameState,
+  minX: number,
+  minY: number,
+  maxX: number,
+  maxY: number,
+  under: boolean,
+): Station | null {
   const { map } = state;
+  const layer = under ? map.stationUnder : map.station;
   let best = 0;
   const check = (x: number, y: number) => {
     if (!inBounds(map, x, y)) return;
-    const id = map.station[y * map.width + x]!;
+    const id = layer[y * map.width + x]!;
     // Punkt kontrolny to nie peron – nowej stacji do niego nie dołączamy.
     if (id && (!best || id < best) && !state.stations.find((s) => s.id === id)?.waypoint) best = id;
   };
@@ -145,6 +159,7 @@ export function planStation(
   y1: number,
   axis: StationAxis,
   separate = false,
+  under = false,
 ): StationPlan {
   const { map } = state;
   const minX = Math.min(x0, x1);
@@ -162,12 +177,16 @@ export function planStation(
   const level = inBounds(map, minX, minY) ? tileBaseHeight(map, minX, minY) : 0;
   for (let y = minY; y <= maxY; y++) {
     for (let x = minX; x <= maxX; x++) {
-      const ok = canPlace(map, x, y, axisTrack) && isFlat(map, x, y) && tileBaseHeight(map, x, y) === level;
+      // Metro: peron pod ziemią – bez oglądania się na teren i budynki na powierzchni.
+      const ok = under
+        ? canPlaceUnder(map, x, y, axisTrack)
+        : canPlace(map, x, y, axisTrack) && isFlat(map, x, y) && tileBaseHeight(map, x, y) === level;
       blocked ||= !ok;
       tiles.push({ x, y, ok });
       if (ok) {
         cost += STATION_TILE_COST;
-        if (getTerrain(map, x, y) === Terrain.Rough) cost += CLEAR_ROUGH_COST;
+        if (under) cost += METRO_STATION_EXTRA;
+        else if (getTerrain(map, x, y) === Terrain.Rough) cost += CLEAR_ROUGH_COST;
       }
     }
   }
@@ -176,7 +195,7 @@ export function planStation(
   if (length > STATION_MAX_LENGTH || platforms > STATION_MAX_PLATFORMS) result = { ok: false, reason: 'tooBig' };
   else if (blocked) result = { ok: false, reason: 'blocked' };
   else if (cost > state.money) result = { ok: false, reason: 'noMoney' };
-  const join = separate ? null : adjacentStation(state, minX, minY, maxX, maxY);
+  const join = separate ? null : adjacentStation(state, minX, minY, maxX, maxY, under);
   return { tiles, axis, cost, result, join };
 }
 
@@ -189,6 +208,14 @@ function canPlace(map: WorldMap, x: number, y: number, axisTrack: Track): boolea
   return bits === 0 || bits === axisTrack;
 }
 
+/** Peron metra: bez innej stacji i zjazdu; tor metra brak albo prosty w osi peronu. */
+function canPlaceUnder(map: WorldMap, x: number, y: number, axisTrack: Track): boolean {
+  if (!inBounds(map, x, y)) return false;
+  const i = y * map.width + x;
+  if (map.stationUnder[i] || map.ramp[i]) return false;
+  return map.under[i] === 0 || map.under[i] === axisTrack;
+}
+
 export function buildStation(
   state: GameState,
   x0: number,
@@ -198,8 +225,9 @@ export function buildStation(
   axis: StationAxis,
   events: SimEvent[],
   separate = false,
+  under = false,
 ): CommandResult {
-  const plan = planStation(state, x0, y0, x1, y1, axis, separate);
+  const plan = planStation(state, x0, y0, x1, y1, axis, separate, under);
   if (!plan.result.ok) return plan.result;
   const { map } = state;
   const id = plan.join ? plan.join.id : state.nextStationId++;
@@ -207,19 +235,26 @@ export function buildStation(
   const tiles: number[] = [];
   for (const { x, y } of plan.tiles) {
     const i = y * map.width + x;
+    tiles.push(i);
+    if (under) {
+      map.stationUnder[i] = id;
+      map.under[i] = axisTrack;
+      continue;
+    }
     map.station[i] = id;
     map.track[i] = axisTrack;
     map.road[i] = 0;
     if (getTerrain(map, x, y) === Terrain.Rough) setTerrain(map, x, y, Terrain.Grass);
-    tiles.push(i);
     events.push({ type: 'tileChanged', x, y });
   }
+  if (under) events.push({ type: 'undergroundChanged' });
   if (plan.join) {
     // Rozbudowa: ta sama stacja (nazwa, ładunek, rozkłady), więcej peronów.
     plan.join.tiles = [...plan.join.tiles, ...tiles].sort((a, b) => a - b);
   } else {
     tiles.sort((a, b) => a - b);
-    state.stations.push({ id, name: stationNameFor(state, tiles), axis, tiles, cargo: {}, waypoint: false });
+    const name = stationNameFor(state, tiles, under);
+    state.stations.push({ id, name, axis, tiles, cargo: {}, waypoint: false, ...(under ? { under: true } : {}) });
   }
   spend(state, 'construction', plan.cost);
   events.push({ type: 'stationsChanged' });
@@ -227,13 +262,19 @@ export function buildStation(
 }
 
 /** Usuwa jeden kafelek peronu (razem z torem); pusta stacja znika. Punkt kontrolny – sam znacznik, tor zostaje. */
-export function removeStationTile(state: GameState, x: number, y: number, events: SimEvent[]): CommandResult {
-  const station = stationAt(state, x, y);
+export function removeStationTile(state: GameState, x: number, y: number, events: SimEvent[], under = false): CommandResult {
+  const station = stationAt(state, x, y, under);
   if (!station) return { ok: false, reason: 'nothingToClear' };
   const { map } = state;
   const i = y * map.width + x;
-  map.station[i] = 0;
-  if (!station.waypoint) map.track[i] = 0;
+  if (under) {
+    map.stationUnder[i] = 0;
+    map.under[i] = 0;
+    events.push({ type: 'undergroundChanged' });
+  } else {
+    map.station[i] = 0;
+    if (!station.waypoint) map.track[i] = 0;
+  }
   station.tiles = station.tiles.filter((t) => t !== i);
   if (station.tiles.length === 0) {
     state.stations = state.stations.filter((s) => s !== station);
@@ -245,7 +286,8 @@ export function removeStationTile(state: GameState, x: number, y: number, events
 }
 
 export function stationTileRefund(station?: Station): number {
-  return Math.round((station?.waypoint ? WAYPOINT_COST : STATION_TILE_COST) * TRACK_REFUND_RATE);
+  const cost = station?.waypoint ? WAYPOINT_COST : STATION_TILE_COST + (station?.under ? METRO_STATION_EXTRA : 0);
+  return Math.round(cost * TRACK_REFUND_RATE);
 }
 
 /** Punkt kontrolny: tylko na płaskim kafelku z jednym prostym torem (bez stacji, zajezdni, mostu, tunelu, drogi, semafora). */

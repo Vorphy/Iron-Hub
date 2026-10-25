@@ -92,4 +92,44 @@ describe('metro (poziom −1)', () => {
     expect(Array.from(back.map.under)).toEqual(Array.from(sim.state.map.under));
     expect(Array.from(back.map.ramp)).toEqual(Array.from(sim.state.map.ramp));
   });
+
+  it('stacje metra: peron pod ziemią, pociąg kursuje między nimi', () => {
+    const sim = metroLine();
+    const { state } = sim;
+    const money = state.money;
+    sim.enqueue({ type: 'buildStation', x0: 11, y0: 5, x1: 13, y1: 5, axis: 'x', under: true });
+    sim.enqueue({ type: 'buildStation', x0: 17, y0: 5, x1: 19, y1: 5, axis: 'x', under: true, separate: true });
+    sim.step();
+    expect(fails(sim)).toEqual([]);
+    expect(state.money).toBeLessThan(money);
+    const [, , m1, m2] = state.stations;
+    expect(m1).toMatchObject({ under: true, tiles: [5 * 32 + 11, 5 * 32 + 12, 5 * 32 + 13] });
+    expect(state.map.stationUnder[5 * 32 + 12]).toBe(m1!.id);
+    expect(state.map.station[5 * 32 + 12]).toBe(0);
+    // Na peronie metra nie dołożysz rozjazdu.
+    sim.enqueue({ type: 'buildTrack', pieces: [{ x: 12, y: 5, track: Track.Upper }], under: true });
+    sim.step();
+    expect(fails(sim)).toEqual(['blocked']);
+
+    sim.enqueue({ type: 'buyTrain', depotId: 1, engine: 'iskra', wagons: ['osobowy'] });
+    sim.step();
+    const train = state.trains[0]!;
+    sim.enqueue({ type: 'setOrders', trainId: train.id, orders: [m1!.id, m2!.id] });
+    sim.enqueue({ type: 'startTrain', trainId: train.id });
+    const visited: number[] = [];
+    for (let i = 0; i < 40 * 60 && visited.length < 3; i++) {
+      sim.step();
+      const h = train.trail[0];
+      if (train.status === 'loading' && h) {
+        expect(isUnderTrack(h.track)).toBe(true);
+        const st = state.map.stationUnder[h.y * 32 + h.x];
+        if (st && visited[visited.length - 1] !== st) visited.push(st);
+      }
+    }
+    expect(visited).toEqual([m1!.id, m2!.id, m1!.id]);
+    // Zapis i rozbiórka peronu metra.
+    const back = deserializeState(JSON.parse(JSON.stringify(serializeState(state))));
+    expect(back.stations.find((s) => s.id === m2!.id)?.under).toBe(true);
+    expect(back.map.stationUnder[5 * 32 + 18]).toBe(m2!.id);
+  });
 });

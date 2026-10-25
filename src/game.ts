@@ -277,7 +277,8 @@ export class Game {
     const y = Math.floor(f.y);
     const depot = depotAt(this.sim.state, x, y);
     if (depot) return this.openWindow({ kind: 'depot', depotId: depot.id });
-    const station = stationAt(this.sim.state, x, y);
+    // W widoku metra najpierw stacja pod ziemią.
+    const station = (this.underground.visible && stationAt(this.sim.state, x, y, true)) || stationAt(this.sim.state, x, y);
     if (station) return this.openWindow({ kind: 'station', stationId: station.id });
     const industry = industryAt(this.sim.state, x, y);
     if (industry) return this.openWindow({ kind: 'industry', industryId: industry.id });
@@ -525,7 +526,7 @@ export class Game {
     // Nowy obiekt tylko przy zmianie – inaczej UI przerysowywałoby się co klatkę.
     const prev = hudStore.get();
     const terrain = tile ? getTerrain(state.map, tile.x, tile.y) : null;
-    const station = tile ? objectName(state, tile.x, tile.y) : null;
+    const station = tile ? objectName(state, tile.x, tile.y, this.underground.visible) : null;
     const h = prev.hover;
     const hoverChanged =
       !h !== !tile || (h && tile && (h.x !== tile.x || h.y !== tile.y || h.terrain !== terrain || h.station !== station));
@@ -553,8 +554,8 @@ export class Game {
 }
 
 /** Nazwa obiektu na kafelku do paska stanu (stacja, zakład, dom w mieście). */
-function objectName(state: GameState, x: number, y: number): string | null {
-  const st = stationAt(state, x, y);
+function objectName(state: GameState, x: number, y: number, under: boolean): string | null {
+  const st = (under && stationAt(state, x, y, true)) || stationAt(state, x, y);
   if (st) return st.name;
   const ind = industryAt(state, x, y);
   if (ind) return ind.name;

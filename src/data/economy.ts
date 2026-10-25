@@ -44,6 +44,8 @@ export const ECONOMY = {
     metroTrackPiece: 500,
     /** Zjazd z powierzchni do metra. */
     metroRamp: 3000,
+    /** Dopłata za kafelek peronu metra (hala peronu pod ziemią) – do ceny zwykłego peronu. */
+    metroStationExtra: 1500,
   },
 
   /** Kredyt i bankructwo. */

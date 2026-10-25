@@ -243,7 +243,7 @@ export class Tools {
 
     if (this.tool === 'cursor' || !p) {
       this.overlay.setHover(tile);
-      const station = tile && stationAt(this.sim.state, tile.x, tile.y);
+      const station = tile && stationAt(this.sim.state, tile.x, tile.y, this.under);
       if (station && !station.waypoint) this.overlay.setCatchment(catchment(map, station.tiles), map.width);
       return;
     }
@@ -258,13 +258,20 @@ export class Tools {
       this.label = { ...planLabel(plan), text: `Zjazd ${SIDE_ARROWS[down]} · ${planLabel(plan).text} (R – obróć)` };
       return;
     }
-    // Pod ziemią (metro): tory, zjazdy i rozbiórka.
-    if (this.under && this.tool !== 'track' && this.tool !== 'bulldozer') {
+    // Pod ziemią (metro): tory, perony, zjazdy, rozkład i rozbiórka.
+    const underTools: Tool[] = ['track', 'bulldozer', 'station', 'orders'];
+    if (this.under && (!underTools.includes(this.tool) || (this.tool === 'station' && this.stationKind === 'waypoint'))) {
       this.overlay.setHover(tile, 0x9aa0a8);
-      this.label = { text: 'Pod ziemią: tory, zjazdy i rozbiórka (Q – powierzchnia)', ok: false };
+      this.label = { text: 'Pod ziemią: tory, perony metra, zjazdy i rozbiórka (Q – powierzchnia)', ok: false };
       return;
     }
-    if (this.under) {
+    if (this.under && this.tool === 'bulldozer' && sameTile(start, p) && tile && map.stationUnder[tile.y * map.width + tile.x]) {
+      const station = stationAt(this.sim.state, tile.x, tile.y, true);
+      this.overlay.setHover(tile, 0xe0503a);
+      this.label = { text: `Zwrot: ${formatMoney(stationTileRefund(station))}`, ok: true };
+      return;
+    }
+    if (this.under && (this.tool === 'track' || this.tool === 'bulldozer')) {
       this.overlay.setHover(null);
       if (this.tool === 'track' && this.trackMode === 'build') {
         const plan = planBuildUnderTrack(this.sim.state, planTrackLine(start.x, start.y, p.x, p.y));
@@ -368,7 +375,7 @@ export class Tools {
     }
 
     if (this.tool === 'orders') {
-      const station = tile && stationAt(this.sim.state, tile.x, tile.y);
+      const station = tile && stationAt(this.sim.state, tile.x, tile.y, this.under);
       this.overlay.setHover(tile, station ? 0x4cc9f0 : 0x9aa0a8);
       if (station && !station.waypoint) this.overlay.setCatchment(catchment(map, station.tiles), map.width);
       this.label = station
@@ -486,7 +493,8 @@ export class Tools {
 
   private stationPlan(start: Point, end: Point) {
     const [x0, y0, x1, y1] = [start.x, start.y, end.x, end.y].map(Math.floor) as [number, number, number, number];
-    return planStation(this.sim.state, x0, y0, x1, y1, stationAxis(x0, y0, x1, y1, this.stationAxis), this.separateStation);
+    const axis = stationAxis(x0, y0, x1, y1, this.stationAxis);
+    return planStation(this.sim.state, x0, y0, x1, y1, axis, this.separateStation, this.under);
   }
 
   private commandFor(start: Point, end: Point): Command | null {
@@ -523,11 +531,18 @@ export class Tools {
       if (this.tool === 'track' && this.trackMode === 'build') {
         return { type: 'buildTrack', pieces: planTrackLine(start.x, start.y, end.x, end.y), under: true };
       }
+      if (this.tool === 'bulldozer' && sameTile(start, end)) {
+        const x = Math.floor(end.x);
+        const y = Math.floor(end.y);
+        const { map } = this.sim.state;
+        if (inBounds(map, x, y) && map.stationUnder[y * map.width + x]) return { type: 'removeUnderStation', x, y };
+      }
       if (this.tool === 'track' || this.tool === 'bulldozer') {
         const pieces = this.removalPieces(start, end);
         return pieces.length ? { type: 'removeTrack', pieces, under: true } : null;
       }
-      return null;
+      // Pod ziemią poza tym tylko perony metra i rozkład (niżej); reszta narzędzi – nic.
+      if (this.tool !== 'orders' && (this.tool !== 'station' || this.stationKind === 'waypoint')) return null;
     }
     if (this.tool === 'track') {
       if (this.trackMode === 'remove') {
@@ -537,7 +552,7 @@ export class Tools {
       return { type: 'buildTrack', pieces: planTrackLine(start.x, start.y, end.x, end.y) };
     }
     if (this.tool === 'orders') {
-      const station = stationAt(this.sim.state, Math.floor(end.x), Math.floor(end.y));
+      const station = stationAt(this.sim.state, Math.floor(end.x), Math.floor(end.y), this.under);
       const train = this.sim.state.trains.find((t) => t.id === this.ordersTrain);
       if (!station || !train) return null;
       return { type: 'setOrders', trainId: train.id, orders: [...train.orders, station.id] };
@@ -562,6 +577,7 @@ export class Tools {
         y1: Math.max(...ys),
         axis: plan.axis,
         separate: this.separateStation,
+        ...(this.under ? { under: true } : {}),
       };
     }
     if (this.tool === 'bulldozer') {

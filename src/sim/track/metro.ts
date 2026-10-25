@@ -32,6 +32,16 @@ export function baseTrack(track: number): Track {
   return (isUnderTrack(track) ? track >> UNDER_SHIFT : track) as Track;
 }
 
+/** Warstwa stacji dla elementu toru: metro (`stationUnder`) albo powierzchnia (`station`). */
+export function stationLayer(map: WorldMap, track: number): Uint32Array {
+  return isUnderTrack(track) ? map.stationUnder : map.station;
+}
+
+/** Bity toru kafelka na poziomie elementu `track` (metro albo powierzchnia). */
+export function levelTrackBits(map: WorldMap, x: number, y: number, track: number): number {
+  return (isUnderTrack(track) ? map.under : map.track)[y * map.width + x]!;
+}
+
 /** Bok, którym tor zjazdu schodzi pod ziemię (null – kafelek nie jest zjazdem). */
 export function rampDown(map: WorldMap, x: number, y: number): Side | null {
   if (!inBounds(map, x, y)) return null;
@@ -48,6 +58,8 @@ function underBuildable(map: WorldMap, p: TrackPiece): boolean {
   if (!inBounds(map, p.x, p.y)) return false;
   const i = p.y * map.width + p.x;
   // Także pod wodą (jak prawdziwe metro pod rzeką); tylko nie pod zjazdem – tam tor dopiero schodzi.
+  // Na peronie metra – tylko jego własny tor.
+  if (map.stationUnder[i]) return map.under[i] === p.track;
   return !map.ramp[i];
 }
 
