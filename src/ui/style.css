@@ -877,6 +877,19 @@ input.seed {
   color: var(--accent);
 }
 
+/* Wiersz rozkładu: nazwa stacji w pierwszej linii, opcje (bez zatrzymania, postój, pełny ładunek) pod nią. */
+.row.order {
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+.order-opts {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  padding-left: 30px;
+}
 .order select.wait-days {
   font-size: 11px;
   max-width: 96px;
