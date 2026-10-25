@@ -262,6 +262,8 @@ export interface HudState {
   /** Grafika OpenGFX wczytana i włączona (wył. – proste kształty). */
   gfxAvailable: boolean;
   gfx: boolean;
+  /** Widok bez budynków (U). */
+  buildingsHidden: boolean;
   /** Okno nowej gry (rozmiar mapy, ziarno). */
   newGameOpen: boolean;
   window: WindowRef | null;
@@ -305,6 +307,7 @@ export const hudStore = new Store<HudState>({
   traffic: true,
   gfxAvailable: false,
   gfx: true,
+  buildingsHidden: false,
   newGameOpen: false,
   window: null,
   windowData: null,
@@ -344,6 +347,7 @@ export interface HudActions {
   minimapGoto(u: number, v: number): void;
   toggleTraffic(): void;
   toggleGfx(): void;
+  toggleBuildings(): void;
   openFinance(): void;
   /** Lista pociągów (K). */
   openTrains(): void;

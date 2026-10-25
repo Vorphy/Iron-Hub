@@ -6,6 +6,7 @@ import { industryDef, type Industry } from '../sim/economy/industry';
 import { darken, drawBox, drawChimney, drawGableRoof, drawPile, drawTree, lighten, tileHash } from './shapes';
 import { inBounds, type WorldMap } from '../sim/world/map';
 import { gfxOn } from './gfx/gfx';
+import { buildingsHidden } from './visibility';
 import { drawHouseBuilding, drawIndustryBuilding, drawIndustryTiles, drawStationFront, drawTrees, tileTrees } from './gfx/tiles';
 import type { GameState } from '../sim/state';
 
@@ -35,6 +36,7 @@ export const houseDepth = (map: WorldMap, i: number) => (i % map.width) + Math.f
  * obiekty dorysowujemy jeszcze raz przed nimi.
  */
 export function housesInFront(state: GameState, fx: number, fy: number, out: Set<number>): void {
+  if (buildingsHidden()) return;
   const { map } = state;
   const sprites = gfxOn();
   const x0 = Math.floor(fx);
@@ -89,7 +91,9 @@ export class IndustryRenderer {
     // Od tyłu do przodu (mniejsze x + y wcześniej).
     for (const ind of [...industries].sort((a, b) => a.x + a.y - (b.x + b.y))) {
       const g = new Graphics();
-      if (!gfxOn() || !drawIndustryTiles(g, map, ind.x, ind.y, ind.type)) drawIndustry(g, ind);
+      if (!gfxOn() || !drawIndustryTiles(g, map, ind.x, ind.y, ind.type)) {
+        if (!buildingsHidden()) drawIndustry(g, ind);
+      }
       const [w, h] = industryDef(ind.type)!.size;
       const left = tileToWorldFlat(ind.x, ind.y + h).x;
       const right = tileToWorldFlat(ind.x + w, ind.y).x;

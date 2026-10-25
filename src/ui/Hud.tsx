@@ -104,6 +104,7 @@ export function Hud({ actions }: { actions: HudActions }) {
           signalMode={s.signalMode}
           traffic={s.traffic}
           gfx={s.gfxAvailable ? s.gfx : null}
+          buildingsHidden={s.buildingsHidden}
           changelogUnseen={s.changelogUnseen}
         />
       )}
@@ -418,6 +419,7 @@ function Menu({
   signalMode,
   traffic,
   gfx,
+  buildingsHidden,
   changelogUnseen,
 }: {
   actions: HudActions;
@@ -426,6 +428,7 @@ function Menu({
   traffic: boolean;
   /** null – atlas grafiki niedostępny. */
   gfx: boolean | null;
+  buildingsHidden: boolean;
   changelogUnseen: boolean;
 }) {
   const hints = useStore(layoutStore).hints;
@@ -462,6 +465,13 @@ function Menu({
           Grafika: {gfx ? 'OpenGFX' : 'prosta'}
         </button>
       )}
+      <button
+        class={buildingsHidden ? '' : 'active'}
+        onClick={actions.toggleBuildings}
+        title="Ukryj domy, zakłady, drzewa i dachy peronów, żeby zobaczyć tory pod nimi"
+      >
+        Budynki: {buildingsHidden ? 'ukryte' : 'widoczne'} <small>U</small>
+      </button>
       <button class={hints ? 'active' : ''} onClick={() => setHints(!hints)} title="Podpowiedzi do narzędzi w rogu ekranu">
         Podpowiedzi: {hints ? 'wł.' : 'wył.'}
       </button>

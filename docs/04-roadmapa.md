@@ -146,4 +146,6 @@ Kredyt i bankructwo · minimapa · pierwsze kroki · lokomotywy z biegiem lat i 
   - *Do przemyślenia:* rysowanie dwóch warstw (przezroczystość, przełączanie), picking na poziomie −1, zapis (nowa wersja + migracja), podgląd na minimapie, tunele z powierzchni przecinające się z metrem.
 - Bugfix - przebudowa - Screenshot 2026-10-25 at 08-34-40 Iron Hub.png - tak jak w ottd, bez sensu kupowanie dwa razy w zajezdni, wszystko kupujemy dokładnie odtworzyć musimy tak jak jest w ottd. do rego na done rozjezdzają się napisy jedne na drugich leżą.Screenshot 2026-10-25 at 08-32-08 Iron Hub.png
 - bugfix Screenshot 2026-10-25 at 08-06-09 Iron Hub.png tory nie budują się w takiej sytuacji a przecież powinny mieszczą się.
+- ~~bardzo szybko w miastach zmieniają sie budynki, non stop praktycznie trzeba to spowolnić zdecydowanie.~~ ✅ (2026-10-25) – wygląd domu stały dla kafelka; zmienia się tylko przy rozbudowie domu albo raz, gdy jego budynek pojawi się w danym roku (wcześniej co nowy rok przetasowywało się całe miasto).
+- ~~konieczny przycisk widoku bez budynó zasłaniają tory, czasem treba widzieć tory~~ ✅ (2026-10-25) – klawisz U albo Menu → Widok → Budynki: domy, zakłady, drzewa i dachy peronów znikają, tory i drogi zostają.
 

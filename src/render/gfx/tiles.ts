@@ -5,6 +5,7 @@ import { Side, Track, TRACK_SIDES, tracksOn } from '../../sim/track/track';
 import { cornerHeights } from '../../sim/world/height';
 import { getTerrain, Terrain, type WorldMap } from '../../sim/world/map';
 import { toWorld } from '../iso';
+import { buildingsHidden } from '../visibility';
 import { tileHash } from '../shapes';
 import { drawSprite, gfxData, type HouseDef, palKey } from './gfx';
 
@@ -186,12 +187,37 @@ export function gfxYear(): number {
   return year;
 }
 
+/** Budynki dostępne od początku gry (bez roku wprowadzenia) – zastępstwo, zanim pojawi się wylosowany. */
+let houseFallback: HouseDef[][] | null = null;
+
+function fallbacks(): HouseDef[][] {
+  if (houseFallback) return houseFallback;
+  const bands = levels();
+  houseFallback = bands.map((_, k) => {
+    // Najbliższy niższy (albo ten sam) poziom, w którym są domy dostępne od zawsze.
+    for (let j = k; j >= 0; j--) {
+      const always = bands[j]!.filter((d) => d.min <= 1900);
+      if (always.length) return always;
+    }
+    return bands[k]!;
+  });
+  return houseFallback;
+}
+
+/**
+ * Wygląd domu stały dla kafelka: budynek losowany raz z całego poziomu (bez względu na rok).
+ * Dopóki wylosowany budynek nie istnieje w danym roku, stoi zastępczy z poziomu – więc kafelek zmienia
+ * wygląd najwyżej raz (gdy wylosowany budynek wejdzie do gry) albo gdy dom się rozbuduje.
+ */
 function houseVariant(x: number, y: number, level: number) {
   const h = tileHash(x, y);
-  const band = levels()[Math.min(3, Math.max(0, level - 1))]!;
-  const fresh = band.filter((d) => d.min <= year && year <= d.max);
-  const list = fresh.length ? fresh : band;
-  const def = list[h % list.length]!;
+  const k = Math.min(3, Math.max(0, level - 1));
+  const band = levels()[k]!;
+  let def = band[h % band.length]!;
+  if (def.min > year) {
+    const list = fallbacks()[k]!;
+    def = list[(h >>> 4) % list.length]!;
+  }
   return def.variants[(h >>> 8) & 3]!;
 }
 
@@ -201,7 +227,7 @@ export function drawHouseTile(g: Graphics, objects: Graphics, map: WorldMap, x: 
   const { z } = tileSlope(map, x, y);
   const o = tileOrigin(x, y, z);
   drawSprite(g, v.ground, o.x, o.y);
-  drawHouseBuilding(objects, map, x, y, level);
+  if (!buildingsHidden()) drawHouseBuilding(objects, map, x, y, level);
 }
 
 /** Sam budynek domu (także do dorysowania przed pojazdem, który zasłania). */
@@ -334,7 +360,8 @@ export function drawStationTile(g: Graphics, objects: Graphics, map: WorldMap, x
   // Nasza oś x = oś Y OpenTTD.
   const ottdX = station.axis === 'y';
   drawSprite(g, ottdX ? SPR_RAIL_TRACK_Y + 1 : SPR_RAIL_TRACK_Y, o.x, o.y);
-  const kind = stationKind(map, x, y, station);
+  // Bez budynków – same perony (bez budynku stacji i zadaszenia).
+  const kind = buildingsHidden() ? 0 : stationKind(map, x, y, station);
   drawStationParts(objects, x, y, z, ottdX, kind, 0);
 }
 
@@ -363,7 +390,8 @@ function drawStationParts(objects: Graphics, x: number, y: number, z: number, ot
 /** Przednia krawędź peronu i zadaszenie – dorysowywane przed pociągiem stojącym przy peronie. */
 export function drawStationFront(objects: Graphics, map: WorldMap, x: number, y: number, station: Station): void {
   const { z } = tileSlope(map, x, y);
-  drawStationParts(objects, x, y, z, station.axis === 'y', stationKind(map, x, y, station), 1);
+  const kind = buildingsHidden() ? 0 : stationKind(map, x, y, station);
+  drawStationParts(objects, x, y, z, station.axis === 'y', kind, 1);
 }
 
 /** Zajezdnia (track_land.h): grunt i budynek w kolorze firmy, wjazd od strony `depot.side`. */
@@ -426,6 +454,7 @@ export function drawIndustryTiles(g: Graphics, map: WorldMap, ix: number, iy: nu
     const o = tileOrigin(ix + t.x, iy + t.y, z);
     drawSprite(g, t.ground, o.x, o.y);
   }
+  if (buildingsHidden()) return true;
   for (const t of sorted) {
     const { z } = tileSlope(map, ix + t.x, iy + t.y);
     const p = subTile(ix + t.x, iy + t.y, z, t.dx, t.dy);

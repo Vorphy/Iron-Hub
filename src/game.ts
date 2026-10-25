@@ -11,6 +11,7 @@ import { BridgeRenderer } from './render/bridges';
 import { TunnelRenderer } from './render/tunnels';
 import { IndustryRenderer } from './render/buildings';
 import { setGfxYear } from './render/gfx/tiles';
+import { buildingsHidden, setBuildingsHidden } from './render/visibility';
 import { FloatingTexts } from './render/floatingText';
 import { MapLabels } from './render/mapLabels';
 import { SignalRenderer } from './render/signals';
@@ -176,6 +177,15 @@ export class Game {
     this.tunnels.draw(state);
   }
 
+  /** Widok bez budynków (U) – żeby zobaczyć tory zasłonięte domami i zakładami. */
+  toggleBuildings(): void {
+    const hidden = !buildingsHidden();
+    setBuildingsHidden(hidden);
+    hudStore.set({ buildingsHidden: hidden });
+    this.redrawAll();
+    showMessage(hidden ? 'Budynki ukryte (U – pokaż)' : 'Budynki widoczne');
+  }
+
   set trafficEnabled(on: boolean) {
     this.traffic.enabled = on;
   }
@@ -305,6 +315,7 @@ export class Game {
     const tool = KEY_TOOLS[code];
     // Semafory tylko w trybie Ekspert.
     if (tool && (tool !== 'signal' || this.sim.state.signalMode === 'manual')) this.setTool(tool);
+    if (code === 'KeyU') this.toggleBuildings();
     if (code === 'KeyV') this.signals.showReservations = !this.signals.showReservations;
     if (code === 'KeyR') this.tools.rotate();
     if (code === 'KeyG') {

@@ -21,6 +21,8 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
       'Stalowe mosty kratownicowe z filarami, wjazdy do tuneli w zboczu i sieć trakcyjna ze słupami jak w TTD.',
       'Pociąg przy peronie chowa się pod zadaszeniem, a drzewa, domy i zakłady przed nim go zasłaniają (np. chłodnie elektrowni).',
       'Menu → Widok → Grafika: powrót do prostych kształtów (np. na słabszym komputerze).',
+      'Klawisz U (albo Menu → Widok → Budynki) ukrywa domy, zakłady, drzewa i dachy peronów – widać tory, które zasłaniały.',
+      'Domy nie zmieniają już wyglądu co rok – każdy ma swój budynek, który zmienia się dopiero przy rozbudowie.',
     ],
   },
   {

@@ -13,6 +13,7 @@ import { darken, lighten, tileHash } from './shapes';
 import { drawHouse } from './buildings';
 import { drawRoad, roadNeighbors } from './roadDraw';
 import { gfxOn } from './gfx/gfx';
+import { buildingsHidden } from './visibility';
 import { drawTunnelPortal } from './gfx/structures';
 import { drawCatenarySprites } from './gfx/catenary';
 import {
@@ -290,7 +291,7 @@ export class MapRenderer {
     else if (drawnBits) drawTrackGround(g, map, x, y, drawnBits);
     else {
       drawGround(g, map, x, y);
-      const trees = tileTrees(map, x, y);
+      const trees = buildingsHidden() ? 0 : tileTrees(map, x, y);
       if (trees) drawTrees(objects, map, x, y, trees);
     }
     if (station?.waypoint) drawWaypoint(objects, x, y, bits === Track.X);
@@ -330,7 +331,7 @@ export class MapRenderer {
     if (waypoint) drawWaypoint(tracksG, x, y, getTrackBits(this.map, x, y) === Track.X);
     if (this.map.electric[y * this.map.width + x]) drawCatenary(tracksG, x, y, tileTracks);
     const house = this.map.house[y * this.map.width + x]!;
-    if (house) drawHouse(tracksG, x, y, house, h);
+    if (house && !buildingsHidden()) drawHouse(tracksG, x, y, house, h);
     const depotId = this.map.depot[y * this.map.width + x];
     if (depotId) {
       const depot = this.getDepots().find((d) => d.id === depotId);

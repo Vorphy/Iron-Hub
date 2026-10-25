@@ -162,6 +162,7 @@ const actions: HudActions = {
   setTerrainMode: (m) => game?.toolController.setTerrainMode(m),
   setSignalMode: (mode) => game?.command({ type: 'setSignalMode', mode }),
   toggleMenu: () => hudStore.set({ menuOpen: !hudStore.get().menuOpen }),
+  toggleBuildings: () => game?.toggleBuildings(),
   toggleGfx: () => {
     const gfx = !hudStore.get().gfx;
     hudStore.set({ gfx });
