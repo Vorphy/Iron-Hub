@@ -18,6 +18,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
       'Metro na minimapie – tory i stacje metra rysowane na niebiesko.',
       'Duże miasta domagają się metra: od 5 000 mieszkańców pojawia się komunikat, a w oknie miasta napis o metrze. Stacja metra w mieście przyspiesza jego wzrost i rozbudowę domów; bez metra miasto powyżej 10 000 mieszkańców przestaje rosnąć.',
       'Zajezdnie zostają na powierzchni – pociągi zjeżdżają do metra zjazdem.',
+      'Miasta bez kolei rosną dużo wolniej (3% szans na nowy dom w miesiącu zamiast 10%) – po 40 latach nie mają już po 3 tys. mieszkańców. Miasta, które obsługujesz, rosną jak dotąd.',
     ],
   },
   {

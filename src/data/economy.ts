@@ -141,8 +141,8 @@ export const ECONOMY = {
     acceptance: { passengers: 1, mail: 100, goods: 200 } satisfies Partial<Record<Cargo, number>>,
     /** Nowe domy na miesiąc w obsługiwanym mieście: 1 + round(growthMaxExtra × odsetek przewiezionych pasażerów). */
     growthMaxExtra: 3,
-    /** Szansa na nowy dom w mieście bez kolei (na miesiąc). */
-    unservedGrowthChance: 0.1,
+    /** Szansa na nowy dom w mieście bez kolei (na miesiąc) – ok. 14 domów przez 40 lat. */
+    unservedGrowthChance: 0.03,
     /** Szansa na rozbudowę jednego domu w obsługiwanym mieście (na miesiąc). */
     upgradeChance: 0.4,
     /** Kafelki w zasięgu stacji są tyle razy chętniej wybierane pod nowy dom. */
