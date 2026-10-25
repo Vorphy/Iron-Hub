@@ -116,9 +116,15 @@ Jedna kolejka, w kolejności, która najszybciej poprawia granie. Maglevy, kolej
     - *Trudne miejsca:* zapis (lista dzielnic w mieście, migracja: jedna dzielnica = stary rynek), `townTiles` po kilku obszarach zamiast jednego kwadratu, scalanie dróg, ocen i statystyk przy wchłonięciu bez „skoków”.
     - *Kolejność:* (1) dzielnice jako dane + okno miasta + nazwy na mapie (każde miasto z jedną), (2) wchłanianie sąsiadów, (3) nowe dzielnice przy wzroście, (4) premia za ruch między dzielnicami i metro per dzielnica.
 
+18. **Pracownicy dla zakładów – poziomy 6 i 7** (pomysł 2026-10-25, do zrobienia). Dziś zakład rośnie do poziomu 5 (`maxLevel`) dzięki wywozowi albo dostawom, a produkcja i zapotrzebowanie rosną liniowo z poziomem (`baseProduction × level`). Pomysł: od poziomu 5 kopalnia albo fabryka może urosnąć jeszcze o 2 poziomy (do 7), ale tylko wtedy, gdy co miesiąc dostaje odpowiednią liczbę **pracowników** – pasażerów dowiezionych na stację w zasięgu zakładu.
+    - *Zakład przyjmuje pasażerów:* stacja przy zakładzie od poziomu 5 przyjmuje pasażerów nawet bez domów w zasięgu (zapłata jak za zwykły przewóz).
+    - *Wymóg:* np. pracownicy na miesiąc = X × poziom (do strojenia w `src/data/economy.ts`); spełniony próg daje punkty rozwoju jak dziś wywóz / dostawy, brak pracowników cofa zakład na poziom 5.
+    - *W oknie zakładu:* pracownicy w tym miesiącu (dowiezieni / potrzebni) i informacja, że zakład chce pracowników.
+    - *Dla gracza:* nowy powód do wożenia ludzi z miast do zakładów; dobrze łączy się z dzielnicami (punkt 17).
+
 ### Faza C
-18. **Etap 7** – grafika, dźwięki, retro UI, wydanie na itch.io.
-19. **Etap 8** – generator/edytor map, chmura, Web Worker, płatne dodatki.
+19. **Etap 7** – grafika, dźwięki, retro UI, wydanie na itch.io.
+20. **Etap 8** – generator/edytor map, chmura, Web Worker, płatne dodatki.
 
 ### Zrobione z wcześniejszej kolejki (2026-10-21)
 Kredyt i bankructwo · minimapa · pierwsze kroki · lokomotywy z biegiem lat i sieć trakcyjna · ciężarówki, chowanie pojazdów za domami, lint/format · wymiana lokomotyw · pomoc i historia zmian · nazwy miast · kopiowanie pociągów · pełny ładunek · magazyn wagonów · rozbudowa stacji · gęstość miast, kopalń i przemysłu · numery zajezdni.
