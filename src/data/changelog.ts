@@ -15,7 +15,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
     title: 'Badania',
     items: [
       'Nowe okno Badania (🔬 na górnym pasku albo Y): ulepszenia za pieniądze i czas – większe wagony, szybsze pociągi, sprawny załadunek, tańsze utrzymanie, lepsza obsługa stacji i prototypy lokomotyw (nowe modele 2 lata wcześniej).',
-      'Jedno badanie naraz, płatne z góry; każdy kolejny poziom droższy i dłuższy. Przerwanie zwraca połowę ceny. Efekty działają od razu na wszystkie pociągi i stacje.',
+      'Jedno badanie naraz, płatne z góry (od 300 000 zł za pierwszy poziom – to inwestycja na dalszą grę); każdy kolejny poziom 2× droższy i dłuższy. Przerwanie zwraca połowę ceny. Efekty działają od razu na wszystkie pociągi i stacje.',
       'Metro ma teraz koszty utrzymania (tory i perony pod ziemią – dwa razy więcej niż na powierzchni).',
       'Kopalnie i inne zakłady nie wychodzą już nad domy i drzewa stojące przed nimi – są rysowane razem z mapą, w tej samej kolejności co budynki.',
     ],
