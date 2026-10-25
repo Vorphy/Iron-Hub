@@ -163,7 +163,7 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
       stationId: st.id,
       name: st.name,
       waypoint: st.waypoint,
-      platforms: st.tiles.length,
+      platforms: st.tiles.length + (st.underTiles?.length ?? 0),
       cargo: CARGOS.filter((c) => st.cargo[c]).map((c) => ({
         cargo: c,
         waiting: Math.floor(st.cargo[c]!.waiting),

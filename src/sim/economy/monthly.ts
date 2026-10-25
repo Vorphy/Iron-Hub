@@ -1,6 +1,6 @@
 import { ECONOMY } from '../../data/economy';
 import type { SimEvent } from '../commands';
-import { catchment, platformStations } from '../station/station';
+import { allTiles, catchment, platformStations } from '../station/station';
 import type { GameState } from '../state';
 import { nextFloat, nextInt } from '../rng';
 import { consistStats, ENGINES } from '../trains/vehicles';
@@ -81,7 +81,7 @@ function closeIndustryMonth(ind: Industry): void {
 /** Maska kafelków w zasięgu jakiejkolwiek stacji (miasta rosną w ich stronę). */
 function stationCatchmentMask(state: GameState): Uint8Array {
   const mask = new Uint8Array(state.map.width * state.map.height);
-  for (const st of platformStations(state)) for (const i of catchment(state.map, st.tiles)) mask[i] = 1;
+  for (const st of platformStations(state)) for (const i of catchment(state.map, allTiles(st))) mask[i] = 1;
   return mask;
 }
 

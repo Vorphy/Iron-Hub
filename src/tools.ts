@@ -6,6 +6,7 @@ import { CARGO_DEFS, type Cargo } from './sim/economy/cargo';
 import { catchmentCargo } from './sim/economy/cargoFlow';
 import { autoDepotSide, depotAt, depotRefund, planDepot } from './sim/depot/depot';
 import {
+  allTiles,
   catchment,
   planStation,
   planWaypoint,
@@ -244,7 +245,7 @@ export class Tools {
     if (this.tool === 'cursor' || !p) {
       this.overlay.setHover(tile);
       const station = tile && stationAt(this.sim.state, tile.x, tile.y, this.under);
-      if (station && !station.waypoint) this.overlay.setCatchment(catchment(map, station.tiles), map.width);
+      if (station && !station.waypoint) this.overlay.setCatchment(catchment(map, allTiles(station)), map.width);
       return;
     }
 
@@ -268,7 +269,7 @@ export class Tools {
     if (this.under && this.tool === 'bulldozer' && sameTile(start, p) && tile && map.stationUnder[tile.y * map.width + tile.x]) {
       const station = stationAt(this.sim.state, tile.x, tile.y, true);
       this.overlay.setHover(tile, 0xe0503a);
-      this.label = { text: `Zwrot: ${formatMoney(stationTileRefund(station))}`, ok: true };
+      this.label = { text: `Zwrot: ${formatMoney(stationTileRefund(station, true))}`, ok: true };
       return;
     }
     if (this.under && (this.tool === 'track' || this.tool === 'bulldozer')) {
@@ -377,7 +378,7 @@ export class Tools {
     if (this.tool === 'orders') {
       const station = tile && stationAt(this.sim.state, tile.x, tile.y, this.under);
       this.overlay.setHover(tile, station ? 0x4cc9f0 : 0x9aa0a8);
-      if (station && !station.waypoint) this.overlay.setCatchment(catchment(map, station.tiles), map.width);
+      if (station && !station.waypoint) this.overlay.setCatchment(catchment(map, allTiles(station)), map.width);
       this.label = station
         ? { text: `Dodaj: ${station.name}${station.waypoint ? ' (punkt kontrolny)' : ''}`, ok: true }
         : { text: 'Wskaż stację lub punkt kontrolny', ok: false };
@@ -410,7 +411,14 @@ export class Tools {
       const info = ok.length ? catchmentCargo(this.sim.state, ok) : null;
       const cargoInfo = info ? describeCatchment(info.supplies, info.accepts) : '';
       const base = this.dragStart ? planLabel(plan) : null;
-      const kind = plan.join ? `Rozbudowa: ${plan.join.name}` : this.dragStart ? 'Nowa stacja' : '';
+      const transfer = plan.join && (this.under ? plan.join.tiles.length > 0 : !!plan.join.underTiles?.length);
+      const kind = plan.join
+        ? `${transfer ? 'Przesiadka' : 'Rozbudowa'}: ${plan.join.name}`
+        : this.dragStart
+          ? this.under
+            ? 'Nowa stacja metra'
+            : 'Nowa stacja'
+          : '';
       this.label =
         base || cargoInfo ? { text: [kind, base?.text, cargoInfo].filter(Boolean).join(' · '), ok: base?.ok ?? true } : null;
       return;

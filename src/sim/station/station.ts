@@ -38,8 +38,11 @@ export interface Station {
   /** Indeksy kafelków peronów (y * width + x), rosnąco. */
   tiles: number[];
   cargo: Partial<Record<Cargo, StationCargo>>;
-  /** Stacja metra (poziom −1): kafelki w `map.stationUnder`, tor peronu w `map.under`. */
-  under?: boolean;
+  /**
+   * Perony metra tej stacji (poziom −1: `map.stationUnder`, tor w `map.under`). Stacja może mieć
+   * perony na obu poziomach – to przesiadka: wspólna nazwa, ładunek i zasięg.
+   */
+  underTiles?: number[];
   /**
    * Punkt kontrolny: jeden kafelek na zwykłym torze, bez peronu i zasięgu. Pociąg z nim w rozkładzie
    * jedzie przez ten tor i nie zatrzymuje się.
@@ -114,7 +117,16 @@ export interface StationPlan {
   join: Station | null;
 }
 
-/** Stacja przylegająca bokiem do prostokąta (najniższy numer, gdy kilka) – do rozbudowy. */
+/** Wszystkie perony stacji – na powierzchni i w metrze (bez powtórzeń) – do zasięgu, ładunku, podpisu. */
+export function allTiles(st: Station): number[] {
+  if (!st.underTiles?.length) return st.tiles;
+  return [...new Set([...st.tiles, ...st.underTiles])].sort((a, b) => a - b);
+}
+
+/**
+ * Stacja, do której dołącza nowy peron (najniższy numer, gdy kilka): przylegająca bokiem na tym samym
+ * poziomie albo – przesiadka – mająca peron na drugim poziomie w zasięgu nowego (promień zasięgu stacji).
+ */
 function adjacentStation(
   state: GameState,
   minX: number,
@@ -124,22 +136,26 @@ function adjacentStation(
   under: boolean,
 ): Station | null {
   const { map } = state;
-  const layer = under ? map.stationUnder : map.station;
   let best = 0;
-  const check = (x: number, y: number) => {
+  const check = (x: number, y: number, layer: Uint32Array) => {
     if (!inBounds(map, x, y)) return;
     const id = layer[y * map.width + x]!;
     // Punkt kontrolny to nie peron – nowej stacji do niego nie dołączamy.
     if (id && (!best || id < best) && !state.stations.find((s) => s.id === id)?.waypoint) best = id;
   };
-  for (let x = minX; x <= maxX; x++) {
-    check(x, minY - 1);
-    check(x, maxY + 1);
+  const other = under ? map.station : map.stationUnder;
+  for (const layer of [map.station, map.stationUnder]) {
+    for (let x = minX; x <= maxX; x++) {
+      check(x, minY - 1, layer);
+      check(x, maxY + 1, layer);
+    }
+    for (let y = minY; y <= maxY; y++) {
+      check(minX - 1, y, layer);
+      check(maxX + 1, y, layer);
+    }
   }
-  for (let y = minY; y <= maxY; y++) {
-    check(minX - 1, y);
-    check(maxX + 1, y);
-  }
+  const r = CATCHMENT_RADIUS;
+  for (let y = minY - r; y <= maxY + r; y++) for (let x = minX - r; x <= maxX + r; x++) check(x, y, other);
   return best ? (state.stations.find((s) => s.id === best) ?? null) : null;
 }
 
@@ -248,13 +264,18 @@ export function buildStation(
     events.push({ type: 'tileChanged', x, y });
   }
   if (under) events.push({ type: 'undergroundChanged' });
+  tiles.sort((a, b) => a - b);
   if (plan.join) {
-    // Rozbudowa: ta sama stacja (nazwa, ładunek, rozkłady), więcej peronów.
-    plan.join.tiles = [...plan.join.tiles, ...tiles].sort((a, b) => a - b);
+    // Rozbudowa (także przesiadka z drugiego poziomu): ta sama stacja – nazwa, ładunek, rozkłady.
+    if (under) plan.join.underTiles = [...(plan.join.underTiles ?? []), ...tiles].sort((a, b) => a - b);
+    else plan.join.tiles = [...plan.join.tiles, ...tiles].sort((a, b) => a - b);
   } else {
-    tiles.sort((a, b) => a - b);
     const name = stationNameFor(state, tiles, under);
-    state.stations.push({ id, name, axis, tiles, cargo: {}, waypoint: false, ...(under ? { under: true } : {}) });
+    state.stations.push(
+      under
+        ? { id, name, axis, tiles: [], underTiles: tiles, cargo: {}, waypoint: false }
+        : { id, name, axis, tiles, cargo: {}, waypoint: false },
+    );
   }
   spend(state, 'construction', plan.cost);
   events.push({ type: 'stationsChanged' });
@@ -275,18 +296,19 @@ export function removeStationTile(state: GameState, x: number, y: number, events
     map.station[i] = 0;
     if (!station.waypoint) map.track[i] = 0;
   }
-  station.tiles = station.tiles.filter((t) => t !== i);
-  if (station.tiles.length === 0) {
+  if (under) station.underTiles = (station.underTiles ?? []).filter((t) => t !== i);
+  else station.tiles = station.tiles.filter((t) => t !== i);
+  if (station.tiles.length === 0 && !station.underTiles?.length) {
     state.stations = state.stations.filter((s) => s !== station);
     dropStationFromOrders(state, station.id);
   }
-  spend(state, 'construction', -stationTileRefund(station));
+  spend(state, 'construction', -stationTileRefund(station, under));
   events.push({ type: 'tileChanged', x, y }, { type: 'stationsChanged' });
   return { ok: true };
 }
 
-export function stationTileRefund(station?: Station): number {
-  const cost = station?.waypoint ? WAYPOINT_COST : STATION_TILE_COST + (station?.under ? METRO_STATION_EXTRA : 0);
+export function stationTileRefund(station?: Station, under = false): number {
+  const cost = station?.waypoint ? WAYPOINT_COST : STATION_TILE_COST + (under ? METRO_STATION_EXTRA : 0);
   return Math.round(cost * TRACK_REFUND_RATE);
 }
 

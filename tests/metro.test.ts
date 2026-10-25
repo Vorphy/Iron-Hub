@@ -103,7 +103,7 @@ describe('metro (poziom −1)', () => {
     expect(fails(sim)).toEqual([]);
     expect(state.money).toBeLessThan(money);
     const [, , m1, m2] = state.stations;
-    expect(m1).toMatchObject({ under: true, tiles: [5 * 32 + 11, 5 * 32 + 12, 5 * 32 + 13] });
+    expect(m1).toMatchObject({ tiles: [], underTiles: [5 * 32 + 11, 5 * 32 + 12, 5 * 32 + 13] });
     expect(state.map.stationUnder[5 * 32 + 12]).toBe(m1!.id);
     expect(state.map.station[5 * 32 + 12]).toBe(0);
     // Na peronie metra nie dołożysz rozjazdu.
@@ -129,7 +129,46 @@ describe('metro (poziom −1)', () => {
     expect(visited).toEqual([m1!.id, m2!.id, m1!.id]);
     // Zapis i rozbiórka peronu metra.
     const back = deserializeState(JSON.parse(JSON.stringify(serializeState(state))));
-    expect(back.stations.find((s) => s.id === m2!.id)?.under).toBe(true);
+    expect(back.stations.find((s) => s.id === m2!.id)?.underTiles).toHaveLength(3);
     expect(back.map.stationUnder[5 * 32 + 18]).toBe(m2!.id);
+  });
+
+  it('przesiadka: peron metra w zasięgu stacji na powierzchni dołącza do niej (albo osobna stacja)', () => {
+    const sim = metroLine();
+    const { state } = sim;
+    // Stacja na powierzchni dwa kafelki obok linii metra.
+    sim.enqueue({ type: 'buildStation', x0: 10, y0: 3, x1: 12, y1: 3, axis: 'x', separate: true });
+    sim.step();
+    const top = state.stations[state.stations.length - 1]!;
+    sim.enqueue({ type: 'buildStation', x0: 11, y0: 5, x1: 13, y1: 5, axis: 'x', under: true });
+    sim.step();
+    expect(fails(sim)).toEqual([]);
+    expect(state.stations).toHaveLength(3);
+    expect(top.tiles).toEqual([3 * 32 + 10, 3 * 32 + 11, 3 * 32 + 12]);
+    expect(top.underTiles).toEqual([5 * 32 + 11, 5 * 32 + 12, 5 * 32 + 13]);
+    expect(state.map.stationUnder[5 * 32 + 12]).toBe(top.id);
+    // Osobna stacja metra mimo zasięgu.
+    sim.enqueue({ type: 'buildStation', x0: 16, y0: 5, x1: 18, y1: 5, axis: 'x', under: true, separate: true });
+    sim.step();
+    expect(state.stations).toHaveLength(4);
+    // Rozbiórka peronu metra zostawia stację na powierzchni.
+    for (const x of [11, 12, 13]) sim.enqueue({ type: 'removeUnderStation', x, y: 5 });
+    sim.step();
+    expect(top.underTiles).toEqual([]);
+    expect(state.stations).toContain(top);
+  });
+
+  it('zapis v22: stacja metra (under: true) przechodzi na perony metra', () => {
+    const sim = metroLine();
+    sim.enqueue({ type: 'buildStation', x0: 11, y0: 5, x1: 13, y1: 5, axis: 'x', under: true });
+    sim.step();
+    const data = JSON.parse(JSON.stringify(serializeState(sim.state)));
+    data.version = 22;
+    const m = data.stations[data.stations.length - 1];
+    data.stations[data.stations.length - 1] = { ...m, tiles: m.underTiles, under: true, underTiles: undefined };
+    const back = deserializeState(data);
+    const st = back.stations[back.stations.length - 1]!;
+    expect(st.tiles).toEqual([]);
+    expect(st.underTiles).toEqual([5 * 32 + 11, 5 * 32 + 12, 5 * 32 + 13]);
   });
 });

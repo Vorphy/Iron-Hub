@@ -12,6 +12,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-25',
+    title: 'Metro: przesiadki',
+    items: [
+      'Peron metra postawiony w zasięgu stacji na powierzchni dołącza do niej (i odwrotnie) – jedna stacja, wspólny ładunek, pasażerów i towary odbierają pociągi na obu poziomach.',
+      'Jak na powierzchni: przełącznik „osobna stacja” (albo Ctrl / Shift) stawia osobną stację mimo zasięgu. Podgląd budowy pokazuje „Przesiadka: …”.',
+      'Przycisk 🏠 na górnym pasku po włączeniu świeci na żółto, jak inne przełączniki.',
+    ],
+  },
+  {
+    date: '2026-10-25',
     title: 'Metro – poziom −1 (pierwsza wersja)',
     items: [
       'Przełącznik poziomu nad narzędziami budowy (albo Q): na poziomie −1 powierzchnia jest przyciemniona, ale jej obrysy zostają widoczne, więc łatwo się zlokalizować.',

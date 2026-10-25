@@ -394,8 +394,8 @@ const PLATFORMS: SeqItem[][][] = [
 export function drawStationTile(g: Graphics, objects: Graphics, map: WorldMap, x: number, y: number, station: Station): void {
   const { z } = tileSlope(map, x, y);
   const o = tileOrigin(x, y, z);
-  // Nasza oś x = oś Y OpenTTD.
-  const ottdX = station.axis === 'y';
+  // Nasza oś x = oś Y OpenTTD; oś peronu z toru na kafelku (stacja z przesiadką może mieć perony w obu osiach).
+  const ottdX = platformAxis(map.track[y * map.width + x]!, station) === 'y';
   drawSprite(g, ottdX ? SPR_RAIL_TRACK_Y + 1 : SPR_RAIL_TRACK_Y, o.x, o.y);
   // Bez budynków – same perony (bez budynku stacji i zadaszenia).
   const kind = buildingsHidden() ? 0 : stationKind(map, x, y, station);
@@ -405,15 +405,21 @@ export function drawStationTile(g: Graphics, objects: Graphics, map: WorldMap, x
 /** Rodzaj kafelka peronu: budynek na środku rzędu, zadaszenie na przemian, zwykłe perony na końcach. */
 function stationKind(map: WorldMap, x: number, y: number, station: Station): number {
   const w = map.width;
-  const along = (i: number) => (station.axis === 'x' ? i % w : Math.floor(i / w));
-  const across = (i: number) => (station.axis === 'x' ? Math.floor(i / w) : i % w);
-  const here = station.axis === 'x' ? y : x;
-  const row = station.tiles.filter((i) => across(i) === here).map(along);
-  const pos = (station.axis === 'x' ? x : y) - Math.min(...row);
+  const axis = platformAxis(map.track[y * w + x]!, station);
+  const along = (i: number) => (axis === 'x' ? i % w : Math.floor(i / w));
+  const across = (i: number) => (axis === 'x' ? Math.floor(i / w) : i % w);
+  const here = axis === 'x' ? y : x;
+  const row = station.tiles.filter((i) => across(i) === here && map.track[i] === map.track[y * w + x]).map(along);
+  const pos = (axis === 'x' ? x : y) - Math.min(...row);
   const len = row.length;
   if (len >= 3 && pos === Math.floor(len / 2)) return 1;
   if (len >= 3 && pos > 0 && pos < len - 1) return 2 + (pos & 1);
   return 0;
+}
+
+/** Oś peronu z bitów toru na kafelku (prosty X albo Y); bez toru – oś stacji. */
+export function platformAxis(bits: number, station: Station): 'x' | 'y' {
+  return bits === Track.X ? 'x' : bits === Track.Y ? 'y' : station.axis;
 }
 
 /** Części peronu od `from` (0 – całość; 1 – przednia krawędź i zadaszenie, zasłaniające pociąg). */
@@ -437,7 +443,7 @@ export function drawUnderPlatform(g: Graphics, map: WorldMap, x: number, y: numb
 export function drawStationFront(objects: Graphics, map: WorldMap, x: number, y: number, station: Station): void {
   const { z } = tileSlope(map, x, y);
   const kind = buildingsHidden() ? 0 : stationKind(map, x, y, station);
-  drawStationParts(objects, x, y, z, station.axis === 'y', kind, 1);
+  drawStationParts(objects, x, y, z, platformAxis(map.track[y * map.width + x]!, station) === 'y', kind, 1);
 }
 
 /** Zajezdnia (track_land.h): grunt i budynek w kolorze firmy, wjazd od strony `depot.side`. */

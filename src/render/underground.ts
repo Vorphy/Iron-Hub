@@ -4,7 +4,7 @@ import { rampDown, rampTrack } from '../sim/track/metro';
 import { tracksOn } from '../sim/track/track';
 import { MAX_HEIGHT } from '../sim/world/height';
 import { gfxOn } from './gfx/gfx';
-import { drawTrackOverlays, drawUnderPlatform, tileSlope } from './gfx/tiles';
+import { drawTrackOverlays, drawUnderPlatform, platformAxis, tileSlope } from './gfx/tiles';
 import { HEIGHT_PX, TILE_H, TILE_W, tileDiamond, toWorld } from './iso';
 import { drawTrackTile, TRACK_STYLE } from './trackDraw';
 
@@ -68,7 +68,7 @@ export class UndergroundRenderer {
       const draw = ramp ? rampTrack(rampDown(map, x, y)!) : bits;
       const station = map.stationUnder[i] ? stations.get(map.stationUnder[i]!) : undefined;
       if (station && sprites) {
-        drawUnderPlatform(g, map, x, y, station.axis);
+        drawUnderPlatform(g, map, x, y, platformAxis(bits, station));
         continue;
       }
       if (station) g.poly(tileDiamond(x, y)).fill({ color: 0xa9a49b, alpha: 0.9 });

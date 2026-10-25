@@ -1,4 +1,5 @@
 import { Container, Graphics, Text } from 'pixi.js';
+import { allTiles } from '../sim/station/station';
 import { industryDef } from '../sim/economy/industry';
 import type { GameState } from '../sim/state';
 import type { Rect } from './camera';
@@ -37,12 +38,13 @@ export class MapLabels {
     for (const st of state.stations) {
       let sx = 0;
       let top = Infinity;
-      for (const t of st.tiles) {
+      const tiles = allTiles(st);
+      for (const t of tiles) {
         const c = tileCenter(t % W, Math.floor(t / W));
         sx += c.x;
         top = Math.min(top, c.y);
       }
-      this.add(st.waypoint ? 'waypoint' : 'station', st.name, sx / st.tiles.length, top - (st.waypoint ? 16 : 6));
+      this.add(st.waypoint ? 'waypoint' : 'station', st.name, sx / tiles.length, top - (st.waypoint ? 16 : 6));
     }
   }
 

@@ -15,7 +15,7 @@ import { engineDef, wagonDef } from './trains/vehicles';
 import { MAX_HEIGHT } from './world/height';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 22;
+export const SAVE_VERSION = 23;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -252,6 +252,16 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     // v22: metro – tory, zjazdy i stacje pod ziemią
     if (d.map) for (const name of ['under', 'ramp', 'stationUnder'] as const) d.map[name] = emptyLayer(name);
     d.version = 22;
+  }
+  if (d.version === 22) {
+    // v23: stacja może mieć perony na obu poziomach (przesiadki) – perony metra w `underTiles`.
+    if (Array.isArray(d.stations)) {
+      d.stations = d.stations.map((s: Record<string, unknown>) => {
+        const { under, ...rest } = s;
+        return under === true ? { ...rest, tiles: [], underTiles: s.tiles } : rest;
+      });
+    }
+    d.version = 23;
   }
   return d as Partial<SerializedState>;
 }
@@ -497,6 +507,7 @@ function isStation(v: unknown): v is Station {
     (st.axis === 'x' || st.axis === 'y') &&
     Array.isArray(st.tiles) &&
     st.tiles.every(isInt) &&
+    (st.underTiles === undefined || (Array.isArray(st.underTiles) && st.underTiles.every(isInt))) &&
     typeof st.waypoint === 'boolean' &&
     isCargoRecord(st.cargo, (c) => isObj(c) && isNum(c.waiting) && isInt(c.lastPickup))
   );

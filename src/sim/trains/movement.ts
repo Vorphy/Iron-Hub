@@ -3,7 +3,7 @@ import { baseTrack, levelTrackBits, stationLayer } from '../track/metro';
 import { SIDE_DELTA } from '../track/track';
 import { inBounds } from '../world/map';
 import { wagonDef } from './vehicles';
-import type { Station } from '../station/station';
+import { allTiles, type Station } from '../station/station';
 import {
   ADHESION,
   GRADE_PER_LEVEL,
@@ -140,7 +140,7 @@ const FULL_LOAD_CHECK_TICKS = 20;
 export function waitsForFullLoad(state: GameState, train: Train, st: Station): boolean {
   if (train.stopped || train.reverseRequested) return false;
   if (train.orders[train.currentOrder] !== st.id || !train.fullLoad[train.currentOrder]) return false;
-  const { supplies } = catchmentCargo(state, st.tiles);
+  const { supplies } = catchmentCargo(state, allTiles(st));
   return train.wagons.some((id, k) => {
     const def = wagonDef(id)!;
     const load = train.loads[k]!;

@@ -1,5 +1,5 @@
 import type { SimEvent } from '../commands';
-import { catchment, platformStations, type Station, type StationCargo } from '../station/station';
+import { allTiles, catchment, platformStations, type Station, type StationCargo } from '../station/station';
 import type { GameState } from '../state';
 import { ECONOMY } from '../../data/economy';
 import { DAYS_PER_MONTH, TICKS_PER_DAY } from '../time';
@@ -31,16 +31,17 @@ export function stationRating(state: GameState, sc: StationCargo | undefined): n
 
 export function stationCenter(state: GameState, st: Station): { x: number; y: number } {
   const W = state.map.width;
-  const n = st.tiles.length;
+  const tiles = allTiles(st);
+  const n = tiles.length;
   return {
-    x: st.tiles.reduce((s, t) => s + (t % W), 0) / n,
-    y: st.tiles.reduce((s, t) => s + Math.floor(t / W), 0) / n,
+    x: tiles.reduce((s, t) => s + (t % W), 0) / n,
+    y: tiles.reduce((s, t) => s + Math.floor(t / W), 0) / n,
   };
 }
 
 /** Ładunki przyjmowane przez stację: surowce zakładów w zasięgu i potrzeby mieszkańców. */
 export function stationAccepts(state: GameState, st: Station): Set<Cargo> {
-  return catchmentCargo(state, st.tiles).accepts;
+  return catchmentCargo(state, allTiles(st)).accepts;
 }
 
 /** Co stacja na tych peronach przyjmie i co będzie zbierać (zakłady i domy w zasięgu). */
@@ -80,7 +81,7 @@ export function deliveryPayment(cargo: Cargo, amount: number, distanceTiles: num
 function catchmentIndex(state: GameState): Map<number, Station[]> {
   const index = new Map<number, Station[]>();
   for (const st of platformStations(state)) {
-    for (const i of catchment(state.map, st.tiles)) {
+    for (const i of catchment(state.map, allTiles(st))) {
       const list = index.get(i);
       if (list) list.push(st);
       else index.set(i, [st]);
@@ -189,7 +190,7 @@ export function serveTrainAtStation(state: GameState, train: Train, st: Station,
 /** Surowiec dowieziony na stację trafia do zakładów w jej zasięgu, które go przyjmują. */
 function deliverToIndustries(state: GameState, st: Station, cargo: Cargo, amount: number): void {
   const ids = new Set<number>();
-  for (const i of catchment(state.map, st.tiles)) if (state.map.industry[i]) ids.add(state.map.industry[i]!);
+  for (const i of catchment(state.map, allTiles(st))) if (state.map.industry[i]) ids.add(state.map.industry[i]!);
   const targets = state.industries.filter((ind) => ids.has(ind.id) && industryDef(ind.type)!.accepts.includes(cargo));
   for (const ind of targets) ind.month.delivered[cargo] = (ind.month.delivered[cargo] ?? 0) + amount / targets.length;
 }
