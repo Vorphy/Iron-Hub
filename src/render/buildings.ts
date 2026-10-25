@@ -6,7 +6,7 @@ import { industryDef, type Industry } from '../sim/economy/industry';
 import { darken, drawBox, drawChimney, drawGableRoof, drawPile, drawTree, lighten, tileHash } from './shapes';
 import { inBounds, type WorldMap } from '../sim/world/map';
 import { gfxOn } from './gfx/gfx';
-import { drawHouseBuilding, drawIndustryTiles, drawStationFront, drawTrees, tileTrees } from './gfx/tiles';
+import { drawHouseBuilding, drawIndustryBuilding, drawIndustryTiles, drawStationFront, drawTrees, tileTrees } from './gfx/tiles';
 import type { GameState } from '../sim/state';
 
 // Placeholder – proste bryły do czasu podpięcia grafiki.
@@ -39,14 +39,16 @@ export function housesInFront(state: GameState, fx: number, fy: number, out: Set
   const sprites = gfxOn();
   const x0 = Math.floor(fx);
   const y0 = Math.floor(fy);
-  for (let dy = 0; dy <= 3; dy++) {
-    for (let dx = 0; dx <= 3; dx++) {
+  // Z grafiką OpenGFX dalej: chłodnie elektrowni i kominy huty zasłaniają kilka kafelków za sobą.
+  const reach = sprites ? 4 : 3;
+  for (let dy = 0; dy <= reach; dy++) {
+    for (let dx = 0; dx <= reach; dx++) {
       const x = x0 + dx;
       const y = y0 + dy;
       if (!inBounds(map, x, y)) continue;
       const i = y * map.width + x;
       if (x + y + 1 <= fx + fy) continue;
-      if (map.house[i] || (sprites && (map.station[i] || tileTrees(map, x, y)))) out.add(i);
+      if (map.house[i] || (sprites && (map.station[i] || map.industry[i] || tileTrees(map, x, y)))) out.add(i);
     }
   }
 }
@@ -61,6 +63,11 @@ export function redrawHouse(g: Graphics, state: GameState, i: number): void {
     return;
   }
   if (map.house[i]) return drawHouseBuilding(g, map, x, y, map.house[i]!);
+  if (map.industry[i]) {
+    const ind = state.industries.find((d) => d.id === map.industry[i]);
+    if (ind) drawIndustryBuilding(g, map, ind.x, ind.y, ind.type, x, y);
+    return;
+  }
   if (map.station[i]) {
     const station = state.stations.find((s) => s.id === map.station[i]);
     if (station && !station.waypoint) drawStationFront(g, map, x, y, station);

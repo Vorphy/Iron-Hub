@@ -399,6 +399,23 @@ export function drawDepotTile(g: Graphics, objects: Graphics, map: WorldMap, x: 
 // ------------------------------------------------------------------ zakłady
 
 /** Zakład z kafelków TTD (układ przygotowany przez build_atlas.py w naszym układzie osi). */
+/** Budynek jednego kafelka zakładu (x, y) – do dorysowania przed pojazdem, który zasłania. */
+export function drawIndustryBuilding(
+  g: Graphics,
+  map: WorldMap,
+  ix: number,
+  iy: number,
+  type: string,
+  x: number,
+  y: number,
+): void {
+  const t = gfxData().industries[type]?.find((k) => ix + k.x === x && iy + k.y === y);
+  if (!t) return;
+  const { z } = tileSlope(map, x, y);
+  const p = subTile(x, y, z, t.dx, t.dy);
+  drawSprite(g, t.building, p.x, p.y);
+}
+
 export function drawIndustryTiles(g: Graphics, map: WorldMap, ix: number, iy: number, type: string): boolean {
   const tiles = gfxData().industries[type];
   if (!tiles) return false;
