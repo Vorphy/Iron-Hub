@@ -1,4 +1,5 @@
 import { ECONOMY } from '../../data/economy';
+import { engineYear, maintenanceFactor } from '../research';
 import type { SimEvent } from '../commands';
 import { allTiles, catchment, platformStations } from '../station/station';
 import type { GameState } from '../state';
@@ -30,13 +31,17 @@ const TOWN_GROWTH_MAX_EXTRA = ECONOMY.town.growthMaxExtra;
 const UNSERVED_GROWTH_CHANCE = ECONOMY.town.unservedGrowthChance;
 const UPGRADE_CHANCE = ECONOMY.town.upgradeChance;
 const STATION_PULL = ECONOMY.town.stationPull;
+/** Utrzymanie toru i peronu metra względem zwykłego. */
+const METRO_MAINTENANCE = 2;
 
 /** Zamknięcie miesiąca: rozwój fabryk i miast, koszty, bilans. Wywoływane na początku nowego miesiąca. */
 export function monthlyEconomy(state: GameState, events: SimEvent[]): void {
   // Nowy rok: lokomotywy, które właśnie weszły do sprzedaży.
   const date = gameDate(state);
   if (date.month === 1) {
-    const engines = ENGINES.filter((e) => e.year === date.year).map((e) => e.id);
+    // Prototypy lokomotyw (badania) przyspieszają wejście do sprzedaży.
+    const year = engineYear(state);
+    const engines = ENGINES.filter((e) => e.year === year).map((e) => e.id);
     if (engines.length) events.push({ type: 'newEngines', engines });
   }
   for (const ind of state.industries) closeIndustryMonth(ind);
@@ -119,7 +124,7 @@ function chargeRunningCosts(state: GameState): void {
   let trains = 0;
   for (const t of state.trains) {
     if (t.status === 'depot') continue;
-    const cost = consistStats(t.engine, t.wagons, t.engineCount).runningCost / 12;
+    const cost = (consistStats(t.engine, t.wagons, t.engineCount).runningCost * maintenanceFactor(state)) / 12;
     trains += cost;
     t.profitThisYear -= cost;
   }
@@ -143,19 +148,26 @@ export function infrastructureCost(state: GameState): number {
   const { map } = state;
   let pieces = 0;
   let stationTiles = 0;
+  let metroPieces = 0;
+  let metroStationTiles = 0;
+  const bitCount = (v: number) => {
+    let n = 0;
+    for (let b = v; b; b &= b - 1) n++;
+    return n;
+  };
   for (let i = 0; i < map.track.length; i++) {
-    let b = map.track[i]!;
-    while (b) {
-      b &= b - 1;
-      pieces++;
-    }
+    pieces += bitCount(map.track[i]!);
     if (map.station[i]) stationTiles++;
+    metroPieces += bitCount(map.under[i]!);
+    if (map.stationUnder[i]) metroStationTiles++;
   }
-  return (
+  const total =
     pieces * MAINTENANCE.trackPiece +
     stationTiles * MAINTENANCE.stationTile +
+    // Metro (tunele, wentylacja) – utrzymanie razy METRO_MAINTENANCE.
+    (metroPieces * MAINTENANCE.trackPiece + metroStationTiles * MAINTENANCE.stationTile) * METRO_MAINTENANCE +
     state.depots.length * MAINTENANCE.depot +
     state.signals.length * MAINTENANCE.signal +
-    catenaryTiles(map) * MAINTENANCE.catenaryTile
-  );
+    catenaryTiles(map) * MAINTENANCE.catenaryTile;
+  return Math.round(total * maintenanceFactor(state));
 }

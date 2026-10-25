@@ -12,6 +12,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-25',
+    title: 'Badania',
+    items: [
+      'Nowe okno Badania (🔬 na górnym pasku albo Y): ulepszenia za pieniądze i czas – większe wagony, szybsze pociągi, sprawny załadunek, tańsze utrzymanie, lepsza obsługa stacji i prototypy lokomotyw (nowe modele 2 lata wcześniej).',
+      'Jedno badanie naraz, płatne z góry; każdy kolejny poziom droższy i dłuższy. Przerwanie zwraca połowę ceny. Efekty działają od razu na wszystkie pociągi i stacje.',
+      'Metro ma teraz koszty utrzymania (tory i perony pod ziemią – dwa razy więcej niż na powierzchni).',
+    ],
+  },
+  {
+    date: '2026-10-25',
     title: 'Poprawki: załadunek, semafory, mniej pasażerów',
     items: [
       'Kolejka na stacji: kto pierwszy przyjechał, ten pierwszy się ładuje. Pociąg, który dojechał później, nie podbiera ładunku temu, który już czeka (np. na pełny ładunek) – pierwszy zapełnia się i odjeżdża pierwszy.',

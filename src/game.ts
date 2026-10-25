@@ -1,4 +1,5 @@
 import { type Application, Container } from 'pixi.js';
+import { researchDef, researchLevel } from './sim/research';
 import { Input } from './input/input';
 import { GameLoop, SPEEDS, type Speed } from './loop';
 import { Camera } from './render/camera';
@@ -232,6 +233,12 @@ export class Game {
     hudStore.set({ window: ref, menuOpen: false });
   }
 
+  /** Otwiera okno, a gdy już jest otwarte – zamyka (przyciski i skróty). */
+  toggleWindow(ref: WindowRef): void {
+    if (hudStore.get().window?.kind === ref.kind) this.closeWindow();
+    else this.openWindow(ref);
+  }
+
   closeWindow(): void {
     hudStore.set({ window: null, windowData: null });
     this.windowJson = '';
@@ -333,6 +340,7 @@ export class Game {
     // Semafory tylko w trybie Ekspert.
     if (tool && (tool !== 'signal' || this.sim.state.signalMode === 'manual')) this.setTool(tool);
     if (code === 'KeyU') this.toggleBuildings();
+    if (code === 'KeyY') this.toggleWindow({ kind: 'research' });
     if (code === 'KeyQ') this.toggleUnderground();
     if (code === 'KeyV') this.signals.showReservations = !this.signals.showReservations;
     if (code === 'KeyR') this.tools.rotate();
@@ -382,7 +390,10 @@ export class Game {
       else if (ev.type === 'tunnelsChanged') this.tunnels.draw(this.sim.state);
       else if (ev.type === 'undergroundChanged') this.underground.markDirty();
       else if (ev.type === 'income') this.floaters.spawn(`+${formatMoney(ev.amount)}`, ev.x, ev.y);
-      else if (ev.type === 'newEngines') {
+      else if (ev.type === 'researchDone') {
+        const def = researchDef(ev.id);
+        if (def) showMessage(`Badanie zakończone: ${def.name} – poziom ${researchLevel(this.sim.state, ev.id)}`);
+      } else if (ev.type === 'newEngines') {
         const names = ev.engines.map((id) => {
           const e = engineDef(id)!;
           return `${e.name} (${TRACTION_NAMES[e.traction]}, ${e.maxSpeed} km/h)`;

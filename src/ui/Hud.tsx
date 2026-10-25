@@ -1,4 +1,5 @@
 import { TERRAFORM_COST, WAYPOINT_COST } from '../sim/config';
+import { ResearchWindow } from './ResearchWindow';
 import { useEffect, useState } from 'preact/hooks';
 import { SPEEDS, type Speed } from '../loop';
 import { Side } from '../sim/track/track';
@@ -116,6 +117,7 @@ export function Hud({ actions }: { actions: HudActions }) {
       {s.windowData?.kind === 'station' && <StationWindow data={s.windowData} actions={actions} />}
       {s.windowData?.kind === 'trains' && <TrainsWindow data={s.windowData} actions={actions} />}
       {s.windowData?.kind === 'finance' && <FinanceWindow data={s.windowData} money={s.money} actions={actions} />}
+      {s.windowData?.kind === 'research' && <ResearchWindow data={s.windowData} money={s.money} actions={actions} />}
       {s.windowData?.kind === 'industry' && <IndustryWindow data={s.windowData} actions={actions} />}
 
       <div class="build-dock" ref={build.ref} style={build.style}>
@@ -207,6 +209,13 @@ function TopbarControls({ s, actions }: { s: HudState; actions: HudActions }) {
           onClick={() => (s.window?.kind === 'trains' ? actions.closeWindow() : actions.openTrains())}
         >
           🚆 Pociągi
+        </button>
+        <button
+          class={s.window?.kind === 'research' ? 'active' : ''}
+          title="Badania – ulepszenia za pieniądze i czas (Y)"
+          onClick={actions.openResearch}
+        >
+          🔬 Badania
         </button>
         <button
           class={s.buildingsHidden ? 'active' : ''}

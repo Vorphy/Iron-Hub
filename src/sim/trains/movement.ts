@@ -1,4 +1,5 @@
 import { TICKS_PER_DAY } from '../time';
+import { engineMaxSpeed, stationWaitFactor, wagonCapacity } from '../research';
 import { baseTrack, levelTrackBits, stationLayer } from '../track/metro';
 import { SIDE_DELTA } from '../track/track';
 import { inBounds } from '../world/map';
@@ -145,7 +146,9 @@ export function waitsForFullLoad(state: GameState, train: Train, st: Station): b
     const def = wagonDef(id)!;
     const load = train.loads[k]!;
     // Wagon z ładunkiem z innej stacji tu nie dobierze (nie mieszamy ładunków).
-    return supplies.has(def.cargo) && load.amount < def.capacity && (load.amount === 0 || load.source === st.id);
+    return (
+      supplies.has(def.cargo) && load.amount < wagonCapacity(state, def.capacity) && (load.amount === 0 || load.source === st.id)
+    );
   });
 }
 
@@ -249,8 +252,8 @@ function brakingCap(d: number, limit: number): number {
 }
 
 /** Droga hamowania z prędkości maksymalnej + zapas – tyle pociąg stara się mieć zarezerwowane. */
-function reserveDistance(train: Train): number {
-  const v = engineDef(train.engine)!.maxSpeed;
+function reserveDistance(state: GameState, train: Train): number {
+  const v = engineMaxSpeed(state, engineDef(train.engine)!.maxSpeed);
   return (v * v * UNITS_PER_KMH_TICK) / (2 * BRAKE_KMH_PER_TICK) + 24;
 }
 
@@ -268,14 +271,19 @@ function moveTrain(ctx: TickContext, train: Train): void {
     train.mayReverse = false;
     return;
   }
-  if (!train.stopped && !train.reverseRequested && !train.resTerminal && reservedDistance(train) < reserveDistance(train)) {
+  if (
+    !train.stopped &&
+    !train.reverseRequested &&
+    !train.resTerminal &&
+    reservedDistance(train) < reserveDistance(state, train)
+  ) {
     // Czekający pociąg ponawia próbę co kilka ticków (mniej liczenia tras).
     const retry = !isWaiting(train) || (state.tick + train.id) % RESERVE_RETRY_TICKS === 0;
     if (retry && extendReservation(ctx, train) === 'reversed') return;
   }
   if (isWaiting(train) && train.speed === 0) train.blockedTicks++;
 
-  const maxSpeed = engineDef(train.engine)!.maxSpeed;
+  const maxSpeed = engineMaxSpeed(state, engineDef(train.engine)!.maxSpeed);
   const head = train.trail[0]!;
   const dist = reservedDistance(train);
   let target = train.stopped || train.reverseRequested ? 0 : maxSpeed;
@@ -338,7 +346,7 @@ function extendReservation(ctx: TickContext, train: Train): 'ok' | 'blocked' | '
     return 'reversed';
   }
 
-  const need = reserveDistance(train);
+  const need = reserveDistance(ctx.state, train);
   let have = reservedDistance(train);
   let i = 0;
   while (have < need && i < plan.steps.length) {
@@ -395,7 +403,7 @@ function arrive(ctx: TickContext, train: Train): void {
       train.arrivedTick = state.tick;
       const st = stationUnderHead(state, train);
       // Za krótki peron: postój dłuższy proporcjonalnie do tego, ile pociągu wystaje (najwyżej 2×).
-      train.waitTicks = Math.round(STATION_WAIT_TICKS * (st ? platformPenalty(state, train) : 1));
+      train.waitTicks = Math.round(STATION_WAIT_TICKS * stationWaitFactor(state) * (st ? platformPenalty(state, train) : 1));
       // Rozkład czasowy: dodatkowy postój ustawiony przy tej stacji.
       train.waitTicks += (train.waitDays[train.currentOrder] ?? 0) * TICKS_PER_DAY;
       if (st) serveTrainAtStation(state, train, st, ctx.events, true);

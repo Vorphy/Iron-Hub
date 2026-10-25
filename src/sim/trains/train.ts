@@ -1,5 +1,6 @@
 import { isElectrified, needsCatenary } from '../track/catenary';
-import { DAYS_PER_MONTH, gameDate, MONTHS_PER_YEAR, TICKS_PER_DAY } from '../time';
+import { engineOnSale } from '../research';
+import { DAYS_PER_MONTH, MONTHS_PER_YEAR, TICKS_PER_DAY } from '../time';
 import { ECONOMY } from '../../data/economy';
 import { MAX_ENGINES, MAX_WAGONS, TRAIN_RESALE_RATE } from '../config';
 import { spend } from '../economy/finance';
@@ -7,7 +8,7 @@ import type { CommandResult, SimEvent } from '../commands';
 import type { GameState } from '../state';
 import type { Side } from '../track/track';
 import { successors } from './steps';
-import { consistStats, engineAvailable, engineDef, wagonDef } from './vehicles';
+import { consistStats, engineDef, wagonDef } from './vehicles';
 
 /** Odcinek drogi pociągu: element toru przejeżdżany od boku `entry` do `exit`. */
 export interface Step {
@@ -126,8 +127,7 @@ export function planBuyTrain(
   if (!Number.isInteger(engineCount) || engineCount < 1 || engineCount > MAX_ENGINES)
     return { cost: 0, result: { ok: false, reason: 'blocked' } };
   if (wagons.length > MAX_WAGONS) return { cost: 0, result: { ok: false, reason: 'tooBig' } };
-  if (!engineAvailable(engineDef(engine)!, gameDate(state).year))
-    return { cost: 0, result: { ok: false, reason: 'notAvailable' } };
+  if (!engineOnSale(state, engineDef(engine)!)) return { cost: 0, result: { ok: false, reason: 'notAvailable' } };
   const { cost } = consistStats(engine, wagons, engineCount);
   return { cost, result: cost > state.money ? { ok: false, reason: 'noMoney' } : { ok: true } };
 }
@@ -305,7 +305,7 @@ export function requestReplace(state: GameState, trainId: number, engine: string
   }
   const def = engineDef(engine);
   if (!def || engine === train.engine) return { ok: false, reason: 'blocked' };
-  if (!engineAvailable(def, gameDate(state).year)) return { ok: false, reason: 'notAvailable' };
+  if (!engineOnSale(state, def)) return { ok: false, reason: 'notAvailable' };
   if (replaceCost(state, train, engine) > state.money) return { ok: false, reason: 'noMoney' };
   if (train.status === 'depot') {
     const depot = state.depots.find((d) => d.id === train.depotId);
@@ -343,7 +343,7 @@ export function replaceOnArrival(state: GameState, train: Train, events: SimEven
     events.push({ type: 'replaceFailed', trainId: train.id, reason: 'noCatenary' });
     return;
   }
-  if (!engineAvailable(engineDef(engine)!, gameDate(state).year)) {
+  if (!engineOnSale(state, engineDef(engine)!)) {
     events.push({ type: 'replaceFailed', trainId: train.id, reason: 'notAvailable' });
   } else if (replaceCost(state, train, engine) > state.money) {
     events.push({ type: 'replaceFailed', trainId: train.id, reason: 'noMoney' });

@@ -1,4 +1,5 @@
 import { START_MONEY } from './config';
+import { emptyResearch, type ResearchState } from './research';
 import { START_YEAR } from './time';
 import type { Depot } from './depot/depot';
 import { emptyFinances, type Finances } from './economy/finance';
@@ -44,6 +45,8 @@ export interface GameState {
   nextGroupId: number;
   /** Kolejny numer wspólnego rozkładu (linii). */
   nextShareId: number;
+  /** Badania (ulepszenia kupowane za pieniądze i czas). */
+  research: ResearchState;
 }
 
 export interface NewGameOptions {
@@ -99,6 +102,7 @@ export function createGame({
     groups: [],
     nextGroupId: 1,
     nextShareId: 1,
+    research: emptyResearch(),
   };
   // Pusty świat (testy) jest płaski.
   if (empty) state.map.heights.fill(0);

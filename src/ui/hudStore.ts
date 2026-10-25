@@ -1,4 +1,5 @@
 import { defaultFilters, type MinimapFilters } from '../render/minimap';
+import type { ResearchId } from '../data/research';
 import type { CustomCounts, Density } from '../sim/world/generate';
 
 export interface MinimapSettings {
@@ -39,6 +40,7 @@ export type WindowRef =
   | { kind: 'industry'; industryId: number }
   | { kind: 'station'; stationId: number }
   | { kind: 'finance' }
+  | { kind: 'research' }
   | { kind: 'trains' };
 
 /** Wiersz listy pociągów. */
@@ -94,8 +96,10 @@ export interface DepotWindowData {
   trains: TrainSummary[];
   /** Magazyn wagonów (typy) i zwrot za każdy. */
   spare: { type: string; resale: number; amount: number }[];
-  /** Bieżący rok – od niego zależą lokomotywy w sprzedaży. */
+  /** Bieżący rok (nowości, wycofania). */
   year: number;
+  /** Lokomotywy w sprzedaży (z uwzględnieniem badań – prototypy wcześniej). */
+  onSale: string[];
   /** Zajezdnia ma sieć trakcyjną (lokomotywy elektryczne mogą z niej wyjechać). */
   electrified: boolean;
 }
@@ -188,6 +192,21 @@ export interface StationWindowData {
   accepts: Cargo[];
 }
 
+/** Okno Badania: kierunki z poziomami, trwające badanie. */
+export interface ResearchWindowData {
+  kind: 'research';
+  items: {
+    id: ResearchId;
+    name: string;
+    effect: string;
+    level: number;
+    maxLevel: number;
+    /** Cena i czas następnego poziomu (null – maksimum). */
+    next: { cost: number; days: number } | null;
+  }[];
+  current: { id: ResearchId; name: string; level: number; progress: number; daysLeft: number; refund: number } | null;
+}
+
 export interface FinanceWindowData {
   kind: 'finance';
   /** Miesiące od bieżącego wstecz. */
@@ -213,6 +232,7 @@ export type WindowData =
   | IndustryWindowData
   | StationWindowData
   | FinanceWindowData
+  | ResearchWindowData
   | TrainsWindowData;
 
 export interface HudState {
@@ -353,6 +373,10 @@ export interface HudActions {
   toggleBuildings(): void;
   toggleUnderground(): void;
   openFinance(): void;
+  /** Okno Badania (Y). */
+  openResearch(): void;
+  startResearch(id: ResearchId): void;
+  cancelResearch(): void;
   /** Lista pociągów (K). */
   openTrains(): void;
   createGroup(name: string): void;

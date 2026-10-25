@@ -1,10 +1,10 @@
 import type { CommandResult, SimEvent } from '../commands';
+import { engineOnSale } from '../research';
 import { MAX_ENGINES, MAX_WAGONS, TRAIN_RESALE_RATE } from '../config';
 import { spend } from '../economy/finance';
 import type { GameState } from '../state';
-import { gameDate } from '../time';
 import { engineTradeIn, oneEngineTradeIn, trainById, unshare } from './train';
-import { engineAvailable, engineDef, wagonDef } from './vehicles';
+import { engineDef, wagonDef } from './vehicles';
 
 /**
  * Zmiany składu w zajezdni (jak w OpenTTD): wagony odpięte albo kupione luzem czekają w magazynie
@@ -108,7 +108,7 @@ export function setEngineCount(state: GameState, trainId: number, count: number,
   if (count === train.engineCount) return { ok: true };
   const def = engineDef(train.engine)!;
   if (count > train.engineCount) {
-    if (!engineAvailable(def, gameDate(state).year)) return { ok: false, reason: 'notAvailable' };
+    if (!engineOnSale(state, def)) return { ok: false, reason: 'notAvailable' };
     const cost = def.cost * (count - train.engineCount);
     if (cost > state.money) return { ok: false, reason: 'noMoney' };
     spend(state, 'construction', cost);

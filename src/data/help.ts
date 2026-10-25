@@ -3,6 +3,7 @@
  * więc po strojeniu opis aktualizuje się sam. Tekst `**tak**` jest pogrubiony.
  */
 import { CARGO_DEFS } from '../sim/economy/cargo';
+import { RESEARCH, RESEARCH_CANCEL_REFUND, RESEARCH_COST_GROWTH, RESEARCH_DAYS_GROWTH } from './research';
 import { INDUSTRY_DEFS } from '../sim/economy/industry';
 import {
   CATCHMENT_RADIUS,
@@ -289,6 +290,17 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
       `Koszty co miesiąc: utrzymanie pociągów w trasie (patrz Pociągi), torów (${zl(E.maintenance.trackPiece)} za element), peronów (${zl(E.maintenance.stationTile)} za kafelek), zajezdni (${zl(E.maintenance.depot)}), semaforów i sieci trakcyjnej.`,
       `**Kredyt**: do ${zl(E.loan.max)}, po ${zl(E.loan.step)}, odsetki ${pct(E.loan.yearlyInterest)} rocznie (co miesiąc). Spłacasz, gdy masz gotówkę.`,
       `**Bankructwo**: ujemne saldo na koniec miesiąca ${E.loan.bankruptcyMonths} razy z rzędu kończy grę. Wcześniej gra ostrzega – weź kredyt, sprzedaj nierentowne pociągi albo zatrzymaj je w zajezdni (tam nie kosztują).`,
+    ],
+  },
+  {
+    id: 'research',
+    title: 'Badania',
+    blocks: [
+      `Okno Badania (🔬 na górnym pasku albo Y): ulepszenia kupowane za pieniądze i czas, żeby zarobione pieniądze dalej pracowały. Jedno badanie naraz; płacisz z góry, a po upływie czasu (dni gry) rośnie poziom. Każdy kolejny poziom jest ${RESEARCH_COST_GROWTH}× droższy i ${RESEARCH_DAYS_GROWTH}× dłuższy. Przerwanie zwraca ${pct(RESEARCH_CANCEL_REFUND)} ceny.`,
+      ...RESEARCH.map(
+        (r) => `**${r.name}** – ${r.effect} za poziom, do ${r.maxLevel} poziomów; pierwszy poziom ${zl(r.cost)}, ${r.days} dni.`,
+      ),
+      'Efekty działają od razu na wszystkie pociągi i stacje – także te już kupione.',
     ],
   },
   {

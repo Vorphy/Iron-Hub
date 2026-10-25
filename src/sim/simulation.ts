@@ -1,4 +1,5 @@
 import { applyCommand, type Command, type SimEvent } from './commands';
+import { tickResearch } from './research';
 import type { GameState } from './state';
 import { buildTrackGraph, type TrackGraph } from './track/graph';
 import { dailyCargo } from './economy/cargoFlow';
@@ -41,6 +42,7 @@ export class Simulation {
     if (this.state.finances.bankrupt) return;
     tickTrains(this.state, this.planner, this.events);
     this.state.tick++;
+    tickResearch(this.state, this.events);
     if (this.state.tick % TICKS_PER_DAY === 0) dailyCargo(this.state);
     if (this.state.tick % (TICKS_PER_DAY * DAYS_PER_MONTH) === 0) monthlyEconomy(this.state, this.events);
   }

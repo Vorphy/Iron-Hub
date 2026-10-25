@@ -2,8 +2,8 @@ import { useState } from 'preact/hooks';
 import type { Traction } from '../data/economy';
 import { MAX_ENGINES, MAX_WAGONS } from '../sim/config';
 import {
-  availableEngines,
   CARGO_NAMES,
+  ENGINES,
   engineDef,
   engineRunningCost,
   TRACTION_NAMES,
@@ -269,7 +269,7 @@ function BuyVehicles({
   actions: HudActions;
   target: TrainSummary | null;
 }) {
-  const engines = availableEngines(data.year);
+  const engines = ENGINES.filter((e) => data.onSale.includes(e.id));
   const [tab, setTab] = useState<'engines' | 'wagons'>('engines');
   const [pickedEngine, setEngine] = useState(engines[0]?.id ?? '');
   const [pickedWagon, setWagon] = useState(WAGONS[0]!.id);

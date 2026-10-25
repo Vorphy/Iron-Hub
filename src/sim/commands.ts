@@ -1,4 +1,6 @@
 import { CLEAR_ROUGH_COST, HOUSE_DEMOLISH_COST, ROAD_REMOVE_COST } from './config';
+import type { ResearchId } from '../data/research';
+import { cancelResearch, startResearch } from './research';
 import { LOAN_MAX, LOAN_STEP, spend } from './economy/finance';
 import { buildDepot, depotAt, removeDepot } from './depot/depot';
 import { dropOrphanSignals, placeSignal, removeSignal, type SignalMode } from './signals/signals';
@@ -105,6 +107,9 @@ export type Command =
   /** Kredyt: pożyczka / spłata (kwota zaokrąglana do kroku kredytu, przycinana do możliwej). */
   | { type: 'borrow'; amount: number }
   | { type: 'repay'; amount: number }
+  /** Badania: rozpoczęcie następnego poziomu / przerwanie trwającego. */
+  | { type: 'startResearch'; id: ResearchId }
+  | { type: 'cancelResearch' }
   /** Testy: dopisanie pieniędzy (poza księgą finansów). */
   | { type: 'addMoney'; amount: number };
 
@@ -145,6 +150,9 @@ export type SimEvent =
   | { type: 'signalsChanged' }
   | { type: 'bridgesChanged' }
   | { type: 'tunnelsChanged' }
+  | { type: 'researchChanged' }
+  /** Badanie zakończone – nowy poziom. */
+  | { type: 'researchDone'; id: ResearchId }
   /** Zmiana torów, zjazdów lub stacji metra (renderer poziomu −1 rysuje się od nowa). */
   | { type: 'undergroundChanged' }
   /** Zapłata za dostawę – (x, y) w układzie logicznym, do napisu nad pociągiem. */
@@ -181,6 +189,10 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
       return cmd.under ? buildUnderTrack(state, cmd.pieces, events) : buildTrack(state, cmd.pieces, events);
     case 'removeTrack':
       return cmd.under ? removeUnderTrack(state, cmd.pieces, events) : removeTrack(state, cmd.pieces, events);
+    case 'startResearch':
+      return startResearch(state, cmd.id, events);
+    case 'cancelResearch':
+      return cancelResearch(state, events);
     case 'buildRamp':
       return buildRamp(state, cmd.x, cmd.y, cmd.down, events);
     case 'buildStation':

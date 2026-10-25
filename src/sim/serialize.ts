@@ -1,4 +1,6 @@
 import type { TrainGroup } from './trains/groups';
+import { RESEARCH, type ResearchId } from '../data/research';
+import { emptyResearch, type ResearchState } from './research';
 import type { Depot } from './depot/depot';
 import { isCargo } from './economy/cargo';
 import type { Finances, Ledger } from './economy/finance';
@@ -15,7 +17,7 @@ import { engineDef, wagonDef } from './trains/vehicles';
 import { MAX_HEIGHT } from './world/height';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 23;
+export const SAVE_VERSION = 24;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -62,6 +64,7 @@ export interface SerializedState {
   groups: TrainGroup[];
   nextGroupId: number;
   nextShareId: number;
+  research: ResearchState;
 }
 
 export class SaveError extends Error {}
@@ -97,6 +100,7 @@ export function serializeState(state: GameState): SerializedState {
     groups: structuredClone(state.groups),
     nextGroupId: state.nextGroupId,
     nextShareId: state.nextShareId,
+    research: structuredClone(state.research),
   };
 }
 
@@ -263,6 +267,11 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     }
     d.version = 23;
   }
+  if (d.version === 23) {
+    // v24: badania
+    d.research = emptyResearch();
+    d.version = 24;
+  }
   return d as Partial<SerializedState>;
 }
 
@@ -318,6 +327,7 @@ export function deserializeState(data: unknown): GameState {
   check(d.groups, isGroup, 'grupy');
   if (d.signalMode !== 'auto' && d.signalMode !== 'manual') throw new SaveError('Uszkodzony tryb sygnalizacji');
   if (!isFinances(d.finances)) throw new SaveError('Uszkodzone finanse');
+  if (!isResearch(d.research)) throw new SaveError('Uszkodzone badania');
   return {
     version: 1,
     tick: d.tick!,
@@ -343,7 +353,17 @@ export function deserializeState(data: unknown): GameState {
     groups: d.groups!,
     nextGroupId: d.nextGroupId!,
     nextShareId: d.nextShareId!,
+    research: d.research,
   };
+}
+
+function isResearch(v: unknown): v is ResearchState {
+  const r = v as ResearchState;
+  if (!isObj(r) || !isObj(r.levels)) return false;
+  const known = new Set(RESEARCH.map((x) => x.id));
+  if (!Object.entries(r.levels).every(([k, n]) => known.has(k as ResearchId) && isInt(n) && n >= 0)) return false;
+  const c = r.current;
+  return c === null || (isObj(c) && known.has(c.id) && isInt(c.startTick) && isInt(c.endTick) && isNum(c.cost));
 }
 
 function isGroup(v: unknown): v is TrainGroup {

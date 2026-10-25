@@ -1009,3 +1009,43 @@ input.seed {
   border-color: #6fa8dc;
   color: #fff;
 }
+
+/* Badania: kierunki z kropkami poziomów i pasek postępu. */
+.research-item {
+  border: 1px solid var(--panel-border);
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.research-item.active {
+  border-color: var(--accent);
+}
+.research-current {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid var(--accent);
+  padding: 6px;
+}
+.progress {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--panel-border);
+}
+.progress-bar {
+  height: 100%;
+  background: var(--accent);
+}
+.pips {
+  display: inline-flex;
+  gap: 3px;
+}
+.pip {
+  width: 9px;
+  height: 9px;
+  border: 1px solid var(--accent);
+}
+.pip.on {
+  background: var(--accent);
+}

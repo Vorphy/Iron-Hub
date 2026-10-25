@@ -1,4 +1,7 @@
 import type { Simulation } from '../sim/simulation';
+import type { GameState } from '../sim/state';
+import { engineMaxSpeed, engineOnSale, maintenanceFactor, nextLevelPlan, researchLevel, wagonCapacity } from '../sim/research';
+import { RESEARCH, RESEARCH_CANCEL_REFUND } from '../data/research';
 import {
   engineAge,
   engineTradeIn,
@@ -12,7 +15,7 @@ import {
   type Train,
 } from '../sim/trains/train';
 import { isWaiting, platformPenalty, waitsForFullLoad } from '../sim/trains/movement';
-import { availableEngines, consistStats, engineAvailable, engineDef } from '../sim/trains/vehicles';
+import { consistStats, engineDef, ENGINES } from '../sim/trains/vehicles';
 import { infrastructureCost } from '../sim/economy/monthly';
 import { BANKRUPTCY_MONTHS, LOAN_INTEREST, LOAN_MAX, LOAN_STEP, monthlyInterest } from '../sim/economy/finance';
 import { DAYS_PER_MONTH, gameDate, MONTHS_PER_YEAR, TICKS_PER_DAY } from '../sim/time';
@@ -52,13 +55,13 @@ function trainStatus(sim: Simulation, t: Train): string {
   return `${passesOrder(sim.state, t, t.currentOrder) ? 'Jedzie przez' : 'Jedzie do'}: ${stationName(sim, target)}`;
 }
 
-function trainLoad(t: Train): { cargo: Cargo; amount: number; capacity: number }[] {
+function trainLoad(state: GameState, t: Train): { cargo: Cargo; amount: number; capacity: number }[] {
   const sums = new Map<Cargo, { amount: number; capacity: number }>();
   t.wagons.forEach((id, k) => {
     const def = wagonDef(id)!;
     const s = sums.get(def.cargo) ?? { amount: 0, capacity: 0 };
     s.amount += t.loads[k]?.amount ?? 0;
-    s.capacity += def.capacity;
+    s.capacity += wagonCapacity(state, def.capacity);
     sums.set(def.cargo, s);
   });
   return [...sums].map(([cargo, s]) => ({ cargo, ...s }));
@@ -75,7 +78,7 @@ function summary(sim: Simulation, t: Train): TrainSummary {
     resale: resaleValue(sim.state, t),
     engineResale: engineTradeIn(sim.state, t),
     oneEngineResale: oneEngineTradeIn(sim.state, t),
-    engineAvailable: engineAvailable(engineDef(t.engine)!, gameDate(sim.state).year),
+    engineAvailable: engineOnSale(sim.state, engineDef(t.engine)!),
     stopped: t.stopped,
   };
 }
@@ -92,6 +95,7 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
       trains: trainsInDepot(state, ref.depotId).map((t) => summary(sim, t)),
       spare: depot.wagons.map((w) => ({ type: w.type, resale: wagonResale(w.type), amount: w.load.amount })),
       year: gameDate(state).year,
+      onSale: ENGINES.filter((e) => engineOnSale(state, e)).map((e) => e.id),
       electrified: isElectrified(state.map, depot.x, depot.y),
     };
   }
@@ -124,6 +128,30 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
       groups: state.groups.map((g) => ({ id: g.id, name: g.name, count: state.trains.filter((t) => t.groupId === g.id).length })),
     };
   }
+  if (ref.kind === 'research') {
+    const cur = state.research.current;
+    return {
+      kind: 'research',
+      items: RESEARCH.map((r) => ({
+        id: r.id,
+        name: r.name,
+        effect: r.effect,
+        level: researchLevel(state, r.id),
+        maxLevel: r.maxLevel,
+        next: nextLevelPlan(state, r.id),
+      })),
+      current: cur
+        ? {
+            id: cur.id,
+            name: RESEARCH.find((r) => r.id === cur.id)!.name,
+            level: researchLevel(state, cur.id) + 1,
+            progress: Math.min(1, (state.tick - cur.startTick) / Math.max(1, cur.endTick - cur.startTick)),
+            daysLeft: Math.max(0, Math.ceil((cur.endTick - state.tick) / TICKS_PER_DAY)),
+            refund: Math.round(cur.cost * RESEARCH_CANCEL_REFUND),
+          }
+        : null,
+    };
+  }
   if (ref.kind === 'finance') {
     const now = gameDate(state);
     const ledgers = [state.finances.month, ...[...state.finances.history].reverse()];
@@ -149,9 +177,11 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
       bankruptcyMonths: BANKRUPTCY_MONTHS,
       infrastructurePerMonth: infrastructureCost(state),
       trainsPerMonth: Math.round(
-        state.trains
+        (state.trains
           .filter((t) => t.status !== 'depot')
-          .reduce((s, t) => s + consistStats(t.engine, t.wagons, t.engineCount).runningCost, 0) / 12,
+          .reduce((s, t) => s + consistStats(t.engine, t.wagons, t.engineCount).runningCost, 0) *
+          maintenanceFactor(state)) /
+          12,
       ),
     };
   }
@@ -223,7 +253,7 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
     wagons: t.wagons,
     status: trainStatus(sim, t),
     speed: Math.round(t.speed),
-    maxSpeed: engineDef(t.engine)!.maxSpeed,
+    maxSpeed: engineMaxSpeed(state, engineDef(t.engine)!.maxSpeed),
     inDepot: t.status === 'depot',
     stopped: t.stopped,
     goToDepot: t.goToDepot,
@@ -241,7 +271,7 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
     currentOrder: t.currentOrder,
     resale: resaleValue(sim.state, t),
     picking: pickingFor === t.id,
-    load: trainLoad(t),
+    load: trainLoad(state, t),
     engineAge: Math.floor(engineAge(state, t)),
     tradeIn: engineTradeIn(state, t),
     replaceWith: t.replaceWith,
@@ -253,11 +283,11 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
       t.shareId === null
         ? []
         : state.trains.filter((o) => o.shareId === t.shareId && o !== t).map((o) => ({ id: o.id, name: o.name })),
-    replaceOptions: availableEngines(gameDate(state).year)
+    replaceOptions: ENGINES.filter((e) => engineOnSale(state, e))
       .filter((e) => e.id !== t.engine)
       .map((e) => ({ id: e.id, cost: replaceCost(state, t, e.id) })),
     sameEngineTrains: state.trains.filter((o) => o.engine === t.engine).length,
     cloneCost: consistStats(t.engine, t.wagons, t.engineCount).cost,
-    cloneAvailable: engineAvailable(engineDef(t.engine)!, gameDate(state).year),
+    cloneAvailable: engineOnSale(state, engineDef(t.engine)!),
   };
 }

@@ -1,4 +1,5 @@
 import type { SimEvent } from '../commands';
+import { ratingBonus, wagonCapacity } from '../research';
 import { stationLayer } from '../track/metro';
 import { allTiles, catchment, platformStations, type Station, type StationCargo } from '../station/station';
 import type { GameState } from '../state';
@@ -26,7 +27,8 @@ export function stationRating(state: GameState, sc: StationCargo | undefined): n
   const days = (state.tick - sc.lastPickup) / TICKS_PER_DAY;
   if (days > SERVICE_DAYS) return 0;
   const t = Math.max(0, (days - S.frequentDays) / (SERVICE_DAYS - S.frequentDays));
-  const rating = S.ratingMax - (S.ratingMax - S.ratingMin) * t;
+  // Badanie „Lepsza obsługa stacji” podnosi ocenę (najwyżej do 100%).
+  const rating = Math.min(1, S.ratingMax - (S.ratingMax - S.ratingMin) * t + ratingBonus(state));
   return sc.waiting > S.crowdedAmount ? rating - S.crowdedPenalty : rating;
 }
 
@@ -175,7 +177,7 @@ export function serveTrainAtStation(state: GameState, train: Train, st: Station,
     if (load.amount > 0 && load.source !== st.id) return;
     // Kto pierwszy przyjechał, ten pierwszy ładuje: ładunek, na który czeka wcześniejszy pociąg, zostaje dla niego.
     if (queued.has(def.cargo)) return;
-    const take = Math.min(def.capacity - load.amount, Math.floor(sc.waiting));
+    const take = Math.min(wagonCapacity(state, def.capacity) - load.amount, Math.floor(sc.waiting));
     if (take <= 0) return;
     if (load.amount === 0) load.loadedTick = state.tick;
     load.amount += take;
@@ -207,7 +209,7 @@ function cargoQueuedAhead(state: GameState, train: Train, st: Station): Set<Carg
     other.wagons.forEach((id, k) => {
       const def = wagonDef(id)!;
       const load = other.loads[k]!;
-      if (load.amount < def.capacity && (load.amount === 0 || load.source === st.id)) out.add(def.cargo);
+      if (load.amount < wagonCapacity(state, def.capacity) && (load.amount === 0 || load.source === st.id)) out.add(def.cargo);
     });
   }
   return out;
