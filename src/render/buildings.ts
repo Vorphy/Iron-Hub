@@ -7,7 +7,7 @@ import { darken, drawBox, drawChimney, drawGableRoof, drawPile, drawTree, lighte
 import { inBounds, type WorldMap } from '../sim/world/map';
 import { gfxOn } from './gfx/gfx';
 import { buildingsHidden } from './visibility';
-import { drawHouseBuilding, drawIndustryBuilding, drawIndustryTiles, drawStationFront, drawTrees, tileTrees } from './gfx/tiles';
+import { drawHouseBuilding, drawIndustryBuilding, drawStationFront, drawTrees, tileTrees } from './gfx/tiles';
 import type { GameState } from '../sim/state';
 
 // Placeholder – proste bryły do czasu podpięcia grafiki.
@@ -124,15 +124,14 @@ export class IndustryRenderer {
   readonly gfx = new Container();
   private items: { g: Graphics; bounds: Rect }[] = [];
 
-  draw(industries: readonly Industry[], map: WorldMap): void {
+  draw(industries: readonly Industry[]): void {
     for (const child of this.gfx.removeChildren()) child.destroy({ context: true });
     this.items = [];
     // Od tyłu do przodu (mniejsze x + y wcześniej).
     for (const ind of [...industries].sort((a, b) => a.x + a.y - (b.x + b.y))) {
       const g = new Graphics();
-      if (!gfxOn() || !drawIndustryTiles(g, map, ind.x, ind.y, ind.type)) {
-        if (!buildingsHidden()) drawIndustry(g, ind);
-      }
+      // Z grafiką OpenGFX zakłady rysuje mapa (kafelek po kafelku, w kolejności z domami).
+      if (!gfxOn() && !buildingsHidden()) drawIndustry(g, ind);
       const [w, h] = industryDef(ind.type)!.size;
       const left = tileToWorldFlat(ind.x, ind.y + h).x;
       const right = tileToWorldFlat(ind.x + w, ind.y).x;

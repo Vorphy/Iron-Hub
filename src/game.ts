@@ -107,6 +107,7 @@ export class Game {
       () => this.sim.state.bridges,
       () => this.sim.state.tunnels,
       () => this.sim.state.stations,
+      () => this.sim.state.industries,
     );
     world.addChild(
       this.mapRenderer.container,
@@ -124,7 +125,7 @@ export class Game {
     );
     this.loop.onBeforeStep = () => this.trains.capture(this.sim.state);
     this.labels.rebuild(state);
-    this.industries.draw(state.industries, state.map);
+    this.industries.draw(state.industries);
     this.bridges.draw(state);
     this.tunnels.draw(state);
     app.stage.addChild(world);
@@ -179,7 +180,7 @@ export class Game {
   redrawAll(): void {
     const state = this.sim.state;
     this.mapRenderer.markAllDirty();
-    this.industries.draw(state.industries, state.map);
+    this.industries.draw(state.industries);
     this.bridges.draw(state);
     this.tunnels.draw(state);
   }

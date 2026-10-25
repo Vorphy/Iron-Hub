@@ -478,7 +478,28 @@ export function drawDepotTile(g: Graphics, objects: Graphics, map: WorldMap, x: 
 
 // ------------------------------------------------------------------ zakłady
 
-/** Zakład z kafelków TTD (układ przygotowany przez build_atlas.py w naszym układzie osi). */
+/**
+ * Kafelek zakładu rysowany razem z mapą (w kolejności głębokości z domami): grunt w warstwie terenu,
+ * budynek w warstwie obiektów. Kafelek bez części w układzie – sam teren.
+ */
+export function drawIndustryTile(
+  g: Graphics,
+  objects: Graphics,
+  map: WorldMap,
+  x: number,
+  y: number,
+  ind: { x: number; y: number; type: string },
+): void {
+  const t = gfxData().industries[ind.type]?.find((k) => ind.x + k.x === x && ind.y + k.y === y);
+  if (!t) return drawGround(g, map, x, y);
+  const { z } = tileSlope(map, x, y);
+  const o = tileOrigin(x, y, z);
+  drawSprite(g, t.ground, o.x, o.y);
+  if (buildingsHidden()) return;
+  const p = subTile(x, y, z, t.dx, t.dy);
+  drawSprite(objects, t.building, p.x, p.y);
+}
+
 /** Budynek jednego kafelka zakładu (x, y) – do dorysowania przed pojazdem, który zasłania. */
 export function drawIndustryBuilding(
   g: Graphics,
@@ -494,23 +515,4 @@ export function drawIndustryBuilding(
   const { z } = tileSlope(map, x, y);
   const p = subTile(x, y, z, t.dx, t.dy);
   drawSprite(g, t.building, p.x, p.y);
-}
-
-export function drawIndustryTiles(g: Graphics, map: WorldMap, ix: number, iy: number, type: string): boolean {
-  const tiles = gfxData().industries[type];
-  if (!tiles) return false;
-  const sorted = [...tiles].sort((a, b) => a.x + a.y - (b.x + b.y));
-  // Najpierw cały grunt, potem budynki od tyłu do przodu.
-  for (const t of sorted) {
-    const { z } = tileSlope(map, ix + t.x, iy + t.y);
-    const o = tileOrigin(ix + t.x, iy + t.y, z);
-    drawSprite(g, t.ground, o.x, o.y);
-  }
-  if (buildingsHidden()) return true;
-  for (const t of sorted) {
-    const { z } = tileSlope(map, ix + t.x, iy + t.y);
-    const p = subTile(ix + t.x, iy + t.y, z, t.dx, t.dy);
-    drawSprite(g, t.building, p.x, p.y);
-  }
-  return true;
 }

@@ -1,4 +1,5 @@
 import { Container, Graphics, Rectangle, Sprite, Texture, type Renderer } from 'pixi.js';
+import type { Industry } from '../sim/economy/industry';
 import type { Depot } from '../sim/depot/depot';
 import type { Station } from '../sim/station/station';
 import { axisTrack, bridgeRole, type Bridge } from '../sim/track/bridge';
@@ -21,6 +22,7 @@ import {
   drawDepotTile,
   drawGround,
   drawHouseTile,
+  drawIndustryTile,
   drawRoadGround,
   drawStationTile,
   drawRampPit,
@@ -93,6 +95,7 @@ export class MapRenderer {
     private readonly getBridges: () => readonly Bridge[],
     private readonly getTunnels: () => readonly Tunnel[],
     private readonly getStations: () => readonly Station[],
+    private readonly getIndustries: () => readonly Industry[],
   ) {
     this.container.addChild(this.terrainLayer, this.trackLayer, this.farLayer);
     this.chunksX = Math.ceil(map.width / CHUNK);
@@ -235,8 +238,8 @@ export class MapRenderer {
     const y0 = cy * CHUNK;
     const left = tileToWorldFlat(x0, y0 + CHUNK).x - TILE_W / 2;
     const right = tileToWorldFlat(x0 + CHUNK, y0).x + TILE_W / 2;
-    // Teren i budynki mogą sięgać wyżej o maksymalną wysokość (+ zapas na kominy).
-    const top = tileToWorldFlat(x0, y0).y - MAX_HEIGHT * HEIGHT_PX - 64;
+    // Teren i budynki mogą sięgać wyżej o maksymalną wysokość (+ zapas na kominy i chłodnie).
+    const top = tileToWorldFlat(x0, y0).y - MAX_HEIGHT * HEIGHT_PX - 112;
     const bottom = tileToWorldFlat(x0 + CHUNK, y0 + CHUNK).y + TILE_H;
     return { x: left, y: top, w: right - left, h: bottom - top };
   }
@@ -290,7 +293,11 @@ export class MapRenderer {
     else if (depot) drawDepotTile(g, objects, map, x, y, depot);
     else if (map.road[i]) drawRoadGround(g, map, x, y, roadNeighbors(map, x, y), bits);
     else if (map.house[i]) drawHouseTile(g, objects, map, x, y, map.house[i]!);
-    else if (drawnBits) {
+    else if (map.industry[i] && !drawnBits) {
+      const ind = this.getIndustries().find((d) => d.id === map.industry[i]);
+      if (ind) drawIndustryTile(g, objects, map, x, y, ind);
+      else drawGround(g, map, x, y);
+    } else if (drawnBits) {
       drawTrackGround(g, map, x, y, drawnBits);
       const down = rampDown(map, x, y);
       if (down !== null) drawRampPit(g, map, x, y, down);
