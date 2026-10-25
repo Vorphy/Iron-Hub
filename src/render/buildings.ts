@@ -7,7 +7,7 @@ import { darken, drawBox, drawChimney, drawGableRoof, drawPile, drawTree, lighte
 import { inBounds, type WorldMap } from '../sim/world/map';
 import { gfxOn } from './gfx/gfx';
 import { buildingsHidden } from './visibility';
-import { drawHouseBuilding, drawIndustryBuilding, drawIndustryTiles, drawStationFront } from './gfx/tiles';
+import { drawHouseBuilding, drawIndustryBuilding, drawIndustryTiles, drawStationFront, drawTrees, tileTrees } from './gfx/tiles';
 import type { GameState } from '../sim/state';
 
 // Placeholder – proste bryły do czasu podpięcia grafiki.
@@ -30,54 +30,71 @@ export function drawHouse(g: Graphics, x: number, y: number, level: number, hash
 /** Głębokość domu do sortowania z pojazdami (środek kafelka, x + y). */
 export const houseDepth = (map: WorldMap, i: number) => (i % map.width) + Math.floor(i / map.width) + 1;
 
-/**
- * Obiekty (domy, a z grafiką OpenGFX także perony i zakłady), które trzeba dorysować przed
- * pojazdem w (fx, fy): stoją przed nim (większe x + y) i nachodzą na niego na ekranie – oraz,
- * po kolei, wszystkie obiekty stojące przed nimi i na nie nachodzące. Bez tego dorysowany dom
- * przykrywałby sąsiada stojącego bliżej widza i budynki „przeskakiwały” przy każdym aucie.
- */
-export function housesInFront(state: GameState, fx: number, fy: number, out: Set<number>): void {
-  if (buildingsHidden()) return;
-  const { map } = state;
-  const sprites = gfxOn();
-  const isObject = (x: number, y: number): boolean => {
+/** Zbiór obiektów dorysowywanych nad pojazdami w jednej klatce (wspólny dla wszystkich pojazdów). */
+export class FrontObjects {
+  readonly tiles = new Set<number>();
+  private readonly queue: number[] = [];
+
+  constructor(private readonly state: GameState) {}
+
+  /** Obiekt mogący zasłonić coś za sobą: dom, a z grafiką OpenGFX też peron, zakład i drzewa. */
+  private isObject(x: number, y: number, trees: boolean): boolean {
+    const { map } = this.state;
     if (!inBounds(map, x, y)) return false;
     const i = y * map.width + x;
-    // Drzew nie dorysowujemy: w gęstym lesie każde zasłania kolejne i las migotałby przy każdym pojeździe.
-    return map.house[i] !== 0 || (sprites && (map.station[i] !== 0 || map.industry[i] !== 0));
-  };
-  const x0 = Math.floor(fx);
-  const y0 = Math.floor(fy);
-  const depth = fx + fy;
-  // Kolumna ekranu (x − y): obiekt nachodzi na sąsiada, gdy różnica kolumn ≤ 2 (kafelek ma 2 kolumny szerokości).
-  const queue: number[] = [];
-  const add = (x: number, y: number) => {
-    const i = y * map.width + x;
-    if (out.has(i) || !isObject(x, y)) return;
-    out.add(i);
-    queue.push(i);
-  };
-  for (let dy = -2; dy <= 5; dy++) {
-    for (let dx = -2; dx <= 5; dx++) {
-      const x = x0 + dx;
-      const y = y0 + dy;
-      if (x + y + 1 > depth && Math.abs(dx - dy) <= 2 && dx + dy <= 6) add(x, y);
+    if (map.house[i]) return true;
+    if (!gfxOn()) return false;
+    return map.station[i] !== 0 || map.industry[i] !== 0 || (trees && tileTrees(map, x, y) > 0);
+  }
+
+  private add(x: number, y: number, trees: boolean): void {
+    const i = y * this.state.map.width + x;
+    if (this.tiles.has(i) || !this.isObject(x, y, trees)) return;
+    this.tiles.add(i);
+    this.queue.push(i);
+  }
+
+  /**
+   * Obiekty, które zasłaniają pojazd w (fx, fy): stoją przed nim (większe x + y) i nachodzą na niego
+   * na ekranie (kolumna x − y różni się najwyżej o 2). Drzewa same pojazdów nie zasłaniają (w lesie
+   * każde zasłania kolejne) – trafiają tu tylko przez `close()`.
+   */
+  addVehicle(fx: number, fy: number): void {
+    if (buildingsHidden()) return;
+    const x0 = Math.floor(fx);
+    const y0 = Math.floor(fy);
+    for (let dy = -2; dy <= 5; dy++) {
+      for (let dx = -2; dx <= 5; dx++) {
+        const x = x0 + dx;
+        const y = y0 + dy;
+        if (x + y + 1 > fx + fy && Math.abs(dx - dy) <= 2 && dx + dy <= 6) this.add(x, y, false);
+      }
     }
   }
-  // Domknięcie: co stoi przed już dorysowanym i na niego nachodzi, też musi być dorysowane.
-  for (let k = 0; k < queue.length && out.size < 200; k++) {
-    const i = queue[k]!;
-    const x = i % map.width;
-    const y = Math.floor(i / map.width);
-    for (let dy = -1; dy <= 2; dy++) {
-      for (let dx = -1; dx <= 2; dx++) {
-        if (dx + dy >= 1 && Math.abs(dx - dy) <= 2 && x + dx + y + dy - depth <= 8) add(x + dx, y + dy);
+
+  /**
+   * Domknięcie: wszystko, co stoi przed dorysowanym obiektem i na niego nachodzi, też trzeba dorysować –
+   * inaczej dom z tyłu przykryłby bliższego sąsiada i budynki „przeskakiwały” przy każdym pojeździe.
+   */
+  close(): void {
+    const { map } = this.state;
+    for (let k = 0; k < this.queue.length && this.tiles.size < MAX_FRONT_OBJECTS; k++) {
+      const i = this.queue[k]!;
+      const x = i % map.width;
+      const y = Math.floor(i / map.width);
+      for (let dy = -1; dy <= 2; dy++) {
+        for (let dx = -1; dx <= 2; dx++) {
+          if (dx + dy >= 1 && Math.abs(dx - dy) <= 2) this.add(x + dx, y + dy, true);
+        }
       }
     }
   }
 }
 
-/** Dorysowuje obiekty kafelka zasłaniające pojazd: dom, budynek zakładu albo przód peronu z zadaszeniem. */
+/** Zabezpieczenie wydajności – w praktyce domknięcie kończy się wcześniej (brzeg miasta). */
+const MAX_FRONT_OBJECTS = 4000;
+
+/** Dorysowuje obiekt kafelka nad pojazdami: dom, budynek zakładu, przód peronu z zadaszeniem albo drzewa. */
 export function redrawHouse(g: Graphics, state: GameState, i: number): void {
   const { map } = state;
   const x = i % map.width;
@@ -97,6 +114,8 @@ export function redrawHouse(g: Graphics, state: GameState, i: number): void {
     if (station && !station.waypoint) drawStationFront(g, map, x, y, station);
     return;
   }
+  const trees = tileTrees(map, x, y);
+  if (trees) drawTrees(g, map, x, y, trees);
 }
 
 /** Wszystkie zakłady w jednej warstwie (jest ich kilkanaście – rysowane raz, odświeżane po zmianach). */

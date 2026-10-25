@@ -40,7 +40,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
       'Menu → Widok → Grafika: powrót do prostych kształtów (np. na słabszym komputerze).',
       'Klawisz U (albo Menu → Widok → Budynki) ukrywa domy, zakłady, drzewa i dachy peronów – widać tory, które zasłaniały.',
       'Domy nie zmieniają już wyglądu co rok – każdy ma swój budynek, który zmienia się dopiero przy rozbudowie.',
-      'Domy i drzewa nie migoczą już, gdy obok przejeżdżają auta i pociągi.',
+      'Budynki w miastach nie „przeskakują” już przy jadących autach i pociągach – wcześniej domy z tyłu potrafiły wyskoczyć nad te z przodu i miasto zdawało się ciągle zmieniać. Auta i pociągi są teraz rysowane razem, w jednej kolejności z budynkami.',
     ],
   },
   {

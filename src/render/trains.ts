@@ -3,7 +3,8 @@ import type { GameState } from '../sim/state';
 import { vehiclePoses, type Point3, type VehiclePose } from '../sim/trains/geometry';
 import { toWorld, type Point } from './iso';
 import { drawSprite, gfxData, gfxOn, palKey, ttdDirection } from './gfx/gfx';
-import { houseDepth, housesInFront, redrawHouse } from './buildings';
+import { FrontObjects, houseDepth, redrawHouse } from './buildings';
+import type { StreetVehicle } from './traffic';
 import { bridgeAbove, drawBridge } from './bridges';
 import type { Bridge } from '../sim/track/bridge';
 
@@ -38,7 +39,8 @@ export class TrainRenderer {
     for (const t of state.trains) for (const p of vehiclePoses(state, t)) this.prev.set(`${t.id}:${p.index}`, p);
   }
 
-  draw(state: GameState, alpha: number, selectedId: number | null): void {
+  /** Pociągi i auta (`cars` z ruchu ulicznego) w jednej kolejności z budynkami, które je zasłaniają. */
+  draw(state: GameState, alpha: number, selectedId: number | null, cars: readonly StreetVehicle[] = []): void {
     const g = this.gfx;
     g.clear();
     const items: Drawn[] = [];
@@ -50,15 +52,18 @@ export class TrainRenderer {
         items.push({ trainId: t.id, pose, depth, engine: t.engine, reversed: t.reversed });
       }
     }
-    // Domy przed pociągiem zasłaniają go – dorysowujemy je w kolejności głębokości.
-    const houses = new Set<number>();
+    // Budynki przed pojazdami zasłaniają je – dorysowujemy je (z tym, co stoi przed nimi) w kolejności głębokości.
+    const front = new FrontObjects(state);
     for (const it of items) {
       const { front: f, back: b } = it.pose;
-      housesInFront(state, (f.x + b.x) / 2, (f.y + b.y) / 2, houses);
+      front.addVehicle((f.x + b.x) / 2, (f.y + b.y) / 2);
     }
-    const order: ({ depth: number; item: Drawn } | { depth: number; house: number })[] = [
+    for (const c of cars) front.addVehicle(c.x, c.y);
+    front.close();
+    const order: ({ depth: number; item: Drawn } | { depth: number; house: number } | { depth: number; car: StreetVehicle })[] = [
       ...items.map((item) => ({ depth: item.depth, item })),
-      ...[...houses].map((house) => ({ depth: houseDepth(state.map, house), house })),
+      ...cars.map((car) => ({ depth: car.depth, car })),
+      ...[...front.tiles].map((house) => ({ depth: houseDepth(state.map, house), house })),
     ];
     order.sort((a, b) => a.depth - b.depth);
     this.hits = [];
@@ -84,6 +89,10 @@ export class TrainRenderer {
     for (const o of order) {
       if ('house' in o) {
         redrawHouse(g, state, o.house);
+        continue;
+      }
+      if ('car' in o) {
+        o.car.draw(g);
         continue;
       }
       if (!under.has(o.item)) drawItem(o.item);

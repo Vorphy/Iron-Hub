@@ -415,10 +415,10 @@ export class Game {
     this.industries.cull(this.camera.viewRect());
     // Ruch uliczny w tempie gry (stoi w pauzie).
     const gameSeconds = (Math.min(deltaMs, 250) * this.loop.speed) / 1000;
-    this.traffic.update(this.sim.state, deltaMs, gameSeconds, this.camera.viewRect(), this.camera.zoom);
+    const cars = this.traffic.update(this.sim.state, deltaMs, gameSeconds, this.camera.viewRect(), this.camera.zoom);
     const win = hudStore.get().window;
     this.signals.draw(this.sim.state);
-    this.trains.draw(this.sim.state, this.loop.alpha, win?.kind === 'train' ? win.trainId : null);
+    this.trains.draw(this.sim.state, this.loop.alpha, win?.kind === 'train' ? win.trainId : null, cars);
     if (this.tools.tool === 'signal' && this.sim.state.signalMode !== 'manual') this.setTool('cursor');
     this.tools.update();
     this.updateMinimap(deltaMs);

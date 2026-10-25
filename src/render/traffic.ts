@@ -6,7 +6,6 @@ import { inBounds, type WorldMap } from '../sim/world/map';
 import type { Rect } from './camera';
 import { tileCenter, tileToWorld, type Point } from './iso';
 import { darken, hull } from './trains';
-import { houseDepth, housesInFront, redrawHouse } from './buildings';
 import { drawSprite, gfxData, gfxOn, palKey, ttdDirection } from './gfx/gfx';
 import { gfxYear } from './gfx/tiles';
 
@@ -42,6 +41,14 @@ const DIRS = [
   [0, 1],
   [-1, 0],
 ] as const;
+
+/** Auto do narysowania: położenie (kafelki), głębokość do sortowania i rysowanie. */
+export interface StreetVehicle {
+  x: number;
+  y: number;
+  depth: number;
+  draw: (g: Graphics) => void;
+}
 
 interface Vehicle {
   kind: Kind;
@@ -82,18 +89,20 @@ export class TrafficRenderer {
   }
 
   /** `gameSeconds` – upływ czasu gry w sekundach (0 w pauzie). */
-  update(state: GameState, deltaMs: number, gameSeconds: number, view: Rect, zoom: number): void {
-    const g = this.gfx;
-    g.clear();
-    if (!this.enabledFlag || zoom < MIN_ZOOM) return;
+  /**
+   * Przesuwa auta i zwraca je do narysowania – rysuje je renderer pociągów razem z pociągami
+   * i budynkami, żeby wszystko zasłaniało się w jednej, wspólnej kolejności.
+   */
+  update(state: GameState, deltaMs: number, gameSeconds: number, view: Rect, zoom: number): StreetVehicle[] {
+    if (!this.enabledFlag || zoom < MIN_ZOOM) return [];
     this.sinceRefresh += deltaMs;
     if (this.sinceRefresh >= REFRESH_MS) {
       this.sinceRefresh = 0;
       this.refresh(state, view);
     }
     const { map } = state;
-    const drawn: ({ depth: number; v: Vehicle; pose: Pose } | { depth: number; house: number })[] = [];
-    const houses = new Set<number>();
+    const out: StreetVehicle[] = [];
+    const sprites = gfxOn();
     for (const tt of this.towns.values()) {
       for (const v of tt.vehicles) {
         if (!this.advance(map, v, gameSeconds * SPEED[v.kind])) {
@@ -101,18 +110,17 @@ export class TrafficRenderer {
           continue;
         }
         const pose = vehiclePose(map, v);
-        drawn.push({ v, pose, depth: pose.x + pose.y });
-        housesInFront(state, pose.x, pose.y, houses);
+        out.push({
+          x: pose.x,
+          y: pose.y,
+          depth: pose.x + pose.y,
+          draw: (g) => {
+            if (!sprites || !drawVehicleSprite(g, pose, v)) drawCar(g, pose, v);
+          },
+        });
       }
     }
-    // Domy przed autami zasłaniają je – dorysowujemy je w kolejności głębokości.
-    for (const house of houses) drawn.push({ depth: houseDepth(map, house), house });
-    drawn.sort((p, q) => p.depth - q.depth);
-    const sprites = gfxOn();
-    for (const d of drawn) {
-      if ('house' in d) redrawHouse(g, state, d.house);
-      else if (!sprites || !drawVehicleSprite(g, d.pose, d.v)) drawCar(g, d.pose, d.v);
-    }
+    return out;
   }
 
   /** Miasta przy widoku dostają ruch; dalsze go tracą. */
