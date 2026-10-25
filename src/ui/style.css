@@ -910,7 +910,6 @@ input.seed {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  cursor: pointer;
 }
 .depot-row.selected {
   border-color: var(--accent);
@@ -924,7 +923,8 @@ input.seed {
   cursor: default;
   border-style: dashed;
 }
-.depot-name {
+.panel button.depot-name {
+  text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

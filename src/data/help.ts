@@ -143,7 +143,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     title: 'Pociągi i zajezdnie',
     blocks: [
       `Zajezdnia (Z): klik obok toru, ${zl(E.construction.depot)}. Kierunek wjazdu w panelu obok narzędzi albo R; „Auto” obraca wjazd w stronę toru.`,
-      `Kliknij zajezdnię → **Nowe pojazdy** (jak w OpenTTD): w zakładce Lokomotywy „Kup” tworzy nowy pociąg; w zakładce Wagony „Kup i doczep” dokłada wagon do wybranego pociągu (klik na jego rząd), „Kup do wolnych wagonów” – luzem. Do ${MAX_WAGONS} wagonów. Pociąg czeka w zajezdni, aż ułożysz rozkład i klikniesz ▶.`,
+      `Kliknij zajezdnię → **Nowe pojazdy** (jak w OpenTTD): w zakładce Lokomotywy „Kup” tworzy nowy pociąg; w zakładce Wagony „Kup i doczep” dokłada wagon do wybranego pociągu (klik na jego nazwę), „Kup do wolnych wagonów” – luzem. Do ${MAX_WAGONS} wagonów. Pociąg czeka w zajezdni, aż ułożysz rozkład i klikniesz ▶.`,
       `Sprzedaż tylko w zajezdni: wagony – zwrot ${pct(E.refunds.trainResale)} ceny, lokomotywa – zależnie od wieku (patrz Wymiana lokomotyw).`,
       `Koszt utrzymania (rocznie, tylko poza zajezdnią): lokomotywa parowa ${pct(E.trainRunningCost.traction.steam)} ceny, spalinowa ${pct(E.trainRunningCost.traction.diesel)}, elektryczna ${pct(E.trainRunningCost.traction.electric)}; wagony ${pct(E.trainRunningCost.wagon)}.`,
       'Okno pociągu (klik na pociąg): start/stop, „Do zajezdni”, „Zawróć”, „Pokaż”, zysk, grupa, rozkład i wymiana lokomotywy.',

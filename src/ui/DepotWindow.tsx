@@ -111,7 +111,7 @@ export function DepotWindow({ data, money, actions }: { data: DepotWindowData; m
       {data.trains.length === 0 && <div class="muted">Pusto – kup lokomotywę w „Nowe pojazdy”, to będzie nowy pociąg.</div>}
       {data.trains.length > 0 && (
         <div class="muted small">
-          Przeciągaj wagony między pociągami, do wolnych wagonów albo do kosza. Klik na rząd – wybór pociągu.
+          Przeciągaj wagony między pociągami, do wolnych wagonów albo do kosza. Klik na nazwę – wybór pociągu.
         </div>
       )}
       {data.trains.map((t) => {
@@ -120,7 +120,6 @@ export function DepotWindow({ data, money, actions }: { data: DepotWindowData; m
           <div
             key={t.id}
             class={`depot-row ${t.id === selected ? 'selected' : ''} ${hover === `t${t.id}` ? 'drop' : ''}`}
-            onClick={() => setSelected(t.id === selected ? null : t.id)}
             {...dropZone(`t${t.id}`, (e) => dropOnTrain(e, t))}
           >
             <div class="row">
@@ -147,10 +146,15 @@ export function DepotWindow({ data, money, actions }: { data: DepotWindowData; m
                   ■
                 </button>
               )}
-              <span class="grow depot-name">
-                {t.name}
+              <button
+                type="button"
+                class="link grow depot-name"
+                onClick={() => setSelected(t.id === selected ? null : t.id)}
+                title="Wybierz – do tego pociągu trafią kupowane i klikane wolne wagony"
+              >
+                {t.id === selected ? '◉' : '○'} {t.name}
                 {!t.stopped && <span class="status small"> · {t.status}</span>}
-              </span>
+              </button>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -181,15 +185,16 @@ export function DepotWindow({ data, money, actions }: { data: DepotWindowData; m
             </div>
             <div class="vehicle-strip">
               {Array.from({ length: t.engineCount }, (_, k) => (
-                <span
+                <button
                   key={`e${k}`}
+                  type="button"
                   class="veh"
                   draggable
                   onDragStart={startDrag({ from: 'engine', trainId: t.id, k })}
                   title={`${engineDef(t.engine)!.name}${k > 0 ? ' (druga – przeciągnij do kosza, by sprzedać)' : ' – przeciągnij do kosza, by sprzedać lokomotywę'}`}
                 >
                   <VehicleIcon type={t.engine} engine pal={pal} />
-                </span>
+                </button>
               ))}
               {t.wagons.map((w, i) => (
                 <button
@@ -400,7 +405,7 @@ function BuyVehicles({
               </button>
             </div>
             {!target && (
-              <div class="muted small">Wybierz pociąg (klik na rząd), żeby kupowane wagony od razu się doczepiały.</div>
+              <div class="muted small">Wybierz pociąg (klik na jego nazwę), żeby kupowane wagony od razu się doczepiały.</div>
             )}
           </div>
         </>

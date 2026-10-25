@@ -26,7 +26,7 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
   },
   {
     title: 'Kup pociąg',
-    hint: 'Kliknij zajezdnię kursorem → Nowe pojazdy: kup lokomotywę, wybierz nowy pociąg (klik na rząd) i w zakładce Wagony dokup wagony (pasażerskie dla miast, węglarki dla kopalni).',
+    hint: 'Kliknij zajezdnię kursorem → Nowe pojazdy: kup lokomotywę, wybierz nowy pociąg (klik na jego nazwę) i w zakładce Wagony dokup wagony (pasażerskie dla miast, węglarki dla kopalni).',
     done: (s) => s.trains.length > 0,
   },
   {
