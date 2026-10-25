@@ -1,4 +1,5 @@
 import { BEND_PENALTY, FULL_LOAD_PENALTY, OCCUPIED_PENALTY, REVERSE_PENALTY } from '../config';
+import { isUnderTrack } from '../track/metro';
 import type { SignalIndex } from '../signals/signals';
 import type { GameState } from '../state';
 import { getTrackBits, SIDE_DELTA, Track } from '../track/track';
@@ -98,7 +99,8 @@ export function planRoute(state: GameState, train: Train, ctx: RouteContext): Pl
   const next = (s: Step) => {
     let out = successors(state, s);
     if (manual) out = out.filter((n) => !ctx.signals.forbids(n));
-    if (electric) out = out.filter((n) => isElectrified(state.map, n.x, n.y));
+    // Metro ma zasilanie z trzeciej szyny – pod ziemią jeździ każda lokomotywa elektryczna.
+    if (electric) out = out.filter((n) => isUnderTrack(n.track) || isElectrified(state.map, n.x, n.y));
     return out;
   };
   if (!goal) return wander(head, next);

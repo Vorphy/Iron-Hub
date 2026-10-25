@@ -134,8 +134,9 @@ export function levelDiagonal(map: WorldMap, x: number, y: number, track: number
   return false;
 }
 
-/** Przyczółek mostu albo portal tunelu: koniec takiej budowli (tor w osi, nie do ruszania osobno). */
+/** Przyczółek mostu, portal tunelu albo zjazd do metra: tor w osi, nie do ruszania osobno. */
 function isBridgeHead(map: WorldMap, x: number, y: number): boolean {
+  if (map.ramp[y * map.width + x]) return true;
   return isStructureEnd(map, map.bridge, x, y) || isStructureEnd(map, map.tunnel, x, y);
 }
 

@@ -15,7 +15,7 @@ export function canHaveRoad(map: WorldMap, x: number, y: number, town?: Town): b
   const i = y * map.width + x;
   if (map.terrain[i] === Terrain.Water || !isFlat(map, x, y)) return false;
   // Miasto nie buduje dróg przez perony, zajezdnie, budynki ani mosty/tunele.
-  if (map.station[i] || map.depot[i] || hasBuilding(map, i) || map.bridge[i] || map.tunnel[i]) return false;
+  if (map.station[i] || map.depot[i] || hasBuilding(map, i) || map.bridge[i] || map.tunnel[i] || map.ramp[i]) return false;
   const bits = map.track[i]!;
   return bits === 0 || (!!town && bits === crossingTrack(town, x, y));
 }

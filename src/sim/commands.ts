@@ -5,6 +5,7 @@ import { dropOrphanSignals, placeSignal, removeSignal, type SignalMode } from '.
 import type { GameState } from './state';
 import { buildStation, buildWaypoint, removeStationTile, type StationAxis } from './station/station';
 import { buildTrack, removeTrack } from './track/build';
+import { buildRamp, buildUnderTrack, removeRamp, removeUnderTrack } from './track/metro';
 import { buildCatenary, dropOrphanCatenary } from './track/catenary';
 import { attachWagon, buyWagon, detachWagon, sellEngine, sellSpareWagon, setEngineCount } from './trains/consist';
 import { createGroup, deleteGroup, renameGroup, setTrainGroup } from './trains/groups';
@@ -35,8 +36,11 @@ import { applyTerraform, levelTargets, planTerraform, terraformTargets } from '.
 /** Jedyny sposób zmiany stanu gry z zewnątrz. */
 export type Command =
   | { type: 'clearTile'; x: number; y: number }
-  | { type: 'buildTrack'; pieces: TrackPiece[] }
-  | { type: 'removeTrack'; pieces: TrackPiece[] }
+  /** `under` – tory metra (poziom −1). */
+  | { type: 'buildTrack'; pieces: TrackPiece[]; under?: boolean }
+  | { type: 'removeTrack'; pieces: TrackPiece[]; under?: boolean }
+  /** Zjazd do metra: prosty tor schodzący pod ziemię bokiem `down`. */
+  | { type: 'buildRamp'; x: number; y: number; down: Side }
   /** Peron obok istniejącej stacji ją rozbudowuje; `separate` – osobna stacja. */
   | { type: 'buildStation'; x0: number; y0: number; x1: number; y1: number; axis: StationAxis; separate?: boolean }
   /** Punkt kontrolny na istniejącym prostym torze. */
@@ -129,6 +133,8 @@ export type SimEvent =
   | { type: 'signalsChanged' }
   | { type: 'bridgesChanged' }
   | { type: 'tunnelsChanged' }
+  /** Zmiana torów, zjazdów lub stacji metra (renderer poziomu −1 rysuje się od nowa). */
+  | { type: 'undergroundChanged' }
   /** Zapłata za dostawę – (x, y) w układzie logicznym, do napisu nad pociągiem. */
   | { type: 'income'; amount: number; x: number; y: number }
   /** Zamknięcie miesiąca z ujemnym saldem: tyle miesięcy do bankructwa. */
@@ -160,9 +166,11 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
     case 'clearTile':
       return clearTile(state, cmd.x, cmd.y, events);
     case 'buildTrack':
-      return buildTrack(state, cmd.pieces, events);
+      return cmd.under ? buildUnderTrack(state, cmd.pieces, events) : buildTrack(state, cmd.pieces, events);
     case 'removeTrack':
-      return removeTrack(state, cmd.pieces, events);
+      return cmd.under ? removeUnderTrack(state, cmd.pieces, events) : removeTrack(state, cmd.pieces, events);
+    case 'buildRamp':
+      return buildRamp(state, cmd.x, cmd.y, cmd.down, events);
     case 'buildStation':
       return buildStation(state, cmd.x0, cmd.y0, cmd.x1, cmd.y1, cmd.axis, events, cmd.separate === true);
     case 'buildWaypoint':
@@ -258,6 +266,7 @@ function clearTile(state: GameState, x: number, y: number, events: SimEvent[]): 
   if (occupiedTiles(state).has(y * map.width + x)) return { ok: false, reason: 'trainInWay' };
   if (map.station[y * map.width + x]) return removeStationTile(state, x, y, events);
   const i = y * map.width + x;
+  if (map.ramp[i]) return removeRamp(state, x, y, events);
   if (map.industry[i]) return { ok: false, reason: 'industry' };
   // Portal tunelu – rozbiórka całego tunelu.
   const tunnel = tunnelAt(state, x, y);

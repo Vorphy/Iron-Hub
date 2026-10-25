@@ -3,6 +3,7 @@ import { axisTrack, bridgeAt, bridgeRole, bridgeTrack, headSpanSide, isBridgeTra
 import { pieceLength, STRAIGHT_LENGTH } from '../track/graph';
 import { isTunnelTrack, portalInnerSide, tunnelAt, tunnelRole, tunnelTrack } from '../track/tunnel';
 import { heightAt } from '../world/height';
+import { baseTrack, isUnderTrack, rampDown, rampTrack, underEntries } from '../track/metro';
 import { oppositeSide, Side, SIDE_DELTA, Track, TRACK_SIDES, tracksOn } from '../track/track';
 import { inBounds } from '../world/map';
 import type { Step } from './train';
@@ -21,6 +22,7 @@ const MID: Record<number, readonly [number, number]> = {
 
 export function stepLength(s: Step): number {
   if (s.track === 0) return DEPOT_STUB_LENGTH;
+  if (isUnderTrack(s.track)) return pieceLength(baseTrack(s.track));
   if (isBridgeTrack(s.track) || isTunnelTrack(s.track)) return STRAIGHT_LENGTH;
   return pieceLength(s.track as Track);
 }
@@ -29,11 +31,30 @@ export function flipStep(s: Step): Step {
   return { x: s.x, y: s.y, track: s.track, entry: s.exit, exit: s.entry };
 }
 
-const TRACK_INDEX: Record<number, number> = { 0: 0, 1: 1, 2: 2, 4: 3, 8: 4, 16: 5, 32: 6, 64: 7, 128: 8, 256: 9, 512: 10 };
+const TRACK_INDEX: Record<number, number> = {
+  0: 0,
+  1: 1,
+  2: 2,
+  4: 3,
+  8: 4,
+  16: 5,
+  32: 6,
+  64: 7,
+  128: 8,
+  256: 9,
+  512: 10,
+  // Metro (poziom −1).
+  1024: 11,
+  2048: 12,
+  4096: 13,
+  8192: 14,
+  16384: 15,
+  32768: 16,
+};
 
 /** Jednoznaczny klucz skierowanego odcinka (do słowników w wyszukiwaniu trasy). */
 export function stepKey(s: Step, mapWidth: number): number {
-  return ((s.y * mapWidth + s.x) * 11 + TRACK_INDEX[s.track]!) * 5 + (s.entry + 1);
+  return ((s.y * mapWidth + s.x) * 17 + TRACK_INDEX[s.track]!) * 5 + (s.entry + 1);
 }
 
 /**
@@ -49,6 +70,17 @@ export function successors(state: GameState, s: Step): Step[] {
   if (!inBounds(map, x, y)) return [];
   const entry = oppositeSide(s.exit);
   const straight = (track: number): Step => ({ x, y, track, entry, exit: oppositeSide(entry) });
+  const metro = () => underEntries(map, x, y, entry).map((e) => ({ x, y, track: e.track, entry, exit: e.exit }));
+
+  // Metro: pod ziemią tylko tory metra, a w zjazd – od jego dolnego boku – na powierzchnię.
+  if (isUnderTrack(s.track)) {
+    const down = rampDown(map, x, y);
+    if (down !== null && entry === down) return [straight(rampTrack(down))];
+    return metro();
+  }
+  // Zjazd: dolnym bokiem prosto pod ziemię; od dolnego boku nie wjeżdża się torem po powierzchni.
+  if (rampDown(map, s.x, s.y) === s.exit) return metro();
+  if (rampDown(map, x, y) === entry) return [];
 
   // Mosty: z rampy na pomost, po pomoście, z pomostu na drugi przyczółek.
   const here = bridgeAt(state, s.x, s.y);
@@ -115,6 +147,13 @@ export function stepHeight(state: GameState, s: Step, d: number): number {
   const tunnel = tunnelAt(state, s.x, s.y);
   if (tunnel && (isTunnelTrack(s.track) || (tunnelRole(tunnel, s.x, s.y) !== 'inside' && s.track === axisTrack(tunnel.axis)))) {
     return tunnel.level;
+  }
+  // Metro: tor pod ziemią poziom niżej niż teren nad nim; zjazd schodzi od powierzchni do tej głębokości.
+  if (isUnderTrack(s.track)) return heightAt(state.map, p.x, p.y) - 1;
+  const down = rampDown(state.map, s.x, s.y);
+  if (down !== null) {
+    const t = d / stepLength(s);
+    return heightAt(state.map, p.x, p.y) - (s.exit === down ? t : 1 - t);
   }
   const bridge = bridgeAt(state, s.x, s.y);
   // Ukos na zboczu leży poziomo – na wysokości swoich końców (środków boków kafelka).

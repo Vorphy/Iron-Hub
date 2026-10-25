@@ -15,7 +15,7 @@ import { engineDef, wagonDef } from './trains/vehicles';
 import { MAX_HEIGHT } from './world/height';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 21;
+export const SAVE_VERSION = 22;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -30,6 +30,9 @@ const LAYERS = {
   tunnel: 2,
   road: 1,
   electric: 1,
+  under: 1,
+  ramp: 1,
+  stationUnder: 4,
 } as const;
 type LayerName = keyof typeof LAYERS;
 
@@ -245,6 +248,11 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     if (Array.isArray(d.stations)) d.stations = d.stations.map((s: Record<string, unknown>) => ({ ...s, waypoint: false }));
     d.version = 21;
   }
+  if (d.version === 21) {
+    // v22: metro – tory, zjazdy i stacje pod ziemią
+    if (d.map) for (const name of ['under', 'ramp', 'stationUnder'] as const) d.map[name] = emptyLayer(name);
+    d.version = 22;
+  }
   return d as Partial<SerializedState>;
 }
 
@@ -272,6 +280,9 @@ export function deserializeState(data: unknown): GameState {
     tunnel: new Uint16Array(bytes('tunnel').buffer),
     road: bytes('road'),
     electric: bytes('electric'),
+    under: bytes('under'),
+    ramp: bytes('ramp'),
+    stationUnder: new Uint32Array(bytes('stationUnder').buffer),
   };
   if (map.heights.some((h) => h > MAX_HEIGHT)) throw new SaveError('Uszkodzone wysokości terenu');
   const ints = [

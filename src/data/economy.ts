@@ -40,6 +40,10 @@ export const ECONOMY = {
     removeRoad: 20,
     /** Sieć trakcyjna nad jednym kafelkiem toru (dla lokomotyw elektrycznych). */
     catenaryTile: 150,
+    /** Element toru metra (pod ziemią – drążenie, kilka razy drożej od zwykłego toru). */
+    metroTrackPiece: 500,
+    /** Zjazd z powierzchni do metra. */
+    metroRamp: 3000,
   },
 
   /** Kredyt i bankructwo. */

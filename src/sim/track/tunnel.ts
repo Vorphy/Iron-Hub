@@ -78,7 +78,7 @@ function portalFree(map: WorldMap, x: number, y: number, axis: 'x' | 'y'): boole
   if (!inBounds(map, x, y)) return false;
   const i = y * map.width + x;
   if (map.terrain[i] === Terrain.Water || map.station[i] || map.depot[i] || hasBuilding(map, i)) return false;
-  if (map.bridge[i] || map.tunnel[i]) return false;
+  if (map.bridge[i] || map.tunnel[i] || map.ramp[i]) return false;
   const bits = map.track[i]!;
   return bits === 0 || bits === axisTrack(axis);
 }

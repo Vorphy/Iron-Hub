@@ -103,6 +103,7 @@ function headDeck(map: WorldMap, x: number, y: number, axis: 'x' | 'y', spanSide
   const i = y * map.width + x;
   if (
     map.terrain[i] === Terrain.Water ||
+    map.ramp[i] ||
     map.station[i] ||
     map.depot[i] ||
     hasBuilding(map, i) ||
@@ -144,7 +145,7 @@ export function planBridge(state: GameState, x0: number, y0: number, x1: number,
   for (const t of tiles.slice(1, -1)) {
     if (!inBounds(map, t.x, t.y)) return fail('blocked');
     const i = t.y * map.width + t.x;
-    if (map.station[i] || map.depot[i] || hasBuilding(map, i) || map.bridge[i]) return fail('blocked', bridge);
+    if (map.station[i] || map.depot[i] || hasBuilding(map, i) || map.bridge[i] || map.ramp[i]) return fail('blocked', bridge);
     if (Math.max(...cornerHeights(map, t.x, t.y)) > bridge.deck - 1) return fail('bridgeLow', bridge);
   }
   const headTracks = [a, b].filter((t) => !map.track[t.y * map.width + t.x]).length;

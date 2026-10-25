@@ -184,7 +184,7 @@ export function planStation(
 function canPlace(map: WorldMap, x: number, y: number, axisTrack: Track): boolean {
   if (!inBounds(map, x, y) || getTerrain(map, x, y) === Terrain.Water) return false;
   const i = y * map.width + x;
-  if (map.station[i] || map.depot[i] || hasBuilding(map, i) || map.bridge[i] || map.tunnel[i]) return false;
+  if (map.station[i] || map.depot[i] || hasBuilding(map, i) || map.bridge[i] || map.tunnel[i] || map.ramp[i]) return false;
   const bits = getTrackBits(map, x, y);
   return bits === 0 || bits === axisTrack;
 }
@@ -262,6 +262,7 @@ export function planWaypoint(state: GameState, x: number, y: number): { cost: nu
     map.depot[i] ||
     map.bridge[i] ||
     map.tunnel[i] ||
+    map.ramp[i] ||
     map.road[i] ||
     !isFlat(map, x, y) ||
     state.signals.some((s) => s.x === x && s.y === y);

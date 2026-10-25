@@ -36,6 +36,12 @@ export interface WorldMap {
   road: Uint8Array;
   /** Sieć trakcyjna nad torem na kafelku (1 – jest). */
   electric: Uint8Array;
+  /** Metro (poziom −1): bity elementów toru pod kafelkiem – jak `track` (patrz track/metro.ts). */
+  under: Uint8Array;
+  /** Zjazd do metra: 0 – brak, inaczej 1 + bok, którym tor schodzi pod ziemię. */
+  ramp: Uint8Array;
+  /** Id stacji podziemnej pod kafelkiem (0 – brak). */
+  stationUnder: Uint32Array;
 }
 
 /** Na kafelku stoi budynek (dom lub zakład) – nie da się tu nic zbudować. */
@@ -89,6 +95,9 @@ export function generateMap(width: number, height: number, seed: number): WorldM
     tunnel: new Uint16Array(n),
     road: new Uint8Array(n),
     electric: new Uint8Array(n),
+    under: new Uint8Array(n),
+    ramp: new Uint8Array(n),
+    stationUnder: new Uint32Array(n),
   };
   matchWaterToHeights(map);
   return map;
