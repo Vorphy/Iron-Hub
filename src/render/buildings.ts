@@ -7,7 +7,7 @@ import { darken, drawBox, drawChimney, drawGableRoof, drawPile, drawTree, lighte
 import { inBounds, type WorldMap } from '../sim/world/map';
 import { gfxOn } from './gfx/gfx';
 import { buildingsHidden } from './visibility';
-import { drawHouseBuilding, drawIndustryBuilding, drawIndustryTiles, drawStationFront, drawTrees, tileTrees } from './gfx/tiles';
+import { drawHouseBuilding, drawIndustryBuilding, drawIndustryTiles, drawStationFront } from './gfx/tiles';
 import type { GameState } from '../sim/state';
 
 // Placeholder – proste bryły do czasu podpięcia grafiki.
@@ -31,31 +31,53 @@ export function drawHouse(g: Graphics, x: number, y: number, level: number, hash
 export const houseDepth = (map: WorldMap, i: number) => (i % map.width) + Math.floor(i / map.width) + 1;
 
 /**
- * Domy (a z grafiką OpenGFX także perony i drzewa), które na ekranie mogą zasłaniać punkt (fx, fy):
- * leżą przed nim (większe x + y) i blisko w poziomie. Pojazdy są rysowane nad mapą, więc takie
- * obiekty dorysowujemy jeszcze raz przed nimi.
+ * Obiekty (domy, a z grafiką OpenGFX także perony i zakłady), które trzeba dorysować przed
+ * pojazdem w (fx, fy): stoją przed nim (większe x + y) i nachodzą na niego na ekranie – oraz,
+ * po kolei, wszystkie obiekty stojące przed nimi i na nie nachodzące. Bez tego dorysowany dom
+ * przykrywałby sąsiada stojącego bliżej widza i budynki „przeskakiwały” przy każdym aucie.
  */
 export function housesInFront(state: GameState, fx: number, fy: number, out: Set<number>): void {
   if (buildingsHidden()) return;
   const { map } = state;
   const sprites = gfxOn();
+  const isObject = (x: number, y: number): boolean => {
+    if (!inBounds(map, x, y)) return false;
+    const i = y * map.width + x;
+    // Drzew nie dorysowujemy: w gęstym lesie każde zasłania kolejne i las migotałby przy każdym pojeździe.
+    return map.house[i] !== 0 || (sprites && (map.station[i] !== 0 || map.industry[i] !== 0));
+  };
   const x0 = Math.floor(fx);
   const y0 = Math.floor(fy);
-  // Z grafiką OpenGFX dalej: chłodnie elektrowni i kominy huty zasłaniają kilka kafelków za sobą.
-  const reach = sprites ? 4 : 3;
-  for (let dy = 0; dy <= reach; dy++) {
-    for (let dx = 0; dx <= reach; dx++) {
+  const depth = fx + fy;
+  // Kolumna ekranu (x − y): obiekt nachodzi na sąsiada, gdy różnica kolumn ≤ 2 (kafelek ma 2 kolumny szerokości).
+  const queue: number[] = [];
+  const add = (x: number, y: number) => {
+    const i = y * map.width + x;
+    if (out.has(i) || !isObject(x, y)) return;
+    out.add(i);
+    queue.push(i);
+  };
+  for (let dy = -2; dy <= 5; dy++) {
+    for (let dx = -2; dx <= 5; dx++) {
       const x = x0 + dx;
       const y = y0 + dy;
-      if (!inBounds(map, x, y)) continue;
-      const i = y * map.width + x;
-      if (x + y + 1 <= fx + fy) continue;
-      if (map.house[i] || (sprites && (map.station[i] || map.industry[i] || tileTrees(map, x, y)))) out.add(i);
+      if (x + y + 1 > depth && Math.abs(dx - dy) <= 2 && dx + dy <= 6) add(x, y);
+    }
+  }
+  // Domknięcie: co stoi przed już dorysowanym i na niego nachodzi, też musi być dorysowane.
+  for (let k = 0; k < queue.length && out.size < 200; k++) {
+    const i = queue[k]!;
+    const x = i % map.width;
+    const y = Math.floor(i / map.width);
+    for (let dy = -1; dy <= 2; dy++) {
+      for (let dx = -1; dx <= 2; dx++) {
+        if (dx + dy >= 1 && Math.abs(dx - dy) <= 2 && x + dx + y + dy - depth <= 8) add(x + dx, y + dy);
+      }
     }
   }
 }
 
-/** Dorysowuje obiekty kafelka zasłaniające pojazd: dom, przód peronu z zadaszeniem albo drzewa. */
+/** Dorysowuje obiekty kafelka zasłaniające pojazd: dom, budynek zakładu albo przód peronu z zadaszeniem. */
 export function redrawHouse(g: Graphics, state: GameState, i: number): void {
   const { map } = state;
   const x = i % map.width;
@@ -75,8 +97,6 @@ export function redrawHouse(g: Graphics, state: GameState, i: number): void {
     if (station && !station.waypoint) drawStationFront(g, map, x, y, station);
     return;
   }
-  const trees = tileTrees(map, x, y);
-  if (trees) drawTrees(g, map, x, y, trees);
 }
 
 /** Wszystkie zakłady w jednej warstwie (jest ich kilkanaście – rysowane raz, odświeżane po zmianach). */

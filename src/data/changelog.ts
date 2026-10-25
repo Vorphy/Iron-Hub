@@ -36,10 +36,11 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
       'Tory, rozjazdy, skrzyżowania, perony z dachami i budynkiem stacji, zajezdnie i semafory w stylu TTD.',
       'Kopalnie, elektrownie, huty, tartaki i lasy z oryginalnych kafelków; pociągi, autobusy, furgonetki i ciężarówki z prawdziwymi sylwetkami – lokomotywa i jej wagony mają wspólny kolor.',
       'Stalowe mosty kratownicowe z filarami, wjazdy do tuneli w zboczu i sieć trakcyjna ze słupami jak w TTD.',
-      'Pociąg przy peronie chowa się pod zadaszeniem, a drzewa, domy i zakłady przed nim go zasłaniają (np. chłodnie elektrowni).',
+      'Pociąg przy peronie chowa się pod zadaszeniem, a domy i zakłady przed nim go zasłaniają (np. chłodnie elektrowni).',
       'Menu → Widok → Grafika: powrót do prostych kształtów (np. na słabszym komputerze).',
       'Klawisz U (albo Menu → Widok → Budynki) ukrywa domy, zakłady, drzewa i dachy peronów – widać tory, które zasłaniały.',
       'Domy nie zmieniają już wyglądu co rok – każdy ma swój budynek, który zmienia się dopiero przy rozbudowie.',
+      'Domy i drzewa nie migoczą już, gdy obok przejeżdżają auta i pociągi.',
     ],
   },
   {
