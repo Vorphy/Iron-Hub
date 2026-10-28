@@ -26,7 +26,7 @@ const MONTH_NAMES = ['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wr
 import { averageSupply, industryDef, MAX_INDUSTRY_LEVEL, monthlyDemand, monthlyProduction } from '../sim/economy/industry';
 import { metroStatus, townHouseCount, townPopulation } from '../sim/economy/town';
 import { CARGOS, type Cargo } from '../sim/economy/cargo';
-import { stationAccepts, stationRating } from '../sim/economy/cargoFlow';
+import { MAX_RATING, ratingParts, ratingTarget, stationAccepts, stationRating } from '../sim/economy/cargoFlow';
 import { wagonDef } from '../sim/trains/vehicles';
 import type { TrainSummary, WindowData, WindowRef } from './hudStore';
 
@@ -195,11 +195,17 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
       name: st.name,
       waypoint: st.waypoint,
       platforms: st.tiles.length + (st.underTiles?.length ?? 0),
-      cargo: CARGOS.filter((c) => st.cargo[c]).map((c) => ({
-        cargo: c,
-        waiting: Math.floor(st.cargo[c]!.waiting),
-        rating: stationRating(state, st.cargo[c]),
-      })),
+      cargo: CARGOS.filter((c) => st.cargo[c]).map((c) => {
+        const sc = st.cargo[c]!;
+        const rating = stationRating(state, sc);
+        return {
+          cargo: c,
+          waiting: Math.floor(sc.waiting),
+          rating,
+          target: rating > 0 ? ratingTarget(state, sc) / MAX_RATING : 0,
+          parts: rating > 0 ? ratingParts(state, sc) : null,
+        };
+      }),
       accepts: CARGOS.filter((c) => stationAccepts(state, st).has(c)),
     };
   }

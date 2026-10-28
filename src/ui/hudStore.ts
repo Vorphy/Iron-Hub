@@ -1,3 +1,4 @@
+import type { RatingParts } from '../sim/economy/cargoFlow';
 import { defaultFilters, type MinimapFilters } from '../render/minimap';
 import type { ResearchId } from '../data/research';
 import type { CustomCounts, Density } from '../sim/world/generate';
@@ -192,8 +193,11 @@ export interface StationWindowData {
   /** Punkt kontrolny (bez peronu i ładunku). */
   waypoint: boolean;
   platforms: number;
-  /** Ładunki obsługiwane lub czekające: ilość i ocena (0–1, 0 – brak obsługi). */
-  cargo: { cargo: Cargo; waiting: number; rating: number }[];
+  /**
+   * Ładunki obsługiwane lub czekające: ilość, ocena (0–1, 0 – brak obsługi), ocena, do której dąży (0–1),
+   * i jej składniki w punktach (255 = 100%; null – brak obsługi).
+   */
+  cargo: { cargo: Cargo; waiting: number; rating: number; target: number; parts: RatingParts | null }[];
   accepts: Cargo[];
 }
 

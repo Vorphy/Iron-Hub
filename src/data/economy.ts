@@ -123,16 +123,45 @@ export const ECONOMY = {
   station: {
     /** Bez pociągu z pasującym wagonem przez tyle dni stacja przestaje zbierać ładunek. */
     serviceDays: 60,
-    /** Kursy co najwyżej co tyle dni – ocena maksymalna. */
-    frequentDays: 7,
-    ratingMax: 0.95,
-    /** Ocena przy kursach co `serviceDays` dni. */
-    ratingMin: 0.4,
-    /** Gdy czeka więcej niż tyle jednostek, ocena spada o `crowdedPenalty`. */
-    crowdedAmount: 500,
-    crowdedPenalty: 0.15,
     /** Najwięcej czekającego ładunku jednego rodzaju. */
     maxWaiting: 4000,
+  },
+
+  /**
+   * Ocena stacji jak w OpenTTD (UpdateStationRating): punkty 0–255 (255 = 100%), suma składników.
+   * Ocena idzie do tej sumy powoli – najwyżej o `stepPerDay` punktów dziennie. Progi „do N” są
+   * kumulowane (krótszy czas daje punkty ze wszystkich progów, które spełnia).
+   */
+  rating: {
+    /** Ocena nowo obsługiwanego ładunku (OpenTTD: 175 ≈ 69%). */
+    initial: 175,
+    stepPerDay: 1,
+    /** Prędkość maksymalna ostatniego pociągu: (km/h − speedFrom) / speedDivisor punktów. */
+    speedFrom: 85,
+    speedDivisor: 4,
+    speedMax: 255,
+    /** Dni od ostatniego załadunku: do N dni – +punkty. */
+    pickupDays: [
+      [52.5, 25],
+      [30, 25],
+      [15, 45],
+      [7.5, 35],
+    ],
+    /** Czekający ładunek: `waitingBase` plus punkty za każdy próg „najwyżej N jednostek”. */
+    waitingBase: -90,
+    waiting: [
+      [1500, 55],
+      [1000, 35],
+      [600, 10],
+      [300, 20],
+      [100, 10],
+    ],
+    /** Wiek lokomotywy ostatniego pociągu: poniżej N lat – +punkty. */
+    ageYears: [
+      [3, 10],
+      [2, 10],
+      [1, 13],
+    ],
   },
 
   /** Miasta. */

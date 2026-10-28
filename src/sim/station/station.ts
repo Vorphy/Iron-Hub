@@ -29,6 +29,16 @@ export interface StationCargo {
   waiting: number;
   /** Tick ostatniego załadunku tego ładunku (-1 – nigdy). Bez obsługi stacja nie zbiera ładunku. */
   lastPickup: number;
+  /** Ocena w punktach 0–255 (jak w OpenTTD) – zmienia się powoli w stronę `ratingTarget`. */
+  rating: number;
+  /** Prędkość maksymalna (km/h) i wiek lokomotywy (lata) ostatniego pociągu, który tu ładował. */
+  lastSpeed: number;
+  lastAge: number;
+}
+
+/** Nowy wpis ładunku na stacji (pierwszy pociąg z pasującym wagonem). */
+export function newStationCargo(rating: number): StationCargo {
+  return { waiting: 0, lastPickup: -1, rating, lastSpeed: 0, lastAge: 0 };
 }
 
 export interface Station {

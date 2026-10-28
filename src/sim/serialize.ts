@@ -15,9 +15,10 @@ import { ALL_TRACKS, Side } from './track/track';
 import type { Step, Train, WagonLoad } from './trains/train';
 import { engineDef, wagonDef } from './trains/vehicles';
 import { MAX_HEIGHT } from './world/height';
+import { TICKS_PER_DAY } from './time';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 26;
+export const SAVE_VERSION = 27;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -285,6 +286,22 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     d.companyName = DEFAULT_COMPANY_NAME;
     d.version = 26;
   }
+  if (d.version === 26) {
+    // v27: ocena stacji jak w OpenTTD – punkty 0–255 ze starej oceny (częstość kursów), bez skoku po wczytaniu.
+    const tick = isNum(d.tick) ? d.tick : 0;
+    if (Array.isArray(d.stations)) {
+      for (const st of d.stations as { cargo?: Record<string, Record<string, unknown>> }[]) {
+        for (const c of Object.values(st.cargo ?? {})) {
+          const days = (tick - Number(c.lastPickup)) / TICKS_PER_DAY;
+          const old = 0.95 - 0.55 * Math.max(0, Math.min(1, (days - 7) / 53));
+          c.rating = Math.round(old * 255);
+          c.lastSpeed = 0;
+          c.lastAge = 0;
+        }
+      }
+    }
+    d.version = 27;
+  }
   return d as Partial<SerializedState>;
 }
 
@@ -546,7 +563,10 @@ function isStation(v: unknown): v is Station {
     st.tiles.every(isInt) &&
     (st.underTiles === undefined || (Array.isArray(st.underTiles) && st.underTiles.every(isInt))) &&
     typeof st.waypoint === 'boolean' &&
-    isCargoRecord(st.cargo, (c) => isObj(c) && isNum(c.waiting) && isInt(c.lastPickup))
+    isCargoRecord(
+      st.cargo,
+      (c) => isObj(c) && isNum(c.waiting) && isInt(c.lastPickup) && isNum(c.rating) && isNum(c.lastSpeed) && isNum(c.lastAge),
+    )
   );
 }
 

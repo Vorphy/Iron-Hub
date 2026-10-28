@@ -1,11 +1,33 @@
 import { useState } from 'preact/hooks';
 import { CARGO_DEFS } from '../sim/economy/cargo';
+import type { RatingParts } from '../sim/economy/cargoFlow';
 import { COMPANY_NAME_MAX } from '../sim/state';
 import { formatMoney } from '../tools';
 import type { FinanceWindowData, HudActions, IndustryWindowData, StationWindowData, TownWindowData } from './hudStore';
 
 function percent(v: number): string {
   return `${Math.round(v * 100)}%`;
+}
+
+/** Strzałka: ocena rośnie albo spada w stronę sumy składników. */
+function trend(rating: number, target: number): string {
+  const diff = target - rating;
+  return diff > 0.004 ? ' ↑' : diff < -0.004 ? ' ↓' : '';
+}
+
+/** Podpowiedź do oceny stacji: składniki w punktach (255 = 100%) jak w OpenTTD. */
+function ratingTitle(parts: RatingParts | null, target: number): string {
+  if (!parts) return 'Stacja nie obsługuje tego ładunku – zacznie, gdy zatrzyma się tu pociąg z pasującym wagonem';
+  const sign = (v: number) => (v > 0 ? `+${v}` : `${v}`);
+  return [
+    'Ocena stacji: jaka część produkcji trafia na stację',
+    `Dni od ostatniego załadunku: ${sign(parts.pickup)}`,
+    `Prędkość ostatniego pociągu: ${sign(parts.speed)}`,
+    `Czekający ładunek: ${sign(parts.waiting)}`,
+    `Wiek lokomotywy: ${sign(parts.age)}`,
+    ...(parts.research ? [`Badania: ${sign(parts.research)}`] : []),
+    `Razem: ${percent(target)} (255 pkt = 100%) – ocena zmierza tam o 1 pkt dziennie`,
+  ].join('\n');
 }
 
 function Head({ title, help, actions }: { title: string; help: string; actions: HudActions }) {
@@ -162,9 +184,9 @@ export function StationWindow({ data: d, actions }: { data: StationWindowData; a
           </span>
           <span
             class={c.rating >= 0.75 ? 'rating good' : c.rating > 0 ? 'rating' : 'rating bad'}
-            title="Ocena stacji: jaka część produkcji trafia na stację (zależy od częstości kursów)"
+            title={ratingTitle(c.parts, c.target)}
           >
-            {c.rating > 0 ? percent(c.rating) : 'brak obsługi'}
+            {c.rating > 0 ? `${percent(c.rating)}${trend(c.rating, c.target)}` : 'brak obsługi'}
           </span>
         </div>
       ))}

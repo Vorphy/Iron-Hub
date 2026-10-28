@@ -34,6 +34,16 @@ export interface HelpTopic {
 const E = ECONOMY;
 const zl = (v: number) => `${v.toLocaleString('pl-PL')} zł`;
 const pct = (v: number) => `${Math.round(v * 100)}%`;
+const R = E.rating;
+const num = (v: number) => v.toLocaleString('pl-PL');
+/** Progi kumulowane z oceny stacji jako tekst: „do 7,5 dni: 130, do 15 dni: 95…”, od najkorzystniejszego. */
+const cumulative = (steps: readonly (readonly [number, number])[], base: number, label: (limit: number) => string) =>
+  steps
+    .map((_, i) => {
+      const total = base + steps.slice(0, steps.length - i).reduce((s, [, p]) => s + p, 0);
+      return `${label(steps[steps.length - 1 - i]![0])}: ${total > 0 ? '+' : ''}${total}`;
+    })
+    .join(', ');
 const cargoName = (c: string) => CARGO_DEFS[c as keyof typeof CARGO_DEFS].name;
 
 export const HELP_TOPICS: readonly HelpTopic[] = [
@@ -144,7 +154,23 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     title: 'Ładunek na stacji i ocena',
     blocks: [
       `Stacja zaczyna zbierać ładunek dopiero, gdy zatrzyma się na niej pociąg z pasującym wagonem. Bez takiego pociągu przez ${E.station.serviceDays} dni przestaje zbierać.`,
-      `**Ocena stacji** mówi, jaka część produkcji trafia na stację: ${pct(E.station.ratingMax)} przy kursach co ${E.station.frequentDays} dni lub częściej, spada do ${pct(E.station.ratingMin)} przy kursach co ${E.station.serviceDays} dni. Gdy czeka ponad ${E.station.crowdedAmount} jednostek – kara ${pct(E.station.crowdedPenalty)}. Na stacji czeka najwyżej ${E.station.maxWaiting} jednostek.`,
+      `**Ocena stacji** (jak w OpenTTD) mówi, jaka część produkcji trafia na stację. To suma punktów (255 = 100%), osobno dla każdego ładunku; najedź na ocenę w oknie stacji, żeby zobaczyć składniki:`,
+      {
+        table: {
+          head: ['Składnik', 'Punkty'],
+          rows: [
+            ['Dni od ostatniego załadunku', cumulative(R.pickupDays, 0, (d) => `do ${num(d)} dni`)],
+            [
+              'Prędkość maks. ostatniego pociągu',
+              `+1 za każde ${R.speedDivisor} km/h ponad ${R.speedFrom} km/h (najwyżej +${Math.floor((R.speedMax - R.speedFrom) / R.speedDivisor)})`,
+            ],
+            ['Czekający ładunek', `${cumulative(R.waiting, R.waitingBase, (n) => `do ${n}`)}, więcej: ${R.waitingBase}`],
+            ['Wiek lokomotywy', cumulative(R.ageYears, 0, (y) => (y === 1 ? 'poniżej roku' : `poniżej ${y} lat`))],
+            ['Badanie „Lepsza obsługa stacji”', 'dodatkowe punkty'],
+          ],
+        },
+      },
+      `Ocena nie skacze: co dzień zmienia się o ${R.stepPerDay} pkt w stronę sumy. Nowo obsługiwany ładunek zaczyna od ${pct(R.initial / 255)}. Wniosek: częste kursy szybkimi, nowymi pociągami i nie dopuszczać do tłumu na peronie. Na stacji czeka najwyżej ${E.station.maxWaiting} jednostek.`,
       'Kilka stacji przy jednym zakładzie dzieli się produkcją według ocen. Wniosek: częste kursy = więcej ładunku.',
       'Na stacji pociąg najpierw rozładowuje to, co stacja przyjmuje, potem ładuje czekający ładunek.',
       '**Kolejka**: kto pierwszy przyjechał, ten pierwszy się ładuje. Pociąg, który dojechał później, nie podbiera ładunku temu, który już czeka (np. na pełny ładunek) – pierwszy zapełnia się i odjeżdża pierwszy.',

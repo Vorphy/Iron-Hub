@@ -139,7 +139,7 @@ Jedna kolejka, w kolejności, która najszybciej poprawia granie. Maglevy, kolej
 21. **Nowe zakłady i ładunki z OpenTTD** (pomysł 2026-10-25). Grafiki są w OpenGFX: **farma** (zboże i żywiec) → **fabryka** (+ stal) → towary; **szyby naftowe** i **platforma wiertnicza** → **rafineria** → towary; **bank** (kosztowności, wagon pancerny). Nowe ładunki, wagony i łańcuchy dostaw; dane produkcji z `src/table/build_industry.h`.
 22. **Mechaniki z OpenTTD do rozważenia** (pomysł 2026-10-25):
     - *Cargodist:* pasażerowie i ładunki z celem podróży – łączy się z dzielnicami i ruchem miejskim (punkt 17), ruch między dzielnicami powstaje sam.
-    - *Ocena stacji jak w OpenTTD:* prędkość i wiek ostatniego pociągu, dni od ostatniego odbioru, ile czeka (`station_cmd.cpp`, UpdateStationRating); dziś liczy się głównie częstotliwość.
+    - ~~*Ocena stacji jak w OpenTTD:*~~ ✅ (2026-10-28 – `ratingParts`/`updateStationRatings` w `cargoFlow.ts`, `ECONOMY.rating`, zapis v27; bez pomnika w mieście i losowego ubytku ładunku) prędkość i wiek ostatniego pociągu, dni od ostatniego odbioru, ile czeka (`station_cmd.cpp`, UpdateStationRating); dziś liczy się głównie częstotliwość.
     - *Animacje:* animowana paleta (woda, latarnia, ogień w hucie, światła) i animowane budynki (fontanny) – kolory animowanej palety są już przygotowane w `build_atlas.py`.
 
 ### Faza C

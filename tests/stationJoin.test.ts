@@ -20,7 +20,7 @@ describe('rozbudowa stacji', () => {
   it('peron obok stacji ją rozbudowuje (ta sama nazwa, wspólne kafelki)', () => {
     const s = sim();
     const st = s.state.stations[0]!;
-    st.cargo.coal = { waiting: 120, lastPickup: 0 };
+    st.cargo.coal = { waiting: 120, lastPickup: 0, rating: 175, lastSpeed: 0, lastAge: 0 };
     expect(planStation(s.state, 5, 6, 8, 6, 'x').join?.id).toBe(st.id);
     s.enqueue({ type: 'buildStation', x0: 5, y0: 6, x1: 8, y1: 6, axis: 'x' });
     s.processCommands();

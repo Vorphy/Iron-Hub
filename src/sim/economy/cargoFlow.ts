@@ -1,12 +1,12 @@
 import type { SimEvent } from '../commands';
-import { ratingBonus, wagonCapacity } from '../research';
+import { engineMaxSpeed, ratingBonus, wagonCapacity } from '../research';
 import { stationLayer } from '../track/metro';
-import { allTiles, catchment, platformStations, type Station, type StationCargo } from '../station/station';
+import { allTiles, catchment, newStationCargo, platformStations, type Station, type StationCargo } from '../station/station';
 import type { GameState } from '../state';
 import { ECONOMY } from '../../data/economy';
 import { DAYS_PER_MONTH, TICKS_PER_DAY } from '../time';
-import type { Train } from '../trains/train';
-import { wagonDef } from '../trains/vehicles';
+import { engineAge, type Train } from '../trains/train';
+import { engineDef, wagonDef } from '../trains/vehicles';
 import { CARGO_DEFS, type Cargo } from './cargo';
 import { earn } from './finance';
 import { industryDef, industryTiles, monthlyProduction } from './industry';
@@ -21,15 +21,58 @@ const PASSENGER_DAY_DIVISOR = ECONOMY.town.passengerDivisor * DAYS_PER_MONTH;
 const MAIL_DAY_DIVISOR = ECONOMY.town.mailDivisor * DAYS_PER_MONTH;
 const TOWN_ACCEPTANCE: Partial<Record<Cargo, number>> = ECONOMY.town.acceptance;
 
+const R = ECONOMY.rating;
+export const MAX_RATING = 255;
+export const INITIAL_RATING = R.initial;
+
+/** Czy stacja obsługuje ładunek (pociąg z pasującym wagonem był tu w ciągu `SERVICE_DAYS` dni). */
+function served(state: GameState, sc: StationCargo | undefined): sc is StationCargo {
+  return !!sc && sc.lastPickup >= 0 && (state.tick - sc.lastPickup) / TICKS_PER_DAY <= SERVICE_DAYS;
+}
+
 /** Ocena stacji dla ładunku (0–1); 0 – stacja nie obsługuje tego ładunku. */
 export function stationRating(state: GameState, sc: StationCargo | undefined): number {
-  if (!sc || sc.lastPickup < 0) return 0;
+  return served(state, sc) ? Math.min(1, sc.rating / MAX_RATING) : 0;
+}
+
+/** Składniki oceny (punkty) – do tej sumy dąży ocena stacji. */
+export interface RatingParts {
+  speed: number;
+  pickup: number;
+  waiting: number;
+  age: number;
+  /** Badanie „Lepsza obsługa stacji”. */
+  research: number;
+}
+
+/** Składniki oceny jak w OpenTTD (UpdateStationRating). */
+export function ratingParts(state: GameState, sc: StationCargo): RatingParts {
   const days = (state.tick - sc.lastPickup) / TICKS_PER_DAY;
-  if (days > SERVICE_DAYS) return 0;
-  const t = Math.max(0, (days - S.frequentDays) / (SERVICE_DAYS - S.frequentDays));
-  // Badanie „Lepsza obsługa stacji” podnosi ocenę (najwyżej do 100%).
-  const rating = Math.min(1, S.ratingMax - (S.ratingMax - S.ratingMin) * t + ratingBonus(state));
-  return sc.waiting > S.crowdedAmount ? rating - S.crowdedPenalty : rating;
+  const speed = Math.max(0, Math.floor((Math.min(R.speedMax, sc.lastSpeed) - R.speedFrom) / R.speedDivisor));
+  let pickup = 0;
+  for (const [limit, pts] of R.pickupDays) if (days <= limit) pickup += pts;
+  let waiting: number = R.waitingBase;
+  for (const [limit, pts] of R.waiting) if (sc.waiting <= limit) waiting += pts;
+  let age = 0;
+  for (const [limit, pts] of R.ageYears) if (sc.lastAge < limit) age += pts;
+  return { speed, pickup, waiting, age, research: Math.round(ratingBonus(state) * MAX_RATING) };
+}
+
+/** Ocena, do której dąży stacja (punkty 0–255). */
+export function ratingTarget(state: GameState, sc: StationCargo): number {
+  const p = ratingParts(state, sc);
+  return Math.max(0, Math.min(MAX_RATING, p.speed + p.pickup + p.waiting + p.age + p.research));
+}
+
+/** Codziennie: ocena każdego obsługiwanego ładunku o krok w stronę sumy składników. */
+export function updateStationRatings(state: GameState): void {
+  for (const st of state.stations) {
+    for (const sc of Object.values(st.cargo)) {
+      if (!served(state, sc)) continue;
+      const diff = ratingTarget(state, sc) - sc.rating;
+      sc.rating += Math.max(-R.stepPerDay, Math.min(R.stepPerDay, diff));
+    }
+  }
 }
 
 export function stationCenter(state: GameState, st: Station): { x: number; y: number } {
@@ -112,6 +155,7 @@ function distribute(state: GameState, stations: readonly Station[], cargo: Cargo
 
 /** Dzienna produkcja zakładów i miast trafia na obsługujące je stacje. */
 export function dailyCargo(state: GameState): void {
+  updateStationRatings(state);
   const index = catchmentIndex(state);
   const { map } = state;
 
@@ -159,8 +203,11 @@ export function serveTrainAtStation(state: GameState, train: Train, st: Station,
   train.wagons.forEach((id, k) => {
     const def = wagonDef(id)!;
     const load = train.loads[k]!;
-    const sc = (st.cargo[def.cargo] ??= { waiting: 0, lastPickup: -1 });
+    const sc = (st.cargo[def.cargo] ??= newStationCargo(INITIAL_RATING));
     sc.lastPickup = state.tick;
+    // Do oceny: prędkość i wiek lokomotywy ostatniego pociągu (jak last_speed i last_age w OpenTTD).
+    sc.lastSpeed = engineMaxSpeed(state, engineDef(train.engine)!.maxSpeed);
+    sc.lastAge = Math.floor(engineAge(state, train));
 
     if (unload && load.amount > 0 && load.source !== st.id && accepts.has(def.cargo)) {
       const source = state.stations.find((s) => s.id === load.source);

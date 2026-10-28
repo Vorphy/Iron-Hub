@@ -12,6 +12,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-28',
+    title: 'Ocena stacji jak w OpenTTD',
+    items: [
+      'Ocena stacji to teraz suma punktów jak w OpenTTD: liczy się, ile dni minęło od ostatniego załadunku, prędkość maksymalna ostatniego pociągu (ponad 85 km/h), ile ładunku czeka na peronie i wiek lokomotywy (nowa – do 3 lat – daje premię).',
+      'Ocena nie skacze, tylko co dzień zbliża się o punkt do tej sumy – w oknie stacji strzałka ↑/↓ pokazuje, w którą stronę idzie, a po najechaniu widać wszystkie składniki.',
+      'Stare, wolne parowozy dają około 69% nawet przy częstych kursach; szybka, nowa lokomotywa – ponad 90%. To powód, żeby wymieniać tabor. Wczytany zapis zaczyna od dotychczasowej oceny i powoli przechodzi na nową.',
+    ],
+  },
+  {
+    date: '2026-10-28',
     title: 'Trasy pociągów jeszcze bliżej OpenTTD',
     items: [
       'Na linii dwutorowej z semaforami ścieżkowymi pociąg trzyma się swojego toru – jazda pod prąd przez semafor liczy się jak 15 kafelków nadłożonej drogi, więc nie wjeżdża na tor przeciwny bez wyraźnego powodu.',

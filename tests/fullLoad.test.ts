@@ -129,7 +129,7 @@ describe('kolejka załadunku', () => {
     second.loads = second.loads.map(() => ({ amount: 0, source: 0, loadedTick: 0 }));
     state.trains.push(second);
     first.loads = first.loads.map(() => ({ amount: 0, source: 0, loadedTick: 0 }));
-    st.cargo.coal = { waiting: 40, lastPickup: state.tick };
+    st.cargo.coal = { waiting: 40, lastPickup: state.tick, rating: 175, lastSpeed: 0, lastAge: 0 };
 
     serveTrainAtStation(state, second, st, [], false);
     expect(second.loads[0]!.amount + second.loads[1]!.amount).toBe(0);

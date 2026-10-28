@@ -1,6 +1,13 @@
 import { ECONOMY } from '../src/data/economy';
 import { describe, expect, it } from 'vitest';
-import { deliveryPayment, stationAccepts, stationRating } from '../src/sim/economy/cargoFlow';
+import {
+  deliveryPayment,
+  ratingParts,
+  ratingTarget,
+  stationAccepts,
+  stationRating,
+  updateStationRatings,
+} from '../src/sim/economy/cargoFlow';
 import { emptyIndustryMonth, industryDef } from '../src/sim/economy/industry';
 import { emptyTownMonth } from '../src/sim/economy/town';
 import { deserializeState, serializeState } from '../src/sim/serialize';
@@ -88,15 +95,47 @@ describe('stacje i ładunki', () => {
     expect(state.industries[0]!.month.transported).toBe(0);
   });
 
-  it('ocena stacji spada, gdy pociągi przestają przyjeżdżać', () => {
+  it('składniki oceny jak w OpenTTD: odbiór, prędkość, tłum, wiek', () => {
     const { state } = coalLine();
-    const sc = { waiting: 0, lastPickup: 0 };
     state.tick = 0;
-    expect(stationRating(state, sc)).toBeCloseTo(0.95);
-    state.tick = 30 * TICKS_PER_DAY;
-    expect(stationRating(state, sc)).toBeLessThan(0.95);
+    const sc = { waiting: 50, lastPickup: 0, rating: 175, lastSpeed: 165, lastAge: 0 };
+    // Świeży odbiór, 165 km/h, mało czeka, nowa lokomotywa: 130 + 20 + 40 + 33.
+    expect(ratingParts(state, sc)).toEqual({ speed: 20, pickup: 130, waiting: 40, age: 33, research: 0 });
+    expect(ratingTarget(state, sc)).toBe(223);
+    // Wolny stary pociąg, 20 dni bez odbioru, tłum na peronie.
+    state.tick = 20 * TICKS_PER_DAY;
+    const bad = { waiting: 2000, lastPickup: 0, rating: 175, lastSpeed: 64, lastAge: 10 };
+    expect(ratingParts(state, bad)).toEqual({ speed: 0, pickup: 50, waiting: -90, age: 0, research: 0 });
+    expect(ratingTarget(state, bad)).toBe(0);
+  });
+
+  it('stary zapis (v26): ocena w punktach ze starej oceny za częstość kursów', () => {
+    const { state } = coalLine();
+    state.tick = 100 * TICKS_PER_DAY;
+    state.stations[0]!.cargo.coal = { waiting: 0, lastPickup: state.tick, rating: 0, lastSpeed: 0, lastAge: 0 };
+    const data = JSON.parse(JSON.stringify(serializeState(state)));
+    data.version = 26;
+    const old = data.stations[0].cargo.coal;
+    delete old.rating;
+    delete old.lastSpeed;
+    delete old.lastAge;
+    const sc = deserializeState(data).stations[0]!.cargo.coal!;
+    expect(sc.rating).toBe(Math.round(0.95 * 255));
+    expect(sc.lastSpeed).toBe(0);
+  });
+
+  it('ocena zmienia się powoli, a bez obsługi przez 60 dni spada do zera', () => {
+    const { state } = coalLine();
+    state.tick = 0;
+    const st = state.stations[0]!;
+    st.cargo.coal = { waiting: 0, lastPickup: 0, rating: 175, lastSpeed: 165, lastAge: 0 };
+    updateStationRatings(state);
+    expect(st.cargo.coal.rating).toBe(176);
+    for (let d = 0; d < 100; d++) updateStationRatings(state);
+    expect(st.cargo.coal.rating).toBe(223);
+    expect(stationRating(state, st.cargo.coal)).toBeCloseTo(223 / 255);
     state.tick = 61 * TICKS_PER_DAY;
-    expect(stationRating(state, sc)).toBe(0);
+    expect(stationRating(state, st.cargo.coal)).toBe(0);
   });
 });
 
