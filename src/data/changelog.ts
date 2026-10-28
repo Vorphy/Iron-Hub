@@ -12,6 +12,16 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-28',
+    title: 'Trasy pociągów jeszcze bliżej OpenTTD',
+    items: [
+      'Na linii dwutorowej z semaforami ścieżkowymi pociąg trzyma się swojego toru – jazda pod prąd przez semafor liczy się jak 15 kafelków nadłożonej drogi, więc nie wjeżdża na tor przeciwny bez wyraźnego powodu.',
+      'Tryb Ekspert: pociąg wybiera trasę z mniejszą liczbą łuków i bez podjazdów – ciężki skład objedzie pagórek płaską trasą, jeśli taka jest.',
+      'Zajęty peron odstrasza bardziej (jak w OpenTTD), a pociąg stojący daleko – za kilkoma semaforami – nie zmienia już wyboru trasy: zanim tam dojedziesz, zwykle odjedzie.',
+      'Trasy liczą się sprytniej (szukanie w stronę celu), co przyda się na dużych mapach.',
+    ],
+  },
+  {
+    date: '2026-10-28',
     title: 'Zgubione pociągi i nazwa firmy',
     items: [
       'Trasy jak w OpenTTD: pociąg omija stacje, które nie są jego celem (jeśli ma obok obwodnicę lub mijankę), a na stacji docelowej wybiera peron pasujący do długości składu – długi skład bierze długi peron, krótki zostawia go innym.',

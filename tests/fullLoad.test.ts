@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SimEvent } from '../src/sim/commands';
-import { FULL_LOAD_PENALTY, OCCUPIED_PENALTY } from '../src/sim/config';
+import { FULL_LOAD_PENALTY, OCCUPIED_PLATFORM_PENALTY } from '../src/sim/config';
 import { fullLoadingTrains, occupancyPenalty } from '../src/sim/trains/path';
 import { buildTaken } from '../src/sim/trains/reservation';
 import { emptyIndustryMonth } from '../src/sim/economy/industry';
@@ -80,11 +80,11 @@ describe('czekaj na pełny ładunek', () => {
     const platform = t.trail[0]!;
     const other = 99; // inny pociąg pytający o ten odcinek
     expect(occupancyPenalty(sim.state, taken, platform, other, fullLoadingTrains(sim.state))).toBe(
-      OCCUPIED_PENALTY + FULL_LOAD_PENALTY,
+      OCCUPIED_PLATFORM_PENALTY + FULL_LOAD_PENALTY,
     );
     // Bez ptaszka – zwykła kara za zajęty tor.
     t.fullLoad[t.currentOrder] = false;
-    expect(occupancyPenalty(sim.state, taken, platform, other, fullLoadingTrains(sim.state))).toBe(OCCUPIED_PENALTY);
+    expect(occupancyPenalty(sim.state, taken, platform, other, fullLoadingTrains(sim.state))).toBe(OCCUPIED_PLATFORM_PENALTY);
     // Własny tor nie kosztuje.
     expect(occupancyPenalty(sim.state, taken, platform, t.id, fullLoadingTrains(sim.state))).toBe(0);
   });

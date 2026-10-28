@@ -63,9 +63,34 @@ export const STATION_WAIT_TICKS = 80;
 export const VEHICLE_GAP = 1;
 /** Kary w wyszukiwaniu trasy (jednostki toru). */
 export const REVERSE_PENALTY = 64;
-export const BEND_PENALTY = 2;
+/**
+ * Jak w OpenTTD (YAPF, 1 kafelek = 16 jednostek): łuk 45° – 1 kafelek, łuk 90° – 6 kafelków
+ * (szybkie trasy prowadzą prosto), podjazd – 2 kafelki za element pod górę (ciężkie składy
+ * wybierają płaską trasę).
+ */
+export const BEND_PENALTY = 16;
+/**
+ * Łuk w trybie Amator (bez semaforów): mała kara. Pociągi mijają się tam tylko dzięki karze za zajęty
+ * tor, a przy pełnej karze z OpenTTD wjeżdżały na siebie zamiast w mijankę.
+ */
+export const AUTO_BEND_PENALTY = 2;
+export const BEND90_PENALTY = 6 * 16;
+export const UPHILL_PENALTY = 2 * 16;
+/**
+ * Semafor ścieżkowy pod prąd (stoi tylko dla przeciwnego kierunku) – 15 kafelków, liczone do
+ * `SIGNAL_LOOKAHEAD` semaforów od pociągu: na dwutorówce pociągi jadą swoim torem.
+ */
+export const SIGNAL_BACK_PENALTY = 15 * 16;
+export const SIGNAL_LOOKAHEAD = 10;
+/** Zajętość innych pociągów liczy się tylko przed tyloma semaforami od pociągu (OpenTTD: połowa `SIGNAL_LOOKAHEAD`). */
+export const OCCUPIED_LOOKAHEAD = 5;
 /** Kara za element toru zajęty przez inny pociąg – trasa omija zajęte perony i tory. */
 export const OCCUPIED_PENALTY = 48;
+/**
+ * Peron zajęty przez inny pociąg (OpenTTD: 8 kafelków za kafelek) – pociąg wybiera wolny peron,
+ * nawet jeśli dojazd ma więcej łuków.
+ */
+export const OCCUPIED_PLATFORM_PENALTY = 8 * 16;
 /**
  * Jak w OpenTTD (YAPF, 1 kafelek = 16 jednostek): przejazd przez peron stacji, która nie jest celem –
  * za każdy kafelek peronu (pociągi wybierają obwodnicę zamiast jazdy przez zatłoczoną stację).

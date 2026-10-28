@@ -1,22 +1,30 @@
 import {
+  AUTO_BEND_PENALTY,
+  BEND90_PENALTY,
   BEND_PENALTY,
   FULL_LOAD_PENALTY,
+  OCCUPIED_LOOKAHEAD,
   OCCUPIED_PENALTY,
+  OCCUPIED_PLATFORM_PENALTY,
   PLATFORM_LONGER_PENALTY,
   PLATFORM_SHORTER_PENALTY,
   REVERSE_PENALTY,
+  SIGNAL_BACK_PENALTY,
+  SIGNAL_LOOKAHEAD,
   STATION_PASS_PENALTY,
+  UPHILL_PENALTY,
 } from '../config';
-import { STRAIGHT_LENGTH } from '../track/graph';
+import { CURVE_LENGTH, STRAIGHT_LENGTH } from '../track/graph';
 import { trainLength } from './geometry';
 import { baseTrack, isUnderTrack, levelTrackBits, stationLayer } from '../track/metro';
-import type { SignalIndex } from '../signals/signals';
+import { dirBit, type SignalIndex } from '../signals/signals';
 import type { GameState } from '../state';
 import { SIDE_DELTA, Track } from '../track/track';
+import { isFlat } from '../world/height';
 import { inBounds } from '../world/map';
 import { isElectrified, needsCatenary } from '../track/catenary';
 import { blockerOf, type Taken } from './reservation';
-import { flipStep, isBend, stepKey, stepLength, successors } from './steps';
+import { flipStep, isBend, stepDirection, stepHeight, stepKey, stepLength, successors } from './steps';
 import { passesOrder, type Step, type Train } from './train';
 
 /**
@@ -81,6 +89,10 @@ const MAX_EXPANSIONS = 50_000;
 interface Node {
   step: Step;
   cost: number;
+  /** Koszt plus oszacowanie reszty drogi do celu (A*). */
+  f: number;
+  /** Semafory minięte od początku trasy (zajętość i kara pod prąd liczą się tylko blisko pociągu). */
+  signals: number;
   parent: Node | null;
   /** Do tego odcinka dojechano przez zawrócenie na końcu poprzedniego. */
   viaReverse: boolean;
@@ -99,9 +111,9 @@ export interface RouteContext {
 }
 
 /**
- * Trasa do celu (Dijkstra po skierowanych odcinkach toru). Tory zajęte przez inne pociągi
- * kosztują więcej, więc pociąg wybiera wolny peron, jeśli jest. Wynik zależy tylko od stanu gry
- * (determinizm).
+ * Trasa do celu (A* po skierowanych odcinkach toru, kary jak w YAPF z OpenTTD). Tory zajęte przez
+ * inne pociągi blisko pociągu kosztują więcej, więc pociąg wybiera wolny peron, jeśli jest. Wynik
+ * zależy tylko od stanu gry (determinizm).
  */
 export function planRoute(state: GameState, train: Train, ctx: RouteContext): Plan {
   const head = ctx.from;
@@ -122,21 +134,22 @@ export function planRoute(state: GameState, train: Train, ctx: RouteContext): Pl
   const fullLoaders = fullLoadingTrains(state);
   const stationCost = stationPenalty(state, train, head, goal);
   const W = state.map.width;
+  const estimate = goalEstimate(state, goal);
   const heap = new MinHeap();
   const best = new Map<number, number>();
   let seq = 0;
-  const push = (n: Omit<Node, 'seq'>) => {
+  const push = (n: Omit<Node, 'seq' | 'f'>) => {
     const key = stepKey(n.step, W);
     const prev = best.get(key);
     if (prev !== undefined && prev <= n.cost) return;
     best.set(key, n.cost);
-    heap.push({ ...n, seq: seq++ });
+    heap.push({ ...n, f: n.cost + estimate(n.step), seq: seq++ });
   };
 
-  push({ step: head, cost: 0, parent: null, viaReverse: false, reversedStart: false });
+  push({ step: head, cost: 0, signals: 0, parent: null, viaReverse: false, reversedStart: false });
   if (ctx.allowReverseStart) {
     const tail = train.trail[train.trail.length - 1]!;
-    push({ step: flipStep(tail), cost: REVERSE_PENALTY, parent: null, viaReverse: false, reversedStart: true });
+    push({ step: flipStep(tail), cost: REVERSE_PENALTY, signals: 0, parent: null, viaReverse: false, reversedStart: true });
   }
 
   let expansions = 0;
@@ -146,21 +159,90 @@ export function planRoute(state: GameState, train: Train, ctx: RouteContext): Pl
     if (isGoal(node.step)) return toPlan(node, goal);
     const nexts = next(node.step);
     for (const s of nexts) {
-      const cost =
-        node.cost +
-        stepLength(s) +
-        (isBend(node.step, s) ? BEND_PENALTY : 0) +
-        occupancyPenalty(state, ctx.taken, s, train.id, fullLoaders) +
-        stationCost(s, isGoal(s));
-      push({ step: s, cost, parent: node, viaReverse: false, reversedStart: node.reversedStart });
+      let cost =
+        node.cost + stepLength(s) + bendPenalty(node.step, s, manual) + uphillPenalty(state, s) + stationCost(s, isGoal(s));
+      // Zajętość – tylko przed kilkoma pierwszymi semaforami; pociąg stojący daleko zdąży odjechać.
+      if (node.signals < OCCUPIED_LOOKAHEAD) cost += occupancyPenalty(state, ctx.taken, s, train.id, fullLoaders);
+      else cost += fullLoadPenalty(state, ctx.taken, s, train.id, fullLoaders);
+      let signals = node.signals;
+      if (manual) {
+        const sig = ctx.signals.at(s.x, s.y, s.track);
+        if (sig) {
+          if (sig.dirs & dirBit(s)) signals++;
+          else if (signals < SIGNAL_LOOKAHEAD) cost += SIGNAL_BACK_PENALTY;
+        }
+      }
+      push({ step: s, cost, signals, parent: node, viaReverse: false, reversedStart: node.reversedStart });
     }
     if (nexts.length === 0) {
       // Koniec toru: zawracamy (kara, żeby wybierać jazdę naprzód, gdy się da).
       const back = flipStep(node.step);
-      push({ step: back, cost: node.cost + REVERSE_PENALTY, parent: node, viaReverse: true, reversedStart: node.reversedStart });
+      push({
+        step: back,
+        cost: node.cost + REVERSE_PENALTY,
+        signals: node.signals,
+        parent: node,
+        viaReverse: true,
+        reversedStart: node.reversedStart,
+      });
     }
   }
   return { ...wander(head, next), lost: true };
+}
+
+/** Łuk między odcinkami: 45° albo 90° (ukosy pod kątem prostym) – jak `CurveCost` w YAPF. */
+function bendPenalty(a: Step, b: Step, manual: boolean): number {
+  if (!isBend(a, b)) return 0;
+  if (!manual) return AUTO_BEND_PENALTY;
+  // stepDirection = (sx + 1) * 3 + (sy + 1); kierunki prostopadłe – iloczyn skalarny 0.
+  const da = stepDirection(a);
+  const db = stepDirection(b);
+  const dot = (Math.floor(da / 3) - 1) * (Math.floor(db / 3) - 1) + ((da % 3) - 1) * ((db % 3) - 1);
+  return dot === 0 ? BEND90_PENALTY : BEND_PENALTY;
+}
+
+/** Element pod górę (prosty tor na zboczu, rampa mostu, zjazd metra) – jak `SlopeCost` w YAPF. */
+function uphillPenalty(state: GameState, s: Step): number {
+  const base = baseTrack(s.track);
+  if (s.track === 0 || (base >= Track.Upper && base <= Track.Right)) return 0;
+  const { map } = state;
+  const i = s.y * map.width + s.x;
+  if (!map.bridge[i] && !map.ramp[i] && isFlat(map, s.x, s.y)) return 0;
+  return stepHeight(state, s, stepLength(s)) > stepHeight(state, s, 0) + 1e-6 ? UPHILL_PENALTY : 0;
+}
+
+/**
+ * Najmniejszy możliwy koszt dojazdu do celu (A*): odległość do prostokąta z kafelkami celu – prosto
+ * 16 jednostek na kafelek, po ukosie 2 łuki (2 × 11). Bez kafelka startu i celu, więc nigdy nie
+ * przeszacowuje i trasa zostaje najtańsza.
+ */
+function goalEstimate(state: GameState, goal: NonNullable<Goal>): (s: Step) => number {
+  const W = state.map.width;
+  let tiles: number[];
+  if (goal.kind === 'depot') tiles = state.depots.map((d) => d.y * W + d.x);
+  else {
+    const st = state.stations.find((x) => x.id === goal.stationId);
+    tiles = st ? [...st.tiles, ...(st.underTiles ?? [])] : [];
+  }
+  if (tiles.length === 0) return () => 0;
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -Infinity;
+  let y1 = -Infinity;
+  for (const t of tiles) {
+    const x = t % W;
+    const y = (t - x) / W;
+    x0 = Math.min(x0, x);
+    y0 = Math.min(y0, y);
+    x1 = Math.max(x1, x);
+    y1 = Math.max(y1, y);
+  }
+  const diag = 2 * CURVE_LENGTH - STRAIGHT_LENGTH;
+  return (s) => {
+    const dx = Math.max(0, x0 - s.x - 1, s.x - x1 - 1);
+    const dy = Math.max(0, y0 - s.y - 1, s.y - y1 - 1);
+    return STRAIGHT_LENGTH * Math.max(dx, dy) + diag * Math.min(dx, dy);
+  };
 }
 
 /**
@@ -218,11 +300,23 @@ export function fullLoadingTrains(state: GameState): Set<number> {
   return out;
 }
 
-/** Kara za odcinek zajęty przez inny pociąg; za czekającym na pełny ładunek – bardzo duża. */
+/**
+ * Kara za odcinek zajęty przez inny pociąg (na peronie – większa); za czekającym na pełny ładunek –
+ * bardzo duża.
+ */
 export function occupancyPenalty(state: GameState, taken: Taken, s: Step, trainId: number, fullLoaders: Set<number>): number {
   const blocker = blockerOf(state, taken, s, trainId);
   if (blocker === null) return 0;
-  return OCCUPIED_PENALTY + (fullLoaders.has(blocker) ? FULL_LOAD_PENALTY : 0);
+  const { map } = state;
+  const platform = s.track !== 0 && !!stationLayer(map, s.track)[s.y * map.width + s.x];
+  return (platform ? OCCUPIED_PLATFORM_PENALTY : OCCUPIED_PENALTY) + (fullLoaders.has(blocker) ? FULL_LOAD_PENALTY : 0);
+}
+
+/** Daleko od pociągu liczy się tylko pociąg czekający na pełny ładunek (może stać bardzo długo). */
+function fullLoadPenalty(state: GameState, taken: Taken, s: Step, trainId: number, fullLoaders: Set<number>): number {
+  if (fullLoaders.size === 0) return 0;
+  const blocker = blockerOf(state, taken, s, trainId);
+  return blocker !== null && fullLoaders.has(blocker) ? FULL_LOAD_PENALTY : 0;
 }
 
 function toPlan(goalNode: Node, goal: NonNullable<Goal>): Plan {
@@ -296,5 +390,5 @@ class MinHeap {
 }
 
 function less(a: Node, b: Node): boolean {
-  return a.cost < b.cost || (a.cost === b.cost && a.seq < b.seq);
+  return a.f < b.f || (a.f === b.f && a.seq < b.seq);
 }

@@ -188,7 +188,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
       'Rozkład to lista stacji, po których pociąg jeździ w kółko: w oknie pociągu „+ Dodaj stacje”, klikaj stacje na mapie, „Gotowe”.',
       '**Pełny ładunek** (ptaszek przy stacji w rozkładzie): pociąg nie odjedzie, dopóki nie napełni wagonów na ładunek, który ta stacja zbiera (status „Czeka na pełny ładunek”). Dobre przy kopalniach – zamiast wozić pół pustych wagonów. Inne pociągi omijają taki peron, jeśli mają wolny.',
       'Rada: przy pełnym ładunku daj stacji co najmniej jeden peron więcej niż pociągów czekających na ładunek. Wagony na inny ładunek nie wstrzymują odjazdu; „■ Stop” albo „Zawróć” przerywa czekanie.',
-      'Pociąg sam wybiera trasę (najkrótszą, omijając zajęte perony) i zawraca na końcu toru albo na stacji, gdy następny cel jest za nim. Jak w OpenTTD: przez cudze stacje jedzie niechętnie (wybierze obwodnicę, jeśli jest – albo poprowadź go punktem kontrolnym), a na stacji docelowej wybiera peron pasujący do długości składu – długi pociąg nie stanie na krótkim peronie, jeśli jest dłuższy.',
+      'Pociąg sam wybiera trasę (najkrótszą, omijając zajęte perony) i zawraca na końcu toru albo na stacji, gdy następny cel jest za nim. Jak w OpenTTD: przez cudze stacje jedzie niechętnie (wybierze obwodnicę, jeśli jest – albo poprowadź go punktem kontrolnym), a na stacji docelowej wybiera peron pasujący do długości składu – długi pociąg nie stanie na krótkim peronie, jeśli jest dłuższy. W trybie Ekspert unika też łuków (najchętniej jedzie prosto), podjazdów (płaska trasa, nawet trochę dłuższa) i zajętych peronów; pociągi stojące daleko, za kilkoma semaforami, nie zmieniają jego wyboru – zdążą odjechać.',
       '**Bez zatrzymania** (ptaszek przy stacji): pociąg przejeżdża przez stację i jedzie dalej – nie ładuje, nie wysiada nikt.',
       '**Punkt kontrolny**: narzędzie Stacja → „Punkt kontrolny”, klik na prosty tor (500 zł). Dodany do rozkładu jak stacja wymusza trasę przez ten tor (np. wybraną mijankę albo objazd); pociąg się na nim nie zatrzymuje. Buldożer usuwa sam znacznik, tor zostaje.',
       'Status „Nie może dojechać” – do celu nie ma toru (albo lokomotywa elektryczna nie ma sieci trakcyjnej, albo w trybie Ekspert drogę zamyka semafor jednokierunkowy). Po kilku dniach takiej jazdy gra pokazuje komunikat – „Pokaż ›” przenosi do pociągu.',
@@ -219,7 +219,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
         figure: mijankaSvg,
         alt: 'Mijanka: pociąg czeka przed semaforem na wyjeździe, pociąg z przeciwka mija semafor drugiego toru od tyłu',
       },
-      'Na linii dwutorowej oba rodzaje działają, ale inaczej. Pociąg omija tory zajęte przez inne pociągi, więc ze ścieżkowymi może wyprzedzić stojący pociąg torem przeciwnym – a ruch z przeciwka w tym czasie czeka. Jednokierunkowe trzymają każdy pociąg na swoim torze:',
+      'Na linii dwutorowej oba rodzaje działają, ale inaczej. Jazda pod prąd przez semafor ścieżkowy kosztuje w wyborze trasy tyle co 15 kafelków (jak w OpenTTD), więc pociąg trzyma się swojego toru. Torem przeciwnym wyprzedzi tylko długo stojący pociąg na dłuższym odcinku – a ruch z przeciwka w tym czasie czeka. Jednokierunkowe trzymają każdy pociąg na swoim torze zawsze:',
       {
         figure: semaforySvg,
         alt: 'Linia dwutorowa: na semaforach ścieżkowych pociąg wyprzedza torem przeciwnym, na jednokierunkowych czeka na swoim torze',
