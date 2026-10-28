@@ -32,10 +32,12 @@ body {
   touch-action: none;
 }
 
+/* Wielkość interfejsu (Menu → Widok): cała warstwa powiększona o --ui-scale; mapa (płótno #game) bez zmian. */
 #ui {
   position: fixed;
   inset: 0;
   pointer-events: none;
+  zoom: var(--ui-scale, 1);
 }
 
 .panel {
@@ -230,6 +232,9 @@ body {
   gap: 4px;
   width: 280px;
   white-space: normal;
+  /* Na niskim ekranie menu się przewija zamiast wychodzić za dół. */
+  max-height: calc(100% - 64px);
+  overflow-y: auto;
 }
 
 .menu button {
@@ -241,6 +246,20 @@ body {
 
 .menu small {
   color: var(--muted);
+}
+
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.menu-row > span {
+  flex: 1;
+}
+
+.menu-row button {
+  padding: 6px 8px;
 }
 
 .menu-title {

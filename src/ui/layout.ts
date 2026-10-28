@@ -13,10 +13,19 @@ export interface PanelLayout {
   collapsed: boolean;
 }
 
+/** Wielkość interfejsu (Menu → Widok): mały – laptopy, normalny – monitory ok. 24", duży – duże ekrany. */
+export type UiSize = 'small' | 'normal' | 'large';
+export const UI_SIZES: readonly UiSize[] = ['small', 'normal', 'large'];
+export const UI_SIZE_SCALE: Record<UiSize, number> = { small: 0.8, normal: 1, large: 1.2 };
+export const UI_SIZE_NAMES: Record<UiSize, string> = { small: 'mały', normal: 'normalny', large: 'duży' };
+/** Okno przeglądarki niższe niż tyle px – na start mały interfejs (laptop). */
+const SMALL_SCREEN_HEIGHT = 800;
+
 export interface LayoutState {
   panels: Record<PanelId, PanelLayout>;
   /** Podpowiedzi do narzędzi w prawym dolnym rogu (Menu → Widok). */
   hints: boolean;
+  uiSize: UiSize;
 }
 
 const KEY = 'ironhub.layout';
@@ -27,7 +36,8 @@ const KEEP_VISIBLE = 48;
 function defaults(): LayoutState {
   const panels = {} as Record<PanelId, PanelLayout>;
   for (const id of PANEL_IDS) panels[id] = { pos: null, collapsed: false };
-  return { panels, hints: true };
+  const uiSize = typeof window !== 'undefined' && window.innerHeight < SMALL_SCREEN_HEIGHT ? 'small' : 'normal';
+  return { panels, hints: true, uiSize };
 }
 
 function load(): LayoutState {
@@ -42,6 +52,7 @@ function load(): LayoutState {
       def.panels[id] = { pos, collapsed: p.collapsed === true };
     }
     def.hints = raw.hints !== false;
+    if (UI_SIZES.includes(raw.uiSize as UiSize)) def.uiSize = raw.uiSize as UiSize;
     return def;
   } catch {
     return def;
@@ -49,6 +60,22 @@ function load(): LayoutState {
 }
 
 export const layoutStore = new Store<LayoutState>(load());
+
+/** Skala interfejsu (1 – normalny). Położenia paneli trzymamy w px ekranu, w CSS dzielimy przez skalę. */
+export function uiScale(): number {
+  return UI_SIZE_SCALE[layoutStore.get().uiSize];
+}
+
+/** Ustawia zmienną CSS `--ui-scale` (zoom warstwy `#ui`). */
+function applyUiScale(): void {
+  if (typeof document !== 'undefined') document.documentElement.style.setProperty('--ui-scale', String(uiScale()));
+}
+applyUiScale();
+
+export function setUiSize(uiSize: UiSize): void {
+  update({ uiSize });
+  applyUiScale();
+}
 
 function update(patch: Partial<LayoutState>): void {
   layoutStore.set(patch);
@@ -68,9 +95,9 @@ export function setHints(on: boolean): void {
   update({ hints: on });
 }
 
-/** Wszystkie panele na domyślne miejsca, rozwinięte; podpowiedzi włączone. */
+/** Wszystkie panele na domyślne miejsca, rozwinięte; podpowiedzi włączone. Wielkość interfejsu zostaje. */
 export function resetLayout(): void {
-  update(defaults());
+  update({ ...defaults(), uiSize: layoutStore.get().uiSize });
 }
 
 /** Położenie przycięte do okna – panel nie ucieknie za ekran (np. po zmniejszeniu okna). */
@@ -117,7 +144,10 @@ export function useFloatingPanel(id: PanelId) {
   };
 
   const pos = drag ?? (layout.pos ? clampToWindow(layout.pos) : null);
-  const style = pos ? { left: `${pos.x}px`, top: `${pos.y}px`, right: 'auto', bottom: 'auto', transform: 'none' } : undefined;
+  const s = UI_SIZE_SCALE[useStore(layoutStore).uiSize];
+  const style = pos
+    ? { left: `${pos.x / s}px`, top: `${pos.y / s}px`, right: 'auto', bottom: 'auto', transform: 'none' }
+    : undefined;
 
   return {
     ref,

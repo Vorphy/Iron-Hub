@@ -13,7 +13,7 @@ import { FinanceWindow, IndustryWindow, StationWindow, TownWindow } from './Info
 import { TrainWindow } from './TrainWindow';
 import { TrainsWindow } from './TrainsWindow';
 import { hudStore, type HudActions, type HudState } from './hudStore';
-import { layoutStore, resetLayout, setHints, useFloatingPanel } from './layout';
+import { layoutStore, resetLayout, setHints, setUiSize, UI_SIZE_NAMES, UI_SIZES, uiScale, useFloatingPanel } from './layout';
 import { useStore } from './store';
 
 const TERRAIN_NAMES: Record<Terrain, string> = {
@@ -464,7 +464,7 @@ function Menu({
   buildingsHidden: boolean;
   changelogUnseen: boolean;
 }) {
-  const hints = useStore(layoutStore).hints;
+  const { hints, uiSize } = useStore(layoutStore);
   return (
     <div class="panel menu">
       <div class="menu-title">Sygnalizacja</div>
@@ -508,6 +508,14 @@ function Menu({
       <button class={hints ? 'active' : ''} onClick={() => setHints(!hints)} title="Podpowiedzi do narzędzi w rogu ekranu">
         Podpowiedzi: {hints ? 'wł.' : 'wył.'}
       </button>
+      <div class="menu-row" title="Wielkość napisów i paneli – mały na laptopie, duży na dużym ekranie">
+        <span>Interfejs:</span>
+        {UI_SIZES.map((size) => (
+          <button key={size} class={uiSize === size ? 'active' : ''} onClick={() => setUiSize(size)}>
+            {UI_SIZE_NAMES[size]}
+          </button>
+        ))}
+      </div>
       <button onClick={resetLayout} title="Górny pasek, menu budowania i podpowiedzi wracają na swoje miejsca i rozwijają się">
         Przywróć układ paneli
       </button>
@@ -539,7 +547,10 @@ function Menu({
 function CursorLabel({ label }: { label: HudState['cursorLabel'] }) {
   if (!label) return null;
   return (
-    <div class={`cursor-label ${label.ok ? '' : 'bad'}`} style={{ left: `${label.x + 16}px`, top: `${label.y + 18}px` }}>
+    <div
+      class={`cursor-label ${label.ok ? '' : 'bad'}`}
+      style={{ left: `${(label.x + 16) / uiScale()}px`, top: `${(label.y + 18) / uiScale()}px` }}
+    >
       {label.text}
     </div>
   );

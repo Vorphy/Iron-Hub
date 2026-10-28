@@ -12,6 +12,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-28',
+    title: 'Wielkość interfejsu dla różnych ekranów',
+    items: [
+      'Menu → Widok → Interfejs: mały, normalny albo duży. Mały mieści menu, okna i panele na ekranie laptopa, duży przydaje się na dużym monitorze. Mapa się nie zmienia.',
+      'Na niskim ekranie gra przy pierwszym uruchomieniu sama wybiera mały interfejs; wybór zapamiętuje przeglądarka.',
+      'Menu wyższe niż ekran można przewijać – nie ucieka już za dolną krawędź.',
+    ],
+  },
+  {
+    date: '2026-10-28',
     title: 'Pracownicy: zakłady rosną do poziomu 7',
     items: [
       'Kopalnia, las czy fabryka na poziomie 5 może urosnąć jeszcze o dwa poziomy (do 7) – ale tylko z pracownikami. Stacja przy takim zakładzie przyjmuje pasażerów, nawet gdy obok nie ma domów, a każdy, kto wysiądzie, idzie do pracy.',

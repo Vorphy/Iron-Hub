@@ -3,6 +3,8 @@ import { defaultFilters, industryColor, MINIMAP_ZOOMS } from '../render/minimap'
 import { INDUSTRY_DEFS } from '../sim/economy/industry';
 import { TUTORIAL_STEPS } from '../tutorial';
 import type { HudActions, MinimapSettings } from './hudStore';
+import { layoutStore, UI_SIZE_SCALE } from './layout';
+import { useStore } from './store';
 
 /** Szerokość małej minimapy w px ekranu (wysokość – połowa, jak w rzucie izometrycznym). */
 const MINIMAP_W = 240;
@@ -17,7 +19,8 @@ export function MinimapPanel({ open, settings, actions }: { open: boolean; setti
   const [pos, setPos] = useState(settings.pos);
   const big = settings.big;
   // Duża mapa: szerokość z rozmiaru okna (płótno 1:1 z ekranem, żeby nie liczyć zbyt wielu pikseli).
-  const bigW = Math.min(900, Math.max(320, window.innerWidth - 360));
+  const s = UI_SIZE_SCALE[useStore(layoutStore).uiSize];
+  const bigW = Math.min(900, Math.max(320, window.innerWidth / s - 360));
   const w = big ? bigW : MINIMAP_W;
   const scale = big ? 1 : 2;
 
@@ -55,7 +58,8 @@ export function MinimapPanel({ open, settings, actions }: { open: boolean; setti
     const next = MINIMAP_ZOOMS[Math.max(0, Math.min(MINIMAP_ZOOMS.length - 1, zoomIdx + d))]!;
     actions.setMinimap({ zoom: next });
   };
-  const style = big || !pos ? undefined : { left: `${pos.x}px`, top: `${pos.y}px` };
+  // Położenie w px ekranu; interfejs jest powiększony o `s` (zoom `#ui`).
+  const style = big || !pos ? undefined : { left: `${pos.x / s}px`, top: `${pos.y / s}px` };
 
   const panel = (
     <div class={`panel minimap ${big ? 'big' : ''}`} style={style}>
