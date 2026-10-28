@@ -113,7 +113,8 @@ export function drawSignal(g: Graphics, sig: Signal, bit: 1 | 2, light: number, 
  */
 const SIGNAL_SLOTS: Record<number, Record<1 | 2, [number, number]>> = {
   [Track.Y]: { 1: [9, 1], 2: [8, 0] },
-  [Track.X]: { 1: [11, 3], 2: [10, 2] },
+  // Nasz X to oś Y OpenTTD: jazda na SE (kierunek 1) to Y_SE – pozycja 10 z obrazkiem SIGNAL_TO_SOUTHEAST.
+  [Track.X]: { 1: [10, 2], 2: [11, 3] },
   [Track.Upper]: { 1: [4, 5], 2: [5, 4] },
   [Track.Lower]: { 1: [7, 4], 2: [6, 5] },
   [Track.Left]: { 1: [1, 6], 2: [0, 7] },

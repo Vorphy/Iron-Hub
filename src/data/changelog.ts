@@ -12,6 +12,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-28',
+    title: 'Poprawka: semafory na prostych torach',
+    items: [
+      'Semafor na prostym torze biegnącym na ekranie z lewej góry w prawy dół (oś X) był rysowany odwrotnie, niż działał – jednokierunkowy ustawiony „na oko” blokował pociągi (np. metro na jednotorowym ringu stawało). Teraz grafika pokazuje kierunek, który obowiązuje.',
+      'W starszych zapisach takie semafory mogą teraz wyglądać na odwrócone – to ich prawdziwy kierunek; kliknij je narzędziem Semafor, żeby zmienić.',
+    ],
+  },
+  {
+    date: '2026-10-28',
     title: 'Miasta: budowa domów, kościoły, parki i nowe budynki',
     items: [
       'Nowy i rozbudowywany dom najpierw się buduje: wykop, rusztowanie, stan surowy, po kilka dni każdy etap – widać, gdzie miasto rośnie.',
