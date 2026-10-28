@@ -4,6 +4,7 @@ import type { Station } from '../../sim/station/station';
 import { Side, Track, TRACK_SIDES, tracksOn } from '../../sim/track/track';
 import { cornerHeights } from '../../sim/world/height';
 import { sideHeight } from '../../sim/track/bridge';
+import { type Corners, Foundation, tileFoundation, trackCorners } from '../../sim/track/foundation';
 import { getTerrain, Terrain, type WorldMap } from '../../sim/world/map';
 import { toWorld } from '../iso';
 import { buildingsHidden } from '../visibility';
@@ -21,13 +22,22 @@ const SPR_RAIL_TRACK_BASE = 1018;
 const SPR_ROAD_Y = 1332;
 const SPR_CROSSING_OFF_X = 1370;
 const NUM_SLOPES = 19;
+const SPR_FOUNDATION_BASE = 989;
 
 /**
  * Zbocze kafelka w kodowaniu TTD: bity podniesionych narożników W=1 (lewy), S=2 (dolny), E=4 (prawy),
  * N=8 (górny), 16 – strome (jeden narożnik o 2 poziomy wyżej). `z` – wysokość najniższego narożnika.
  */
 export function tileSlope(map: WorldMap, x: number, y: number): { slope: number; z: number } {
-  const [n, e, s, w] = cornerHeights(map, x, y);
+  return cornersSlope(cornerHeights(map, x, y));
+}
+
+/** Zbocze, po którym biegną tory kafelka – wierzch fundamentu, jeśli jest. */
+export function railTileSlope(map: WorldMap, x: number, y: number): { slope: number; z: number } {
+  return cornersSlope(trackCorners(map, x, y));
+}
+
+function cornersSlope([n, e, s, w]: Corners): { slope: number; z: number } {
   const z = Math.min(n, e, s, w);
   const max = Math.max(n, e, s, w);
   let slope = (w > z ? 1 : 0) | (s > z ? 2 : 0) | (e > z ? 4 : 0) | (n > z ? 8 : 0);
@@ -116,7 +126,8 @@ function touches(bits: number, side: Side): boolean {
 
 /** Tory z gruntem pod nimi (jak DrawTrackBits w OpenTTD). `bits` – tylko elementy do narysowania. */
 export function drawTrackGround(g: Graphics, map: WorldMap, x: number, y: number, bits: number): void {
-  const { slope, z } = tileSlope(map, x, y);
+  drawFoundation(g, map, x, y);
+  const { slope, z } = railTileSlope(map, x, y);
   const o = tileOrigin(x, y, z);
   if (slope !== 0) {
     const off = TRACK_SLOPED[slope];
@@ -149,6 +160,25 @@ export function drawTrackGround(g: Graphics, map: WorldMap, x: number, y: number
           : 4;
   drawSprite(g, SPR_RAIL_TRACK_BASE + ground, o.x, o.y);
   for (const t of tracksOn(bits)) drawSprite(g, SINGLE[t]!, o.x, o.y);
+}
+
+/**
+ * Ścianki fundamentu pod torami na zboczu (DrawFoundation w OpenTTD): poziomy – sprite 989 + zbocze,
+ * pochyły – z dodatków OpenTTD, indeks: najwyższy narożnik × 2 + (oś Y OpenTTD, czyli nasz tor X).
+ */
+function drawFoundation(g: Graphics, map: WorldMap, x: number, y: number): void {
+  const f = tileFoundation(map, x, y);
+  if (f === Foundation.None) return;
+  const { slope, z } = tileSlope(map, x, y);
+  const o = tileOrigin(x, y, z);
+  if (f === Foundation.Leveled) {
+    drawSprite(g, SPR_FOUNDATION_BASE + slope, o.x, o.y);
+    return;
+  }
+  // Pochyły tylko przy jednym podniesionym narożniku: W=1, S=2, E=4, N=8 -> narożnik 0–3.
+  const corner = Math.log2(slope);
+  const alongX = map.track[y * map.width + x] === Track.X ? 1 : 0;
+  drawSprite(g, `FOUNDATIONS_SLOPES_HALFTILES:${corner * 2 + alongX}`, o.x, o.y);
 }
 
 /** Same szyny (bez gruntu) – tory metra w widoku poziomu −1. */

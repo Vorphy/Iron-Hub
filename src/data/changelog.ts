@@ -11,6 +11,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    date: '2026-10-28',
+    title: 'Fundamenty pod torami na zboczach',
+    items: [
+      'Tory w poprzek zbocza, łuki i rozjazdy na zboczu można już budować – stoją na kamiennym fundamencie, jak w OpenTTD. Kafelek podnosi się do najwyższego narożnika, a prosty tor przy jednym podniesionym narożniku dostaje fundament pochyły, równo pod górę.',
+      'Fundament kosztuje 250 zł za kafelek (do ceny torów), płaci się raz – kolejne tory na tym samym fundamencie tylko w cenie toru. Podgląd budowy pokazuje koszt z fundamentem.',
+      'Nie da się, gdy tor kończyłby się uskokiem nad niższym sąsiadem, ani na stromym zboczu.',
+    ],
+  },
+  {
     date: '2026-10-25',
     title: 'Pomoc uzupełniona',
     items: [

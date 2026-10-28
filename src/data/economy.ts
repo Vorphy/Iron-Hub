@@ -32,6 +32,11 @@ export const ECONOMY = {
     tunnelTile: 600,
     /** Zmiana wysokości jednego narożnika terenu. */
     terraformCorner: 150,
+    /**
+     * Fundament pod torem na zboczu (łuk, rozjazd albo tor w poprzek zbocza) – za kafelek, do ceny torów.
+     * Jak w OpenTTD: 2,5× ceny elementu toru.
+     */
+    foundation: 250,
     /** Oczyszczenie nieużytku. */
     clearRough: 50,
     /** Wyburzenie domu. */

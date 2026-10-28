@@ -13,6 +13,7 @@ export const HOUSE_DEMOLISH_COST = C.demolishHouse;
 export const ROAD_REMOVE_COST = C.removeRoad;
 export const CATENARY_COST = C.catenaryTile;
 export const TERRAFORM_COST = C.terraformCorner;
+export const FOUNDATION_COST = C.foundation;
 export const BRIDGE_TILE_COST = C.bridgeTile;
 export const TUNNEL_TILE_COST = C.tunnelTile;
 export const METRO_TRACK_COST = C.metroTrackPiece;

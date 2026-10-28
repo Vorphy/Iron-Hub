@@ -1,5 +1,6 @@
 import type { GameState } from '../state';
 import { axisTrack, bridgeAt, bridgeRole, bridgeTrack, headSpanSide, isBridgeTrack, sideHeight } from '../track/bridge';
+import { trackHeight } from '../track/foundation';
 import { pieceLength, STRAIGHT_LENGTH } from '../track/graph';
 import { isTunnelTrack, portalInnerSide, tunnelAt, tunnelRole, tunnelTrack } from '../track/tunnel';
 import { heightAt } from '../world/height';
@@ -159,12 +160,14 @@ export function stepHeight(state: GameState, s: Step, d: number): number {
   // Ukos na zboczu leży poziomo – na wysokości swoich końców (środków boków kafelka).
   if (s.track >= Track.Upper && s.track <= Track.Right) {
     const e = pointOnStep(s, 0);
-    return heightAt(state.map, e.x, e.y);
+    return trackHeight(state.map, s.x, s.y, e.x - s.x, e.y - s.y);
   }
-  if (!bridge) return heightAt(state.map, p.x, p.y);
+  // Teren albo wierzch fundamentu.
+  const surface = () => trackHeight(state.map, s.x, s.y, p.x - s.x, p.y - s.y);
+  if (!bridge) return surface();
   if (isBridgeTrack(s.track)) return bridge.deck;
   const role = bridgeRole(bridge, s.x, s.y);
-  if (role === 'span' || s.track !== axisTrack(bridge.axis)) return heightAt(state.map, p.x, p.y);
+  if (role === 'span' || s.track !== axisTrack(bridge.axis)) return surface();
   const spanSide = headSpanSide(bridge, role);
   const edge = (side: number) => (side === spanSide ? bridge.deck : sideHeight(state.map, s.x, s.y, side as Side));
   const t = d / stepLength(s);

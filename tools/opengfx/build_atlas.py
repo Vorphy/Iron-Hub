@@ -363,6 +363,11 @@ def main() -> None:
     for sid in range(3924, 4062):
         atlas.add(sid)
     shore_sprites(atlas, root)
+    # Fundamenty pod torami na zboczach: poziome (989 + zbocze) i pochyłe z dodatków OpenTTD.
+    for sid in range(990, 1004):
+        atlas.add(sid)
+    for k in range(8):
+        atlas.add(f'FOUNDATIONS_SLOPES_HALFTILES:{k}')
     # Tory, zajezdnie, perony i dachy stacji (kolor firmy), semafory.
     for sid in range(1005, 1069):
         atlas.add(sid)

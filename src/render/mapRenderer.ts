@@ -4,12 +4,13 @@ import type { Depot } from '../sim/depot/depot';
 import type { Station } from '../sim/station/station';
 import { axisTrack, bridgeRole, type Bridge } from '../sim/track/bridge';
 import { tunnelRole, type Tunnel } from '../sim/track/tunnel';
+import { Foundation, tileFoundation, trackCorners } from '../sim/track/foundation';
 import { isHeadAxisTrack } from './bridges';
 import { getTrackBits, Track, tracksOn } from '../sim/track/track';
 import { getTerrain, Terrain, type WorldMap } from '../sim/world/map';
 import type { Rect } from './camera';
 import { cornerHeights, MAX_HEIGHT } from '../sim/world/height';
-import { HEIGHT_PX, TILE_H, TILE_W, tileDiamond, tileToWorld, tileToWorldFlat } from './iso';
+import { HEIGHT_PX, TILE_H, TILE_W, tileDiamond, tileToWorld, tileToWorldFlat, toWorld } from './iso';
 import { darken, lighten, tileHash } from './shapes';
 import { drawHouse } from './buildings';
 import { drawRoad, roadNeighbors } from './roadDraw';
@@ -54,6 +55,9 @@ const COLORS: Record<Terrain, number[]> = {
   [Terrain.Rough]: [0x7a7346, 0x766f43, 0x7e7749, 0x736c41],
 };
 const ROUGH_DOT = 0x4f4a2b;
+/** Ścianki fundamentu (kamień): od strony światła (SW) jaśniejsza. */
+const FOUNDATION_LIGHT = 0xa39a86;
+const FOUNDATION_DARK = 0x7a7262;
 const PLATFORM = [0xa9a49b, 0xa5a097, 0xaca79e, 0xa29d94];
 const PLATFORM_EDGE = 0x6d6860;
 
@@ -323,6 +327,7 @@ export class MapRenderer {
     } else {
       drawTerrainTile(g, this.map, x, y, COLORS[t][h & 3]!);
       if (t === Terrain.Rough) drawRoughDots(g, x, y, h);
+      if (tileFoundation(this.map, x, y) !== Foundation.None) drawFoundationShape(g, this.map, x, y, COLORS[t][h & 3]!);
     }
     // Droga pod torem (przejazd) – najpierw droga, tor nad nią.
     if (this.map.road[y * this.map.width + x]) drawRoad(tracksG, this.map, x, y);
@@ -379,6 +384,34 @@ function drawRoughDots(g: Graphics, x: number, y: number, h: number): void {
     const p = tileToWorld(x + fx, y + fy);
     g.rect(p.x - 1.5, p.y - 1, 3, 2).fill(ROUGH_DOT);
   }
+}
+
+/** Fundament pod torem: wierzch na wysokości torów i dwie widoczne ścianki (boki SE i SW) w kolorze kamienia. */
+function drawFoundationShape(g: Graphics, map: WorldMap, x: number, y: number, color: number): void {
+  const ground = cornerHeights(map, x, y);
+  const top = trackCorners(map, x, y);
+  const xy = [
+    [x, y],
+    [x + 1, y],
+    [x + 1, y + 1],
+    [x, y + 1],
+  ] as const;
+  const at = (k: number, z: readonly number[]) => toWorld(xy[k]![0], xy[k]![1], z[k]!);
+  // Boki SE (narożniki prawo–dół) i SW (dół–lewo).
+  for (const [a, b, c] of [
+    [1, 2, FOUNDATION_DARK],
+    [2, 3, FOUNDATION_LIGHT],
+  ] as const) {
+    if (top[a] === ground[a] && top[b] === ground[b]) continue;
+    const pts = [at(a, ground), at(b, ground), at(b, top), at(a, top)];
+    g.poly(pts.flatMap((p) => [p.x, p.y]))
+      .fill(c)
+      .stroke({ width: 1, color: 0x000000, alpha: 0.15 });
+  }
+  const pts = [0, 1, 2, 3].map((k) => at(k, top));
+  g.poly(pts.flatMap((p) => [p.x, p.y]))
+    .fill(color)
+    .stroke({ width: 1, color: 0x000000, alpha: 0.08 });
 }
 
 /**

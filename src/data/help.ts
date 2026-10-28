@@ -98,7 +98,8 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     title: 'Tory, mosty, tunele',
     blocks: [
       `Tory (T): przeciągnij wzdłuż osi albo po skosie; pozycja kursora w pierwszym kafelku wybiera łuk. Linia powstaje w całości albo wcale (czerwony podgląd = coś blokuje). ${zl(E.construction.trackPiece)} za element toru. Nie ma skrętów o 90° – skręca się łukami.`,
-      'Na zboczu prosty tor tylko w górę zbocza; ukos (łuk) tylko poziomo – np. wzdłuż płaskiej połówki kafelka z jednym podniesionym narożnikiem. Stacje i zajezdnie tylko na płaskim. Pod górę pociąg zwalnia, z górki przyspiesza.',
+      'Na zboczu prosty tor w górę zbocza i ukos (łuk) leżący poziomo – np. wzdłuż płaskiej połówki kafelka z jednym podniesionym narożnikiem – leżą wprost na terenie. Stacje i zajezdnie tylko na płaskim. Pod górę pociąg zwalnia, z górki przyspiesza.',
+      `**Fundament** (jak w OpenTTD): tor w poprzek zbocza, łuk albo rozjazd na zboczu stoi na kamiennym fundamencie – kafelek jest podnoszony do najwyższego narożnika (prosty tor przy jednym podniesionym narożniku – na fundamencie pochyłym, równo pod górę). ${zl(E.construction.foundation)} za kafelek, do ceny torów. Nie da się, gdy tor kończyłby się uskokiem nad niższym sąsiadem (bok kafelka cały na dole) ani na stromym zboczu.`,
       `Usuwanie: Tory → Usuń albo Rozbiórka (X). Klik – jeden element pod kursorem, przeciągnięcie – odcinek. Zwrot ${pct(E.refunds.demolition)}. Toru pod pociągiem nie rozbierzesz.`,
       `**Most** (M): przeciągnij od przyczółka do przyczółka, do ${MAX_BRIDGE_LENGTH} kafelków, ${zl(E.construction.bridgeTile)} za kafelek. Przyczółki na tej samej wysokości, pod mostem teren niżej (woda, inne tory).`,
       `**Tunel** (N): kliknij zbocze – tunel biegnie prosto do zbocza po drugiej stronie na tej samej wysokości. Do ${MAX_TUNNEL_LENGTH} kafelków, ${zl(E.construction.tunnelTile)} za kafelek.`,

@@ -2,6 +2,7 @@ import type { Graphics } from 'pixi.js';
 import { ALL_TRACKS, getTrackBits, oppositeSide, Side, SIDE_DELTA, TRACK_SIDES, type Track } from '../sim/track/track';
 import { inBounds, type WorldMap } from '../sim/world/map';
 import { tileToWorld, toWorld } from './iso';
+import { Foundation, tileFoundation, trackHeight } from '../sim/track/foundation';
 
 export interface TrackStyle {
   ballast: number;
@@ -179,7 +180,12 @@ export function drawTrackPiece(
   const [bx, by] = SIDE_MID[sb];
   const miters: [Miter, Miter] = map ? [jointMiter(map, x, y, track, sa), jointMiter(map, x, y, track, sb)] : [null, null];
   const clips = map ? [sa, sb].filter((side) => jointClipped(map, x, y, side)).map((side) => tileSidePlane(x, y, side)) : [];
-  drawTrackSegment(g, x + ax, y + ay, x + bx, y + by, style, undefined, miters, layers, clips);
+  // Na fundamencie tor biegnie po jego wierzchu, nie po terenie.
+  const zAlong =
+    map && tileFoundation(map, x, y) !== Foundation.None
+      ? (t: number) => trackHeight(map, x, y, ax + (bx - ax) * t, ay + (by - ay) * t)
+      : undefined;
+  drawTrackSegment(g, x + ax, y + ay, x + bx, y + by, style, zAlong, miters, layers, clips);
 }
 
 /** Wszystkie elementy toru na kafelku: najpierw podsypka, potem podkłady, na wierzchu szyny (rozjazdy). */

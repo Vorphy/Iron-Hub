@@ -33,7 +33,7 @@ describe('zbocza', () => {
     expect(heightAt(s.map, 11.5, 5.5)).toBeCloseTo(1.5);
   });
 
-  it('tor: na zboczu tylko prosty w górę zbocza, łuki tylko na płaskim', () => {
+  it('tor: na zboczu prosty w górę zbocza, w poprzek – na fundamencie, łuk do dolnej krawędzi – nie', () => {
     const s = rampWorld();
     const sim = new Simulation(s);
     sim.enqueue({ type: 'buildTrack', pieces: xLine(1, 20, 5) });
@@ -41,8 +41,9 @@ describe('zbocza', () => {
     sim.enqueue({ type: 'buildTrack', pieces: [{ x: 12, y: 8, track: Track.Upper }] });
     sim.step();
     const fails = sim.drainEvents().flatMap((e) => (e.type === 'commandFailed' ? [e.reason] : []));
-    expect(fails).toEqual(['blocked', 'blocked']);
+    expect(fails).toEqual(['blocked']);
     expect(s.map.track[5 * 40 + 12]).toBe(Track.X);
+    expect(s.map.track[7 * 40 + 12]).toBe(Track.Y);
   });
 
   it('poziomy ukos na zboczu: na płaskiej połówce kafelka wolno, w poprzek zbocza nie', () => {

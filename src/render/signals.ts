@@ -4,6 +4,7 @@ import type { WorldMap } from '../sim/world/map';
 import { dirBit, type Signal, signalCode } from '../sim/signals/signals';
 import type { GameState } from '../sim/state';
 import { Track, TRACK_SIDES } from '../sim/track/track';
+import { trackHeight } from '../sim/track/foundation';
 import { heightAt } from '../sim/world/height';
 import { drawSprite, gfxOn } from './gfx/gfx';
 import { pointOnStep, stepHeight, stepLength } from '../sim/trains/steps';
@@ -139,9 +140,10 @@ export function drawSignalSprite(g: Graphics, map: WorldMap, sig: Signal, bit: 1
   const [pos, image] = SIGNAL_SLOTS[sig.track]![bit];
   const [px, py] = SIGNAL_POS[pos]!;
   // Oś x OpenTTD = nasza oś y.
-  const fx = sig.x + py / 16;
-  const fy = sig.y + px / 16;
-  const p = toWorld(fx, fy, heightAt(map, fx, fy));
+  const [u, v] = [py / 16, px / 16];
+  // Na powierzchni – wierzch fundamentu, jeśli jest; w widoku metra – teren jak dotąd.
+  const z = sig.under ? heightAt(map, sig.x + u, sig.y + v) : trackHeight(map, sig.x, sig.y, u, v);
+  const p = toWorld(sig.x + u, sig.y + v, z);
   drawSprite(g, `PRE_SIGNAL_SEMAPHORE_PBS:${(sig.oneWay ? 128 : 112) + image * 2 + (green ? 1 : 0)}`, p.x, p.y);
 }
 

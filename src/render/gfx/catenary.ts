@@ -1,11 +1,11 @@
 import type { Graphics } from 'pixi.js';
 import { Side, Track, TRACK_SIDES, tracksOn } from '../../sim/track/track';
-import { heightAt } from '../../sim/world/height';
+import { trackHeight } from '../../sim/track/foundation';
 import { sideHeight } from '../../sim/track/bridge';
 import type { WorldMap } from '../../sim/world/map';
 import { HEIGHT_PX, toWorld } from '../iso';
 import { drawSprite } from './gfx';
-import { tileSlope } from './tiles';
+import { railTileSlope } from './tiles';
 
 /**
  * Sieć trakcyjna z grafiki OpenGFX – uproszczony algorytm z elrail.cpp OpenTTD: przewód nad każdym
@@ -61,7 +61,7 @@ const PYLON_DIR: Record<number, Partial<Record<Side, number>>> = {
 };
 
 export function drawCatenarySprites(g: Graphics, map: WorldMap, x: number, y: number, bits: number): void {
-  const { slope, z } = tileSlope(map, x, y);
+  const { slope, z } = railTileSlope(map, x, y);
   const at = (ox: number, oy: number, zz: number) => toWorld(x + oy / 16, y + ox / 16, zz);
   const done = new Set<Side>();
   for (const track of tracksOn(bits)) {
@@ -77,7 +77,7 @@ export function drawCatenarySprites(g: Graphics, map: WorldMap, x: number, y: nu
     done.add(side);
     const px = PCP_X[side] + PPP_X[dir]!;
     const py = PCP_Y[side] + PPP_Y[dir]!;
-    const p = at(px, py, heightAt(map, x + py / 16, y + px / 16));
+    const p = at(px, py, trackHeight(map, x, y, py / 16, px / 16));
     drawSprite(g, `CATENARY:${28 + PYLON_SPRITE[dir]!}`, p.x, p.y);
   }
   for (const track of tracksOn(bits)) {

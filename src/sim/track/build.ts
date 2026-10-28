@@ -1,11 +1,12 @@
 import { spend } from '../economy/finance';
-import { CLEAR_ROUGH_COST, TRACK_COST, TRACK_REFUND_RATE } from '../config';
+import { CLEAR_ROUGH_COST, FOUNDATION_COST, TRACK_COST, TRACK_REFUND_RATE } from '../config';
 import type { CommandResult, SimEvent } from '../commands';
 import type { GameState } from '../state';
 import { getTerrain, hasBuilding, inBounds, setTerrain, Terrain, type WorldMap } from '../world/map';
 import { occupiedTiles } from '../trains/train';
-import { cornerHeights, tileSlope, type Slope } from '../world/height';
-import { hasTrack, Track, type TrackPiece } from './track';
+import { cornerHeights } from '../world/height';
+import { Foundation, railFoundation } from './foundation';
+import { hasTrack, Track, type TrackPiece, tracksOn } from './track';
 
 export type PieceStatus = 'new' | 'exists' | 'blocked';
 
@@ -20,24 +21,35 @@ export interface TrackPlan {
 export function planBuildTrack(state: GameState, pieces: readonly TrackPiece[]): TrackPlan {
   const { map } = state;
   const out: TrackPlan['pieces'] = [];
-  const roughTiles = new Set<number>();
-  let cost = 0;
-  let blocked = false;
+  // Nowe elementy po kafelkach – zbocze sprawdzamy dla wszystkich torów kafelka razem.
+  const added = new Map<number, number>();
   for (const piece of unique(pieces)) {
     let status: PieceStatus;
-    if (!buildable(map, piece)) {
-      status = 'blocked';
-      blocked = true;
-    } else if (hasTrack(map, piece.x, piece.y, piece.track)) {
-      status = 'exists';
-    } else {
+    if (!buildable(map, piece)) status = 'blocked';
+    else if (hasTrack(map, piece.x, piece.y, piece.track)) status = 'exists';
+    else {
       status = 'new';
-      cost += TRACK_COST;
-      if (getTerrain(map, piece.x, piece.y) === Terrain.Rough) roughTiles.add(piece.y * map.width + piece.x);
+      const i = piece.y * map.width + piece.x;
+      added.set(i, (added.get(i) ?? 0) | piece.track);
     }
     out.push({ piece, status });
   }
-  cost += roughTiles.size * CLEAR_ROUGH_COST;
+  let cost = 0;
+  for (const [i, bits] of added) {
+    const x = i % map.width;
+    const y = Math.floor(i / map.width);
+    const corners = cornerHeights(map, x, y);
+    const after = railFoundation(corners, map.track[i]! | bits);
+    // Przejazd przez drogę tylko na terenie, bez fundamentu.
+    if (after === null || (map.road[i] && after !== Foundation.None)) {
+      for (const p of out) if (p.status === 'new' && p.piece.y * map.width + p.piece.x === i) p.status = 'blocked';
+      continue;
+    }
+    cost += tracksOn(bits).length * TRACK_COST;
+    if (after !== railFoundation(corners, map.track[i]!)) cost += FOUNDATION_COST;
+    if (getTerrain(map, x, y) === Terrain.Rough) cost += CLEAR_ROUGH_COST;
+  }
+  const blocked = out.some((p) => p.status === 'blocked');
   const result: CommandResult = blocked
     ? { ok: false, reason: 'blocked' }
     : cost > state.money
@@ -110,28 +122,7 @@ function buildable(map: WorldMap, { x, y, track }: TrackPiece): boolean {
   if (map.station[y * map.width + x]) return (track === Track.X || track === Track.Y) && hasTrack(map, x, y, track);
   // Przyczółek mostu: tylko istniejący tor w osi mostu.
   if (isBridgeHead(map, x, y)) return hasTrack(map, x, y, track);
-  return trackFitsSlope(tileSlope(map, x, y), track) || levelDiagonal(map, x, y, track);
-}
-
-/** Tor na zboczu: tylko prosty, biegnący w górę zbocza (jak w TTD); łuki tylko na płaskim. */
-export function trackFitsSlope(slope: Slope, track: number): boolean {
-  if (slope === 'flat') return true;
-  if (slope === 'x') return track === Track.X;
-  if (slope === 'y') return track === Track.Y;
-  return false;
-}
-
-/**
- * Ukos (łuk przy narożniku) na zboczu – wolno, gdy leży poziomo: oba jego końce (środki boków przy
- * narożniku) są na tej samej wysokości, np. na płaskiej połówce kafelka z jednym podniesionym
- * narożnikiem (jak w TTD). Bez stromych zboczy.
- */
-export function levelDiagonal(map: WorldMap, x: number, y: number, track: number): boolean {
-  const [t, r, b, l] = cornerHeights(map, x, y);
-  if (Math.max(t, r, b, l) - Math.min(t, r, b, l) > 1) return false;
-  if (track === Track.Upper || track === Track.Lower) return l === r;
-  if (track === Track.Left || track === Track.Right) return t === b;
-  return false;
+  return true;
 }
 
 /** Przyczółek mostu, portal tunelu albo zjazd do metra: tor w osi, nie do ruszania osobno. */
