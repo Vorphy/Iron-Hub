@@ -101,7 +101,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
       },
       'Klik kursorem na pociąg, stację, zajezdnię, miasto lub zakład otwiera jego okno. Klik na kwotę na górnym pasku – finanse.',
       'Układ paneli zapamiętuje przeglądarka. Podpowiedzi wyłączysz krzyżykiem albo w Menu → Widok; tam też „Przywróć układ paneli”, gdy coś odjedzie za daleko.',
-      '**Wielkość interfejsu**: Menu → Widok → Interfejs – mały (laptop), normalny (monitor ok. 24") albo duży (duży ekran). Zmienia napisy, przyciski, okna i panele; mapa zostaje bez zmian. Przy pierwszym uruchomieniu na niskim ekranie gra sama wybiera mały. Ustawienie zapamiętuje przeglądarka.',
+      '**Wielkość interfejsu**: Menu → Widok → Interfejs – 60% lub 80% (laptop, mały ekran), 100% (monitor ok. 24") albo 120% (duży ekran). Zmienia napisy, przyciski, okna i panele; mapa zostaje bez zmian. Przy pierwszym uruchomieniu na niskim ekranie gra sama wybiera mały. Ustawienie zapamiętuje przeglądarka.',
     ],
   },
   {

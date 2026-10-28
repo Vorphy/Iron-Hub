@@ -13,11 +13,14 @@ export interface PanelLayout {
   collapsed: boolean;
 }
 
-/** Wielkość interfejsu (Menu → Widok): mały – laptopy, normalny – monitory ok. 24", duży – duże ekrany. */
-export type UiSize = 'small' | 'normal' | 'large';
-export const UI_SIZES: readonly UiSize[] = ['small', 'normal', 'large'];
-export const UI_SIZE_SCALE: Record<UiSize, number> = { small: 0.8, normal: 1, large: 1.2 };
-export const UI_SIZE_NAMES: Record<UiSize, string> = { small: 'mały', normal: 'normalny', large: 'duży' };
+/**
+ * Wielkość interfejsu (Menu → Widok): 60% i 80% – laptopy i małe ekrany, 100% – monitory ok. 24",
+ * 120% – duże ekrany.
+ */
+export type UiSize = 'tiny' | 'small' | 'normal' | 'large';
+export const UI_SIZES: readonly UiSize[] = ['tiny', 'small', 'normal', 'large'];
+export const UI_SIZE_SCALE: Record<UiSize, number> = { tiny: 0.6, small: 0.8, normal: 1, large: 1.2 };
+export const UI_SIZE_NAMES: Record<UiSize, string> = { tiny: '60%', small: '80%', normal: '100%', large: '120%' };
 /** Okno przeglądarki niższe niż tyle px – na start mały interfejs (laptop). */
 const SMALL_SCREEN_HEIGHT = 800;
 

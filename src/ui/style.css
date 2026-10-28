@@ -255,11 +255,13 @@ body {
 }
 
 .menu-row > span {
-  flex: 1;
+  margin-right: 4px;
 }
 
 .menu-row button {
-  padding: 6px 8px;
+  flex: 1;
+  justify-content: center;
+  padding: 6px 2px;
 }
 
 .menu-title {

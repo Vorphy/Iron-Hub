@@ -508,7 +508,10 @@ function Menu({
       <button class={hints ? 'active' : ''} onClick={() => setHints(!hints)} title="Podpowiedzi do narzędzi w rogu ekranu">
         Podpowiedzi: {hints ? 'wł.' : 'wył.'}
       </button>
-      <div class="menu-row" title="Wielkość napisów i paneli – mały na laptopie, duży na dużym ekranie">
+      <div
+        class="menu-row"
+        title={'Wielkość napisów i paneli – 60–80% na laptopie, 100% na monitorze ok. 24", 120% na dużym ekranie'}
+      >
         <span>Interfejs:</span>
         {UI_SIZES.map((size) => (
           <button key={size} class={uiSize === size ? 'active' : ''} onClick={() => setUiSize(size)}>

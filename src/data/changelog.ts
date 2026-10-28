@@ -14,8 +14,8 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
     date: '2026-10-28',
     title: 'Wielkość interfejsu dla różnych ekranów',
     items: [
-      'Menu → Widok → Interfejs: mały, normalny albo duży. Mały mieści menu, okna i panele na ekranie laptopa, duży przydaje się na dużym monitorze. Mapa się nie zmienia.',
-      'Na niskim ekranie gra przy pierwszym uruchomieniu sama wybiera mały interfejs; wybór zapamiętuje przeglądarka.',
+      'Menu → Widok → Interfejs: 60%, 80%, 100% albo 120%. Mniejsze mieszczą menu, okna i panele na ekranie laptopa, 120% przydaje się na dużym monitorze. Mapa się nie zmienia.',
+      'Na niskim ekranie gra przy pierwszym uruchomieniu sama wybiera 80%; wybór zapamiętuje przeglądarka.',
       'Menu wyższe niż ekran można przewijać – nie ucieka już za dolną krawędź.',
     ],
   },
