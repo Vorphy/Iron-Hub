@@ -374,6 +374,8 @@ export class Tools {
           : existing
             ? { text: after?.dirs === 3 ? 'Kliknij: oba kierunki' : 'Kliknij: zmień kierunek', ok: true }
             : { text: `Koszt: ${formatMoney(SIGNAL_COST)}`, ok: this.sim.state.money >= SIGNAL_COST };
+      // Jednokierunkowy: pod prąd nie przejedzie nikt – przypomnienie, co znaczy strzałka.
+      if (after?.oneWay && this.label.ok) this.label = { text: `${this.label.text} · jazda tylko w stronę strzałki`, ok: true };
       return;
     }
 

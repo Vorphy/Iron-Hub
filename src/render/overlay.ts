@@ -4,7 +4,7 @@ import type { TrackPlan } from '../sim/track/build';
 import type { Side, Track } from '../sim/track/track';
 import type { Signal } from '../sim/signals/signals';
 import { drawDepot } from './depotDraw';
-import { drawSignal, drawSignalSprite } from './signals';
+import { drawDirectionArrow, drawSignal, drawSignalSprite } from './signals';
 import { gfxOn } from './gfx/gfx';
 import type { WorldMap } from '../sim/world/map';
 import { tileDiamond, tileToWorld } from './iso';
@@ -67,8 +67,11 @@ export class Overlay {
     for (const bit of [1, 2] as const) {
       if (!(signal.dirs & bit)) continue;
       // Z grafiką OpenGFX – podgląd tym samym obrazkiem co postawiony semafor.
-      if (map && gfxOn()) drawSignalSprite(this.preview, map, signal, bit, true);
-      else drawSignal(this.preview, signal, bit, 0xffe066, 0.85);
+      if (map && gfxOn()) {
+        drawSignalSprite(this.preview, map, signal, bit, true);
+        // Jednokierunkowy: strzałka, w którą stronę wolno jechać (sam obrazek łatwo odczytać odwrotnie).
+        if (signal.oneWay) drawDirectionArrow(this.preview, signal, bit, 0xffe066, 0.95);
+      } else drawSignal(this.preview, signal, bit, 0xffe066, 0.85);
     }
   }
 

@@ -461,6 +461,7 @@ export class Game {
     const cars = this.traffic.update(this.sim.state, deltaMs, gameSeconds, this.camera.viewRect(), this.camera.zoom);
     this.underground.update(this.sim.state);
     const win = hudStore.get().window;
+    this.signals.showDirections = this.tools.tool === 'signal';
     this.signals.draw(this.sim.state, this.underground.visible);
     const metro = this.underground.visible;
     this.trains.draw(this.sim.state, this.loop.alpha, win?.kind === 'train' ? win.trainId : null, metro ? [] : cars, metro);

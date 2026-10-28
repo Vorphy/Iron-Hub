@@ -17,6 +17,8 @@ const ARROW_LEN = 0.24;
 const ARROW_W = 0.15;
 const RED = 0xe0503a;
 const GREEN = 0x5fd35f;
+/** Strzałka kierunku jednokierunkowego semafora przy narzędziu Semafor. */
+const DIRECTION_ARROW = 0xffe066;
 const RESERVATION_COLORS = [0x4cc9f0, 0xf72585, 0xffb703, 0x06d6a0, 0x9d4edd, 0xff6b35, 0xb5e48c, 0xff9ff3];
 
 /**
@@ -26,6 +28,8 @@ const RESERVATION_COLORS = [0x4cc9f0, 0xf72585, 0xffb703, 0x06d6a0, 0x9d4edd, 0x
 export class SignalRenderer {
   readonly gfx = new Graphics();
   showReservations = false;
+  /** Narzędzie Semafor: na jednokierunkowych strzałka kierunku jazdy (także z grafiką OpenGFX). */
+  showDirections = false;
 
   /** `metro` – widok poziomu −1: tylko semafory metra (na powierzchni – tylko zwykłe). */
   draw(state: GameState, metro = false): void {
@@ -52,16 +56,17 @@ export class SignalRenderer {
         const green = passing.has(`${sig.y * W + sig.x}:${signalCode(sig)}:${bit}`);
         if (sprites) drawSignalSprite(g, state.map, sig, bit, green);
         else drawSignal(g, sig, bit, green ? GREEN : RED);
+        if (sprites && sig.oneWay && this.showDirections) drawDirectionArrow(g, sig, bit, DIRECTION_ARROW);
       }
     }
   }
 }
 
 /**
- * Semafor dla jednego kierunku jazdy: strzałka na torze wskazująca kierunek, którego dotyczy,
- * i słup z latarnią po prawej stronie toru (patrząc w kierunku jazdy), przy końcu elementu.
+ * Strzałka na torze semafora wskazująca kierunek jazdy, którego dotyczy (jednokierunkowy – podwójna).
+ * Zwraca grot i prawą stronę kierunku jazdy (do słupa semafora).
  */
-export function drawSignal(g: Graphics, sig: Signal, bit: 1 | 2, light: number, alpha = 1): void {
+export function drawDirectionArrow(g: Graphics, sig: Signal, bit: 1 | 2, color: number, alpha = 1) {
   const [a, b] = TRACK_SIDES[sig.track];
   const step: Step =
     bit === 1
@@ -78,22 +83,28 @@ export function drawSignal(g: Graphics, sig: Signal, bit: 1 | 2, light: number, 
   const ry = ux / n;
   const fx = ux / n;
   const fy = uy / n;
-
-  // Strzałka na torze (grot w kierunku jazdy); jednokierunkowy – podwójna.
-  const tip = { x: p1.x, y: p1.y };
   const chevron = (back: number) => {
-    const t = { x: tip.x - fx * back, y: tip.y - fy * back };
+    const t = { x: p1.x - fx * back, y: p1.y - fy * back };
     const pts = [
       tileToWorld(t.x, t.y),
       tileToWorld(t.x - fx * ARROW_LEN + rx * ARROW_W, t.y - fy * ARROW_LEN + ry * ARROW_W),
       tileToWorld(t.x - fx * ARROW_LEN - rx * ARROW_W, t.y - fy * ARROW_LEN - ry * ARROW_W),
     ];
     g.poly(pts.flatMap((v) => [v.x, v.y]))
-      .fill({ color: 0xffffff, alpha })
+      .fill({ color, alpha })
       .stroke({ width: 1, color: 0x000000, alpha: 0.7 * alpha });
   };
   chevron(0);
   if (sig.oneWay) chevron(ARROW_LEN * 0.8);
+  return { p1, rx, ry };
+}
+
+/**
+ * Semafor dla jednego kierunku jazdy: strzałka na torze wskazująca kierunek, którego dotyczy,
+ * i słup z latarnią po prawej stronie toru (patrząc w kierunku jazdy), przy końcu elementu.
+ */
+export function drawSignal(g: Graphics, sig: Signal, bit: 1 | 2, light: number, alpha = 1): void {
+  const { p1, rx, ry } = drawDirectionArrow(g, sig, bit, 0xffffff, alpha);
 
   // Słup po prawej stronie kierunku jazdy.
   const base = tileToWorld(p1.x + rx * 0.3, p1.y + ry * 0.3);

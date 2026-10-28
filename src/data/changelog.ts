@@ -14,6 +14,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
     date: '2026-10-28',
     title: 'Zgubione pociągi i nazwa firmy',
     items: [
+      'Semafory jednokierunkowe: przy narzędziu Semafor (B) każdy pokazuje żółtą strzałkę – w tę stronę wolno jechać. Podgląd przed kliknięciem też ją ma.',
       'Pociąg, który od kilku dni nie może dojechać do celu (brak toru, semafor jednokierunkowy pod prąd, zły rozkład), zgłasza się komunikatem – „Pokaż ›” przenosi do niego i otwiera jego okno.',
       'Nazwa firmy: wpisujesz ją przy nowej grze, widać ją na górnym pasku i w oknie Finanse (tam też ją zmienisz), a eksportowany zapis ma ją w nazwie pliku.',
     ],
