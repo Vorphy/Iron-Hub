@@ -124,23 +124,27 @@ describe('punkty kontrolne', () => {
     expect(sim.state.stations.find((s) => s.waypoint)!.tiles).toHaveLength(1);
   });
 
-  it('wymusza trasę przez mijankę i pociąg się na nim nie zatrzymuje', () => {
-    const sim = network();
-    sim.enqueue({ type: 'buildWaypoint', x: 15, y: 6 });
-    sim.processCommands();
-    const wp = sim.state.stations.find((s) => s.waypoint)!.id;
-    // Bez punktu: A → C prosto torem głównym.
+  it('wymusza trasę i pociąg się na nim nie zatrzymuje', () => {
+    // Bez punktu: A → C mijanką – omija stację B na torze głównym (kara za przejazd przez cudzą stację).
     const plain = network();
     plain.enqueue({ type: 'setOrders', trainId: 1, orders: [1, 3] });
     plain.enqueue({ type: 'startTrain', trainId: 1 });
-    expect(drive(plain, 1500).visited.has('15,6')).toBe(false);
+    const bypass = drive(plain, 1500).visited;
+    expect(bypass.has('15,6')).toBe(true);
+    expect(bypass.has('17,5')).toBe(false);
 
+    // Punkt kontrolny na torze głównym za stacją B: trasa prowadzi przez B, bez zatrzymania.
+    const sim = network();
+    sim.enqueue({ type: 'buildWaypoint', x: 17, y: 5 });
+    sim.processCommands();
+    const wp = sim.state.stations.find((s) => s.waypoint)!.id;
     sim.enqueue({ type: 'setOrders', trainId: 1, orders: [1, wp, 3] });
     sim.enqueue({ type: 'startTrain', trainId: 1 });
     const { stops, visited } = drive(sim, 3000);
-    expect(visited.has('15,6')).toBe(true);
+    expect(visited.has('17,5')).toBe(true);
     expect(stops.slice(0, 3)).toEqual([1, 3, 1]);
     expect(stops).not.toContain(wp);
+    expect(stops).not.toContain(2);
   });
 
   it('punkt kontrolny nie zbiera ładunku i trafia do zapisu', () => {

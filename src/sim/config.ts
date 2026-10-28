@@ -67,6 +67,14 @@ export const BEND_PENALTY = 2;
 /** Kara za element toru zajęty przez inny pociąg – trasa omija zajęte perony i tory. */
 export const OCCUPIED_PENALTY = 48;
 /**
+ * Jak w OpenTTD (YAPF, 1 kafelek = 16 jednostek): przejazd przez peron stacji, która nie jest celem –
+ * za każdy kafelek peronu (pociągi wybierają obwodnicę zamiast jazdy przez zatłoczoną stację).
+ */
+export const STATION_PASS_PENALTY = 10 * 16;
+/** Peron u celu krótszy od pociągu (część składu poza peronem) i dłuższy niż trzeba. */
+export const PLATFORM_SHORTER_PENALTY = 40 * 16;
+export const PLATFORM_LONGER_PENALTY = 8 * 16;
+/**
  * Tor zajęty przez pociąg czekający na pełny ładunek (może stać bardzo długo): taki peron wybieramy
  * tylko, gdy nie ma innej drogi – inaczej pociągi ustawiają się za nim w kolejce i zatykają stację.
  */

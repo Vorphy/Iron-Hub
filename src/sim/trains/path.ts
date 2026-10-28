@@ -1,4 +1,14 @@
-import { BEND_PENALTY, FULL_LOAD_PENALTY, OCCUPIED_PENALTY, REVERSE_PENALTY } from '../config';
+import {
+  BEND_PENALTY,
+  FULL_LOAD_PENALTY,
+  OCCUPIED_PENALTY,
+  PLATFORM_LONGER_PENALTY,
+  PLATFORM_SHORTER_PENALTY,
+  REVERSE_PENALTY,
+  STATION_PASS_PENALTY,
+} from '../config';
+import { STRAIGHT_LENGTH } from '../track/graph';
+import { trainLength } from './geometry';
 import { baseTrack, isUnderTrack, levelTrackBits, stationLayer } from '../track/metro';
 import type { SignalIndex } from '../signals/signals';
 import type { GameState } from '../state';
@@ -110,6 +120,7 @@ export function planRoute(state: GameState, train: Train, ctx: RouteContext): Pl
 
   const isGoal = goalTest(state, goal);
   const fullLoaders = fullLoadingTrains(state);
+  const stationCost = stationPenalty(state, train, head, goal);
   const W = state.map.width;
   const heap = new MinHeap();
   const best = new Map<number, number>();
@@ -139,7 +150,8 @@ export function planRoute(state: GameState, train: Train, ctx: RouteContext): Pl
         node.cost +
         stepLength(s) +
         (isBend(node.step, s) ? BEND_PENALTY : 0) +
-        occupancyPenalty(state, ctx.taken, s, train.id, fullLoaders);
+        occupancyPenalty(state, ctx.taken, s, train.id, fullLoaders) +
+        stationCost(s, isGoal(s));
       push({ step: s, cost, parent: node, viaReverse: false, reversedStart: node.reversedStart });
     }
     if (nexts.length === 0) {
@@ -149,6 +161,54 @@ export function planRoute(state: GameState, train: Train, ctx: RouteContext): Pl
     }
   }
   return { ...wander(head, next), lost: true };
+}
+
+/**
+ * Kary stacyjne jak w YAPF (OpenTTD): przejazd przez peron cudzej stacji (za kafelek) – bez stacji celu,
+ * stacji, na której pociąg właśnie stoi, i punktów kontrolnych; u celu – peron za krótki albo za długi
+ * względem składu (długi pociąg bierze długi peron).
+ */
+function stationPenalty(
+  state: GameState,
+  train: Train,
+  head: Step,
+  goal: NonNullable<Goal>,
+): (s: Step, atGoal: boolean) => number {
+  const { map } = state;
+  const W = map.width;
+  const goalId = goal.kind === 'station' ? goal.stationId : 0;
+  const here = stationLayer(map, head.track)[head.y * W + head.x] ?? 0;
+  const waypoints = new Set(state.stations.filter((st) => st.waypoint).map((st) => st.id));
+  const trainTiles = Math.ceil(trainLength(train) / STRAIGHT_LENGTH);
+  return (s, atGoal) => {
+    if (s.track === 0) return 0;
+    const id = stationLayer(map, s.track)[s.y * W + s.x]!;
+    if (!id) return 0;
+    if (atGoal && goal.kind === 'station' && !goal.pass) {
+      const missing = trainTiles - platformLength(state, s, id);
+      return missing > 0 ? PLATFORM_SHORTER_PENALTY : missing < 0 ? PLATFORM_LONGER_PENALTY : 0;
+    }
+    if (id === goalId || id === here || waypoints.has(id)) return 0;
+    return STATION_PASS_PENALTY;
+  };
+}
+
+/** Długość peronu (kafelki), na którego końcu kończy się odcinek `s` – liczona wstecz od końca. */
+export function platformLength(state: GameState, s: Step, stationId: number): number {
+  const { map } = state;
+  const stations = stationLayer(map, s.track);
+  const base = baseTrack(s.track);
+  if (s.entry === -1) return 1;
+  const [dx, dy] = SIDE_DELTA[s.entry];
+  let n = 1;
+  let x = s.x + dx;
+  let y = s.y + dy;
+  while (inBounds(map, x, y) && stations[y * map.width + x] === stationId && levelTrackBits(map, x, y, s.track) === base) {
+    n++;
+    x += dx;
+    y += dy;
+  }
+  return n;
 }
 
 /** Pociągi stojące na stacji z ptaszkiem „pełny ładunek” przy bieżącej pozycji rozkładu. */
