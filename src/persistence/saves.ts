@@ -107,7 +107,15 @@ export function downloadSave(state: GameState, view?: ViewState): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `iron-hub-${file.savedAt.slice(0, 19).replace(/[:T]/g, '-')}.json`;
+  // Nazwa firmy w nazwie pliku (same litery, cyfry i myślniki).
+  const company = state.companyName
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[łŁ]/g, 'l')
+    .replace(/[^A-Za-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase();
+  a.download = `iron-hub-${company ? `${company}-` : ''}${file.savedAt.slice(0, 19).replace(/[:T]/g, '-')}.json`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

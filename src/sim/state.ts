@@ -23,6 +23,8 @@ export interface GameState {
   /** Stan PRNG symulacji (patrz rng.ts). */
   rng: { state: number };
   money: number;
+  /** Nazwa firmy gracza (nowa gra, zmiana w oknie Finanse). */
+  companyName: string;
   map: WorldMap;
   stations: Station[];
   /** Kolejne id stacji (od 1; 0 na mapie oznacza brak stacji). */
@@ -64,6 +66,17 @@ export interface NewGameOptions {
   resources?: Density;
   /** Tryb własny: dokładne liczby miast i zakładów (zamiast gęstości). */
   custom?: CustomCounts | null;
+  /** Nazwa firmy (pusta – domyślna). */
+  companyName?: string;
+}
+
+export const DEFAULT_COMPANY_NAME = 'Kolej Żelazna';
+export const COMPANY_NAME_MAX = 40;
+
+/** Nazwa firmy po oczyszczeniu: bez zbędnych spacji, przycięta; pusta – domyślna. */
+export function cleanCompanyName(name: string): string {
+  const clean = name.replace(/\s+/g, ' ').trim().slice(0, COMPANY_NAME_MAX).trim();
+  return clean || DEFAULT_COMPANY_NAME;
 }
 
 export function createGame({
@@ -76,6 +89,7 @@ export function createGame({
   industry = DEFAULT_DENSITY,
   resources = DEFAULT_DENSITY,
   custom = null,
+  companyName = '',
 }: NewGameOptions): GameState {
   const state: GameState = {
     version: 1,
@@ -83,6 +97,7 @@ export function createGame({
     startYear,
     rng: { state: seed >>> 0 },
     money: START_MONEY,
+    companyName: cleanCompanyName(companyName),
     map: generateMap(width, height, seed),
     stations: [],
     nextStationId: 1,

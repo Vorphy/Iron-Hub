@@ -1,4 +1,5 @@
 import { useState } from 'preact/hooks';
+import { COMPANY_NAME_MAX, DEFAULT_COMPANY_NAME } from '../sim/state';
 import { START_YEAR, START_YEARS } from '../sim/time';
 import { INDUSTRY_DEFS } from '../sim/economy/industry';
 import {
@@ -95,6 +96,7 @@ function randomSeed(): number {
 export function NewGameDialog({ actions, canCancel }: { actions: HudActions; canCancel: boolean }) {
   const [size, setSize] = useState(128);
   const [seed, setSeed] = useState(randomSeed);
+  const [companyName, setCompanyName] = useState('');
   const [year, setYear] = useState<number>(START_YEAR);
   const [towns, setTowns] = useState<Density>(DEFAULT_DENSITY);
   const [industry, setIndustry] = useState<Density>(DEFAULT_DENSITY);
@@ -121,6 +123,16 @@ export function NewGameDialog({ actions, canCancel }: { actions: HudActions; can
             </button>
           )}
         </div>
+
+        <div class="section-title">Nazwa firmy</div>
+        <input
+          class="text"
+          maxLength={COMPANY_NAME_MAX}
+          placeholder={DEFAULT_COMPANY_NAME}
+          value={companyName}
+          onInput={(e) => setCompanyName((e.target as HTMLInputElement).value)}
+          onKeyDown={(e) => e.stopPropagation()}
+        />
 
         <div class="section-title">Rozmiar mapy</div>
         <div class="choices">
@@ -208,7 +220,7 @@ export function NewGameDialog({ actions, canCancel }: { actions: HudActions; can
 
         <button
           class="primary"
-          onClick={() => actions.startNewGame(size, seed, { startYear: year, towns, industry, resources, custom })}
+          onClick={() => actions.startNewGame(size, seed, { startYear: year, towns, industry, resources, custom, companyName })}
         >
           Rozpocznij
         </button>

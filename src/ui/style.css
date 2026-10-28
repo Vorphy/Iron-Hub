@@ -499,6 +499,23 @@ body {
   padding: 8px 10px;
 }
 
+input.text {
+  font: inherit;
+  color: var(--text);
+  background: #2c323b;
+  border: 1px solid var(--panel-border);
+  padding: 4px 8px;
+  min-width: 0;
+}
+
+.topbar .company {
+  color: var(--muted);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 input.seed {
   font: inherit;
   color: var(--text);
@@ -540,6 +557,19 @@ input.seed {
   left: 50%;
   transform: translateX(-50%);
   border-color: #c0634a;
+}
+
+.toast.clickable {
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+.toast-action {
+  margin-left: 8px;
+  color: #ffd166;
+  white-space: nowrap;
 }
 
 @media (max-width: 700px) {

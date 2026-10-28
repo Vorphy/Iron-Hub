@@ -191,7 +191,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
       'Pociąg sam wybiera trasę (najkrótszą, omijając zajęte perony) i zawraca na końcu toru albo na stacji, gdy następny cel jest za nim.',
       '**Bez zatrzymania** (ptaszek przy stacji): pociąg przejeżdża przez stację i jedzie dalej – nie ładuje, nie wysiada nikt.',
       '**Punkt kontrolny**: narzędzie Stacja → „Punkt kontrolny”, klik na prosty tor (500 zł). Dodany do rozkładu jak stacja wymusza trasę przez ten tor (np. wybraną mijankę albo objazd); pociąg się na nim nie zatrzymuje. Buldożer usuwa sam znacznik, tor zostaje.',
-      'Status „Nie może dojechać” – do celu nie ma toru (albo lokomotywa elektryczna nie ma sieci trakcyjnej).',
+      'Status „Nie może dojechać” – do celu nie ma toru (albo lokomotywa elektryczna nie ma sieci trakcyjnej, albo w trybie Ekspert drogę zamyka semafor jednokierunkowy). Po kilku dniach takiej jazdy gra pokazuje komunikat – „Pokaż ›” przenosi do pociągu.',
       'Bez rozkładu pociąg jeździ przed siebie i zawraca na końcach toru.',
     ],
   },
@@ -313,7 +313,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     id: 'finance',
     title: 'Finanse, kredyt, bankructwo',
     blocks: [
-      `Start: ${zl(E.startMoney)}. Okno Finanse (klik na kwotę): przychody i koszty z ostatnich miesięcy.`,
+      `Start: ${zl(E.startMoney)}. Okno Finanse (klik na kwotę): przychody i koszty z ostatnich miesięcy. Tam też zmienisz nazwę firmy (wpisaną przy nowej grze – widać ją na górnym pasku i w nazwie eksportowanego zapisu).`,
       `Koszty co miesiąc: utrzymanie pociągów w trasie (patrz Pociągi), torów (${zl(E.maintenance.trackPiece)} za element), peronów (${zl(E.maintenance.stationTile)} za kafelek), zajezdni (${zl(E.maintenance.depot)}), semaforów i sieci trakcyjnej. Tory i perony metra – dwa razy więcej niż na powierzchni. Badanie „Tańsze utrzymanie” obniża te koszty.`,
       `**Kredyt**: do ${zl(E.loan.max)}, po ${zl(E.loan.step)}, odsetki ${pct(E.loan.yearlyInterest)} rocznie (co miesiąc). Spłacasz, gdy masz gotówkę.`,
       `**Bankructwo**: ujemne saldo na koniec miesiąca ${E.loan.bankruptcyMonths} razy z rzędu kończy grę. Wcześniej gra ostrzega – weź kredyt, sprzedaj nierentowne pociągi albo zatrzymaj je w zajezdni (tam nie kosztują).`,

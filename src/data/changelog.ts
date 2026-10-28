@@ -12,6 +12,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-28',
+    title: 'Zgubione pociągi i nazwa firmy',
+    items: [
+      'Pociąg, który od kilku dni nie może dojechać do celu (brak toru, semafor jednokierunkowy pod prąd, zły rozkład), zgłasza się komunikatem – „Pokaż ›” przenosi do niego i otwiera jego okno.',
+      'Nazwa firmy: wpisujesz ją przy nowej grze, widać ją na górnym pasku i w oknie Finanse (tam też ją zmienisz), a eksportowany zapis ma ją w nazwie pliku.',
+    ],
+  },
+  {
+    date: '2026-10-28',
     title: 'Poprawka: semafory na prostych torach',
     items: [
       'Semafor na prostym torze biegnącym na ekranie z lewej góry w prawy dół (oś X) był rysowany odwrotnie, niż działał – jednokierunkowy ustawiony „na oko” blokował pociągi (np. metro na jednotorowym ringu stawało). Teraz grafika pokazuje kierunek, który obowiązuje.',

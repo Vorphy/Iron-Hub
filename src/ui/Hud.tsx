@@ -60,6 +60,7 @@ const TOOL_HELP: Record<Tool, string> = {
 };
 
 const MESSAGE_MS = 2500;
+const ACTION_MESSAGE_MS = 8000;
 
 function speedLabel(s: Speed): string {
   return s === 0 ? '⏸' : `${s}×`;
@@ -77,6 +78,11 @@ export function Hud({ actions }: { actions: HudActions }) {
           ⠿
         </span>
         <span class="title">IRON HUB</span>
+        {!top.collapsed && (
+          <span class="company" title="Nazwa firmy – zmienisz ją w oknie Finanse">
+            {s.company}
+          </span>
+        )}
         <span class="sep" />
         <span>{s.date}</span>
         <span class="sep" />
@@ -544,11 +550,25 @@ function Toast({ message }: { message: HudState['message'] }) {
   useEffect(() => {
     if (!message) return;
     setVisible(true);
-    const t = setTimeout(() => setVisible(false), MESSAGE_MS);
+    // Komunikat z akcją dłużej – żeby zdążyć kliknąć.
+    const t = setTimeout(() => setVisible(false), message.onClick ? ACTION_MESSAGE_MS : MESSAGE_MS);
     return () => clearTimeout(t);
   }, [message?.id]);
   if (!message || !visible) return null;
-  return <div class="panel toast">{message.text}</div>;
+  const { onClick } = message;
+  if (!onClick) return <div class="panel toast">{message.text}</div>;
+  return (
+    <button
+      type="button"
+      class="panel toast clickable"
+      onClick={() => {
+        onClick();
+        setVisible(false);
+      }}
+    >
+      {message.text} <span class="toast-action">Pokaż ›</span>
+    </button>
+  );
 }
 
 /** Koniec gry po bankructwie: nowa gra albo powrót do zapisu. */

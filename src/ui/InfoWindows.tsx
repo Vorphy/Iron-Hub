@@ -1,4 +1,6 @@
+import { useState } from 'preact/hooks';
 import { CARGO_DEFS } from '../sim/economy/cargo';
+import { COMPANY_NAME_MAX } from '../sim/state';
 import { formatMoney } from '../tools';
 import type { FinanceWindowData, HudActions, IndustryWindowData, StationWindowData, TownWindowData } from './hudStore';
 
@@ -175,6 +177,44 @@ export function StationWindow({ data: d, actions }: { data: StationWindowData; a
   );
 }
 
+/** Nazwa firmy z możliwością zmiany (Enter albo przycisk zapisuje). */
+function CompanyName({ name, actions }: { name: string; actions: HudActions }) {
+  const [draft, setDraft] = useState<string | null>(null);
+  if (draft === null) {
+    return (
+      <div class="row">
+        <span class="grow">
+          Firma: <b>{name}</b>
+        </span>
+        <button onClick={() => setDraft(name)}>Zmień nazwę</button>
+      </div>
+    );
+  }
+  const save = () => {
+    actions.renameCompany(draft);
+    setDraft(null);
+  };
+  return (
+    <div class="row">
+      <input
+        class="text grow"
+        maxLength={COMPANY_NAME_MAX}
+        value={draft}
+        onInput={(e) => setDraft((e.target as HTMLInputElement).value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') save();
+          if (e.key === 'Escape') setDraft(null);
+          e.stopPropagation();
+        }}
+      />
+      <button class="primary" onClick={save}>
+        Zapisz
+      </button>
+      <button onClick={() => setDraft(null)}>Anuluj</button>
+    </div>
+  );
+}
+
 export function FinanceWindow({ data: d, money, actions }: { data: FinanceWindowData; money: number; actions: HudActions }) {
   const rows: { key: keyof FinanceWindowData['months'][number]; label: string; sign: 1 | -1 }[] = [
     { key: 'income', label: 'Przewozy', sign: 1 },
@@ -188,6 +228,7 @@ export function FinanceWindow({ data: d, money, actions }: { data: FinanceWindow
   return (
     <div class="panel window wide">
       <Head title="Finanse" help="finance" actions={actions} />
+      <CompanyName name={d.companyName} actions={actions} />
       <table class="ledger">
         <thead>
           <tr>

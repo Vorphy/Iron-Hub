@@ -409,6 +409,13 @@ export class Game {
         const names = ev.trainIds.map((id) => this.sim.state.trains.find((t) => t.id === id)?.name).filter(Boolean);
         const list = names.length > 4 ? `${names.slice(0, 4).join(', ')} i ${names.length - 4} innych` : names.join(', ');
         showMessage(`Strata w zeszłym roku: ${list} – lista pociągów (K)`);
+      } else if (ev.type === 'trainLost') {
+        const t = this.sim.state.trains.find((tr) => tr.id === ev.trainId);
+        if (t)
+          showMessage(`${t.name} nie może dojechać do celu – sprawdź tory, semafory jednokierunkowe i rozkład`, () => {
+            this.focusTrain(t.id);
+            this.openWindow({ kind: 'train', trainId: t.id });
+          });
       } else if (ev.type === 'trainCloned') {
         showMessage(`Kopia gotowa: Pociąg ${ev.trainId} w zajezdni #${ev.depotId} – kliknij ▶ Wyjedź`);
       } else if (ev.type === 'engineReplaced') {
@@ -554,6 +561,7 @@ export class Game {
     hudStore.set({
       date: `${pad(d.day)}.${pad(d.month)}.${d.year}`,
       money: state.money,
+      company: state.companyName,
       speed: this.loop.speed,
       tool: this.tools.tool,
       signalMode: state.signalMode,

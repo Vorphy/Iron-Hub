@@ -10,14 +10,14 @@ import type { Signal, SignalMode } from './signals/signals';
 import type { Station } from './station/station';
 import type { Bridge } from './track/bridge';
 import type { Tunnel } from './track/tunnel';
-import type { GameState } from './state';
+import { cleanCompanyName, DEFAULT_COMPANY_NAME, type GameState } from './state';
 import { ALL_TRACKS, Side } from './track/track';
 import type { Step, Train, WagonLoad } from './trains/train';
 import { engineDef, wagonDef } from './trains/vehicles';
 import { MAX_HEIGHT } from './world/height';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 25;
+export const SAVE_VERSION = 26;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -45,6 +45,7 @@ export interface SerializedState {
   startYear: number;
   rng: number;
   money: number;
+  companyName: string;
   /** `heights` – siatka narożników (width+1)×(height+1), pozostałe warstwy – po jednej wartości na kafelek. */
   map: { width: number; height: number; heights: string } & Record<LayerName, string>;
   stations: Station[];
@@ -82,6 +83,7 @@ export function serializeState(state: GameState): SerializedState {
     startYear: state.startYear,
     rng: state.rng.state,
     money: state.money,
+    companyName: state.companyName,
     map: { width: map.width, height: map.height, heights: layerToBase64(map.heights), ...layers },
     stations: structuredClone(state.stations),
     nextStationId: state.nextStationId,
@@ -278,6 +280,11 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     if (d.map) d.map.houseBuild = emptyLayer('houseBuild');
     d.version = 25;
   }
+  if (d.version === 25) {
+    // v26: nazwa firmy
+    d.companyName = DEFAULT_COMPANY_NAME;
+    d.version = 26;
+  }
   return d as Partial<SerializedState>;
 }
 
@@ -335,12 +342,14 @@ export function deserializeState(data: unknown): GameState {
   if (d.signalMode !== 'auto' && d.signalMode !== 'manual') throw new SaveError('Uszkodzony tryb sygnalizacji');
   if (!isFinances(d.finances)) throw new SaveError('Uszkodzone finanse');
   if (!isResearch(d.research)) throw new SaveError('Uszkodzone badania');
+  if (typeof d.companyName !== 'string') throw new SaveError('Uszkodzona nazwa firmy');
   return {
     version: 1,
     tick: d.tick!,
     startYear: d.startYear!,
     rng: { state: d.rng! >>> 0 },
     money: d.money,
+    companyName: cleanCompanyName(d.companyName),
     map,
     stations: d.stations!,
     nextStationId: d.nextStationId!,

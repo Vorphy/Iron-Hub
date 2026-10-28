@@ -224,6 +224,7 @@ const actions: HudActions = {
   setTrainGroup: (trainId, groupId) => game?.command({ type: 'setTrainGroup', trainId, groupId }),
   addTestMoney: () => game?.command({ type: 'addMoney', amount: 100_000 }),
   borrow: (amount) => game?.command({ type: 'borrow', amount }),
+  renameCompany: (name) => game?.command({ type: 'renameCompany', name }),
   repay: (amount) => game?.command({ type: 'repay', amount }),
   quickSave: () => void saveTo('quick'),
   quickLoad: () => {

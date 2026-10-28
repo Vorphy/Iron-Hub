@@ -4,7 +4,7 @@ import { cancelResearch, startResearch } from './research';
 import { LOAN_MAX, LOAN_STEP, spend } from './economy/finance';
 import { buildDepot, depotAt, removeDepot } from './depot/depot';
 import { dropOrphanSignals, placeSignal, removeSignal, type SignalMode } from './signals/signals';
-import type { GameState } from './state';
+import { cleanCompanyName, type GameState } from './state';
 import { buildStation, buildWaypoint, removeStationTile, type StationAxis } from './station/station';
 import { buildTrack, removeTrack } from './track/build';
 import { buildRamp, buildUnderTrack, removeRamp, removeUnderTrack } from './track/metro';
@@ -97,6 +97,7 @@ export type Command =
   | { type: 'placeSignal'; x: number; y: number; track: Track; oneWay: boolean; under?: boolean }
   | { type: 'removeSignal'; x: number; y: number; track: Track; under?: boolean }
   | { type: 'setSignalMode'; mode: SignalMode }
+  | { type: 'renameCompany'; name: string }
   | { type: 'buildBridge'; x0: number; y0: number; x1: number; y1: number }
   | { type: 'buildTunnel'; x: number; y: number }
   | { type: 'terraform'; vx: number; vy: number; delta: 1 | -1 }
@@ -143,6 +144,8 @@ export type CommandResult = { ok: true } | { ok: false; reason: FailReason };
 /** Zdarzenia dla warstwy prezentacji (renderer, UI). Nie wpływają na symulację. */
 export type SimEvent =
   | { type: 'tileChanged'; x: number; y: number }
+  /** Pociąg od kilku dni nie może dojechać do celu. */
+  | { type: 'trainLost'; trainId: number }
   | { type: 'stationsChanged' }
   /** Postawiono / rozebrano zajezdnię (podpisy z numerami na mapie). */
   | { type: 'depotsChanged' }
@@ -287,6 +290,9 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
     case 'setSignalMode':
       state.signalMode = cmd.mode;
       events.push({ type: 'signalsChanged' });
+      return { ok: true };
+    case 'renameCompany':
+      state.companyName = cleanCompanyName(cmd.name);
       return { ok: true };
   }
 }

@@ -157,6 +157,7 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
     const ledgers = [state.finances.month, ...[...state.finances.history].reverse()];
     return {
       kind: 'finance',
+      companyName: state.companyName,
       months: ledgers.map((l, k) => {
         const total = now.year * 12 + (now.month - 1) - k;
         return {

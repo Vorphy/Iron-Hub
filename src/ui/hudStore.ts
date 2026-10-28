@@ -23,6 +23,8 @@ export interface NewWorldSettings {
   resources: Density;
   /** Tryb własny – dokładne liczby (null – według gęstości). */
   custom: CustomCounts | null;
+  /** Nazwa firmy gracza. */
+  companyName: string;
 }
 import type { Speed } from '../loop';
 import type { Terrain } from '../sim/world/map';
@@ -212,6 +214,7 @@ export interface ResearchWindowData {
 
 export interface FinanceWindowData {
   kind: 'finance';
+  companyName: string;
   /** Miesiące od bieżącego wstecz. */
   months: { label: string; income: number; trains: number; infrastructure: number; construction: number; interest: number }[];
   loan: number;
@@ -241,6 +244,8 @@ export type WindowData =
 export interface HudState {
   date: string;
   money: number;
+  /** Nazwa firmy gracza. */
+  company: string;
   speed: Speed;
   tool: Tool;
   /** Ustawienia narzędzi budowy (panel opcji). */
@@ -263,7 +268,8 @@ export interface HudState {
   hover: { x: number; y: number; terrain: Terrain; station: string | null } | null;
   /** Koszt / błąd przy kursorze podczas używania narzędzia (x, y – piksele ekranu). */
   cursorLabel: { x: number; y: number; text: string; ok: boolean } | null;
-  message: { id: number; text: string } | null;
+  /** Komunikat na dole ekranu; `onClick` – klik w komunikat (np. pokaż pociąg). */
+  message: { id: number; text: string; onClick?: () => void } | null;
   /** Daty zapisów w przeglądarce (ISO) – do menu. */
   saves: { quick: string | null; auto: string | null };
   menuOpen: boolean;
@@ -299,6 +305,7 @@ export interface HudState {
 export const hudStore = new Store<HudState>({
   date: '',
   money: 0,
+  company: '',
   speed: 1,
   tool: 'cursor',
   toolOptions: {
@@ -341,8 +348,8 @@ export const hudStore = new Store<HudState>({
 
 let messageId = 0;
 
-export function showMessage(text: string): void {
-  hudStore.set({ message: { id: ++messageId, text } });
+export function showMessage(text: string, onClick?: () => void): void {
+  hudStore.set({ message: { id: ++messageId, text, onClick } });
 }
 
 export interface HudActions {
@@ -388,6 +395,7 @@ export interface HudActions {
   setTrainGroup(trainId: number, groupId: number | null): void;
   addTestMoney(): void;
   borrow(amount: number): void;
+  renameCompany(name: string): void;
   repay(amount: number): void;
   quickSave(): void;
   quickLoad(): void;

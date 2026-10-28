@@ -30,12 +30,18 @@ import { STRAIGHT_LENGTH } from '../track/graph';
 import { depotExit, leaveDepot, lineHeadway, passesOrder, replaceOnArrival, sharedTrains, type Step, type Train } from './train';
 import { consistStats, engineDef } from './vehicles';
 
+/** Po tylu dniach bez trasy do celu gra zgłasza zgubiony pociąg (jak „Train is lost” w OpenTTD). */
+export const LOST_REPORT_DAYS = 5;
+
 /**
  * Informacje o pociągach dla interfejsu (stan pochodny, nie trafia do zapisu i nie wpływa
  * na symulację): czy pociąg nie może dojechać do celu. Czekanie na wolny tor jest w stanie pociągu.
  */
 export class Planner {
   private lost = new Set<number>();
+  /** Od kiedy (tick) pociąg nie może dojechać do celu; zgłoszone – komunikat już poszedł. */
+  private lostSince = new Map<number, number>();
+  private reported = new Set<number>();
 
   /** Zostawione dla zgodności z Simulation – trasy nie są już pamiętane między tickami. */
   invalidate(): void {}
@@ -44,9 +50,20 @@ export class Planner {
     return this.lost.has(trainId);
   }
 
-  setLost(trainId: number, lost: boolean): void {
-    if (lost) this.lost.add(trainId);
-    else this.lost.delete(trainId);
+  /** Zapamiętuje, czy pociąg jest zgubiony; true – właśnie minęło `LOST_REPORT_DAYS` dni (czas na komunikat). */
+  setLost(trainId: number, lost: boolean, tick = 0): boolean {
+    if (!lost) {
+      this.lost.delete(trainId);
+      this.lostSince.delete(trainId);
+      this.reported.delete(trainId);
+      return false;
+    }
+    this.lost.add(trainId);
+    const since = this.lostSince.get(trainId) ?? tick;
+    this.lostSince.set(trainId, since);
+    if (this.reported.has(trainId) || tick - since < LOST_REPORT_DAYS * TICKS_PER_DAY) return false;
+    this.reported.add(trainId);
+    return true;
   }
 }
 
@@ -337,7 +354,7 @@ function extendReservation(ctx: TickContext, train: Train): 'ok' | 'blocked' | '
     taken: ctx.taken,
     signals: ctx.signals,
   });
-  planner.setLost(train.id, plan.lost);
+  if (planner.setLost(train.id, plan.lost, state.tick)) ctx.events.push({ type: 'trainLost', trainId: train.id });
 
   if (plan.terminal === 'reverseNow') {
     reverseTrain(train);
