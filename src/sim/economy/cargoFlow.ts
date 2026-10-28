@@ -9,7 +9,7 @@ import { engineAge, type Train } from '../trains/train';
 import { engineDef, wagonDef } from '../trains/vehicles';
 import { CARGO_DEFS, type Cargo } from './cargo';
 import { earn } from './finance';
-import { industryDef, industryTiles, monthlyProduction } from './industry';
+import { industryDef, industryTiles, monthlyProduction, wantsWorkers } from './industry';
 import { HOUSE_POPULATION } from './town';
 
 // Reguły z pliku ekonomii (src/data/economy.ts).
@@ -107,6 +107,8 @@ export function catchmentCargo(state: GameState, tiles: readonly number[]): { ac
     const def = industryDef(ind.type)!;
     for (const c of def.accepts) accepts.add(c);
     if (def.produces) supplies.add(def.produces);
+    // Duży zakład przyjmuje pracowników – pasażerów, nawet bez domów w zasięgu.
+    if (wantsWorkers(ind)) accepts.add('passengers');
   }
   for (const [c, need] of Object.entries(TOWN_ACCEPTANCE) as [Cargo, number][]) if (population >= need) accepts.add(c);
   if (population > 0) supplies.add('passengers');
@@ -262,10 +264,17 @@ function cargoQueuedAhead(state: GameState, train: Train, st: Station): Set<Carg
   return out;
 }
 
-/** Surowiec dowieziony na stację trafia do zakładów w jej zasięgu, które go przyjmują. */
+/**
+ * Surowiec dowieziony na stację trafia do zakładów w jej zasięgu, które go przyjmują; pasażerowie –
+ * jako pracownicy do zakładów, które ich szukają (dzielone po równo).
+ */
 function deliverToIndustries(state: GameState, st: Station, cargo: Cargo, amount: number): void {
   const ids = new Set<number>();
   for (const i of catchment(state.map, allTiles(st))) if (state.map.industry[i]) ids.add(state.map.industry[i]!);
-  const targets = state.industries.filter((ind) => ids.has(ind.id) && industryDef(ind.type)!.accepts.includes(cargo));
+  const near = state.industries.filter((ind) => ids.has(ind.id));
+  const targets = near.filter((ind) => industryDef(ind.type)!.accepts.includes(cargo));
   for (const ind of targets) ind.month.delivered[cargo] = (ind.month.delivered[cargo] ?? 0) + amount / targets.length;
+  if (cargo !== 'passengers') return;
+  const employers = near.filter(wantsWorkers);
+  for (const ind of employers) ind.month.workers += amount / employers.length;
 }

@@ -12,6 +12,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-28',
+    title: 'Pracownicy: zakłady rosną do poziomu 7',
+    items: [
+      'Kopalnia, las czy fabryka na poziomie 5 może urosnąć jeszcze o dwa poziomy (do 7) – ale tylko z pracownikami. Stacja przy takim zakładzie przyjmuje pasażerów, nawet gdy obok nie ma domów, a każdy, kto wysiądzie, idzie do pracy.',
+      'Potrzeba 50 pracowników na każdy poziom zakładu na miesiąc (250 na poziomie 5, 300 na 6). W oknie zakładu widać, ilu dowiozłeś w tym miesiącu i ilu trzeba.',
+      'Bez kompletu pracowników zakład na poziomie 6–7 co miesiąc traci punkt rozwoju i po roku spada o poziom (nie niżej niż 5). Nowy powód, żeby wozić ludzi z miast do zakładów.',
+    ],
+  },
+  {
+    date: '2026-10-28',
     title: 'Ocena stacji jak w OpenTTD',
     items: [
       'Ocena stacji to teraz suma punktów jak w OpenTTD: liczy się, ile dni minęło od ostatniego załadunku, prędkość maksymalna ostatniego pociągu (ponad 85 km/h), ile ładunku czeka na peronie i wiek lokomotywy (nowa – do 3 lat – daje premię).',

@@ -15,7 +15,9 @@ import {
   emptyIndustryMonth,
   industryDef,
   isPrimary,
+  BASE_MAX_LEVEL,
   MAX_INDUSTRY_LEVEL,
+  workersNeeded,
   monthlyDemand,
   type Industry,
 } from './industry';
@@ -79,12 +81,14 @@ function closeIndustryMonth(ind: Industry): void {
   ind.history.push(monthRatio(ind));
   if (ind.history.length > HISTORY_MONTHS) ind.history.shift();
   const supply = averageSupply(ind) ?? 0;
-  if (supply >= GROW_THRESHOLD) ind.growth++;
-  else if (supply <= DECLINE_THRESHOLD) ind.growth--;
+  // Od poziomu 5 rozwój wymaga pracowników; na poziomach 6–7 ich brak cofa rozwój.
+  const staffed = ind.month.workers >= workersNeeded(ind);
+  if (supply >= GROW_THRESHOLD && staffed) ind.growth++;
+  else if (supply <= DECLINE_THRESHOLD || (ind.level > BASE_MAX_LEVEL && !staffed)) ind.growth--;
   if (ind.growth >= LEVEL_POINTS) {
     ind.growth = 0;
-    if (ind.level < MAX_INDUSTRY_LEVEL) ind.level++;
-    else ind.growth = LEVEL_POINTS; // na maksimum nie zbieramy dalej
+    if (ind.level < MAX_INDUSTRY_LEVEL && staffed) ind.level++;
+    else ind.growth = LEVEL_POINTS; // na maksimum (albo bez pracowników) nie zbieramy dalej
   } else if (ind.growth <= -LEVEL_POINTS) {
     ind.growth = 0;
     if (ind.level > 1) ind.level--;

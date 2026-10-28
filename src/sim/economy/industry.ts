@@ -26,7 +26,9 @@ export function industryDef(id: string): IndustryDef | undefined {
   return defById.get(id);
 }
 
-export const MAX_INDUSTRY_LEVEL = ECONOMY.industry.maxLevel;
+/** Najwyższy poziom bez pracowników; dalej (do `MAX_INDUSTRY_LEVEL`) tylko z pracownikami. */
+export const BASE_MAX_LEVEL = ECONOMY.industry.maxLevel;
+export const MAX_INDUSTRY_LEVEL = BASE_MAX_LEVEL + ECONOMY.industry.workerLevels;
 
 /** Statystyki bieżącego miesiąca. */
 export interface IndustryMonth {
@@ -35,6 +37,8 @@ export interface IndustryMonth {
   transported: number;
   /** Dostarczone surowce. */
   delivered: Partial<Record<Cargo, number>>;
+  /** Pracownicy – pasażerowie dowiezieni na stację w zasięgu zakładu (od poziomu `BASE_MAX_LEVEL`). */
+  workers: number;
 }
 
 export interface Industry {
@@ -53,7 +57,7 @@ export interface Industry {
 }
 
 export function emptyIndustryMonth(): IndustryMonth {
-  return { produced: 0, transported: 0, delivered: {} };
+  return { produced: 0, transported: 0, delivered: {}, workers: 0 };
 }
 
 export function industryAt(state: GameState, x: number, y: number): Industry | undefined {
@@ -94,6 +98,16 @@ export function monthlyProduction(ind: Industry): number {
   if (isPrimary(def)) return base;
   const supply = Math.min(1, averageSupply(ind) ?? 0);
   return base * (IDLE_PRODUCTION + (1 - IDLE_PRODUCTION) * supply);
+}
+
+/** Zakład na poziomie `BASE_MAX_LEVEL` lub wyżej przyjmuje pracowników (stacja przy nim przyjmuje pasażerów). */
+export function wantsWorkers(ind: Industry): boolean {
+  return ind.level >= BASE_MAX_LEVEL;
+}
+
+/** Pracownicy potrzebni w miesiącu, żeby zakład rósł (lub utrzymał poziom 6–7); 0 – nie potrzebuje. */
+export function workersNeeded(ind: Industry): number {
+  return wantsWorkers(ind) ? ECONOMY.industry.workersPerLevel * ind.level : 0;
 }
 
 export function monthlyDemand(ind: Industry): number {

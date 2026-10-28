@@ -290,6 +290,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
       },
       `**Wskaźnik zaopatrzenia** (średnia z ${E.industry.historyMonths} miesięcy): kopalnia/las – jaką część produkcji wywozisz; przetwórnia – ile dostarczasz względem potrzeb.`,
       `Od ${pct(E.industry.growThreshold)} zakład zbiera +1 punkt na miesiąc, poniżej ${pct(E.industry.declineThreshold)} traci punkt, pomiędzy – stoi. ${E.industry.levelPoints} punktów = poziom w górę (lub w dół). Poziomy 1–${E.industry.maxLevel}; produkcja rośnie z poziomem.`,
+      `**Pracownicy – poziomy ${E.industry.maxLevel + 1}–${E.industry.maxLevel + E.industry.workerLevels}**: od poziomu ${E.industry.maxLevel} zakład rośnie dalej tylko z pracownikami. Stacja w jego zasięgu przyjmuje wtedy pasażerów (nawet bez domów obok, zapłata jak za zwykły przewóz), a każdy, kto wysiądzie, to pracownik. Potrzeba ${E.industry.workersPerLevel} × poziom pracowników na miesiąc (np. ${E.industry.workersPerLevel * E.industry.maxLevel} na poziomie ${E.industry.maxLevel}). Na poziomach ${E.industry.maxLevel + 1}–${E.industry.maxLevel + E.industry.workerLevels} brak kompletu odbiera punkt rozwoju co miesiąc – po roku zakład spada o poziom, najniżej do ${E.industry.maxLevel}. Stan widać w oknie zakładu.`,
       `Przetwórnia bez dostaw pracuje na ${pct(E.industry.idleProduction)} mocy – dowóz surowców zwiększa produkcję towarów. Towary wieź do dużych miast.`,
     ],
   },

@@ -110,6 +110,25 @@ export function IndustryWindow({ data: d, actions }: { data: IndustryWindowData;
         {d.growth} / ±12 pkt
       </div>
 
+      {d.workersNeeded > 0 && (
+        <>
+          <div class="section-title">Pracownicy</div>
+          <div class="row">
+            <span class="swatch" style={{ background: CARGO_DEFS.passengers.color }} />
+            <span class="grow">W tym miesiącu</span>
+            <span class={d.workers >= d.workersNeeded ? 'rating good' : 'rating bad'}>
+              {d.workers} / {d.workersNeeded}
+            </span>
+          </div>
+          <div class="muted small">
+            {d.level > d.baseMaxLevel
+              ? `Bez kompletu pracowników zakład traci punkty i wraca do poziomu ${d.baseMaxLevel}.`
+              : 'Zakład szuka pracowników: dowoź pasażerów na stację w jego zasięgu, a urośnie ponad poziom ' +
+                `${d.baseMaxLevel} (do ${d.maxLevel}).`}
+          </div>
+        </>
+      )}
+
       {d.produces && (
         <>
           <div class="section-title">Produkuje</div>

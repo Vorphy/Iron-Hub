@@ -184,6 +184,11 @@ export interface IndustryWindowData {
   transported: number;
   /** Wskaźnik zaopatrzenia/wywozu z ostatnich miesięcy (0–1). */
   supply: number | null;
+  /** Najwyższy poziom bez pracowników (dalej – tylko z pracownikami). */
+  baseMaxLevel: number;
+  /** Pracownicy dowiezieni w tym miesiącu i potrzebni (0 – zakład ich nie szuka). */
+  workers: number;
+  workersNeeded: number;
 }
 
 export interface StationWindowData {

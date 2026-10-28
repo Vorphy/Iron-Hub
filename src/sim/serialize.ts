@@ -18,7 +18,7 @@ import { MAX_HEIGHT } from './world/height';
 import { TICKS_PER_DAY } from './time';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 27;
+export const SAVE_VERSION = 28;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -301,6 +301,13 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
       }
     }
     d.version = 27;
+  }
+  if (d.version === 27) {
+    // v28: pracownicy zakładów (poziomy 6–7)
+    if (Array.isArray(d.industries)) {
+      for (const ind of d.industries as { month?: Record<string, unknown> }[]) if (ind.month) ind.month.workers = 0;
+    }
+    d.version = 28;
   }
   return d as Partial<SerializedState>;
 }
@@ -600,6 +607,7 @@ function isIndustry(v: unknown): v is Industry {
     isNum(i.month.produced) &&
     isNum(i.month.transported) &&
     isCargoRecord(i.month.delivered, isNum) &&
+    isNum(i.month.workers) &&
     Array.isArray(i.history) &&
     i.history.every(isNum)
   );

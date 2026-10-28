@@ -23,7 +23,15 @@ import { isElectrified } from '../sim/track/catenary';
 import { wagonResale } from '../sim/trains/consist';
 
 const MONTH_NAMES = ['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'];
-import { averageSupply, industryDef, MAX_INDUSTRY_LEVEL, monthlyDemand, monthlyProduction } from '../sim/economy/industry';
+import {
+  averageSupply,
+  BASE_MAX_LEVEL,
+  industryDef,
+  MAX_INDUSTRY_LEVEL,
+  monthlyDemand,
+  monthlyProduction,
+  workersNeeded,
+} from '../sim/economy/industry';
 import { metroStatus, townHouseCount, townPopulation } from '../sim/economy/town';
 import { CARGOS, type Cargo } from '../sim/economy/cargo';
 import { MAX_RATING, ratingParts, ratingTarget, stationAccepts, stationRating } from '../sim/economy/cargoFlow';
@@ -249,6 +257,9 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
       produced: Math.round(ind.month.produced),
       transported: Math.round(ind.month.transported),
       supply: averageSupply(ind),
+      baseMaxLevel: BASE_MAX_LEVEL,
+      workers: Math.round(ind.month.workers),
+      workersNeeded: workersNeeded(ind),
     };
   }
   const t = trainById(state, ref.trainId);

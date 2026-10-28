@@ -210,6 +210,13 @@ export const ECONOMY = {
     /** Tyle punktów = zmiana poziomu. */
     levelPoints: 12,
     maxLevel: 5,
+    /**
+     * Poziomy ponad `maxLevel` (6 i 7) tylko z pracownikami: pasażerami dowiezionymi na stację
+     * w zasięgu zakładu. Na poziomie L (od `maxLevel`) potrzeba `workersPerLevel × L` na miesiąc –
+     * inaczej zakład nie rośnie, a na poziomach 6–7 traci punkty rozwoju.
+     */
+    workerLevels: 2,
+    workersPerLevel: 50,
     /** Z ilu ostatnich miesięcy liczymy średnie zaopatrzenie. */
     historyMonths: 3,
     /** Przetwórnia bez dostaw pracuje na tej części mocy. */
