@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { emptyIndustryMonth, industryDef, monthlyProduction } from '../src/sim/economy/industry';
 import { infrastructureCost, LEVEL_POINTS, MAINTENANCE, monthlyEconomy, monthRatio } from '../src/sim/economy/monthly';
-import { emptyTownMonth, townHouseCount } from '../src/sim/economy/town';
+import { emptyTownMonth, townHouseCount, townTiles } from '../src/sim/economy/town';
 import { createGame, type GameState } from '../src/sim/state';
 import { Side, Track } from '../src/sim/track/track';
 import { consistStats } from '../src/sim/trains/vehicles';
@@ -123,8 +123,8 @@ describe('rozwój miast', () => {
       town.month.passengersTransported = 80;
       monthlyEconomy(s, []);
     }
-    // 6 miesięcy × (1 + round(3 × 0,8) = 3) domy
-    expect(townHouseCount(s, town)).toBe(1 + 6 * 3);
+    // 6 miesięcy × (1 + round(3 × 0,8) = 3) budynki (domy, a przy rynku też kościół i ozdoby)
+    expect(townTiles(s, town)).toHaveLength(1 + 6 * 3);
     expect(town.lastTransported).toBeCloseTo(0.8);
   });
 

@@ -5,7 +5,8 @@ python build_atlas.py <katalog OpenGFX> <katalog src OpenTTD> <katalog wyjściow
 Wynik: atlas-N.png (strony 2048×2048) i gfx.json:
   frames   – klucz sprite'a -> [strona, x, y, w, h, przes. x, przes. y]; klucz to numer sprite'a TTD
              ("1011"), z przekolorowaniem ("2905@787") albo sprite dodatkowy OpenTTD ("CATENARY:3")
-  houses   – domy 1×1 klimatu umiarkowanego (populacja, lata, warianty: grunt, budynek, przesunięcie)
+  houses   – domy 1×1 klimatu umiarkowanego i subarktyczne spod linii śniegu, ozdoby (populacja 0), kościoły
+             (populacja, lata, warianty: grunt, budynek, przesunięcie i 3 etapy budowy)
   industries – układy kafelków naszych zakładów (współrzędne już w układzie gry)
   trees    – układy drzew na kafelku (jak w OpenTTD)
   engines / wagons / company – sprite'y pojazdów i kolor firmy
@@ -129,32 +130,42 @@ def parse_houses(ottd: Path, consts: dict[str, int]) -> list[dict]:
             'pop': int(pop),
             'size1': 'Size1x1' in body,
             'temperate': 'ClimateTemperate' in body,
+            'below_snow': 'ClimateSubarcticBelowSnow' in body,
             'church': 'IsChurch' in body,
             'stadium': 'IsStadium' in body,
         })
     houses = []
     for i, spec in enumerate(specs):
-        if not (spec['size1'] and spec['temperate']):
+        # Umiarkowany i subarktyczny spod linii śniegu (bez śniegu wyglądają jak zwykłe domy).
+        if not (spec['size1'] and (spec['temperate'] or spec['below_snow'])):
             continue
-        variants = []
-        for v in range(4):
-            row = draw[i * 16 + v * 4 + 3]
-            s1, p1, s2, p2, dx, dy = row[:6]
-            ground = c_value(s1, consts)
-            building = c_value(s2, consts)
+
+        def stage(v: int, st: int) -> dict:
+            s1, p1, s2, p2, dx, dy = draw[i * 16 + v * 4 + st][:6]
             pal = c_value(p2, consts)
             # Kolor firmy w domach: w OpenTTD losowy kolor domu – tu stały dla wariantu.
             if not pal and has_colour_modifier(s2):
                 pal = HOUSE_COLOURS[v]
-            variants.append({
-                'ground': ground,
+            return {
+                'ground': c_value(s1, consts),
                 'gpal': c_value(p1, consts),
-                'building': building,
+                'building': c_value(s2, consts),
                 'pal': pal,
                 'dx': int(dx),
                 'dy': int(dy),
-            })
-        houses.append({'id': i, 'pop': spec['pop'], 'min': spec['min'], 'max': spec['max'], 'church': spec['church'], 'variants': variants})
+            }
+
+        # Wariant: gotowy dom (etap 3) i trzy etapy budowy (wykop, rusztowanie, stan surowy).
+        variants = [{**stage(v, 3), 'stages': [stage(v, st) for st in range(3)]} for v in range(4)]
+        houses.append({
+            'id': i,
+            'pop': spec['pop'],
+            'min': spec['min'],
+            'max': spec['max'],
+            'church': spec['church'],
+            'arctic': not spec['temperate'],
+            'variants': variants,
+        })
     return houses
 
 
@@ -402,11 +413,15 @@ def main() -> None:
 
     # Domy.
     houses = parse_houses(ottd, consts)
+    def add_house_sprites(v: dict) -> None:
+        v['ground'] = atlas.add(v['ground'], v.pop('gpal'))
+        v['building'] = atlas.add(v['building'], v.pop('pal'))
+
     for h in houses:
         for v in h['variants']:
-            v['ground'] = atlas.add(v['ground'], v.pop('gpal'))
-            v['building'] = atlas.add(v['building'], v['pal'])
-            del v['pal']
+            add_house_sprites(v)
+            for st in v['stages']:
+                add_house_sprites(st)
 
     # Zakłady: (układ OpenTTD, transpozycja?, wycinek kafelków) -> nasze kafelki.
     tiles = parse_industry_tiles(ottd, consts)

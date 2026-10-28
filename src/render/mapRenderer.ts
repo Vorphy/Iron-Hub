@@ -348,7 +348,7 @@ export class MapRenderer {
     if (waypoint) drawWaypoint(tracksG, x, y, getTrackBits(this.map, x, y) === Track.X);
     if (this.map.electric[y * this.map.width + x]) drawCatenary(tracksG, x, y, tileTracks);
     const house = this.map.house[y * this.map.width + x]!;
-    if (house && !buildingsHidden()) drawHouse(tracksG, x, y, house, h);
+    if (house && !buildingsHidden()) drawHouse(tracksG, x, y, house, h, this.map.houseBuild[y * this.map.width + x]);
     const depotId = this.map.depot[y * this.map.width + x];
     if (depotId) {
       const depot = this.getDepots().find((d) => d.id === depotId);

@@ -1,10 +1,22 @@
 import { emptyIndustryMonth, INDUSTRY_DEFS, type IndustryDef, isPrimary } from '../economy/industry';
-import { emptyTownMonth, isStreet, MAX_HOUSE_LEVEL, TOWN_NAMES, townNameGenerator, type Town } from '../economy/town';
+import { ECONOMY } from '../../data/economy';
+import {
+  emptyTownMonth,
+  HOUSE_CHURCH,
+  HOUSE_ORNAMENT,
+  isStreet,
+  MAX_HOUSE_LEVEL,
+  TOWN_NAMES,
+  townNameGenerator,
+  type Town,
+} from '../economy/town';
 import { createRng, nextFloat, nextInt, type Rng } from '../rng';
 import type { GameState } from '../state';
 import { isFlat, tileBaseHeight } from './height';
 import { updateTownRoads } from './roads';
 import { getTerrain, hasBuilding, inBounds, setTerrain, Terrain, type WorldMap } from './map';
+
+const T = ECONOMY.town;
 
 /** Powierzchnia mapy, dla której podane są liczby miast i zakładów (128×128). */
 const REFERENCE_AREA = 128 * 128;
@@ -174,10 +186,17 @@ export function growTown(state: GameState, rng: Rng, town: Town, houses: number,
     // Sąsiedzi istniejących domów miasta; dla pustego miasta – okolica rynku.
     const R = 12;
     let any = false;
+    let homes = 0;
+    let ornaments = 0;
+    let church = false;
     for (let y = town.y - R; y <= town.y + R; y++) {
       for (let x = town.x - R; x <= town.x + R; x++) {
         if (!inBounds(map, x, y) || map.town[y * map.width + x] !== town.id) continue;
         any = true;
+        const kind = map.house[y * map.width + x]!;
+        if (kind === HOUSE_CHURCH) church = true;
+        else if (kind === HOUSE_ORNAMENT) ornaments++;
+        else if (kind) homes++;
         // Przez ulicę i tory też można przejść – kwartały po drugiej stronie (skośny tor to
         // „schodki” z kafelków, więc bez tego zamykałby miastu drogę).
         for (const [dx, dy] of NEIGHBORS) {
@@ -202,7 +221,15 @@ export function growTown(state: GameState, rng: Rng, town: Town, houses: number,
     const y = Math.floor(i / map.width);
     const dist = Math.abs(x - town.x) + Math.abs(y - town.y);
     const maxLevel = dist <= 3 ? MAX_HOUSE_LEVEL : dist <= 6 ? 3 : 2;
-    map.house[i] = nextInt(rng, 1, maxLevel + 1);
+    // Blisko rynku: kościół (jeden na miasto) albo – rzadko – park, staw, pomnik czy fontanna.
+    if (dist <= T.ornamentRadius && !church && homes >= T.churchMinHouses) map.house[i] = HOUSE_CHURCH;
+    else if (
+      dist <= T.ornamentRadius &&
+      ornaments < 1 + Math.floor(homes / T.housesPerOrnament) &&
+      nextFloat(rng) < T.ornamentChance
+    )
+      map.house[i] = HOUSE_ORNAMENT;
+    else map.house[i] = nextInt(rng, 1, maxLevel + 1);
     map.town[i] = town.id;
     if (getTerrain(map, x, y) === Terrain.Rough) setTerrain(map, x, y, Terrain.Grass);
     built++;

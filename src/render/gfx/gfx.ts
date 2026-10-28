@@ -6,12 +6,17 @@ import { Assets, type Graphics, Rectangle, Texture } from 'pixi.js';
  * renderery rysują dotychczasowe kształty.
  */
 
-export interface HouseVariant {
+export interface HouseSprite {
   ground: string | null;
   building: string | null;
   /** Przesunięcie budynku w kafelku w 1/16 kafelka, osie OpenTTD (dx wzdłuż naszego y). */
   dx: number;
   dy: number;
+}
+
+/** Gotowy dom i trzy etapy budowy (wykop, rusztowanie, stan surowy). */
+export interface HouseVariant extends HouseSprite {
+  stages: HouseSprite[];
 }
 
 export interface HouseDef {
@@ -20,6 +25,8 @@ export interface HouseDef {
   min: number;
   max: number;
   church: boolean;
+  /** Dom z klimatu subarktycznego (spod linii śniegu). */
+  arctic: boolean;
   variants: HouseVariant[];
 }
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { SimEvent } from '../src/sim/commands';
 import { monthlyEconomy } from '../src/sim/economy/monthly';
-import { emptyTownMonth, metroStatus, townHouseCount, townPopulation } from '../src/sim/economy/town';
+import { emptyTownMonth, metroStatus, townHouseCount, townPopulation, townTiles } from '../src/sim/economy/town';
 import { createRng } from '../src/sim/rng';
 import { Simulation } from '../src/sim/simulation';
 import { createGame } from '../src/sim/state';
@@ -105,8 +105,9 @@ describe('miasta a metro', () => {
     sim.enqueue({ type: 'buildStation', x0: 31, y0: 33, x1: 33, y1: 33, axis: 'x', under: true });
     sim.processCommands();
     expect(metroStatus(state, town, townPopulation(state, town))).toBe('metro');
-    const houses = townHouseCount(state, town);
+    // Budynki – domy, a przy rynku też ozdoby.
+    const buildings = townTiles(state, town).length;
     for (let k = 0; k < 3; k++) monthlyEconomy(state, []);
-    expect(townHouseCount(state, town)).toBeGreaterThanOrEqual(houses + 6);
+    expect(townTiles(state, town).length).toBeGreaterThanOrEqual(buildings + 6);
   });
 });

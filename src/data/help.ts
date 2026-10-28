@@ -234,9 +234,10 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     id: 'towns',
     title: 'Miasta – jak rosną',
     blocks: [
-      `Domy mają ${E.town.housePopulation.slice(1).join(' / ')} mieszkańców zależnie od wysokości. Miesięcznie miasto daje pasażerów = mieszkańcy / ${E.town.passengerDivisor} i pocztę = mieszkańcy / ${E.town.mailDivisor} (z domów w zasięgu stacji).`,
+      `Domy mają ${E.town.housePopulation.slice(1, 5).join(' / ')} mieszkańców zależnie od wysokości. Miesięcznie miasto daje pasażerów = mieszkańcy / ${E.town.passengerDivisor} i pocztę = mieszkańcy / ${E.town.mailDivisor} (z domów w zasięgu stacji).`,
       `**Wzrost co miesiąc**: miasto, z którego wozisz pasażerów, dostaje 1–${1 + E.town.growthMaxExtra} nowe domy (więcej, im większy odsetek przewieziesz) i ma ${pct(E.town.upgradeChance)} szans na rozbudowę domu w górę. Miasto bez kolei – tylko ${pct(E.town.unservedGrowthChance)} szans na jeden dom.`,
       `Nowe domy powstają ${E.town.stationPull}× chętniej w zasięgu stacji – miasto rośnie w stronę kolei. Większe miasto = więcej pasażerów = więcej pieniędzy.`,
+      `Nowy albo rozbudowywany dom przez kilka dni się buduje (wykop, rusztowanie, stan surowy – po ${E.town.constructionStageDays} dni) – widać, gdzie miasto rośnie. Przy rynku stoi kościół (od ${E.town.churchMinHouses} domów) i z rzadka park, staw, pomnik albo fontanna – bez mieszkańców.`,
       `**Metro w dużym mieście**: od ${E.town.metroDemandPop.toLocaleString('pl-PL')} mieszkańców miasto domaga się metra (komunikat i napis w oknie miasta). Stacja metra w obrębie miasta przyspiesza jego rozwój: +${E.town.metroGrowthExtra} domy na miesiąc i dodatkowe ${pct(E.town.metroUpgradeChance)} szans na rozbudowę. Bez metra miasto powyżej ${E.town.metroRequiredPop.toLocaleString('pl-PL')} mieszkańców przestaje rosnąć.`,
       `Miasta same budują drogi (jeździ po nich ruch – tylko dekoracja). Dom można wyburzyć buldożerem (${zl(E.construction.demolishHouse)}).`,
     ],

@@ -19,7 +19,15 @@ import {
   monthlyDemand,
   type Industry,
 } from './industry';
-import { emptyTownMonth, HOUSE_POPULATION, MAX_HOUSE_LEVEL, metroStatus, townTiles, type Town } from './town';
+import {
+  emptyTownMonth,
+  HOUSE_POPULATION,
+  MAX_HOUSE_LEVEL,
+  metroStatus,
+  startHouseConstruction,
+  townTiles,
+  type Town,
+} from './town';
 
 // Reguły z pliku ekonomii (src/data/economy.ts).
 export const GROW_THRESHOLD = ECONOMY.industry.growThreshold;
@@ -116,7 +124,11 @@ function closeTownMonth(state: GameState, town: Town, nearStations: Uint8Array, 
 
   const before = new Set(tiles);
   growTown(state, state.rng, town, houses, (i) => (nearStations[i] ? STATION_PULL : 1));
-  for (const i of townTiles(state, town)) if (!before.has(i)) events.push(tileEvent(state, i));
+  for (const i of townTiles(state, town)) {
+    if (before.has(i)) continue;
+    startHouseConstruction(state, i);
+    events.push(tileEvent(state, i));
+  }
   updateTownRoads(state, town, events);
 
   // W obsługiwanym mieście część domów się rozbudowuje (z metrem – częściej).
@@ -131,6 +143,7 @@ function upgradeHouse(state: GameState, tiles: number[], events: SimEvent[]): vo
   const i = tiles[nextInt(state.rng, 0, tiles.length)]!;
   if (state.map.house[i]! < MAX_HOUSE_LEVEL) {
     state.map.house[i]!++;
+    startHouseConstruction(state, i);
     events.push(tileEvent(state, i));
   }
 }

@@ -17,7 +17,7 @@ import { engineDef, wagonDef } from './trains/vehicles';
 import { MAX_HEIGHT } from './world/height';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 24;
+export const SAVE_VERSION = 25;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -26,6 +26,7 @@ const LAYERS = {
   station: 4,
   depot: 4,
   house: 1,
+  houseBuild: 1,
   town: 2,
   industry: 4,
   bridge: 2,
@@ -272,6 +273,11 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     d.research = emptyResearch();
     d.version = 24;
   }
+  if (d.version === 24) {
+    // v25: etapy budowy domów (stare domy – gotowe)
+    if (d.map) d.map.houseBuild = emptyLayer('houseBuild');
+    d.version = 25;
+  }
   return d as Partial<SerializedState>;
 }
 
@@ -292,6 +298,7 @@ export function deserializeState(data: unknown): GameState {
     station: new Uint32Array(bytes('station').buffer),
     depot: new Uint32Array(bytes('depot').buffer),
     house: bytes('house'),
+    houseBuild: bytes('houseBuild'),
     town: new Uint16Array(bytes('town').buffer),
     industry: new Uint32Array(bytes('industry').buffer),
     heights: fromBase64(m.heights, (m.width + 1) * (m.height + 1)),

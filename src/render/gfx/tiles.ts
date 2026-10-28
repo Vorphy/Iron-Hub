@@ -9,7 +9,8 @@ import { getTerrain, Terrain, type WorldMap } from '../../sim/world/map';
 import { toWorld } from '../iso';
 import { buildingsHidden } from '../visibility';
 import { tileHash } from '../shapes';
-import { drawSprite, gfxData, type HouseDef, palKey } from './gfx';
+import { drawSprite, gfxData, type HouseDef, type HouseSprite, type HouseVariant, palKey } from './gfx';
+import { HOUSE_BUILD_STAGES } from '../../sim/economy/town';
 
 // Numery sprite'ów TTD (table/sprites.h w OpenTTD).
 const SPR_FLAT_GRASS = 3981;
@@ -232,14 +233,25 @@ export function drawRoadGround(g: Graphics, map: WorldMap, x: number, y: number,
 
 // ------------------------------------------------------------------ domy
 
-/** Domy TTD pogrupowane według poziomu naszego domu (1–4) – po populacji budynku. */
+/**
+ * Budynki TTD według wartości naszego kafelka: poziomy domu 1–4 (po populacji budynku), potem ozdoby
+ * (park, staw, pomnik, fontanna – budynki bez mieszkańców) i kościoły.
+ */
 let houseLevels: HouseDef[][] | null = null;
 
 function levels(): HouseDef[][] {
   if (houseLevels) return houseLevels;
-  const all = gfxData().houses.filter((h) => h.pop > 0 && !h.church);
+  const houses = gfxData().houses;
+  const all = houses.filter((h) => h.pop > 0 && !h.church);
   const band = (lo: number, hi: number) => all.filter((h) => h.pop > lo && h.pop <= hi);
-  houseLevels = [band(0, 35), band(35, 100), band(100, 150), band(150, 10000)];
+  houseLevels = [
+    band(0, 35),
+    band(35, 100),
+    band(100, 150),
+    band(150, 10000),
+    houses.filter((h) => h.pop === 0),
+    houses.filter((h) => h.church),
+  ];
   return houseLevels;
 }
 
@@ -276,9 +288,9 @@ function fallbacks(): HouseDef[][] {
  * Dopóki wylosowany budynek nie istnieje w danym roku, stoi zastępczy z poziomu – więc kafelek zmienia
  * wygląd najwyżej raz (gdy wylosowany budynek wejdzie do gry) albo gdy dom się rozbuduje.
  */
-function houseVariant(x: number, y: number, level: number) {
+function houseVariant(x: number, y: number, level: number): HouseVariant {
   const h = tileHash(x, y);
-  const k = Math.min(3, Math.max(0, level - 1));
+  const k = Math.min(levels().length - 1, Math.max(0, level - 1));
   const band = levels()[k]!;
   let def = band[h % band.length]!;
   if (def.min > year) {
@@ -288,9 +300,16 @@ function houseVariant(x: number, y: number, level: number) {
   return def.variants[(h >>> 8) & 3]!;
 }
 
-/** Dom na kafelku: grunt (warstwa terenu) i budynek (warstwa obiektów); wygląd zależy od poziomu i roku. */
-export function drawHouseTile(g: Graphics, objects: Graphics, map: WorldMap, x: number, y: number, level: number): void {
+/** Wygląd domu w obecnym etapie budowy (warstwa `houseBuild`: 3 – wykop … 1 – stan surowy, 0 – gotowy). */
+function houseSprite(map: WorldMap, x: number, y: number, level: number): HouseSprite {
   const v = houseVariant(x, y, level);
+  const left = map.houseBuild[y * map.width + x]!;
+  return left ? (v.stages[HOUSE_BUILD_STAGES - left] ?? v) : v;
+}
+
+/** Dom na kafelku: grunt (warstwa terenu) i budynek (warstwa obiektów); wygląd zależy od poziomu, roku i etapu budowy. */
+export function drawHouseTile(g: Graphics, objects: Graphics, map: WorldMap, x: number, y: number, level: number): void {
+  const v = houseSprite(map, x, y, level);
   const { z } = tileSlope(map, x, y);
   const o = tileOrigin(x, y, z);
   drawSprite(g, v.ground, o.x, o.y);
@@ -299,7 +318,7 @@ export function drawHouseTile(g: Graphics, objects: Graphics, map: WorldMap, x: 
 
 /** Sam budynek domu (także do dorysowania przed pojazdem, który zasłania). */
 export function drawHouseBuilding(objects: Graphics, map: WorldMap, x: number, y: number, level: number): void {
-  const v = houseVariant(x, y, level);
+  const v = houseSprite(map, x, y, level);
   const { z } = tileSlope(map, x, y);
   const b = subTile(x, y, z, v.dx, v.dy);
   drawSprite(objects, v.building, b.x, b.y);

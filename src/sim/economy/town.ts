@@ -1,4 +1,5 @@
 import { ECONOMY } from '../../data/economy';
+import type { SimEvent } from '../commands';
 import type { GameState } from '../state';
 import { createRng, nextFloat, nextInt } from '../rng';
 import { inBounds } from '../world/map';
@@ -6,6 +7,27 @@ import { inBounds } from '../world/map';
 /** Mieszkańcy domu w zależności od poziomu zabudowy (1–4). */
 export const HOUSE_POPULATION: readonly number[] = ECONOMY.town.housePopulation;
 export const MAX_HOUSE_LEVEL = 4;
+/** Wartości warstwy `house` poza poziomami 1–4: ozdoba (park, pomnik…) i kościół – bez mieszkańców. */
+export const HOUSE_ORNAMENT = 5;
+export const HOUSE_CHURCH = 6;
+/** Etapy budowy domu (warstwa `houseBuild`: ile etapów zostało; 0 – gotowy). */
+export const HOUSE_BUILD_STAGES = 3;
+export const CONSTRUCTION_STAGE_DAYS = ECONOMY.town.constructionStageDays;
+
+/** Dom zaczyna się budować od nowa – po wzroście miasta albo rozbudowie. */
+export function startHouseConstruction(state: GameState, i: number): void {
+  state.map.houseBuild[i] = HOUSE_BUILD_STAGES;
+}
+
+/** Co `CONSTRUCTION_STAGE_DAYS` dni: budowane domy przechodzą do następnego etapu. */
+export function advanceHouseConstruction(state: GameState, events: SimEvent[]): void {
+  const { map } = state;
+  for (let i = 0; i < map.houseBuild.length; i++) {
+    if (!map.houseBuild[i]) continue;
+    map.houseBuild[i]!--;
+    events.push({ type: 'tileChanged', x: i % map.width, y: Math.floor(i / map.width) });
+  }
+}
 
 export interface TownMonth {
   passengers: number;
@@ -169,8 +191,9 @@ export function metroStatus(state: GameState, town: Town, population: number): M
   return population > ECONOMY.town.metroRequiredPop ? 'stalled' : 'wanted';
 }
 
+/** Domy z mieszkańcami (bez ozdób i kościoła). */
 export function townHouseCount(state: GameState, town: Town): number {
-  return townTiles(state, town).filter((i) => state.map.house[i]).length;
+  return townTiles(state, town).filter((i) => state.map.house[i]! && state.map.house[i]! <= MAX_HOUSE_LEVEL).length;
 }
 
 /** Najbliższe miasto w zasięgu `maxDist` kafelków (do nazw stacji i zakładów). */

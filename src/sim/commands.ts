@@ -318,6 +318,7 @@ function clearTile(state: GameState, x: number, y: number, events: SimEvent[]): 
     if (state.money < HOUSE_DEMOLISH_COST) return { ok: false, reason: 'noMoney' };
     spend(state, 'construction', HOUSE_DEMOLISH_COST);
     map.house[i] = 0;
+    map.houseBuild[i] = 0;
     map.town[i] = 0;
     events.push({ type: 'tileChanged', x, y });
     return { ok: true };

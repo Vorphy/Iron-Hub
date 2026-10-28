@@ -1,7 +1,8 @@
 import { Container, Graphics } from 'pixi.js';
 import { MAX_HEIGHT } from '../sim/world/height';
 import type { Rect } from './camera';
-import { HEIGHT_PX, tileToWorldFlat } from './iso';
+import { HEIGHT_PX, tileToWorld, tileToWorldFlat } from './iso';
+import { HOUSE_BUILD_STAGES, HOUSE_CHURCH, HOUSE_ORNAMENT } from '../sim/economy/town';
 import { industryDef, type Industry } from '../sim/economy/industry';
 import { darken, drawBox, drawChimney, drawGableRoof, drawPile, drawTree, lighten, tileHash } from './shapes';
 import { inBounds, type WorldMap } from '../sim/world/map';
@@ -14,8 +15,37 @@ import type { GameState } from '../sim/state';
 const WALLS = [0xe8dcc0, 0xd9b38c, 0xc9c2b8, 0xe0c9a6];
 const ROOFS = [0xa0412d, 0x7a4a2e, 0x8a3b2a, 0x6b4a3a];
 
-/** Dom w mieście; wysokość rośnie z poziomem, poziom 4 – kamienica z płaskim dachem. */
-export function drawHouse(g: Graphics, x: number, y: number, level: number, hash: number): void {
+const CONSTRUCTION = 0xb9b2a4;
+const CHURCH_WALL = 0xd8d2c4;
+
+/**
+ * Dom w mieście; wysokość rośnie z poziomem, poziom 4 – kamienica z płaskim dachem. Ozdoba – drzewka
+ * z oczkiem wodnym, kościół – nawa z wieżą. `building` – ile etapów budowy zostało (0 – gotowy).
+ */
+export function drawHouse(g: Graphics, x: number, y: number, level: number, hash: number, building = 0): void {
+  if (level === HOUSE_ORNAMENT) {
+    const p = tileToWorld(x + 0.5, y + 0.5);
+    g.ellipse(p.x, p.y, 9, 4.5).fill(0x3f7fb5);
+    drawTree(g, x + 0.25, y + 0.3, 12, 0x2f6b2a);
+    drawTree(g, x + 0.75, y + 0.7, 10, 0x3d7d33);
+    return;
+  }
+  if (building) {
+    // Budowa: niska szara bryła rośnie z każdym etapem, bez dachu.
+    const h = 4 + (HOUSE_BUILD_STAGES - building) * 5;
+    drawBox(g, x + 0.2, y + 0.2, x + 0.8, y + 0.8, h, { left: CONSTRUCTION, right: darken(CONSTRUCTION, 0.78), roof: 0x8a8070 });
+    return;
+  }
+  if (level === HOUSE_CHURCH) {
+    drawBox(g, x + 0.2, y + 0.3, x + 0.8, y + 0.75, 14, {
+      left: CHURCH_WALL,
+      right: darken(CHURCH_WALL, 0.78),
+      roof: CHURCH_WALL,
+    });
+    drawGableRoof(g, x + 0.2, y + 0.3, x + 0.8, y + 0.75, 14, 9, 0x5d5f66, 0x45474d);
+    drawBox(g, x + 0.62, y + 0.4, x + 0.8, y + 0.6, 34, { left: CHURCH_WALL, right: darken(CHURCH_WALL, 0.78), roof: 0x45474d });
+    return;
+  }
   const inset = 0.16 + ((hash >>> 3) & 3) * 0.02;
   const wall = WALLS[hash & 3]!;
   const h = 6 + level * 6;
@@ -100,7 +130,7 @@ export function redrawHouse(g: Graphics, state: GameState, i: number): void {
   const x = i % map.width;
   const y = Math.floor(i / map.width);
   if (!gfxOn()) {
-    if (map.house[i]) drawHouse(g, x, y, map.house[i]!, tileHash(x, y));
+    if (map.house[i]) drawHouse(g, x, y, map.house[i]!, tileHash(x, y), map.houseBuild[i]);
     return;
   }
   if (map.house[i]) return drawHouseBuilding(g, map, x, y, map.house[i]!);

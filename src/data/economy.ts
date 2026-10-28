@@ -137,8 +137,19 @@ export const ECONOMY = {
 
   /** Miasta. */
   town: {
-    /** Mieszkańcy domu według poziomu zabudowy (indeks = poziom 0–4). */
-    housePopulation: [0, 20, 45, 80, 140],
+    /** Mieszkańcy domu według poziomu zabudowy (indeks = poziom 0–4; 5 – ozdoba, 6 – kościół: bez mieszkańców). */
+    housePopulation: [0, 20, 45, 80, 140, 0, 0],
+    /**
+     * Ozdoby (park, staw, pomnik, fontanna) i kościół – tylko blisko rynku (do `ornamentRadius` kafelków).
+     * Kościół jeden na miasto, gdy ma co najmniej `churchMinHouses` domów; ozdoba z szansą `ornamentChance`
+     * przy każdym nowym budynku w tym promieniu, najwyżej 1 na `housesPerOrnament` domów.
+     */
+    ornamentRadius: 4,
+    ornamentChance: 0.08,
+    housesPerOrnament: 25,
+    churchMinHouses: 8,
+    /** Nowy albo rozbudowywany dom: 3 etapy budowy (wykop, rusztowanie, stan surowy) po tyle dni. */
+    constructionStageDays: 5,
     /** Pasażerowie na miesiąc = mieszkańcy / passengerDivisor; poczta = mieszkańcy / mailDivisor. */
     passengerDivisor: 8,
     mailDivisor: 32,

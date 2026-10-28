@@ -20,8 +20,10 @@ export interface WorldMap {
   station: Uint32Array;
   /** Id zajezdni na kafelku (0 – brak), indeks jak terrain. */
   depot: Uint32Array;
-  /** Poziom domu na kafelku (0 – brak, 1–4), indeks jak terrain. */
+  /** Poziom domu na kafelku (0 – brak, 1–4; 5 – ozdoba, 6 – kościół), indeks jak terrain. */
   house: Uint8Array;
+  /** Dom w budowie: ile etapów budowy zostało (0 – gotowy, patrz town.ts). */
+  houseBuild: Uint8Array;
   /** Id miasta, do którego należy dom (0 – brak). */
   town: Uint16Array;
   /** Id zakładu przemysłowego na kafelku (0 – brak). */
@@ -89,6 +91,7 @@ export function generateMap(width: number, height: number, seed: number): WorldM
     station: new Uint32Array(n),
     depot: new Uint32Array(n),
     house: new Uint8Array(n),
+    houseBuild: new Uint8Array(n),
     town: new Uint16Array(n),
     industry: new Uint32Array(n),
     bridge: new Uint16Array(n),

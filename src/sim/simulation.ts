@@ -4,6 +4,7 @@ import type { GameState } from './state';
 import { buildTrackGraph, type TrackGraph } from './track/graph';
 import { dailyCargo } from './economy/cargoFlow';
 import { monthlyEconomy } from './economy/monthly';
+import { advanceHouseConstruction, CONSTRUCTION_STAGE_DAYS } from './economy/town';
 import { DAYS_PER_MONTH, TICKS_PER_DAY } from './time';
 import { Planner, tickTrains } from './trains/movement';
 
@@ -44,6 +45,7 @@ export class Simulation {
     this.state.tick++;
     tickResearch(this.state, this.events);
     if (this.state.tick % TICKS_PER_DAY === 0) dailyCargo(this.state);
+    if (this.state.tick % (TICKS_PER_DAY * CONSTRUCTION_STAGE_DAYS) === 0) advanceHouseConstruction(this.state, this.events);
     if (this.state.tick % (TICKS_PER_DAY * DAYS_PER_MONTH) === 0) monthlyEconomy(this.state, this.events);
   }
 

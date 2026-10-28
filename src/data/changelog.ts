@@ -12,6 +12,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-28',
+    title: 'Miasta: budowa domów, kościoły, parki i nowe budynki',
+    items: [
+      'Nowy i rozbudowywany dom najpierw się buduje: wykop, rusztowanie, stan surowy, po kilka dni każdy etap – widać, gdzie miasto rośnie.',
+      'Przy rynku staje kościół (jeden na miasto), a z rzadka park, staw, pomnik albo fontanna. Nie mają mieszkańców – liczba domów i mieszkańców w oknie miasta ich nie liczy.',
+      '13 nowych domów i drugi kościół – budynki z klimatu subarktycznego spod linii śniegu (kamienice, wieżowce, domki), więc miasta są mniej jednakowe.',
+    ],
+  },
+  {
+    date: '2026-10-28',
     title: 'Fundamenty pod torami na zboczach',
     items: [
       'Tory w poprzek zbocza, łuki i rozjazdy na zboczu można już budować – stoją na kamiennym fundamencie, jak w OpenTTD. Kafelek podnosi się do najwyższego narożnika, a prosty tor przy jednym podniesionym narożniku dostaje fundament pochyły, równo pod górę.',
