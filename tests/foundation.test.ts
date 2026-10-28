@@ -76,7 +76,13 @@ describe('fundamenty pod torami (jak GetRailFoundation w OpenTTD)', () => {
     expect(failures(sim)).toEqual([]);
     expect(tileFoundation(s.map, 5, 5)).toBe(Foundation.Leveled);
     expect(s.money).toBe(START_MONEY - TRACK_COST - FOUNDATION_COST);
-    sim.enqueue({ type: 'buildTrack', pieces: [{ x: 5, y: 5, track: Track.X }, { x: 5, y: 5, track: Track.Lower }] });
+    sim.enqueue({
+      type: 'buildTrack',
+      pieces: [
+        { x: 5, y: 5, track: Track.X },
+        { x: 5, y: 5, track: Track.Lower },
+      ],
+    });
     sim.step();
     expect(failures(sim)).toEqual([]);
     expect(s.money).toBe(START_MONEY - 3 * TRACK_COST - FOUNDATION_COST);
@@ -90,7 +96,13 @@ describe('fundamenty pod torami (jak GetRailFoundation w OpenTTD)', () => {
       [6, 6],
     ]);
     const sim = new Simulation(s);
-    sim.enqueue({ type: 'buildTrack', pieces: [{ x: 5, y: 5, track: Track.Right }, { x: 5, y: 5, track: Track.Y }] });
+    sim.enqueue({
+      type: 'buildTrack',
+      pieces: [
+        { x: 5, y: 5, track: Track.Right },
+        { x: 5, y: 5, track: Track.Y },
+      ],
+    });
     sim.step();
     expect(failures(sim)).toEqual([]);
     expect(tileFoundation(s.map, 5, 5)).toBe(Foundation.Leveled);
