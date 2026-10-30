@@ -5,7 +5,7 @@ import type { Depot } from './depot/depot';
 import { isCargo } from './economy/cargo';
 import type { Finances, Ledger } from './economy/finance';
 import { industryDef, type Industry } from './economy/industry';
-import type { Town } from './economy/town';
+import { CENTER_DISTRICT_NAME, type Town } from './economy/town';
 import type { Signal, SignalMode } from './signals/signals';
 import type { Station } from './station/station';
 import type { Bridge } from './track/bridge';
@@ -18,7 +18,7 @@ import { MAX_HEIGHT } from './world/height';
 import { TICKS_PER_DAY } from './time';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 28;
+export const SAVE_VERSION = 29;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -309,6 +309,13 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     }
     d.version = 28;
   }
+  if (d.version === 28) {
+    // v29: dzielnice – każde miasto ma jedną, centrum na rynku
+    if (Array.isArray(d.towns)) {
+      for (const t of d.towns as Record<string, unknown>[]) t.districts = [{ name: CENTER_DISTRICT_NAME, x: t.x, y: t.y }];
+    }
+    d.version = 29;
+  }
   return d as Partial<SerializedState>;
 }
 
@@ -452,6 +459,10 @@ function checkReferences(state: GameState): GameState {
   }
   for (const o of [...state.depots, ...state.towns, ...state.industries, ...state.bridges, ...state.tunnels, ...state.signals]) {
     if (!inMap(o.x, o.y)) fail('obiekt poza mapą');
+  }
+  for (const t of state.towns) {
+    if (t.districts.some((d) => !inMap(d.x, d.y))) fail(`dzielnica miasta ${t.name} poza mapą`);
+    if (t.districts[0]!.x !== t.x || t.districts[0]!.y !== t.y) fail(`centrum miasta ${t.name} poza rynkiem`);
   }
 
   for (const t of state.trains) {
@@ -676,6 +687,9 @@ function isTown(v: unknown): v is Town {
     isObj(t.month) &&
     Object.values(t.month).every(isNum) &&
     isNum(t.lastTransported) &&
+    Array.isArray(t.districts) &&
+    t.districts.length > 0 &&
+    t.districts.every((d) => isObj(d) && typeof d.name === 'string' && isInt(d.x) && isInt(d.y)) &&
     (t.metroDemand === undefined || typeof t.metroDemand === 'boolean')
   );
 }

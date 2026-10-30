@@ -9,7 +9,7 @@ import {
   updateStationRatings,
 } from '../src/sim/economy/cargoFlow';
 import { emptyIndustryMonth, industryDef } from '../src/sim/economy/industry';
-import { emptyTownMonth } from '../src/sim/economy/town';
+import { newTown } from '../src/sim/economy/town';
 import { deserializeState, serializeState } from '../src/sim/serialize';
 import { Simulation } from '../src/sim/simulation';
 import { createGame, type GameState } from '../src/sim/state';
@@ -30,7 +30,7 @@ function addIndustry(state: GameState, type: string, x: number, y: number): void
 
 function addTown(state: GameState, name: string, x: number, y: number, houses: [number, number][]): void {
   const id = state.towns.length + 1;
-  state.towns.push({ id, name, x, y, month: emptyTownMonth(), lastTransported: 0 });
+  state.towns.push(newTown(id, name, x, y));
   for (const [hx, hy] of houses) {
     state.map.house[hy * state.map.width + hx] = 3;
     state.map.town[hy * state.map.width + hx] = id;

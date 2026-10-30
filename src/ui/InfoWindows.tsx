@@ -63,6 +63,18 @@ export function TownWindow({ data: t, actions }: { data: TownWindowData; actions
         <span class="grow">Budynki</span>
         <span>{t.houses}</span>
       </div>
+      {t.districts.length > 1 && (
+        <>
+          <div class="section-title">Dzielnice</div>
+          {t.districts.map((d) => (
+            <div class="row" key={d.name}>
+              <span class="grow">{d.name}</span>
+              {d.metro && <span title="Stacja metra w dzielnicy">🚇</span>}
+              <span>{d.population.toLocaleString('pl-PL')}</span>
+            </div>
+          ))}
+        </>
+      )}
       <div class="section-title">W tym miesiącu</div>
       <div class="row">
         <span class="grow">Pasażerowie (przewiezieni / wszyscy)</span>

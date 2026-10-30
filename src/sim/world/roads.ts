@@ -1,5 +1,5 @@
 import type { SimEvent } from '../commands';
-import { isStreet, TOWN_EXTENT, type Town } from '../economy/town';
+import { districtIndexAt, forEachTownTile, isStreet, TOWN_EXTENT, type Town } from '../economy/town';
 import type { GameState } from '../state';
 import { Track } from '../track/track';
 import { isFlat } from './height';
@@ -26,8 +26,9 @@ export function canHaveRoad(map: WorldMap, x: number, y: number, town?: Town): b
  * Pociągi mają pierwszeństwo: auta są tylko dekoracją i nie zatrzymują pociągów.
  */
 export function crossingTrack(town: Town, x: number, y: number): number {
-  const row = (y - town.y) % 4 === 0;
-  const column = (x - town.x) % 4 === 0;
+  const d = town.districts[districtIndexAt(town, x, y)]!;
+  const row = (y - d.y) % 4 === 0;
+  const column = (x - d.x) % 4 === 0;
   if (row === column) return 0;
   return row ? Track.Y : Track.X;
 }
@@ -42,16 +43,13 @@ function nextToHouse(map: WorldMap, x: number, y: number, townId: number): boole
   return false;
 }
 
-/** Dokłada drogi na ulicach obok domów miasta (w okolicy rynku). */
+/** Dokłada drogi na ulicach obok domów miasta (w obszarze dzielnic). */
 export function updateTownRoads(state: GameState, town: Town, events?: SimEvent[]): void {
   const { map } = state;
-  for (let y = Math.max(0, town.y - TOWN_EXTENT); y <= Math.min(map.height - 1, town.y + TOWN_EXTENT); y++) {
-    for (let x = Math.max(0, town.x - TOWN_EXTENT); x <= Math.min(map.width - 1, town.x + TOWN_EXTENT); x++) {
-      const i = y * map.width + x;
-      if (map.road[i] || !isStreet(town, x, y) || !canHaveRoad(map, x, y, town) || !nextToHouse(map, x, y, town.id)) continue;
-      map.road[i] = 1;
-      if (map.terrain[i] === Terrain.Rough) setTerrain(map, x, y, Terrain.Grass);
-      events?.push({ type: 'tileChanged', x, y });
-    }
-  }
+  forEachTownTile(map, town, TOWN_EXTENT, (x, y, i) => {
+    if (map.road[i] || !isStreet(town, x, y) || !canHaveRoad(map, x, y, town) || !nextToHouse(map, x, y, town.id)) return;
+    map.road[i] = 1;
+    if (map.terrain[i] === Terrain.Rough) setTerrain(map, x, y, Terrain.Grass);
+    events?.push({ type: 'tileChanged', x, y });
+  });
 }

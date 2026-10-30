@@ -32,7 +32,7 @@ import {
   monthlyProduction,
   workersNeeded,
 } from '../sim/economy/industry';
-import { metroStatus, townHouseCount, townPopulation } from '../sim/economy/town';
+import { districtInfo, metroStatus, townHouseCount } from '../sim/economy/town';
 import { CARGOS, type Cargo } from '../sim/economy/cargo';
 import { MAX_RATING, ratingParts, ratingTarget, stationAccepts, stationRating } from '../sim/economy/cargoFlow';
 import { wagonDef } from '../sim/trains/vehicles';
@@ -224,7 +224,8 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
   if (ref.kind === 'town') {
     const town = state.towns.find((t) => t.id === ref.townId);
     if (!town) return null;
-    const population = townPopulation(state, town);
+    const districts = districtInfo(state, town);
+    const population = districts.reduce((sum, d) => sum + d.population, 0);
     return {
       kind: 'town',
       townId: town.id,
@@ -237,6 +238,7 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
       mailTransported: Math.round(town.month.mailTransported),
       lastTransported: town.lastTransported,
       metro: metroStatus(state, town, population),
+      districts,
     };
   }
   if (ref.kind === 'industry') {

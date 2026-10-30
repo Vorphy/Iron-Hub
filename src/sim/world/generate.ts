@@ -1,11 +1,13 @@
 import { emptyIndustryMonth, INDUSTRY_DEFS, type IndustryDef, isPrimary } from '../economy/industry';
 import { ECONOMY } from '../../data/economy';
 import {
-  emptyTownMonth,
+  districtIndexAt,
+  forEachTownTile,
   HOUSE_CHURCH,
   HOUSE_ORNAMENT,
   isStreet,
   MAX_HOUSE_LEVEL,
+  newTown,
   TOWN_NAMES,
   townNameGenerator,
   type Town,
@@ -128,7 +130,7 @@ function placeTowns(state: GameState, rng: Rng, seed: number, count: number): vo
       if (!landAround(map, x, y, 3)) continue;
       if (state.towns.some((t) => Math.abs(t.x - x) + Math.abs(t.y - y) < MIN_TOWN_DISTANCE)) continue;
       const name = base.length ? base.splice(nextInt(rng, 0, base.length), 1)[0]! : extra();
-      const town: Town = { id: state.towns.length + 1, name, x, y, month: emptyTownMonth(), lastTransported: 0 };
+      const town = newTown(state.towns.length + 1, name, x, y);
       state.towns.push(town);
       growTown(state, rng, town, nextInt(rng, 8, 30));
       break;
@@ -189,24 +191,22 @@ export function growTown(state: GameState, rng: Rng, town: Town, houses: number,
     let homes = 0;
     let ornaments = 0;
     let church = false;
-    for (let y = town.y - R; y <= town.y + R; y++) {
-      for (let x = town.x - R; x <= town.x + R; x++) {
-        if (!inBounds(map, x, y) || map.town[y * map.width + x] !== town.id) continue;
-        any = true;
-        const kind = map.house[y * map.width + x]!;
-        if (kind === HOUSE_CHURCH) church = true;
-        else if (kind === HOUSE_ORNAMENT) ornaments++;
-        else if (kind) homes++;
-        // Przez ulicę i tory też można przejść – kwartały po drugiej stronie (skośny tor to
-        // „schodki” z kafelków, więc bez tego zamykałby miastu drogę).
-        for (const [dx, dy] of NEIGHBORS) {
-          consider(x + dx, y + dy);
-          let k = 1;
-          while (k <= MAX_CROSSING && crossable(map, town, x + k * dx, y + k * dy)) k++;
-          if (k > 1) consider(x + k * dx, y + k * dy);
-        }
+    forEachTownTile(map, town, R, (x, y, i) => {
+      if (map.town[i] !== town.id) return;
+      any = true;
+      const kind = map.house[i]!;
+      if (kind === HOUSE_CHURCH) church = true;
+      else if (kind === HOUSE_ORNAMENT) ornaments++;
+      else if (kind) homes++;
+      // Przez ulicę i tory też można przejść – kwartały po drugiej stronie (skośny tor to
+      // „schodki” z kafelków, więc bez tego zamykałby miastu drogę).
+      for (const [dx, dy] of NEIGHBORS) {
+        consider(x + dx, y + dy);
+        let k = 1;
+        while (k <= MAX_CROSSING && crossable(map, town, x + k * dx, y + k * dy)) k++;
+        if (k > 1) consider(x + k * dx, y + k * dy);
       }
-    }
+    });
     if (!any)
       for (const [dx, dy] of [
         [1, 1],
@@ -219,7 +219,8 @@ export function growTown(state: GameState, rng: Rng, town: Town, houses: number,
     const i = candidates[pickWeighted(rng, weights)]!;
     const x = i % map.width;
     const y = Math.floor(i / map.width);
-    const dist = Math.abs(x - town.x) + Math.abs(y - town.y);
+    const center = town.districts[districtIndexAt(town, x, y)]!;
+    const dist = Math.abs(x - center.x) + Math.abs(y - center.y);
     const maxLevel = dist <= 3 ? MAX_HOUSE_LEVEL : dist <= 6 ? 3 : 2;
     // Blisko rynku: kościół (jeden na miasto) albo – rzadko – park, staw, pomnik czy fontanna.
     if (dist <= T.ornamentRadius && !church && homes >= T.churchMinHouses) map.house[i] = HOUSE_CHURCH;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { emptyIndustryMonth, industryDef, monthlyProduction } from '../src/sim/economy/industry';
 import { infrastructureCost, LEVEL_POINTS, MAINTENANCE, monthlyEconomy, monthRatio } from '../src/sim/economy/monthly';
-import { emptyTownMonth, townHouseCount, townTiles } from '../src/sim/economy/town';
+import { newTown, townHouseCount, townTiles } from '../src/sim/economy/town';
 import { createGame, type GameState } from '../src/sim/state';
 import { Side, Track } from '../src/sim/track/track';
 import { consistStats } from '../src/sim/trains/vehicles';
@@ -114,7 +114,7 @@ describe('koszty miesięczne', () => {
 describe('rozwój miast', () => {
   it('obsługiwane miasto rośnie, nowe domy chętniej w zasięgu stacji', () => {
     const s = emptyWorld();
-    s.towns.push({ id: 1, name: 'Testowo', x: 20, y: 20, month: emptyTownMonth(), lastTransported: 0 });
+    s.towns.push(newTown(1, 'Testowo', 20, 20));
     s.map.house[21 * 40 + 21] = 2;
     s.map.town[21 * 40 + 21] = 1;
     const town = s.towns[0]!;
@@ -130,7 +130,7 @@ describe('rozwój miast', () => {
 
   it('nieobsługiwane miasto rośnie rzadko', () => {
     const s = emptyWorld();
-    s.towns.push({ id: 1, name: 'Testowo', x: 20, y: 20, month: emptyTownMonth(), lastTransported: 0 });
+    s.towns.push(newTown(1, 'Testowo', 20, 20));
     s.map.house[21 * 40 + 21] = 2;
     s.map.town[21 * 40 + 21] = 1;
     for (let m = 0; m < 12; m++) monthlyEconomy(s, []);

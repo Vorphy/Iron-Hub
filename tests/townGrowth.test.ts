@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { SimEvent } from '../src/sim/commands';
 import { monthlyEconomy } from '../src/sim/economy/monthly';
-import { emptyTownMonth, metroStatus, townHouseCount, townPopulation, townTiles } from '../src/sim/economy/town';
+import { metroStatus, newTown, townHouseCount, townPopulation, townTiles } from '../src/sim/economy/town';
 import { createRng } from '../src/sim/rng';
 import { Simulation } from '../src/sim/simulation';
 import { createGame } from '../src/sim/state';
@@ -18,7 +18,7 @@ function townWithTrack(pieces: TrackPiece[]) {
   const state = createGame({ width: W, height: W, seed: 1, empty: true });
   state.map.terrain.fill(Terrain.Grass);
   state.money = 1_000_000;
-  state.towns.push({ id: 1, name: 'Testowo', x: 20, y: 20, month: emptyTownMonth(), lastTransported: 0 });
+  state.towns.push(newTown(1, 'Testowo', 20, 20));
   const sim = new Simulation(state);
   sim.enqueue({ type: 'buildTrack', pieces });
   sim.processCommands();
@@ -73,7 +73,7 @@ describe('miasta a metro', () => {
     const state = createGame({ width: W, height: W, seed: 1, empty: true });
     state.map.terrain.fill(Terrain.Grass);
     state.money = 10_000_000;
-    state.towns.push({ id: 1, name: 'Metropolia', x: 32, y: 32, month: emptyTownMonth(), lastTransported: 0 });
+    state.towns.push(newTown(1, 'Metropolia', 32, 32));
     const town = state.towns[0]!;
     growTown(state, createRng(3), town, 120);
     for (let i = 0; i < state.map.house.length; i++) if (state.map.house[i]) state.map.house[i] = level;

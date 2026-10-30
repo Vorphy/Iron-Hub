@@ -45,12 +45,71 @@ export interface Town {
   month: TownMonth;
   /** Odsetek przewiezionych pasażerów w poprzednim miesiącu (0–1). */
   lastTransported: number;
+  /** Dzielnice; pierwsza to centrum na rynku (`x`, `y`). Miasto = suma ich obszarów. */
+  districts: District[];
   /** Miasto już ogłosiło, że chce metra (komunikat tylko raz). */
   metroDemand?: boolean;
 }
 
+/** Dzielnica miasta: środek (własna siatka ulic i obszar zabudowy) i nazwa. */
+export interface District {
+  name: string;
+  x: number;
+  y: number;
+}
+
+export const CENTER_DISTRICT_NAME = 'Centrum';
+
 export function emptyTownMonth(): TownMonth {
   return { passengers: 0, passengersTransported: 0, mail: 0, mailTransported: 0 };
+}
+
+/** Nowe miasto z jedną dzielnicą – centrum na rynku. */
+export function newTown(id: number, name: string, x: number, y: number): Town {
+  return { id, name, x, y, districts: [{ name: CENTER_DISTRICT_NAME, x, y }], month: emptyTownMonth(), lastTransported: 0 };
+}
+
+/** Dzielnica, do której należy kafelek: ta z najbliższym środkiem (przy remisie – wcześniejsza). */
+export function districtIndexAt(town: Town, x: number, y: number): number {
+  let best = 0;
+  let bestD = Infinity;
+  for (let k = 0; k < town.districts.length; k++) {
+    const d = town.districts[k]!;
+    const dist = Math.abs(x - d.x) + Math.abs(y - d.y);
+    if (dist < bestD) {
+      bestD = dist;
+      best = k;
+    }
+  }
+  return best;
+}
+
+/** Kafelek leży w kwadracie ±`extent` wokół środka którejś dzielnicy. */
+export function inTownArea(town: Town, x: number, y: number, extent = TOWN_EXTENT): boolean {
+  return town.districts.some((d) => Math.abs(x - d.x) <= extent && Math.abs(y - d.y) <= extent);
+}
+
+/**
+ * Przechodzi po obszarze miasta: kwadratach ±`extent` wokół środków dzielnic (przycięte do mapy),
+ * każdy kafelek raz – część wspólna z wcześniejszą dzielnicą jest pomijana.
+ */
+export function forEachTownTile(
+  map: { width: number; height: number },
+  town: Town,
+  extent: number,
+  fn: (x: number, y: number, i: number) => void,
+): void {
+  const ds = town.districts;
+  for (let k = 0; k < ds.length; k++) {
+    const d = ds[k]!;
+    for (let y = Math.max(0, d.y - extent); y <= Math.min(map.height - 1, d.y + extent); y++) {
+      for (let x = Math.max(0, d.x - extent); x <= Math.min(map.width - 1, d.x + extent); x++) {
+        let seen = false;
+        for (let j = 0; j < k && !seen; j++) seen = Math.abs(x - ds[j]!.x) <= extent && Math.abs(y - ds[j]!.y) <= extent;
+        if (!seen) fn(x, y, y * map.width + x);
+      }
+    }
+  }
 }
 
 /** Fikcyjne nazwy miast. */
@@ -146,24 +205,22 @@ export function townNear(state: GameState, x: number, y: number): Town | undefin
   return undefined;
 }
 
-/** Ulice: co czwarty rząd/kolumna od rynku zostaje wolna (kwartały zabudowy). */
+/** Ulice: co czwarty rząd/kolumna od środka dzielnicy zostaje wolna (kwartały zabudowy). */
 export function isStreet(town: Town, x: number, y: number): boolean {
-  return (x - town.x) % 4 === 0 || (y - town.y) % 4 === 0;
+  const d = town.districts[districtIndexAt(town, x, y)]!;
+  return (x - d.x) % 4 === 0 || (y - d.y) % 4 === 0;
 }
 
 /** Dom miasta powstaje najwyżej tyle kafelków od rynku (wzrost szuka miejsc w promieniu 12 + ulica). */
 export const TOWN_EXTENT = 16;
 
-/** Kafelki domów miasta – szukane tylko w okolicy rynku (na dużych mapach to kluczowe dla wydajności). */
+/** Kafelki domów miasta – szukane tylko w obszarze dzielnic (na dużych mapach to kluczowe dla wydajności). */
 export function townTiles(state: GameState, town: Town): number[] {
   const { map } = state;
   const out: number[] = [];
-  for (let y = Math.max(0, town.y - TOWN_EXTENT); y <= Math.min(map.height - 1, town.y + TOWN_EXTENT); y++) {
-    for (let x = Math.max(0, town.x - TOWN_EXTENT); x <= Math.min(map.width - 1, town.x + TOWN_EXTENT); x++) {
-      const i = y * map.width + x;
-      if (map.town[i] === town.id) out.push(i);
-    }
-  }
+  forEachTownTile(map, town, TOWN_EXTENT, (_x, _y, i) => {
+    if (map.town[i] === town.id) out.push(i);
+  });
   return out;
 }
 
@@ -174,9 +231,31 @@ export function townPopulation(state: GameState, town: Town): number {
 /** Metro w mieście: stacja z peronem na poziomie −1 w obrębie miasta. */
 export function townHasMetro(state: GameState, town: Town): boolean {
   const w = state.map.width;
-  return state.stations.some((st) =>
-    st.underTiles?.some((i) => Math.abs((i % w) - town.x) <= TOWN_EXTENT && Math.abs(Math.floor(i / w) - town.y) <= TOWN_EXTENT),
-  );
+  return state.stations.some((st) => st.underTiles?.some((i) => inTownArea(town, i % w, Math.floor(i / w))));
+}
+
+export interface DistrictInfo {
+  name: string;
+  population: number;
+  /** W obszarze dzielnicy jest peron metra. */
+  metro: boolean;
+}
+
+/** Mieszkańcy i metro w każdej dzielnicy (do okna miasta). */
+export function districtInfo(state: GameState, town: Town): DistrictInfo[] {
+  const { map } = state;
+  const out = town.districts.map((d) => ({ name: d.name, population: 0, metro: false }));
+  for (const i of townTiles(state, town)) {
+    out[districtIndexAt(town, i % map.width, Math.floor(i / map.width))]!.population += HOUSE_POPULATION[map.house[i]!]!;
+  }
+  for (const st of state.stations) {
+    for (const i of st.underTiles ?? []) {
+      const x = i % map.width;
+      const y = Math.floor(i / map.width);
+      if (inTownArea(town, x, y)) out[districtIndexAt(town, x, y)]!.metro = true;
+    }
+  }
+  return out;
 }
 
 /**

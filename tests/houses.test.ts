@@ -3,7 +3,7 @@ import type { SimEvent } from '../src/sim/commands';
 import { monthlyEconomy } from '../src/sim/economy/monthly';
 import {
   advanceHouseConstruction,
-  emptyTownMonth,
+  newTown,
   HOUSE_BUILD_STAGES,
   HOUSE_CHURCH,
   HOUSE_ORNAMENT,
@@ -23,7 +23,7 @@ import { Terrain } from '../src/sim/world/map';
 function emptyTown(): GameState {
   const state = createGame({ width: 64, height: 64, seed: 1, empty: true });
   state.map.terrain.fill(Terrain.Grass);
-  state.towns.push({ id: 1, name: 'Testowo', x: 30, y: 30, month: emptyTownMonth(), lastTransported: 0 });
+  state.towns.push(newTown(1, 'Testowo', 30, 30));
   return state;
 }
 

@@ -1,6 +1,6 @@
 import { Graphics } from 'pixi.js';
 import { industryDef } from '../sim/economy/industry';
-import { townPopulation, TOWN_EXTENT, type Town } from '../sim/economy/town';
+import { forEachTownTile, townPopulation, TOWN_EXTENT, type Town } from '../sim/economy/town';
 import type { GameState } from '../sim/state';
 import { inBounds, type WorldMap } from '../sim/world/map';
 import type { Rect } from './camera';
@@ -126,10 +126,11 @@ export class TrafficRenderer {
   /** Miasta przy widoku dostają ruch; dalsze go tracą. */
   private refresh(state: GameState, view: Rect): void {
     const margin = TOWN_EXTENT * 32;
-    const near = (t: Town) => {
-      const c = tileCenter(t.x, t.y);
-      return c.x > view.x - margin && c.x < view.x + view.w + margin && c.y > view.y - margin && c.y < view.y + view.h + margin;
-    };
+    const near = (t: Town) =>
+      t.districts.some((d) => {
+        const c = tileCenter(d.x, d.y);
+        return c.x > view.x - margin && c.x < view.x + view.w + margin && c.y > view.y - margin && c.y < view.y + view.h + margin;
+      });
     const active = new Set<number>();
     for (const town of state.towns) {
       if (!near(town)) continue;
@@ -147,7 +148,7 @@ export class TrafficRenderer {
       let trucks = pop > 800 ? 1 : 0;
       for (const ind of state.industries) {
         const [w, h] = industryDef(ind.type)!.size;
-        if (Math.abs(ind.x + w / 2 - town.x) + Math.abs(ind.y + h / 2 - town.y) <= INDUSTRY_REACH)
+        if (town.districts.some((d) => Math.abs(ind.x + w / 2 - d.x) + Math.abs(ind.y + h / 2 - d.y) <= INDUSTRY_REACH))
           trucks += ind.level >= 3 ? 2 : 1;
       }
       trucks = roads.length < 6 ? 0 : Math.min(4, trucks);
@@ -183,12 +184,9 @@ export class TrafficRenderer {
 
 function townRoads(map: WorldMap, town: Town): number[] {
   const out: number[] = [];
-  for (let y = Math.max(0, town.y - TOWN_EXTENT); y <= Math.min(map.height - 1, town.y + TOWN_EXTENT); y++) {
-    for (let x = Math.max(0, town.x - TOWN_EXTENT); x <= Math.min(map.width - 1, town.x + TOWN_EXTENT); x++) {
-      const i = y * map.width + x;
-      if (map.road[i] && roadExits(map, i).length) out.push(i);
-    }
-  }
+  forEachTownTile(map, town, TOWN_EXTENT, (_x, _y, i) => {
+    if (map.road[i] && roadExits(map, i).length) out.push(i);
+  });
   return out;
 }
 

@@ -31,7 +31,7 @@ export interface NewWorldSettings {
 import type { Speed } from '../loop';
 import type { Terrain } from '../sim/world/map';
 import type { Cargo } from '../sim/economy/cargo';
-import type { MetroStatus } from '../sim/economy/town';
+import type { DistrictInfo, MetroStatus } from '../sim/economy/town';
 import type { StationAxis } from '../sim/station/station';
 import type { Side } from '../sim/track/track';
 import type { SignalMode } from '../sim/signals/signals';
@@ -167,6 +167,8 @@ export interface TownWindowData {
   lastTransported: number;
   /** Metro a rozwój miasta (patrz metroStatus). */
   metro: MetroStatus;
+  /** Dzielnice: mieszkańcy i czy jest w nich metro. */
+  districts: DistrictInfo[];
 }
 
 export interface IndustryWindowData {
