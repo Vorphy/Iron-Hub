@@ -42,7 +42,9 @@ Prawie cały czas zabiera zamiana warstw mapy na base64 (`toBase64` w `src/sim/s
 
 **Poprawka:** liczyć tylko w prostokącie obejmującym perony ± promień (zbiór lub mała tablica zamiast tablicy całej mapy). Wynik się nie zmienia (ta sama lista, rosnąco), więc determinizm i zapisy są bezpieczne. Spodziewany zysk: ~50–500× na wywołanie, tym większy, im większa mapa.
 
-## 2. `dailyCargo()` – indeks zasięgów i szukanie miasta przy każdym domu
+## 2. `dailyCargo()` – indeks zasięgów i szukanie miasta przy każdym domu ✅ (2026-10-31)
+
+*Zrobione:* `Map<id, Town>` przed pętlą po domach. Pomiar (seed 3, mapa 1024, 40 stacji, 512 miast): 92 ms (przed audytem) → 11,7 ms (po pkt 1) → **3,2 ms**; mapa 256: 1,2 → 0,5 ms. Indeks zasięgów zostaje liczony codziennie – po pkt 1 kosztuje ułamek milisekundy, pamiętanie go nie jest warte ryzyka.
 
 `src/sim/economy/cargoFlow.ts`:
 

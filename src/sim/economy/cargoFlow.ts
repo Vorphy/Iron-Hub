@@ -171,10 +171,11 @@ export function dailyCargo(state: GameState): void {
     ind.month.transported += distribute(state, sortById([...near]), def.produces, daily);
   }
 
+  const towns = new Map(state.towns.map((t) => [t.id, t]));
   for (let i = 0; i < map.house.length; i++) {
     const level = map.house[i]!;
     if (!level) continue;
-    const town = state.towns.find((t) => t.id === map.town[i]);
+    const town = towns.get(map.town[i]!);
     if (!town) continue;
     const pop = HOUSE_POPULATION[level]!;
     const passengers = pop / PASSENGER_DAY_DIVISOR;
