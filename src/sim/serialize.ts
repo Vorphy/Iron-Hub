@@ -638,25 +638,54 @@ function layerToBase64(arr: Uint8Array | Uint16Array | Uint32Array): string {
   return toBase64(new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength));
 }
 
-function toBase64(bytes: Uint8Array): string {
-  let bin = '';
-  const CHUNK = 0x8000;
-  for (let i = 0; i < bytes.length; i += CHUNK) {
-    bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+/** Natywne base64 (Chrome 140+, Firefox 133+, Safari 18.2+, Node 25+) – kilkadziesiąt razy szybsze. */
+type NativeBase64 = { toBase64?: () => string };
+type NativeFromBase64 = { fromBase64?: (s: string) => Uint8Array };
+
+const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+const B64_CODES = Uint8Array.from(B64, (c) => c.charCodeAt(0));
+const PAD = 61; // '='
+
+/** `useNative = false` – tylko w testach (kodowanie zapasowe dla starszych przeglądarek). */
+export function toBase64(bytes: Uint8Array, useNative = true): string {
+  const native = (bytes as NativeBase64).toBase64;
+  if (native && useNative) return native.call(bytes);
+  // Zapas: kody znaków do tablicy bajtów i jedno dekodowanie (bez sklejania napisów i btoa).
+  const n = bytes.length;
+  const out = new Uint8Array(Math.ceil(n / 3) * 4);
+  let o = 0;
+  let i = 0;
+  for (; i + 2 < n; i += 3) {
+    const v = (bytes[i]! << 16) | (bytes[i + 1]! << 8) | bytes[i + 2]!;
+    out[o++] = B64_CODES[v >>> 18]!;
+    out[o++] = B64_CODES[(v >>> 12) & 63]!;
+    out[o++] = B64_CODES[(v >>> 6) & 63]!;
+    out[o++] = B64_CODES[v & 63]!;
   }
-  return btoa(bin);
+  if (i < n) {
+    const v = (bytes[i]! << 16) | (i + 1 < n ? bytes[i + 1]! << 8 : 0);
+    out[o++] = B64_CODES[v >>> 18]!;
+    out[o++] = B64_CODES[(v >>> 12) & 63]!;
+    out[o++] = i + 1 < n ? B64_CODES[(v >>> 6) & 63]! : PAD;
+    out[o++] = PAD;
+  }
+  return new TextDecoder('ascii').decode(out);
 }
 
 function fromBase64(s: unknown, expectedLength: number): Uint8Array {
   if (typeof s !== 'string') throw new SaveError('Brak danych mapy');
-  let bin: string;
+  let out: Uint8Array;
   try {
-    bin = atob(s);
+    const native = (Uint8Array as NativeFromBase64).fromBase64;
+    if (native) out = native(s);
+    else {
+      const bin = atob(s);
+      out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    }
   } catch {
     throw new SaveError('Uszkodzone dane mapy');
   }
-  if (bin.length !== expectedLength) throw new SaveError('Nieprawidłowy rozmiar danych mapy');
-  const out = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  if (out.length !== expectedLength) throw new SaveError('Nieprawidłowy rozmiar danych mapy');
   return out;
 }

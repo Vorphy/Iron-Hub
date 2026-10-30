@@ -15,7 +15,9 @@ Jednorazowy pomiar w Node (vitest), świat z generatora (seed 3) z 40 stacjami p
 
 Dla skali: przy 8× gra liczy 160 ticków/s, a dzień ma 40 ticków, czyli `dailyCargo` leci 4 razy na sekundę. Na mapie 1024 z 40 stacjami to ~370 ms procesora na sekundę gry, w porcjach po ~90 ms, czyli wyraźne przycięcia klatek.
 
-## 0. Autozapis zamraża grę na dużych mapach ⭐ dopisane po audycie
+## 0. Autozapis zamraża grę na dużych mapach ⭐ dopisane po audycie ✅ (2026-10-31, wariant 2)
+
+*Zrobione:* natywne `Uint8Array.prototype.toBase64` / `Uint8Array.fromBase64`, a gdzie ich nie ma – koder z tablicą znaków (bez sklejania napisów i `btoa`). Pomiar w Node, mapa 1024: `serializeState` 1370 ms → **9,8 ms**; koder zapasowy 52 ms na 31 MB. Zostaje `JSON.stringify` (~35–65 ms, 44 MB) i zapis do IndexedDB – wariant 1 (pamięć warstw) odpada, bo porównanie warstwy z kopią jest wolniejsze niż natywne kodowanie; warianty 3 (RLE) i 4 (Worker) – dopiero gdyby te ~100 ms przeszkadzało.
 
 `serializeState()` na mapie 1024 trwa **~560 ms** (do tego `JSON.stringify` ~20 ms i zapis ~34 MB do IndexedDB), cały czas w wątku gry. Autozapis na 1024 leci co 2 min (`AUTOSAVE_MS × szerokość / 256`, `src/main.ts`), więc co 2 minuty gra staje na ponad pół sekundy. Na 512 to ~150 ms co minutę. Zapis przy zamknięciu karty działa tak samo.
 

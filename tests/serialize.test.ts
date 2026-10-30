@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { deserializeState, SaveError, serializeState } from '../src/sim/serialize';
+import { deserializeState, SaveError, serializeState, toBase64 } from '../src/sim/serialize';
 import { Simulation } from '../src/sim/simulation';
 import { createGame } from '../src/sim/state';
 import { Track } from '../src/sim/track/track';
@@ -71,5 +71,23 @@ describe('plik zapisu z widokiem kamery', () => {
     expect(loaded.view).toEqual(view);
     expect(loaded.state).toEqual(sim.state);
     expect(parseSaveFile(JSON.stringify(toSaveFile(sim.state))).view).toBeNull();
+  });
+});
+
+describe('base64 warstw mapy', () => {
+  it('kodowanie zapasowe daje to samo co natywne i btoa – każda długość reszty', () => {
+    for (const n of [0, 1, 2, 3, 4, 5, 100, 70_001]) {
+      const bytes = Uint8Array.from({ length: n }, (_, i) => (i * 37 + (i >> 3)) & 255);
+      expect(toBase64(bytes, false)).toBe(toBase64(bytes));
+      if (n <= 100) expect(toBase64(bytes, false)).toBe(btoa(String.fromCharCode(...bytes)));
+    }
+  });
+
+  it('uszkodzona warstwa – czytelny błąd zamiast wyjątku', () => {
+    const data = JSON.parse(JSON.stringify(serializeState(createGame({ width: 8, height: 8, seed: 1, empty: true }))));
+    data.map.track = '@@@ to nie base64 @@@';
+    expect(() => deserializeState(data)).toThrow(SaveError);
+    data.map.track = toBase64(new Uint8Array(10));
+    expect(() => deserializeState(data)).toThrow(SaveError);
   });
 });

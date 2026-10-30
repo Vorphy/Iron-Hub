@@ -16,6 +16,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
     items: [
       'Zasięg stacji liczy się kilkaset razy szybciej – mniej przycięć przy rozładunku, czekaniu na pełny ładunek i wzroście miast, zwłaszcza na mapach 512 i 1024.',
       'Codzienne rozdzielanie pasażerów, poczty i ładunków na stacje: na mapie 1024 z 40 stacjami 3 ms zamiast ok. 90 ms – koniec regularnych przycięć przy prędkości 8×.',
+      'Autozapis na dużej mapie nie zatrzymuje już gry na pół sekundy – zapis mapy 1024 trwa setne części sekundy. Wczytywanie też jest szybsze.',
       'Otwarte okna (stacja, pociąg, lista pociągów, finanse) odświeżają się 5 razy na sekundę zamiast w każdej klatce – po kliknięciu przycisku od razu.',
     ],
   },
