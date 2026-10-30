@@ -97,7 +97,7 @@ Jedna kolejka, w kolejności, która najszybciej poprawia granie. Maglevy, kolej
 
 ### Utrzymanie projektu
 - ~~**Akcje GitHuba na Node 24**~~ ✅ (2026-10-22) – w `.github/workflows/deploy.yml`: checkout v7, setup-node v7, upload-pages-artifact v5, deploy-pages v5 (wszystkie na Node 24). Build na `ubuntu-latest` przechodzi.
-- **Pilnowanie zależności** (z audytu 2026-10-30) – `.github/dependabot.yml` dla `npm` i `github-actions` (raz w tygodniu, aktualizacje zgrupowane w jeden PR) oraz krok `npm audit --omit=dev --audit-level=high` w CI. Dziś `npm audit` pokazuje 0 podatności, ale nikt tego nie sprawdza automatycznie.
+- ~~**Pilnowanie zależności**~~ ✅ (2026-10-30, z audytu) – `.github/dependabot.yml` dla `npm` i `github-actions` (raz w tygodniu, aktualizacje zgrupowane w jeden PR) oraz krok `npm audit --omit=dev --audit-level=high` w CI (tylko biblioteki trafiające do gry; narzędzia deweloperskie pilnuje Dependabot, żeby podatność w np. Vitest nie blokowała publikacji).
 - **Odporność na uszkodzone zapisy** (z audytu 2026-10-30) – `deserializeState` sprawdza wersję, wymiary mapy, długości warstw i wysokości, ale nie odwołania między obiektami (pociąg → zajezdnia/stacja, sygnał → kafelek, id w warstwach mapy bez obiektu). Ręcznie zmieniony albo ucięty plik może wywrócić grę dopiero w trakcie ticku. Do zrobienia: przy wczytaniu odrzucić (albo naprawić) wiszące odwołania + kilka testów z celowo zepsutymi zapisami. Oszukiwanie przez edycję zapisu jest OK (gra single-player, patrz [05-decyzje](05-decyzje.md)) – chodzi o czytelny komunikat zamiast zawieszonej gry.
 
 ### Faza B – głębia rozgrywki (po wnioskach z testów)
