@@ -367,7 +367,7 @@ export function deserializeState(data: unknown): GameState {
   if (!isFinances(d.finances)) throw new SaveError('Uszkodzone finanse');
   if (!isResearch(d.research)) throw new SaveError('Uszkodzone badania');
   if (typeof d.companyName !== 'string') throw new SaveError('Uszkodzona nazwa firmy');
-  return {
+  return checkReferences({
     version: 1,
     tick: d.tick!,
     startYear: d.startYear!,
@@ -394,7 +394,95 @@ export function deserializeState(data: unknown): GameState {
     nextGroupId: d.nextGroupId!,
     nextShareId: d.nextShareId!,
     research: d.research,
+  });
+}
+
+/**
+ * Odwołania między obiektami zapisu (ręcznie zmieniony albo ucięty plik): to, bez czego gra
+ * wywróciłaby się dopiero w trakcie ticku, odrzucamy z czytelnym komunikatem; drobne wiszące
+ * odwołania (grupa, zajezdnia macierzysta, blokujący pociąg) i za małe liczniki id – naprawiamy.
+ */
+function checkReferences(state: GameState): GameState {
+  const { map } = state;
+  const n = map.width * map.height;
+  const fail = (what: string) => {
+    throw new SaveError(`Uszkodzony zapis: ${what}`);
   };
+  const ids = <T extends { id: number }>(list: readonly T[], what: string) => {
+    const set = new Set<number>();
+    for (const o of list) {
+      if (o.id <= 0 || set.has(o.id)) fail(`powtórzony albo zły numer (${what})`);
+      set.add(o.id);
+    }
+    return set;
+  };
+  const stations = ids(state.stations, 'stacje');
+  const depots = ids(state.depots, 'zajezdnie');
+  const trains = ids(state.trains, 'pociągi');
+  const towns = ids(state.towns, 'miasta');
+  const industries = ids(state.industries, 'zakłady');
+  const bridges = ids(state.bridges, 'mosty');
+  const tunnels = ids(state.tunnels, 'tunele');
+  const groups = ids(state.groups, 'grupy');
+  const inMap = (x: number, y: number) => x >= 0 && y >= 0 && x < map.width && y < map.height;
+
+  // Warstwy mapy wskazują istniejące obiekty.
+  const layers: [ArrayLike<number>, Set<number>, string][] = [
+    [map.station, stations, 'stacja na mapie'],
+    [map.stationUnder, stations, 'stacja metra na mapie'],
+    [map.depot, depots, 'zajezdnia na mapie'],
+    [map.town, towns, 'miasto na mapie'],
+    [map.industry, industries, 'zakład na mapie'],
+    [map.bridge, bridges, 'most na mapie'],
+    [map.tunnel, tunnels, 'tunel na mapie'],
+  ];
+  for (const [layer, set, what] of layers) {
+    let last = 0;
+    for (let i = 0; i < n; i++) {
+      const id = layer[i]!;
+      if (id === 0 || id === last) continue;
+      if (!set.has(id)) fail(what);
+      last = id;
+    }
+  }
+  for (let i = 0; i < n; i++) if (map.house[i]! > 6) fail('dom na mapie');
+
+  for (const st of state.stations) {
+    for (const t of [...st.tiles, ...(st.underTiles ?? [])]) if (t < 0 || t >= n) fail(`peron stacji ${st.name} poza mapą`);
+  }
+  for (const o of [...state.depots, ...state.towns, ...state.industries, ...state.bridges, ...state.tunnels, ...state.signals]) {
+    if (!inMap(o.x, o.y)) fail('obiekt poza mapą');
+  }
+
+  for (const t of state.trains) {
+    if (t.orders.some((id) => !stations.has(id))) fail(`rozkład pociągu ${t.name} wskazuje nieistniejącą stację`);
+    if (t.orders.length > 0 ? t.currentOrder < 0 || t.currentOrder >= t.orders.length : t.currentOrder !== 0) {
+      t.currentOrder = 0;
+    }
+    if (t.depotId !== null && !depots.has(t.depotId)) fail(`pociąg ${t.name} w nieistniejącej zajezdni`);
+    if ([...t.trail, ...t.reservedAhead].some((step) => !inMap(step.x, step.y))) fail(`pociąg ${t.name} poza mapą`);
+    if (t.homeDepot !== null && !depots.has(t.homeDepot)) t.homeDepot = null;
+    if (t.groupId !== null && !groups.has(t.groupId)) t.groupId = null;
+    if (t.blockedBy !== null && !trains.has(t.blockedBy)) t.blockedBy = null;
+  }
+
+  // Liczniki id muszą być większe od każdego użytego numeru – inaczej nowe obiekty dublowałyby stare.
+  const after = (counter: number, used: Iterable<number>) => {
+    let max = 0;
+    for (const id of used) max = Math.max(max, id);
+    return Math.max(counter, max + 1);
+  };
+  state.nextStationId = after(state.nextStationId, stations);
+  state.nextDepotId = after(state.nextDepotId, depots);
+  state.nextTrainId = after(state.nextTrainId, trains);
+  state.nextBridgeId = after(state.nextBridgeId, bridges);
+  state.nextTunnelId = after(state.nextTunnelId, tunnels);
+  state.nextGroupId = after(state.nextGroupId, groups);
+  state.nextShareId = after(
+    state.nextShareId,
+    state.trains.flatMap((t) => (t.shareId === null ? [] : [t.shareId])),
+  );
+  return state;
 }
 
 function isResearch(v: unknown): v is ResearchState {

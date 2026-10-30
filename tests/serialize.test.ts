@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { deserializeState, SaveError, serializeState, toBase64 } from '../src/sim/serialize';
 import { Simulation } from '../src/sim/simulation';
 import { createGame } from '../src/sim/state';
-import { Track } from '../src/sim/track/track';
+import { Side, Track } from '../src/sim/track/track';
 
 function playedSim(): Simulation {
   const sim = new Simulation(createGame({ width: 32, height: 24, seed: 3, empty: true }));
@@ -89,5 +89,86 @@ describe('base64 warstw mapy', () => {
     expect(() => deserializeState(data)).toThrow(SaveError);
     data.map.track = toBase64(new Uint8Array(10));
     expect(() => deserializeState(data)).toThrow(SaveError);
+  });
+});
+
+describe('odwołania w zapisie (ręcznie zmieniony plik)', () => {
+  /** Gra z zajezdnią i jeżdżącym pociągiem na rozkładzie dwóch stacji. */
+  function withTrain() {
+    const sim = new Simulation(createGame({ width: 32, height: 24, seed: 3, empty: true }));
+    sim.state.map.terrain.fill(0);
+    sim.state.money = 1e7;
+    sim.enqueue({ type: 'buildTrack', pieces: Array.from({ length: 20 }, (_, k) => ({ x: k + 1, y: 4, track: Track.X })) });
+    sim.enqueue({ type: 'buildDepot', x: 0, y: 4, side: Side.SE });
+    sim.enqueue({ type: 'buildStation', x0: 2, y0: 4, x1: 4, y1: 4, axis: 'x' });
+    sim.enqueue({ type: 'buildStation', x0: 16, y0: 4, x1: 18, y1: 4, axis: 'x' });
+    sim.enqueue({ type: 'createGroup', name: 'Pasażerskie' });
+    sim.step();
+    sim.enqueue({ type: 'buyTrain', depotId: 1, engine: 'iskra', wagons: ['osobowy'] });
+    sim.step();
+    sim.enqueue({ type: 'setOrders', trainId: 1, orders: [1, 2] });
+    sim.enqueue({ type: 'setTrainGroup', trainId: 1, groupId: 1 });
+    sim.enqueue({ type: 'startTrain', trainId: 1 });
+    for (let i = 0; i < 200; i++) sim.step();
+    expect(sim.state.trains[0]!.status).not.toBe('depot');
+    return sim;
+  }
+  const data = (sim: Simulation) => JSON.parse(JSON.stringify(serializeState(sim.state)));
+  const message = (d: unknown) => {
+    try {
+      deserializeState(d);
+    } catch (e) {
+      expect(e).toBeInstanceOf(SaveError);
+      return (e as Error).message;
+    }
+    return 'wczytany';
+  };
+
+  it('rozegrana gra z pociągiem wczytuje się bez zmian', () => {
+    const sim = withTrain();
+    expect(deserializeState(data(sim))).toEqual(sim.state);
+  });
+
+  it('odrzuca to, co wywróciłoby grę w trakcie – z czytelnym komunikatem', () => {
+    const sim = withTrain();
+    let d = data(sim);
+    d.trains[0].orders = [1, 99];
+    expect(message(d)).toMatch(/rozkład pociągu .* nieistniejącą stację/);
+
+    d = data(sim);
+    d.stations = d.stations.filter((st: { id: number }) => st.id !== 2);
+    d.trains[0].orders = [1];
+    d.trains[0].fullLoad = [false];
+    d.trains[0].nonStop = [false];
+    d.trains[0].waitDays = [0];
+    expect(message(d)).toMatch(/stacja na mapie/);
+
+    d = data(sim);
+    d.depots = [];
+    expect(message(d)).toMatch(/zajezdnia na mapie/);
+
+    d = data(sim);
+    d.trains[0].trail[0].x = 500;
+    expect(message(d)).toMatch(/poza mapą/);
+
+    d = data(sim);
+    d.trains.push({ ...d.trains[0] });
+    expect(message(d)).toMatch(/powtórzony/);
+  });
+
+  it('drobne wiszące odwołania i za małe liczniki naprawia', () => {
+    const sim = withTrain();
+    const d = data(sim);
+    d.groups = [];
+    d.trains[0].homeDepot = 42;
+    d.trains[0].blockedBy = 7;
+    d.trains[0].currentOrder = 5;
+    d.nextTrainId = 1;
+    d.nextStationId = 2;
+    const loaded = deserializeState(d);
+    const t = loaded.trains[0]!;
+    expect([t.groupId, t.homeDepot, t.blockedBy, t.currentOrder]).toEqual([null, null, null, 0]);
+    expect(loaded.nextTrainId).toBe(2);
+    expect(loaded.nextStationId).toBe(3);
   });
 });
