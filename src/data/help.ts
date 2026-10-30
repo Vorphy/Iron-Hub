@@ -251,7 +251,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
         figure: semaforySvg,
         alt: 'Linia dwutorowa: na semaforach ścieżkowych pociąg wyprzedza torem przeciwnym, na jednokierunkowych czeka na swoim torze',
       },
-      'Jeden jednokierunkowy wystarczy, by cały odcinek między rozjazdami stał się jednokierunkowy. Uwaga: postawiony na jedynym torze odcina ruch w drugą stronę (status „Nie może dojechać”). Przy narzędziu Semafor jednokierunkowe mają żółtą strzałkę – w tę stronę wolno jechać.',
+      'Jeden jednokierunkowy wystarczy, by cały odcinek między rozjazdami stał się jednokierunkowy. Uwaga: postawiony na jedynym torze odcina ruch w drugą stronę (status „Nie może dojechać”). Przy narzędziu Semafor każdy semafor ma żółtą strzałkę kierunku, którego dotyczy (jednokierunkowy – podwójną, w tę stronę wolno jechać). Pociąg jadący pod strzałkę mija zwykły semafor ścieżkowy od tyłu, nawet przy czerwonym – to światło dla jadących z naprzeciwka; kolejne kliknięcie zmienia kierunek.',
       'Odstęp od rozjazdu do semafora za nim powinien mieścić cały najdłuższy pociąg – inaczej pociąg staje przed semaforem z ogonem na zwrotnicy i blokuje inne drogi (zwłaszcza w głowicy stacji). Przed stacją postaw semafor kilka kafelków przed rozjazdem.',
       'Na jednym torze z ruchem w obie strony buduj mijanki. Gdy pociągi zablokują się naprzeciw siebie, po 3 dniach jeden sam zawróci; możesz też kliknąć „Zawróć”.',
       'Klawisz V pokazuje rezerwacje – widać, kto na kogo czeka.',

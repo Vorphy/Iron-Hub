@@ -17,7 +17,7 @@ const ARROW_LEN = 0.24;
 const ARROW_W = 0.15;
 const RED = 0xe0503a;
 const GREEN = 0x5fd35f;
-/** Strzałka kierunku jednokierunkowego semafora przy narzędziu Semafor. */
+/** Strzałka kierunku semafora przy narzędziu Semafor (jednokierunkowy – podwójna). */
 const DIRECTION_ARROW = 0xffe066;
 const RESERVATION_COLORS = [0x4cc9f0, 0xf72585, 0xffb703, 0x06d6a0, 0x9d4edd, 0xff6b35, 0xb5e48c, 0xff9ff3];
 
@@ -28,7 +28,7 @@ const RESERVATION_COLORS = [0x4cc9f0, 0xf72585, 0xffb703, 0x06d6a0, 0x9d4edd, 0x
 export class SignalRenderer {
   readonly gfx = new Graphics();
   showReservations = false;
-  /** Narzędzie Semafor: na jednokierunkowych strzałka kierunku jazdy (także z grafiką OpenGFX). */
+  /** Narzędzie Semafor: strzałka kierunku jazdy przy każdym semaforze (także z grafiką OpenGFX). */
   showDirections = false;
 
   /** `metro` – widok poziomu −1: tylko semafory metra (na powierzchni – tylko zwykłe). */
@@ -56,7 +56,7 @@ export class SignalRenderer {
         const green = passing.has(`${sig.y * W + sig.x}:${signalCode(sig)}:${bit}`);
         if (sprites) drawSignalSprite(g, state.map, sig, bit, green);
         else drawSignal(g, sig, bit, green ? GREEN : RED);
-        if (sprites && sig.oneWay && this.showDirections) drawDirectionArrow(g, sig, bit, DIRECTION_ARROW);
+        if (sprites && this.showDirections) drawDirectionArrow(g, sig, bit, DIRECTION_ARROW);
       }
     }
   }
