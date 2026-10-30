@@ -26,7 +26,9 @@ Prawie cały czas zabiera zamiana warstw mapy na base64 (`toBase64` w `src/sim/s
 3. Mniej danych: większość warstw to zera, więc proste kodowanie RLE przed base64 zmniejszy zapis kilka–kilkadziesiąt razy (wymaga nowej wersji zapisu i migracji).
 4. Serializacja w Web Workerze (kopia tablic przez `postMessage`) – gra nie staje wcale.
 
-## 1. `catchment()` przegląda całą mapę ⭐ największy zysk, mała zmiana
+## 1. `catchment()` przegląda całą mapę ⭐ największy zysk, mała zmiana ✅ (2026-10-30)
+
+*Zrobione:* tylko prostokąt peronów ± promień; wynik identyczny (test porównujący z przeglądem całej mapy). Pomiar (4 perony): mapa 256 – 0,076 → 0,008 ms, mapa 1024 – 0,88 → 0,0013 ms. `dailyCargo` z pkt 2 nadal ma pętlę po wszystkich domach mapy i `towns.find` – to następny krok.
 
 `src/sim/station/station.ts` – `catchment(map, tiles)` przy każdym wywołaniu tworzy `Uint8Array` wielkości całej mapy (1 MB przy 1024²) i przegląda ją całą, choć zasięg stacji to kilkadziesiąt kafelków. Wywołują ją:
 

@@ -377,17 +377,39 @@ export function platformStations(state: GameState): Station[] {
 
 /** Kafelki w zasięgu stacji (promień Czebyszewa od każdego peronu), rosnąco. */
 export function catchment(map: WorldMap, tiles: readonly number[], radius = CATCHMENT_RADIUS): number[] {
-  const inside = new Uint8Array(map.width * map.height);
+  if (tiles.length === 0) return [];
+  // Tylko prostokąt obejmujący perony ± promień, nie cała mapa (na mapie 1024 to ~1 MB na wywołanie).
+  let x0 = map.width;
+  let y0 = map.height;
+  let x1 = -1;
+  let y1 = -1;
   for (const t of tiles) {
     const tx = t % map.width;
     const ty = Math.floor(t / map.width);
-    for (let y = Math.max(0, ty - radius); y <= Math.min(map.height - 1, ty + radius); y++) {
-      for (let x = Math.max(0, tx - radius); x <= Math.min(map.width - 1, tx + radius); x++) {
-        inside[y * map.width + x] = 1;
+    x0 = Math.min(x0, tx);
+    y0 = Math.min(y0, ty);
+    x1 = Math.max(x1, tx);
+    y1 = Math.max(y1, ty);
+  }
+  x0 = Math.max(0, x0 - radius);
+  y0 = Math.max(0, y0 - radius);
+  x1 = Math.min(map.width - 1, x1 + radius);
+  y1 = Math.min(map.height - 1, y1 + radius);
+  const w = x1 - x0 + 1;
+  const inside = new Uint8Array(w * (y1 - y0 + 1));
+  for (const t of tiles) {
+    const tx = t % map.width;
+    const ty = Math.floor(t / map.width);
+    for (let y = Math.max(y0, ty - radius); y <= Math.min(y1, ty + radius); y++) {
+      for (let x = Math.max(x0, tx - radius); x <= Math.min(x1, tx + radius); x++) {
+        inside[(y - y0) * w + (x - x0)] = 1;
       }
     }
   }
+  // Wiersz po wierszu – wynik rosnąco, jak wcześniej.
   const out: number[] = [];
-  for (let i = 0; i < inside.length; i++) if (inside[i]) out.push(i);
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) if (inside[(y - y0) * w + (x - x0)]) out.push(y * map.width + x);
+  }
   return out;
 }

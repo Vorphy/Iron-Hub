@@ -12,6 +12,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-30',
+    title: 'Płynniej na dużych mapach',
+    items: [
+      'Zasięg stacji liczy się kilkaset razy szybciej – mniej przycięć przy rozładunku, czekaniu na pełny ładunek i wzroście miast, zwłaszcza na mapach 512 i 1024.',
+      'Otwarte okna (stacja, pociąg, lista pociągów, finanse) odświeżają się 5 razy na sekundę zamiast w każdej klatce – po kliknięciu przycisku od razu.',
+    ],
+  },
+  {
+    date: '2026-10-30',
     title: 'Kościoły i parki także w starszych miastach',
     items: [
       'Miasta z gier zaczętych przed pojawieniem się kościołów i ozdób nie miały na nie miejsca – centrum było już zabudowane. Teraz po zakończeniu miesiąca najmniejszy dom przy rynku przebudowuje się na kościół, a z czasem i na park, staw, pomnik albo fontannę.',

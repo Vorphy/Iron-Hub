@@ -134,5 +134,30 @@ describe('zasięg stacji', () => {
     expect(catchment(map, [10 * 20 + 10])).toHaveLength(81);
     // Dwa sąsiednie perony – zasięgi się sumują bez duplikatów.
     expect(catchment(map, [10 * 20 + 10, 10 * 20 + 11])).toHaveLength(90);
+    expect(catchment(map, [])).toEqual([]);
+  });
+
+  it('ten sam wynik co przegląd całej mapy – rosnąco, bez duplikatów, także przy brzegach', () => {
+    const map = createGame({ width: 40, height: 30, seed: 1, empty: true }).map;
+    const reference = (tiles: number[], r = 4) => {
+      const out: number[] = [];
+      for (let i = 0; i < map.width * map.height; i++) {
+        const x = i % map.width;
+        const y = Math.floor(i / map.width);
+        if (tiles.some((t) => Math.abs((t % map.width) - x) <= r && Math.abs(Math.floor(t / map.width) - y) <= r)) out.push(i);
+      }
+      return out;
+    };
+    let seed = 7;
+    const rand = (n: number) => {
+      seed = (seed * 1103515245 + 12345) >>> 0;
+      return seed % n;
+    };
+    for (let k = 0; k < 50; k++) {
+      // Perony rozrzucone (np. stacja połączona z peronem metra) i przy brzegu mapy.
+      const tiles = Array.from({ length: 1 + rand(6) }, () => rand(map.width * map.height));
+      expect(catchment(map, tiles)).toEqual(reference(tiles));
+      expect(catchment(map, tiles, 2)).toEqual(reference(tiles, 2));
+    }
   });
 });
