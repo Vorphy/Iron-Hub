@@ -38,6 +38,8 @@ import { FAIL_MESSAGES, formatMoney, Tools, type Tool } from './tools';
 import { hudStore, showMessage, type HudState, type WindowRef } from './ui/hudStore';
 import { buildWindowData } from './ui/windowData';
 
+/** Co ile ms przeliczać dane otwartego okna (zamiast w każdej klatce). */
+const WINDOW_REFRESH_MS = 200;
 const KEY_SPEEDS: Record<string, Speed> = { Digit1: 1, Digit2: 2, Digit3: 4, Digit4: 8 };
 const KEY_TOOLS: Record<string, Tool> = {
   Escape: 'cursor',
@@ -82,6 +84,10 @@ export class Game {
   private pointer: Point | null = null;
   private lastSpeed: Speed = 1;
   private windowJson = '';
+  /** Okno odświeżane co `WINDOW_REFRESH_MS`, od razu po otwarciu innego okna i po komendzie gracza. */
+  private windowSince = 0;
+  private windowRef: WindowRef | null = null;
+  private windowCommands = 0;
   private readonly world = new Container();
   private readonly onResize = (w: number, h: number) => this.camera.resize(w, h);
   private readonly onTick = (ticker: { deltaMS: number }) => this.frame(ticker.deltaMS);
@@ -242,6 +248,7 @@ export class Game {
   closeWindow(): void {
     hudStore.set({ window: null, windowData: null });
     this.windowJson = '';
+    this.windowRef = null;
     if (this.tools.tool === 'orders') this.tools.setTool('cursor');
   }
 
@@ -249,6 +256,7 @@ export class Game {
   pickOrders(trainId: number): void {
     const active = this.tools.tool === 'orders' && this.tools.ordersTrain === trainId;
     this.setTool(active ? 'cursor' : 'orders', trainId);
+    this.windowRef = null;
   }
 
   /** Kamera do zapisu gry. */
@@ -469,7 +477,7 @@ export class Game {
     this.tools.update();
     this.updateMinimap(deltaMs);
     this.updateTutorial(deltaMs);
-    this.updateWindow();
+    this.updateWindow(deltaMs);
     this.updateHud();
   }
 
@@ -498,10 +506,16 @@ export class Game {
     }
   }
 
-  /** Dane otwartego okna; do UI trafiają tylko przy zmianie. */
-  private updateWindow(): void {
+  /** Dane otwartego okna (kilka razy na sekundę zamiast co klatkę); do UI trafiają tylko przy zmianie. */
+  private updateWindow(deltaMs: number): void {
     const ref = hudStore.get().window;
     if (!ref) return;
+    this.windowSince += deltaMs;
+    const fresh = ref !== this.windowRef || this.sim.commandsDone !== this.windowCommands;
+    if (!fresh && this.windowSince < WINDOW_REFRESH_MS) return;
+    this.windowSince = 0;
+    this.windowRef = ref;
+    this.windowCommands = this.sim.commandsDone;
     const data = buildWindowData(this.sim, ref, this.tools.tool === 'orders' ? this.tools.ordersTrain : null);
     if (!data) return this.closeWindow();
     const json = JSON.stringify(data);

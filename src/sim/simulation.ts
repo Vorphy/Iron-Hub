@@ -15,6 +15,9 @@ export class Simulation {
   /** Trasy pociągów – stan pochodny, liczony od nowa po zmianach. */
   readonly planner = new Planner();
 
+  /** Liczba wykonanych komend (interfejs odświeża okna od razu po akcji gracza). */
+  commandsDone = 0;
+
   constructor(readonly state: GameState) {}
 
   enqueue(cmd: Command): void {
@@ -25,6 +28,7 @@ export class Simulation {
   processCommands(): void {
     const cmds = this.queue;
     this.queue = [];
+    this.commandsDone += cmds.length;
     for (const cmd of cmds) {
       const result = applyCommand(this.state, cmd, this.events);
       if (!result.ok) this.events.push({ type: 'commandFailed', command: cmd, reason: result.reason });

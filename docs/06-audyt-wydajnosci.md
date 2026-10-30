@@ -49,7 +49,9 @@ Prawie cały czas zabiera zamiana warstw mapy na base64 (`toBase64` w `src/sim/s
 
 Spodziewany zysk: z ~92 ms do pojedynczych milisekund na mapie 1024.
 
-## 3. Okna liczone w każdej klatce
+## 3. Okna liczone w każdej klatce ✅ (2026-10-30)
+
+*Zrobione:* dane okna co 200 ms (`WINDOW_REFRESH_MS` w `src/game.ts`), od razu po otwarciu innego okna, przełączeniu wskazywania rozkładu i po każdej wykonanej komendzie (`Simulation.commandsDone`); w oknie stacji jedno `stationAccepts`; `lineSize` z mapy policzonej raz. Finanse (`infrastructureCost`) dalej liczone przy odświeżeniu, ale 5×/s zamiast 60×/s.
 
 `src/game.ts` → `updateWindow()` woła `buildWindowData()` i `JSON.stringify()` w **każdej klatce** (60/s), żeby sprawdzić, czy coś się zmieniło. Najdroższe okna:
 

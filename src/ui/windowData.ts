@@ -112,6 +112,9 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
     const year = gameDate(state).year;
     const yearStart =
       state.tick - (gameDate(state).month - 1) * DAYS_PER_MONTH * TICKS_PER_DAY - (gameDate(state).day - 1) * TICKS_PER_DAY;
+    // Pociągi na wspólnym rozkładzie – policzone raz, nie osobno dla każdego wiersza.
+    const lineSizes = new Map<number, number>();
+    for (const t of state.trains) if (t.shareId !== null) lineSizes.set(t.shareId, (lineSizes.get(t.shareId) ?? 0) + 1);
     return {
       kind: 'trains',
       year,
@@ -130,7 +133,7 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
           groupId: t.groupId,
           unprofitable: t.profitLastYear < 0 && t.createdTick <= yearStart - yearTicks,
           newTrain: t.createdTick > yearStart - 1 && t.profitLastYear === 0,
-          lineSize: t.shareId === null ? 0 : state.trains.filter((o) => o.shareId === t.shareId).length,
+          lineSize: t.shareId === null ? 0 : (lineSizes.get(t.shareId) ?? 0),
         };
       }),
       groups: state.groups.map((g) => ({ id: g.id, name: g.name, count: state.trains.filter((t) => t.groupId === g.id).length })),
@@ -197,6 +200,7 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
   if (ref.kind === 'station') {
     const st = state.stations.find((s) => s.id === ref.stationId);
     if (!st) return null;
+    const accepts = stationAccepts(state, st);
     return {
       kind: 'station',
       stationId: st.id,
@@ -214,7 +218,7 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
           parts: rating > 0 ? ratingParts(state, sc) : null,
         };
       }),
-      accepts: CARGOS.filter((c) => stationAccepts(state, st).has(c)),
+      accepts: CARGOS.filter((c) => accepts.has(c)),
     };
   }
   if (ref.kind === 'town') {
