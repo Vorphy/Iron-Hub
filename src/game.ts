@@ -472,7 +472,14 @@ export class Game {
     this.signals.showDirections = this.tools.tool === 'signal';
     this.signals.draw(this.sim.state, this.underground.visible);
     const metro = this.underground.visible;
-    this.trains.draw(this.sim.state, this.loop.alpha, win?.kind === 'train' ? win.trainId : null, metro ? [] : cars, metro);
+    this.trains.draw(
+      this.sim.state,
+      this.loop.alpha,
+      win?.kind === 'train' ? win.trainId : null,
+      metro ? [] : cars,
+      metro,
+      this.camera.viewRect(),
+    );
     if (this.tools.tool === 'signal' && this.sim.state.signalMode !== 'manual') this.setTool('cursor');
     this.tools.update();
     this.updateMinimap(deltaMs);

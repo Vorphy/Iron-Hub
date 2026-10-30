@@ -1,7 +1,10 @@
 import { Graphics } from 'pixi.js';
 import type { GameState } from '../sim/state';
 import { vehiclePoses, type Point3, type VehiclePose } from '../sim/trains/geometry';
-import { toWorld, type Point } from './iso';
+import type { Train } from '../sim/trains/train';
+import { MAX_HEIGHT } from '../sim/world/height';
+import type { Rect } from './camera';
+import { HEIGHT_PX, TILE_W, tileToWorldFlat, toWorld, type Point } from './iso';
 import { drawSprite, gfxData, gfxOn, palKey, ttdDirection } from './gfx/gfx';
 import { FrontObjects, houseDepth, redrawHouse } from './buildings';
 import type { StreetVehicle } from './traffic';
@@ -11,6 +14,24 @@ import type { Bridge } from '../sim/track/bridge';
 const HALF_WIDTH = 0.13;
 const BODY_H = 7;
 const HIT_RADIUS = 14;
+/** Zapas przy odrzucaniu pociągów spoza ekranu: kafelek i najwyższy teren (pojazd stoi wyżej niż płaski rzut). */
+const VIEW_MARGIN = TILE_W + MAX_HEIGHT * HEIGHT_PX;
+
+/** Czy któryś kafelek zajmowany przez pociąg leży w widoku (bez liczenia pozycji wagonów). */
+export function trainInView(t: Train, view: Rect | null): boolean {
+  if (!view) return true;
+  for (const s of t.trail) {
+    const p = tileToWorldFlat(s.x + 0.5, s.y + 0.5);
+    if (
+      p.x > view.x - VIEW_MARGIN &&
+      p.x < view.x + view.w + VIEW_MARGIN &&
+      p.y > view.y - VIEW_MARGIN &&
+      p.y < view.y + view.h + VIEW_MARGIN * 2
+    )
+      return true;
+  }
+  return false;
+}
 
 type Pose = Pick<VehiclePose, 'front' | 'back'>;
 
@@ -32,19 +53,33 @@ export class TrainRenderer {
   private prev = new Map<string, Pose>();
   /** Środki pojazdów w świecie (px) do wskazywania myszą. */
   private hits: { trainId: number; x: number; y: number }[] = [];
+  /** Widok z ostatniej klatki – pociągi spoza niego nie są ani liczone, ani rysowane. */
+  private view: Rect | null = null;
 
   /** Zapamiętuje pozycje przed tickiem symulacji. */
   capture(state: GameState): void {
     this.prev.clear();
-    for (const t of state.trains) for (const p of vehiclePoses(state, t)) this.prev.set(`${t.id}:${p.index}`, p);
+    for (const t of state.trains) {
+      if (!trainInView(t, this.view)) continue;
+      for (const p of vehiclePoses(state, t)) this.prev.set(`${t.id}:${p.index}`, p);
+    }
   }
 
   /** Pociągi i auta (`cars` z ruchu ulicznego) w jednej kolejności z budynkami, które je zasłaniają. */
-  draw(state: GameState, alpha: number, selectedId: number | null, cars: readonly StreetVehicle[] = [], metro = false): void {
+  draw(
+    state: GameState,
+    alpha: number,
+    selectedId: number | null,
+    cars: readonly StreetVehicle[] = [],
+    metro = false,
+    view: Rect | null = null,
+  ): void {
     const g = this.gfx;
     g.clear();
+    this.view = view;
     const items: Drawn[] = [];
     for (const t of state.trains) {
+      if (!trainInView(t, view)) continue;
       for (const cur of vehiclePoses(state, t)) {
         // Widok metra – tylko pociągi pod ziemią; widok powierzchni – tylko na powierzchni.
         if (cur.under !== metro) continue;

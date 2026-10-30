@@ -80,7 +80,7 @@ To najpewniej największy koszt ticku przy wielu pociągach na rozbudowanej siec
 
 ## 5. Drobniejsze
 
-- **Rysowanie pociągów** (`src/render/trains.ts`): wszystkie pociągi są przeliczane i rysowane w każdej klatce, także poza ekranem, a `vehiclePoses` liczy się dwa razy (`capture` co tick i `draw` co klatkę). Odrzucenie pociągów poza `camera.viewRect()` przed `vehiclePoses` daje zysk na dużych mapach z wieloma pociągami.
+- ✅ (2026-10-31 – `trainInView`: pociąg bez żadnego kafelka `trail` w widoku z zapasem nie jest liczony ani w `capture`, ani w `draw`) **Rysowanie pociągów** (`src/render/trains.ts`): wszystkie pociągi są przeliczane i rysowane w każdej klatce, także poza ekranem, a `vehiclePoses` liczy się dwa razy (`capture` co tick i `draw` co klatkę). Odrzucenie pociągów poza `camera.viewRect()` przed `vehiclePoses` daje zysk na dużych mapach z wieloma pociągami.
 - **Semafory i rezerwacje** (`src/render/signals.ts`): `g.clear()` i rysowanie od nowa w każdej klatce. W trybie Amator bez podglądu (V) od razu wychodzi z funkcji – OK. W trybie Ekspert zbiór `passing` buduje klucze-napisy dla wszystkich odcinków wszystkich pociągów; klucz liczbowy byłby tańszy.
 - **Rysowanie kafelków** (`src/render/mapRenderer.ts`): przy przerysowaniu kawałka mapy każdy kafelek stacji, zajezdni i mostu robi `find()` po całej tablicy. Mapa `id → obiekt` zbudowana raz na kawałek wystarczy. Ma znaczenie tylko przy przewijaniu dużej mapy.
 - **`passesOrder`** (`src/sim/trains/train.ts`): `state.stations.some(...)` przy każdym wjeździe czoła na nowy odcinek. Koszt pomijalny przy kilkudziesięciu stacjach. Wróć do niego, jeśli stacji będą setki.
