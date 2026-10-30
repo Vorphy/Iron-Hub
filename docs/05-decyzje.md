@@ -34,6 +34,9 @@ Opcje:
 
 Do decyzji przed etapem 7. Do tego czasu nie mieszać grafiki OpenGFX z docelowymi zasobami w repozytorium (osobny katalog z plikiem licencji).
 
+### Oszukiwanie w grze single-player (2026-10-30, po audycie)
+Gracz jest panem swojego świata: zapisy to zwykły JSON bez podpisu, a zmiana pieniędzy w pliku czy w konsoli nie jest błędem. Podpisywanie zapisu (HMAC) nic nie daje – klucz i tak siedzi w kodzie JS. Obiekty gry są w `window` tylko w trybie deweloperskim (`import.meta.env.DEV`). Wszystko, co kiedyś trafi na serwer (rankingi), liczy i sprawdza serwer – patrz [07-backend-mozliwosci](07-backend-mozliwosci.md).
+
 ### Pozostałe
 - Czy fabryka może zostać zamknięta po spadku poniżej poziomu 1?
 - Wskaźnik zaopatrzenia fabryki przetwórczej: minimum z wejść czy średnia ważona?

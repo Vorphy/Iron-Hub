@@ -76,6 +76,8 @@ To najpewniej największy koszt ticku przy wielu pociągach na rozbudowanej siec
 - **Semafory i rezerwacje** (`src/render/signals.ts`): `g.clear()` i rysowanie od nowa w każdej klatce. W trybie Amator bez podglądu (V) od razu wychodzi z funkcji – OK. W trybie Ekspert zbiór `passing` buduje klucze-napisy dla wszystkich odcinków wszystkich pociągów; klucz liczbowy byłby tańszy.
 - **Rysowanie kafelków** (`src/render/mapRenderer.ts`): przy przerysowaniu kawałka mapy każdy kafelek stacji, zajezdni i mostu robi `find()` po całej tablicy. Mapa `id → obiekt` zbudowana raz na kawałek wystarczy. Ma znaczenie tylko przy przewijaniu dużej mapy.
 - **`passesOrder`** (`src/sim/trains/train.ts`): `state.stations.some(...)` przy każdym wjeździe czoła na nowy odcinek. Koszt pomijalny przy kilkudziesięciu stacjach. Wróć do niego, jeśli stacji będą setki.
+- **Zajezdnia w `successors`** (`src/sim/trains/steps.ts:126`, z audytu 2026-10-30): `state.depots.find(...)` przy każdym rozwinięciu kafelka zajezdni w wyszukiwaniu trasy. Tanie przy kilku zajezdniach; jeśli będzie ich kilkadziesiąt – `Map<id, Depot>` w `TickContext` (to samo w `train.ts`, `consist.ts`, `catenary.ts`).
+- **`townPopulation`** (z audytu 2026-10-30): za każdym razem przegląda kwadrat 33×33 wokół rynku. Woła ją okno miasta (co klatkę, pkt 3) i ruch uliczny (`src/render/traffic.ts`) dla miast na ekranie. Jeśli wyjdzie w profilu – liczba mieszkańców trzymana w mieście i aktualizowana przy zmianie domu. Przy dzielnicach (punkt 17 roadmapy) i tak to się zmieni.
 - **`infrastructureCost`** raz w miesiącu – w symulacji OK, problemem jest tylko okno finansów (pkt 3).
 
 ## Czego audyt nie objął

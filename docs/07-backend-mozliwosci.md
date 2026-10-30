@@ -127,6 +127,15 @@ Z tego jednym zapytaniem SQL wychodzi: kto grał, ile sesji, łączny czas, na j
 4. Prosta strona z podsumowaniem dla nas (kto, ile, kiedy).
 5. Etap 8: zapis w chmurze i rankingi na tej samej bazie.
 
+## Rankingi a oszukiwanie (z audytu 2026-10-30)
+
+Cała gra liczy się w przeglądarce, więc gracz może zmienić pieniądze w zapisie albo w konsoli. Dla gry single-player to w porządku, ale **ranking nie może wierzyć liczbom wysłanym z przeglądarki**. Możliwe podejścia, gdy dojdziemy do etapu 8:
+- serwer dostaje cały zapis i sam liczy wynik (symulacja jest deterministyczna i działa w Node – testy już to robią); najprościej: sprawdzić, czy zapis jest spójny, i policzyć z niego wartość firmy;
+- mocniej: serwer dostaje ziarno mapy + listę komend gracza i odtwarza grę (powtórka); pewne, ale drogie przy długich grach;
+- rankingi tylko „dla zabawy”, bez nagród – wtedy wystarczy podstawowa kontrola.
+
+Nazwy firm z rankingu wyświetlać zawsze jako tekst (Preact robi to sam; nie używać `dangerouslySetInnerHTML`).
+
 ## Otwarte pytania (do decyzji)
 
 - Czy wystarczy nam „liczba i czas” (opcja A), czy chcemy widzieć konkretnych graczy (B / C / D)?
