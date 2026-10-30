@@ -49,6 +49,35 @@ describe('ozdoby i kościół', () => {
     );
     expect(townPopulation(state, town)).toBe(pop);
   });
+
+  it('miasto bez kościoła i ozdób (stary zapis) dostaje je przy rynku – jako budowa', () => {
+    const state = emptyTown();
+    const town = state.towns[0]!;
+    growTown(state, createRng(3), town, 60);
+    // Jak w zapisie sprzed ozdób: same domy, centrum zabudowane.
+    for (const i of townTiles(state, town)) if (state.map.house[i]! > MAX_HOUSE_LEVEL) state.map.house[i] = 1;
+    const ornamentsAfter = () => townTiles(state, town).filter((i) => state.map.house[i] === HOUSE_ORNAMENT);
+    for (let m = 0; m < 60 && ornamentsAfter().length === 0; m++) monthlyEconomy(state, []);
+    const church = townTiles(state, town).filter((i) => state.map.house[i] === HOUSE_CHURCH);
+    expect(church).toHaveLength(1);
+    expect(ornamentsAfter()).toHaveLength(1);
+    for (const i of [...church, ...ornamentsAfter()]) {
+      expect(Math.abs((i % 64) - town.x) + Math.abs(Math.floor(i / 64) - town.y)).toBeLessThanOrEqual(4);
+    }
+    // Drugi kościół nie powstaje.
+    monthlyEconomy(state, []);
+    expect(townTiles(state, town).filter((i) => state.map.house[i] === HOUSE_CHURCH)).toHaveLength(1);
+  });
+
+  it('nowy kościół w zabudowanym mieście stoi najpierw jako budowa', () => {
+    const state = emptyTown();
+    const town = state.towns[0]!;
+    growTown(state, createRng(3), town, 60);
+    for (const i of townTiles(state, town)) if (state.map.house[i]! > MAX_HOUSE_LEVEL) state.map.house[i] = 1;
+    monthlyEconomy(state, []);
+    const church = townTiles(state, town).find((i) => state.map.house[i] === HOUSE_CHURCH)!;
+    expect(state.map.houseBuild[church]).toBe(HOUSE_BUILD_STAGES);
+  });
 });
 
 describe('etapy budowy domów', () => {

@@ -191,6 +191,46 @@ export function metroStatus(state: GameState, town: Town, population: number): M
   return population > ECONOMY.town.metroRequiredPop ? 'stalled' : 'wanted';
 }
 
+/**
+ * Kościół i ozdoba w mieście, które ich nie ma (np. ze starego zapisu albo z zabudowanym centrum,
+ * gdzie wzrost nie znajdzie wolnego kafelka przy rynku): zamiast nowego budynku przebudowuje się
+ * najniższy dom najbliżej rynku. Kościół od razu, ozdoba z szansą `ornamentChance` na miesiąc.
+ * Zwraca przebudowane kafelki.
+ */
+export function addMissingLandmarks(state: GameState, town: Town, tiles: number[], chance: number): number[] {
+  const { map } = state;
+  const T = ECONOMY.town;
+  let church = false;
+  let ornaments = 0;
+  let homes = 0;
+  const near: number[] = [];
+  for (const i of tiles) {
+    const kind = map.house[i]!;
+    if (kind === HOUSE_CHURCH) church = true;
+    else if (kind === HOUSE_ORNAMENT) ornaments++;
+    else if (kind) {
+      homes++;
+      const dist = Math.abs((i % map.width) - town.x) + Math.abs(Math.floor(i / map.width) - town.y);
+      if (dist <= T.ornamentRadius && kind <= 2 && !map.houseBuild[i]) near.push(i);
+    }
+  }
+  if (homes < T.churchMinHouses || near.length === 0) return [];
+  const dist = (i: number) => Math.abs((i % map.width) - town.x) + Math.abs(Math.floor(i / map.width) - town.y);
+  near.sort((a, b) => map.house[a]! - map.house[b]! || dist(a) - dist(b) || a - b);
+  const out: number[] = [];
+  if (!church) {
+    const i = near.shift()!;
+    map.house[i] = HOUSE_CHURCH;
+    out.push(i);
+  }
+  if (ornaments === 0 && near.length > 0 && chance < T.ornamentChance) {
+    const i = near.shift()!;
+    map.house[i] = HOUSE_ORNAMENT;
+    out.push(i);
+  }
+  return out;
+}
+
 /** Domy z mieszkańcami (bez ozdób i kościoła). */
 export function townHouseCount(state: GameState, town: Town): number {
   return townTiles(state, town).filter((i) => state.map.house[i]! && state.map.house[i]! <= MAX_HOUSE_LEVEL).length;

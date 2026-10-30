@@ -22,6 +22,7 @@ import {
   type Industry,
 } from './industry';
 import {
+  addMissingLandmarks,
   emptyTownMonth,
   HOUSE_POPULATION,
   MAX_HOUSE_LEVEL,
@@ -134,6 +135,10 @@ function closeTownMonth(state: GameState, town: Town, nearStations: Uint8Array, 
     events.push(tileEvent(state, i));
   }
   updateTownRoads(state, town, events);
+  for (const i of addMissingLandmarks(state, town, townTiles(state, town), nextFloat(state.rng))) {
+    startHouseConstruction(state, i);
+    events.push(tileEvent(state, i));
+  }
 
   // W obsługiwanym mieście część domów się rozbudowuje (z metrem – częściej).
   if (metro !== 'stalled' && before.size > 0) {
