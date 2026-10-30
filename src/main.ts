@@ -1,3 +1,4 @@
+import { addPlayTime, loadPlayStats, newSession, storePlayStats } from './persistence/playStats';
 import { customCounts, DEFAULT_DENSITY, isDensity } from './sim/world/generate';
 import { LATEST_CHANGELOG } from './ui/HelpWindows';
 import { START_YEAR, START_YEARS } from './sim/time';
@@ -332,6 +333,7 @@ async function start(): Promise<void> {
     hudStore.set({ newGameOpen: true });
   }
   void refreshSaveInfo();
+  trackPlayTime();
 
   // Autozapis co 30 s; na dużych mapach rzadziej (zapis 1024×1024 to kilkadziesiąt MB danych).
   let lastAutosave = Date.now();
@@ -346,6 +348,29 @@ async function start(): Promise<void> {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden' && !game?.state.finances.bankrupt) void saveTo('auto', true);
   });
+}
+
+/** Sesja i czas grania (tylko gdy karta jest widoczna) – w pamięci przeglądarki, widoczne w menu. */
+function trackPlayTime(): void {
+  let stats = newSession(loadPlayStats(), new Date());
+  storePlayStats(stats);
+  hudStore.set({ playStats: stats });
+  let last = Date.now();
+  let visible = document.visibilityState === 'visible';
+  const tick = () => {
+    const now = Date.now();
+    // Liczy się odcinek, przez który karta była widoczna; przerwy dłuższe niż 2 min
+    // (uśpiony komputer, wstrzymana karta) nie są graniem.
+    if (visible && now - last < 120_000) {
+      stats = addPlayTime(stats, (now - last) / 1000);
+      storePlayStats(stats);
+      hudStore.set({ playStats: stats });
+    }
+    last = now;
+    visible = document.visibilityState === 'visible';
+  };
+  setInterval(tick, 15_000);
+  document.addEventListener('visibilitychange', tick);
 }
 
 // Podgląd stanu gry w konsoli przeglądarki (tylko serwer deweloperski).

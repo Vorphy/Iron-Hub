@@ -1,3 +1,4 @@
+import { formatPlayTime } from '../persistence/playStats';
 import { TERRAFORM_COST, WAYPOINT_COST } from '../sim/config';
 import { ResearchWindow } from './ResearchWindow';
 import { useEffect, useState } from 'preact/hooks';
@@ -110,6 +111,7 @@ export function Hud({ actions }: { actions: HudActions }) {
         <Menu
           actions={actions}
           saves={s.saves}
+          playStats={s.playStats}
           signalMode={s.signalMode}
           traffic={s.traffic}
           gfx={s.gfxAvailable ? s.gfx : null}
@@ -449,6 +451,7 @@ function formatSaveDate(iso: string | null): string {
 function Menu({
   actions,
   saves,
+  playStats,
   signalMode,
   traffic,
   gfx,
@@ -457,6 +460,7 @@ function Menu({
 }: {
   actions: HudActions;
   saves: HudState['saves'];
+  playStats: HudState['playStats'];
   signalMode: HudState['signalMode'];
   traffic: boolean;
   /** null – atlas grafiki niedostępny. */
@@ -533,6 +537,12 @@ function Menu({
         Wczytaj <small>{formatSaveDate(saves.quick)}</small>
       </button>
       <div class="menu-note">Autozapis co 30 s: {formatSaveDate(saves.auto)}</div>
+      {playStats && (
+        <div class="menu-note" title="Liczone tylko w tej przeglądarce, nigdzie niewysyłane">
+          Grasz od {new Date(playStats.since).toLocaleDateString('pl-PL')} · sesje: {playStats.sessions} · łącznie{' '}
+          {formatPlayTime(playStats.seconds)}
+        </div>
+      )}
       <div class="menu-title">Plik</div>
       <button onClick={actions.exportFile}>Eksportuj do pliku</button>
       <button onClick={actions.importFile}>Importuj z pliku</button>

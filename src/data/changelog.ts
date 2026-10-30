@@ -12,10 +12,11 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-31',
-    title: 'Bezpieczniejsze wczytywanie zapisów',
+    title: 'Bezpieczniejsze wczytywanie i czas grania',
     items: [
       'Uszkodzony albo ręcznie zmieniony plik zapisu nie zawiesza gry w trakcie – przy wczytaniu pojawia się komunikat, co jest nie tak (np. rozkład pociągu wskazuje nieistniejącą stację).',
       'Drobne niespójności (usunięta grupa pociągów, za mały licznik numerów) gra naprawia sama.',
+      'Menu → Gra: od kiedy grasz, ile było sesji i ile czasu łącznie. Liczone tylko w tej przeglądarce (gdy karta z grą jest widoczna) i nigdzie niewysyłane.',
     ],
   },
   {

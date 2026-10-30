@@ -363,7 +363,8 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     title: 'Zapis gry i ustawienia',
     blocks: [
       'Gra zapisuje się sama co 30 s (na dużych mapach rzadziej) i przy zamknięciu karty. W Menu: Zapisz / Wczytaj (ręczny zapis), eksport i import pliku (przeniesienie na inny komputer).',
-      'Zapisy w przeglądarce są widoczne tylko na tym urządzeniu i tej stronie.',
+      'Zapisy w przeglądarce są widoczne tylko na tym urządzeniu i tej stronie. Uszkodzony albo ręcznie zmieniony plik nie wczyta się – zobaczysz komunikat, co jest nie tak.',
+      'Menu → Gra pokazuje, od kiedy grasz, ile było sesji i łączny czas grania (liczony, gdy karta z grą jest widoczna). Te liczby zostają w przeglądarce – gra nigdzie ich nie wysyła.',
       '**Grafika**: Menu → Widok → Grafika przełącza między grafiką w stylu TTD (OpenGFX – darmowa grafika projektu OpenTTD, licencja GPL v2, na czas testów) a prostymi kształtami. Lasy, pojedyncze drzewa i wygląd domów to tylko dekoracja – nie wpływają na grę.',
       '**U** – widok bez budynków: domy, zakłady, drzewa i dachy peronów znikają, żeby zobaczyć tory, które zasłaniały. Ponowne U je przywraca (też w Menu → Widok → Budynki).',
       'Menu → Ruch w miastach – auta i autobusy można wyłączyć na słabszym komputerze. Minimapę zwijasz przyciskiem ▾, przenosisz za nagłówek; jej położenie, zoom i filtry przeglądarka zapamiętuje.',

@@ -1,3 +1,4 @@
+import type { PlayStats } from '../persistence/playStats';
 import type { RatingParts } from '../sim/economy/cargoFlow';
 import { defaultFilters, type MinimapFilters } from '../render/minimap';
 import type { ResearchId } from '../data/research';
@@ -281,6 +282,8 @@ export interface HudState {
   message: { id: number; text: string; onClick?: () => void } | null;
   /** Daty zapisów w przeglądarce (ISO) – do menu. */
   saves: { quick: string | null; auto: string | null };
+  /** Statystyki grania w tej przeglądarce (do menu). */
+  playStats: PlayStats | null;
   menuOpen: boolean;
   /** Otwarty temat pomocy (null – pomoc zamknięta). */
   helpTopic: string | null;
@@ -336,6 +339,7 @@ export const hudStore = new Store<HudState>({
   cursorLabel: null,
   message: null,
   saves: { quick: null, auto: null },
+  playStats: null,
   menuOpen: false,
   helpTopic: null,
   changelogOpen: false,
