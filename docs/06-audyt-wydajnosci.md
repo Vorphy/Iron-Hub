@@ -88,6 +88,22 @@ To najpewniej największy koszt ticku przy wielu pociągach na rozbudowanej siec
 - **`townPopulation`** (z audytu 2026-10-30): za każdym razem przegląda kwadrat 33×33 wokół rynku. Woła ją okno miasta (co klatkę, pkt 3) i ruch uliczny (`src/render/traffic.ts`) dla miast na ekranie. Jeśli wyjdzie w profilu – liczba mieszkańców trzymana w mieście i aktualizowana przy zmianie domu. Przy dzielnicach (punkt 17 roadmapy) i tak to się zmieni.
 - **`infrastructureCost`** raz w miesiącu – w symulacji OK, problemem jest tylko okno finansów (pkt 3).
 
+## Pomiar ticku z pociągami (2026-10-31) – decyzja w sprawie pkt 4
+
+Zamiast profilu w przeglądarce: pomiar w Node na syntetycznym scenariuszu – pusta mapa 1024, 48 linii po ~390 kafelków (zajezdnia, dwie stacje, jeden pociąg na linię), 6000 ticków po rozgrzewce, z tymczasowym licznikiem wokół `planRoute` (usunięty po pomiarze).
+
+| Co | Wynik |
+|---|---|
+| Średni tick (48 jeżdżących pociągów) | 0,45–0,56 ms → przy 8× (160 ticków/s) **70–90 ms procesora na sekundę gry** |
+| `planRoute` | 12 720 wywołań, średnio **0,19 ms**, żadne > 3 ms; razem ~60% czasu ticku |
+| Sprzątanie pamięci (GC) | 220–240 przerw, razem ~90 ms, najdłuższa 2–4 ms |
+| `dailyCargo` (te 96 stacji) | 1,2–4,6 ms raz na dzień gry |
+| Najwolniejsze ticki | 14–24 ms – wszystkie pociągi szukają trasy w tym samym ticku; to artefakt scenariusza (identyczne linie, start w jednej chwili), w prawdziwej grze pociągi się rozjeżdżają |
+
+**Decyzja:** pamiętanie tras (pkt 4.2) na razie **nie jest potrzebne** – tick mieści się z dużym zapasem. Wrócić, gdy: pociągów będzie > 150, sieć będzie gęsta (wiele rozjazdów – Dijkstra/A\* rozwija wtedy dużo więcej węzłów niż na prostej linii) albo profil w przeglądarce pokaże `planRoute` na górze. Najtańszy pierwszy krok zostaje ten sam: pkt 4.1 (bez kopii węzła, `fullLoadingTrains` raz na tick).
+
+**Ograniczenia pomiaru:** proste linie bez rozjazdów i semaforów, Node zamiast przeglądarki, bez rysowania. Nadal niezmierzone (tylko w przeglądarce, zakładka Performance): ruch uliczny, minimapa, podpisy, daleki zoom, Preact, pamięć po kilku „Nowa gra”.
+
 ## Czego audyt nie objął
 
 Audyt to przegląd kodu i pomiary w Node, nie profil gry w przeglądarce. Nie mierzono: ruchu ulicznego (`traffic.ts`), minimapy, podpisów na mapie, renderu dalekiego zoomu, odświeżania interfejsu Preact, pamięci (wycieki, GC) ani generowania mapy (~2 s na 1024, jednorazowo). Pewność „reszta jest optymalna” da dopiero profil z DevTools (zakładka Performance) na dużej mapie przy 8× z kilkudziesięcioma pociągami.
