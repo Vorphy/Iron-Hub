@@ -89,14 +89,16 @@ export function tickTrains(state: GameState, planner: Planner, events: SimEvent[
       train.reverseRequested = false;
     }
     if (train.status === 'loading') {
+      // Zjazd do zajezdni ma pierwszeństwo: bez dalszego postoju, pełnego ładunku i wyrównywania odstępów.
+      if (train.goToDepot) train.waitTicks = Math.min(train.waitTicks, 1);
       if (--train.waitTicks <= 0) {
         // Przed odjazdem dobieramy ładunek, który pojawił się w czasie postoju.
         const st = stationUnderHead(state, train);
         if (st) serveTrainAtStation(state, train, st, events, false);
         // „Pełny ładunek”: zostaje i ładuje dalej, aż wagony na ładunek tej stacji będą pełne.
-        if (st && waitsForFullLoad(state, train, st)) train.waitTicks = FULL_LOAD_CHECK_TICKS;
+        if (st && !train.goToDepot && waitsForFullLoad(state, train, st)) train.waitTicks = FULL_LOAD_CHECK_TICKS;
         else {
-          const hold = spacingHold(state, train);
+          const hold = train.goToDepot ? 0 : spacingHold(state, train);
           if (hold > 0) {
             train.holding = true;
             train.waitTicks = Math.min(hold, FULL_LOAD_CHECK_TICKS);

@@ -89,6 +89,22 @@ describe('czekaj na pełny ładunek', () => {
     expect(occupancyPenalty(sim.state, taken, platform, t.id, fullLoadingTrains(sim.state))).toBe(0);
   });
 
+  it('czekający na pełny ładunek po „Do zajezdni” od razu rusza i dojeżdża do zajezdni', () => {
+    const sim = line(true);
+    const t = sim.state.trains[0]!;
+    for (let i = 0; i < 20_000 && t.status !== 'loading'; i++) sim.step();
+    expect(t.status).toBe('loading');
+    // Kopalnia nic nie daje – bez zjazdu pociąg stałby bez końca.
+    sim.state.industries[0]!.level = 0;
+    for (const load of t.loads) load.amount = 0;
+    sim.enqueue({ type: 'sendToDepot', trainId: t.id });
+    sim.processCommands();
+    for (let i = 0; i < 5 && t.status === 'loading'; i++) sim.step();
+    expect(t.status).toBe('running');
+    for (let i = 0; i < 20_000 && t.status !== 'depot'; i++) sim.step();
+    expect(t.status).toBe('depot');
+  });
+
   it('ptaszki idą za pozycjami rozkładu: dopisanie zostawia, usunięcie stacji zabiera', () => {
     const sim = line(true);
     const t = sim.state.trains[0]!;

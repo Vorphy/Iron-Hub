@@ -12,6 +12,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-31',
+    title: 'Poprawka: zjazd do zajezdni ze stacji',
+    items: [
+      'Pociąg czekający na stacji na pełny ładunek (albo na wyrównanie odstępu) po kliknięciu „Do zajezdni” od razu rusza do zajezdni – wcześniej stał dalej, aż wagony się zapełnią.',
+    ],
+  },
+  {
+    date: '2026-10-31',
     title: 'Dzielnice i ruch miejski',
     items: [
       'Duże miasto (od 5 000 mieszkańców), które dorośnie do mniejszego sąsiada, wchłania go – sąsiad zostaje dzielnicą pod swoją dotychczasową nazwą. Komunikat pokazuje, gdzie to się stało; stacje nie zmieniają nazw.',
