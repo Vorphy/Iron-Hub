@@ -26,6 +26,7 @@ import {
   setWaitDays,
   toggleFullLoad,
   toggleNonStop,
+  moveOrder,
   startTrain,
   stopTrain,
   trainsInDepot,
@@ -92,6 +93,7 @@ export type Command =
   | { type: 'setOrders'; trainId: number; orders: number[]; fullLoad?: boolean[]; waitDays?: number[]; nonStop?: boolean[] }
   /** „Bez zatrzymania” przy pozycji rozkładu. */
   | { type: 'toggleNonStop'; trainId: number; index: number }
+  | { type: 'moveOrder'; trainId: number; from: number; to: number }
   /** Rozkład czasowy: dodatkowy postój przy pozycji rozkładu i równe odstępy na linii. */
   | { type: 'setWaitDays'; trainId: number; index: number; days: number }
   | { type: 'setSpacing'; trainId: number; on: boolean }
@@ -278,6 +280,8 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
       return setOrders(state, cmd.trainId, cmd.orders, cmd.fullLoad, cmd.waitDays, cmd.nonStop);
     case 'toggleNonStop':
       return toggleNonStop(state, cmd.trainId, cmd.index);
+    case 'moveOrder':
+      return moveOrder(state, cmd.trainId, cmd.from, cmd.to);
     case 'setWaitDays':
       return setWaitDays(state, cmd.trainId, cmd.index, cmd.days);
     case 'setSpacing':

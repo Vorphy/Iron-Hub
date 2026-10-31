@@ -473,6 +473,33 @@ export function toggleFullLoad(state: GameState, trainId: number, index: number)
 }
 
 /** Przełącza „bez zatrzymania” dla pozycji rozkładu (całej linii). */
+/**
+ * Przeniesienie pozycji rozkładu z `from` na `to` (przeciąganie w oknie pociągu) – razem z jej opcjami.
+ * Pociąg jedzie dalej do tej samej stacji co przed zmianą (bieżąca pozycja przesuwa się z nią).
+ */
+export function moveOrder(state: GameState, trainId: number, from: number, to: number): CommandResult {
+  const train = trainById(state, trainId);
+  const n = train?.orders.length ?? 0;
+  if (!train || from < 0 || from >= n || to < 0 || to >= n) return { ok: false, reason: 'blocked' };
+  if (from === to) return { ok: true };
+  const move = <T>(list: T[]): T[] => {
+    const out = [...list];
+    const [item] = out.splice(from, 1);
+    out.splice(to, 0, item!);
+    return out;
+  };
+  const order = move(Array.from({ length: n }, (_, i) => i));
+  for (const t of sharedTrains(state, train)) {
+    t.orders = move(t.orders);
+    t.fullLoad = move(t.fullLoad);
+    t.nonStop = move(t.nonStop);
+    t.waitDays = move(t.waitDays);
+    t.currentOrder = Math.max(0, order.indexOf(t.currentOrder));
+    t.resTerminal = null;
+  }
+  return { ok: true };
+}
+
 export function toggleNonStop(state: GameState, trainId: number, index: number): CommandResult {
   const train = trainById(state, trainId);
   if (!train || index < 0 || index >= train.orders.length) return { ok: false, reason: 'blocked' };

@@ -10,6 +10,13 @@ const WAIT_CHOICES = [0, 1, 2, 3, 5, 10, 20, 30];
 export function TrainWindow({ data: t, actions }: { data: TrainWindowData; actions: HudActions }) {
   const id = t.trainId;
   const running = !t.stopped;
+  // Przeciąganie pozycji rozkładu: skąd i nad którą pozycję.
+  const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
+  const endDrag = () => {
+    setDragFrom(null);
+    setDragOver(null);
+  };
   return (
     <div class="panel window">
       <div class="window-head">
@@ -138,58 +145,91 @@ export function TrainWindow({ data: t, actions }: { data: TrainWindowData; actio
         </label>
       )}
       {t.orders.length === 0 && <div class="muted small">Brak stacji – pociąg jeździ przed siebie.</div>}
-      {t.orders.map((o, i) => (
-        <div class="row order" key={i}>
-          <span class="order-mark">{i === t.currentOrder && !t.goToDepot ? '▶' : `${i + 1}.`}</span>
-          <span class="grow">
-            {o.name}
-            {o.waypoint && <span class="badge">punkt kontrolny</span>}
-          </span>
-          <button
-            class="close"
-            title="Usuń z rozkładu"
-            onClick={() =>
-              actions.setOrders(
-                id,
-                t.orders.map((x) => x.stationId).filter((_, j) => j !== i),
-                t.orders.map((x) => x.fullLoad).filter((_, j) => j !== i),
-                t.orders.map((x) => x.waitDays).filter((_, j) => j !== i),
-                t.orders.map((x) => x.nonStop).filter((_, j) => j !== i),
-              )
-            }
+      <ul class="orders">
+        {t.orders.map((o, i) => (
+          <li
+            class={`row order${dragFrom === i ? ' dragging' : ''}${
+              dragOver === i && dragFrom !== null && dragFrom !== i ? (dragFrom < i ? ' drop-below' : ' drop-above') : ''
+            }`}
+            key={i}
+            onDragOver={(e) => {
+              if (dragFrom === null) return;
+              e.preventDefault();
+              if (dragOver !== i) setDragOver(i);
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              if (dragFrom !== null && dragFrom !== i) actions.moveOrder(id, dragFrom, i);
+              endDrag();
+            }}
           >
-            ✕
-          </button>
-          {!o.waypoint && (
-            <div class="order-opts">
-              <label class="full-load" title="Pociąg przejeżdża przez stację bez zatrzymania (np. żeby jechał tym torem)">
-                <input type="checkbox" checked={o.nonStop} onChange={() => actions.toggleNonStop(id, i)} />
-                bez zatrzymania
-              </label>
-              {!o.nonStop && (
-                <select
-                  class="wait-days"
-                  value={String(o.waitDays)}
-                  title="Dodatkowy postój na tej stacji (dni)"
-                  onChange={(e) => actions.setWaitDays(id, i, Number((e.target as HTMLSelectElement).value))}
-                >
-                  {WAIT_CHOICES.map((d) => (
-                    <option key={d} value={String(d)}>
-                      {d === 0 ? 'bez postoju' : `postój ${d} d.`}
-                    </option>
-                  ))}
-                </select>
-              )}
-              {!o.nonStop && (
-                <label class="full-load" title="Czekaj na tej stacji, aż wagony na jej ładunek będą pełne">
-                  <input type="checkbox" checked={o.fullLoad} onChange={() => actions.toggleFullLoad(id, i)} />
-                  pełny ładunek
+            {t.orders.length > 1 && (
+              <button
+                type="button"
+                class="order-handle"
+                draggable
+                title="Przeciągnij, żeby zmienić kolejność"
+                onDragStart={(e) => {
+                  e.dataTransfer?.setData('text/plain', String(i));
+                  if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+                  setDragFrom(i);
+                }}
+                onDragEnd={endDrag}
+              >
+                ⠿
+              </button>
+            )}
+            <span class="order-mark">{i === t.currentOrder && !t.goToDepot ? '▶' : `${i + 1}.`}</span>
+            <span class="grow">
+              {o.name}
+              {o.waypoint && <span class="badge">punkt kontrolny</span>}
+            </span>
+            <button
+              class="close"
+              title="Usuń z rozkładu"
+              onClick={() =>
+                actions.setOrders(
+                  id,
+                  t.orders.map((x) => x.stationId).filter((_, j) => j !== i),
+                  t.orders.map((x) => x.fullLoad).filter((_, j) => j !== i),
+                  t.orders.map((x) => x.waitDays).filter((_, j) => j !== i),
+                  t.orders.map((x) => x.nonStop).filter((_, j) => j !== i),
+                )
+              }
+            >
+              ✕
+            </button>
+            {!o.waypoint && (
+              <div class="order-opts">
+                <label class="full-load" title="Pociąg przejeżdża przez stację bez zatrzymania (np. żeby jechał tym torem)">
+                  <input type="checkbox" checked={o.nonStop} onChange={() => actions.toggleNonStop(id, i)} />
+                  bez zatrzymania
                 </label>
-              )}
-            </div>
-          )}
-        </div>
-      ))}
+                {!o.nonStop && (
+                  <select
+                    class="wait-days"
+                    value={String(o.waitDays)}
+                    title="Dodatkowy postój na tej stacji (dni)"
+                    onChange={(e) => actions.setWaitDays(id, i, Number((e.target as HTMLSelectElement).value))}
+                  >
+                    {WAIT_CHOICES.map((d) => (
+                      <option key={d} value={String(d)}>
+                        {d === 0 ? 'bez postoju' : `postój ${d} d.`}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {!o.nonStop && (
+                  <label class="full-load" title="Czekaj na tej stacji, aż wagony na jej ładunek będą pełne">
+                    <input type="checkbox" checked={o.fullLoad} onChange={() => actions.toggleFullLoad(id, i)} />
+                    pełny ładunek
+                  </label>
+                )}
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
       <div class="buttons wrap">
         <button class={t.picking ? 'active' : ''} onClick={() => actions.pickOrders(id)}>
           {t.picking ? 'Gotowe' : '+ Dodaj stacje'}

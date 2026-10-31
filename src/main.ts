@@ -272,6 +272,7 @@ const actions: HudActions = {
   setOrders: (trainId, orders, fullLoad, waitDays, nonStop) =>
     game?.command({ type: 'setOrders', trainId, orders, fullLoad, waitDays, nonStop }),
   toggleNonStop: (trainId, index) => game?.command({ type: 'toggleNonStop', trainId, index }),
+  moveOrder: (trainId, from, to) => game?.command({ type: 'moveOrder', trainId, from, to }),
   setWaitDays: (trainId, index, days) => game?.command({ type: 'setWaitDays', trainId, index, days }),
   setSpacing: (trainId, on) => game?.command({ type: 'setSpacing', trainId, on }),
   toggleFullLoad: (trainId, index) => game?.command({ type: 'toggleFullLoad', trainId, index }),

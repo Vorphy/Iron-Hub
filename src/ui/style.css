@@ -944,6 +944,33 @@ input.seed {
   flex-wrap: wrap;
   row-gap: 2px;
 }
+ul.orders {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+/* Przeciąganie pozycji rozkładu: uchwyt, przenoszony wiersz i linia w miejscu upuszczenia. */
+.panel button.order-handle {
+  cursor: grab;
+  background: none;
+  border: none;
+  font: inherit;
+  color: var(--panel-border);
+  padding: 0 4px 0 0;
+  user-select: none;
+}
+.panel button.order-handle:hover {
+  color: var(--accent);
+}
+.row.order.dragging {
+  opacity: 0.4;
+}
+.row.order.drop-above {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+.row.order.drop-below {
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
 .order-opts {
   flex-basis: 100%;
   display: flex;

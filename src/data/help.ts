@@ -214,7 +214,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     id: 'orders',
     title: 'Rozkład jazdy',
     blocks: [
-      'Rozkład to lista stacji, po których pociąg jeździ w kółko: w oknie pociągu „+ Dodaj stacje”, klikaj stacje na mapie, „Gotowe”.',
+      'Rozkład to lista stacji, po których pociąg jeździ w kółko: w oknie pociągu „+ Dodaj stacje”, klikaj stacje na mapie, „Gotowe”. Kolejność zmieniasz, przeciągając stację za uchwyt ⠿ przed numerem – razem z jej opcjami.',
       '**Pełny ładunek** (ptaszek przy stacji w rozkładzie): pociąg nie odjedzie, dopóki nie napełni wagonów na ładunek, który ta stacja zbiera (status „Czeka na pełny ładunek”). Dobre przy kopalniach – zamiast wozić pół pustych wagonów. Inne pociągi omijają taki peron, jeśli mają wolny.',
       'Rada: przy pełnym ładunku daj stacji co najmniej jeden peron więcej niż pociągów czekających na ładunek. Wagony na inny ładunek nie wstrzymują odjazdu; „■ Stop” albo „Zawróć” przerywa czekanie.',
       'Pociąg sam wybiera trasę (najkrótszą, omijając zajęte perony) i zawraca na końcu toru albo na stacji, gdy następny cel jest za nim. Jak w OpenTTD: przez cudze stacje jedzie niechętnie (wybierze obwodnicę, jeśli jest – albo poprowadź go punktem kontrolnym), a na stacji docelowej wybiera peron pasujący do długości składu – długi pociąg nie stanie na krótkim peronie, jeśli jest dłuższy. W trybie Ekspert unika też łuków (najchętniej jedzie prosto), podjazdów (płaska trasa, nawet trochę dłuższa) i zajętych peronów; pociągi stojące daleko, za kilkoma semaforami, nie zmieniają jego wyboru – zdążą odjechać.',

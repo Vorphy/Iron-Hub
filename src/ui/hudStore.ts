@@ -451,6 +451,7 @@ export interface HudActions {
   replaceEngine(trainId: number, engine: string | null, all?: boolean): void;
   setOrders(trainId: number, orders: number[], fullLoad?: boolean[], waitDays?: number[], nonStop?: boolean[]): void;
   toggleNonStop(trainId: number, index: number): void;
+  moveOrder(trainId: number, from: number, to: number): void;
   setWaitDays(trainId: number, index: number, days: number): void;
   setSpacing(trainId: number, on: boolean): void;
   toggleFullLoad(trainId: number, index: number): void;

@@ -28,6 +28,29 @@ function line(): Simulation {
 }
 
 describe('rozkład czasowy', () => {
+  it('przeciąganie pozycji rozkładu: opcje jadą z nią, pociąg dalej jedzie do tej samej stacji (cała linia)', () => {
+    const sim = line();
+    sim.enqueue({ type: 'buildStation', x0: 12, y0: 5, x1: 14, y1: 5, axis: 'x' });
+    sim.enqueue({ type: 'setOrders', trainId: 1, orders: [1, 2, 3], fullLoad: [false, true, false], waitDays: [0, 0, 5] });
+    sim.enqueue({ type: 'cloneTrain', trainId: 1 });
+    sim.processCommands();
+    const [a, b] = sim.state.trains;
+    a!.currentOrder = 2;
+    b!.currentOrder = 0;
+    sim.enqueue({ type: 'moveOrder', trainId: 1, from: 2, to: 0 });
+    sim.processCommands();
+    for (const t of [a!, b!]) {
+      expect(t.orders).toEqual([3, 1, 2]);
+      expect(t.fullLoad).toEqual([false, false, true]);
+      expect(t.waitDays).toEqual([5, 0, 0]);
+    }
+    expect(a!.orders[a!.currentOrder]).toBe(3);
+    expect(b!.orders[b!.currentOrder]).toBe(1);
+    sim.enqueue({ type: 'moveOrder', trainId: 1, from: 0, to: 3 });
+    sim.processCommands();
+    expect(a!.orders).toEqual([3, 1, 2]);
+  });
+
   it('dodatkowy postój przy stacji wydłuża postój o tyle dni (dla całej linii)', () => {
     const sim = line();
     sim.enqueue({ type: 'cloneTrain', trainId: 1 });
