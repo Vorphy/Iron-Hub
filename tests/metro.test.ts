@@ -17,8 +17,8 @@ const fails = (sim: Simulation) => sim.drainEvents().flatMap((e) => (e.type === 
  * Linia wzdłuż y = 5: zajezdnia (0), stacja A (2–4), tor do zjazdu w x = 8 (w dół w stronę SE),
  * metro x = 9–20, zjazd w górę w x = 21 (dół od strony NW), tor i stacja B (25–27).
  */
-function metroLine(): Simulation {
-  const state = createGame({ width: 32, height: 12, seed: 1, empty: true });
+function metroLine(startYear?: number): Simulation {
+  const state = createGame({ width: 32, height: 12, seed: 1, empty: true, startYear });
   state.map.terrain.fill(Terrain.Grass);
   state.money = 10_000_000;
   const sim = new Simulation(state);
@@ -91,6 +91,30 @@ describe('metro (poziom −1)', () => {
       }
     }
     expect(wentUnder).toBe(true);
+    expect(visited).toEqual([a!.id, b!.id, a!.id]);
+  });
+
+  it('lokomotywa elektryczna: sieć tylko na powierzchni, zjazd i metro na trzeciej szynie', () => {
+    const sim = metroLine(1962);
+    const { state } = sim;
+    const surface = [...Array.from({ length: 8 }, (_, x) => x), ...Array.from({ length: 9 }, (_, i) => 22 + i)];
+    sim.enqueue({ type: 'buildCatenary', tiles: surface.map((x) => ({ x, y: 5 })) });
+    sim.enqueue({ type: 'buyTrain', depotId: 1, engine: 'elektra', wagons: ['osobowy'] });
+    sim.step();
+    expect(fails(sim)).toEqual([]);
+    expect(state.map.electric[5 * 32 + 8]).toBe(0);
+    const train = state.trains[0]!;
+    const [a, b] = state.stations;
+    sim.enqueue({ type: 'setOrders', trainId: train.id, orders: [a!.id, b!.id] });
+    sim.enqueue({ type: 'startTrain', trainId: train.id });
+    const visited: number[] = [];
+    for (let i = 0; i < 40 * 60 && visited.length < 3; i++) {
+      sim.step();
+      if (train.status === 'loading') {
+        const st = state.map.station[train.trail[0]!.y * 32 + train.trail[0]!.x];
+        if (st && visited[visited.length - 1] !== st) visited.push(st);
+      }
+    }
     expect(visited).toEqual([a!.id, b!.id, a!.id]);
   });
 
