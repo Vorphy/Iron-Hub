@@ -14,6 +14,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
     date: '2026-10-31',
     title: 'Metro płasko na poziomie −1; przejście pod torem metra; kolejność w rozkładzie',
     items: [
+      'Poprawka: w trybie Ekspert jednokierunkowy semafor w metrze potrafił zablokować wjazd na zupełnie inny tor metra (16 kafelków dalej w tym samym rzędzie) – pociąg dojeżdżał pod stację, zawracał i krążył. Semafory metra nie mylą się już z innymi torami.',
       'Trzecia szyna w metrze: lokomotywy elektryczne jeżdżą pod ziemią tylko po torach z zasilaniem. Kładziesz je narzędziem Trakcja (E) w widoku metra (Q) – tak samo jak sieć na powierzchni, ta sama cena i utrzymanie; na torach widać żółtą szynę z boku. Kafelek zjazdu leży na powierzchni, więc potrzebuje zwykłej sieci. W zapisanych grach istniejące metro dostało trzecią szynę od razu.',
       'Rozkład jazdy: kolejność stacji zmieniasz przeciąganiem za uchwyt ⠿ przed numerem. Stacja przenosi się razem z opcjami (pełny ładunek, postój, bez zatrzymania), a pociąg jedzie dalej do tej samej stacji co przed zmianą. Przy wspólnym rozkładzie zmiana dotyczy całej linii.',
       'Przejście pod torem metra: narzędzie Tunel (N) w widoku metra – przeciągnij wzdłuż swojej linii przez tor drugiej linii. Twoja linia schodzi tam poziom niżej, druga biegnie górą bez połączenia, więc pociągi obu linii nie blokują się nawzajem jak na płaskim skrzyżowaniu. Przeciągnięcie przez istniejące skrzyżowanie od razu je przebudowuje. Rozbiórka – buldożer na wejściu przejścia.',

@@ -40,8 +40,9 @@ export function dirBit(s: Step): 1 | 2 {
   return s.exit === TRACK_SIDES[baseTrack(s.track)][1] ? 1 : 2;
 }
 
+/** Klucz semafora: kafelek i kod elementu (kody metra sięgają 1 << 15, więc mnożnik musi być większy). */
 function key(width: number, x: number, y: number, track: number): number {
-  return (y * width + x) * 64 + track;
+  return (y * width + x) * 65536 + track;
 }
 
 /** Szybkie wyszukiwanie semaforów po elemencie toru (budowane z listy w stanie). */

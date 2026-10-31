@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { SignalIndex } from '../src/sim/signals/signals';
 import { deserializeState, serializeState } from '../src/sim/serialize';
 import { Simulation } from '../src/sim/simulation';
 import { createGame } from '../src/sim/state';
@@ -276,6 +277,17 @@ describe('metro (poziom −1)', () => {
     sim.step();
     expect(fails(sim)).toEqual([]);
     expect(state.signals).toEqual([]);
+  });
+
+  it('semafor metra 16 kafelków dalej nie udaje semafora na innym torze metra', () => {
+    const state = createGame({ width: 64, height: 12, seed: 1, empty: true });
+    // Kod metra Y (2048) na (10, 5) = kod X (1024) 16 kafelków dalej – dawniej ten sam klucz.
+    state.signals.push({ x: 26, y: 5, track: Track.X, dirs: 2, oneWay: true, under: true });
+    const index = new SignalIndex(state);
+    const step = { x: 10, y: 5, track: underTrack(Track.Y), entry: Side.NE, exit: Side.SW };
+    expect(index.at(10, 5, step.track)).toBeUndefined();
+    expect(index.forbids(step)).toBe(false);
+    expect(index.at(26, 5, underTrack(Track.X))).toBeDefined();
   });
 
   it('przejście pod torem metra: druga linia biegnie górą, pociąg przejeżdża dołem', () => {
