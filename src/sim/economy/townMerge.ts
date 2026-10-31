@@ -76,27 +76,30 @@ export function absorbTown(state: GameState, big: Town, small: Town): void {
 }
 
 /**
- * Zamknięcie miesiąca: miasto, które styka się z większym sąsiadem (przy równej liczbie mieszkańców –
- * starszym, o niższym numerze), po `absorbMonths` miesiącach styku zostaje jego dzielnicą. Miasta
- * nie przejmują się nawzajem w inny sposób.
+ * Zamknięcie miesiąca: liczymy, od ilu miesięcy miasto styka się z innym (`contact.months` – bez
+ * przerwy, z kimkolwiek; `contact.townId` – największy sąsiad). Po `absorbMonths` miesiącach
+ * większy sąsiad (przy równej liczbie mieszkańców – o niższym numerze) przejmuje miasto, także gdy
+ * urósł dopiero niedawno. Miasta nie przejmują się nawzajem w inny sposób.
  */
 export function absorbTowns(state: GameState, events: SimEvent[]): void {
   const pop = new Map(state.towns.map((t) => [t.id, townPopulation(state, t)]));
   const bigger = (a: Town, b: Town) => pop.get(a.id)! > pop.get(b.id)! || (pop.get(a.id) === pop.get(b.id) && a.id < b.id);
   for (const town of state.towns) {
-    let absorber: Town | undefined;
+    let neighbour: Town | undefined;
     for (const id of touchingTowns(state, town)) {
       const other = state.towns.find((t) => t.id === id);
-      if (other && bigger(other, town) && (!absorber || bigger(other, absorber))) absorber = other;
+      if (other && (!neighbour || bigger(other, neighbour))) neighbour = other;
     }
-    if (!absorber) {
+    if (!neighbour) {
       delete town.contact;
       continue;
     }
-    if (town.contact?.townId === absorber.id) town.contact.months++;
-    else {
-      town.contact = { townId: absorber.id, months: 1 };
-      events.push({ type: 'townsTouching', townId: absorber.id, smallId: town.id });
+    if (town.contact) {
+      town.contact.months++;
+      town.contact.townId = neighbour.id;
+    } else {
+      town.contact = { townId: neighbour.id, months: 1 };
+      if (bigger(neighbour, town)) events.push({ type: 'townsTouching', townId: neighbour.id, smallId: town.id });
     }
   }
   // Najpierw najmniejsze – łańcuch C → B → A w jednym miesiącu kończy się w A.
@@ -105,9 +108,10 @@ export function absorbTowns(state: GameState, events: SimEvent[]): void {
     .sort((a, b) => pop.get(a.id)! - pop.get(b.id)! || b.id - a.id);
   for (const small of ready) {
     const big = state.towns.find((t) => t.id === small.contact?.townId);
-    if (!big || !state.towns.includes(small)) continue;
+    if (!big || !state.towns.includes(small) || !bigger(big, small)) continue;
     delete small.contact;
     absorbTown(state, big, small);
+    pop.set(big.id, pop.get(big.id)! + pop.get(small.id)!);
     events.push({ type: 'townAbsorbed', townId: big.id, district: small.name });
   }
 }

@@ -14,7 +14,7 @@ import {
   townTiles,
 } from '../src/sim/economy/town';
 import { absorbTowns } from '../src/sim/economy/townMerge';
-import { districtName, foundDistrict } from '../src/sim/economy/districts';
+import { districtName, foundDistrict, renameDuplicateDistricts } from '../src/sim/economy/districts';
 import { monthlyEconomy } from '../src/sim/economy/monthly';
 import { createRng } from '../src/sim/rng';
 import { Side, Track } from '../src/sim/track/track';
@@ -423,5 +423,56 @@ describe('puste dzielnice', () => {
     monthlyEconomy(state, events);
     expect(town.districts.map((d) => d.name)).toEqual(['Centrum', 'Zatorze']);
     expect(events).toContainEqual({ type: 'districtsChanged', townId: 1 });
+  });
+});
+
+describe('nazwy dzielnic na całej mapie', () => {
+  it('nowa nazwa nie powtarza nazwy dzielnicy innego miasta', () => {
+    const state = world();
+    const a = newTown(1, 'Żelazowo', 30, 48);
+    const b = newTown(2, 'Kolejno', 70, 48);
+    a.districts.push({ name: 'Zatorze', x: 30, y: 60 });
+    state.towns.push(a, b);
+    state.map.track[48 * W + 76] = Track.X;
+    expect(districtName(state, b, b.districts[0]!, 82, 48)).toBe('Kolejno-Wschód');
+  });
+
+  it('powtórzone nazwy (stare zapisy) dostają wolną nazwę z listy', () => {
+    const state = world();
+    const a = newTown(1, 'Żelazowo', 30, 30);
+    const b = newTown(2, 'Kolejno', 70, 30);
+    a.districts.push({ name: 'Osiedle Parowe', x: 30, y: 46 }, { name: 'Zatorze', x: 46, y: 30 });
+    b.districts.push({ name: 'Osiedle Parowe', x: 70, y: 46 }, { name: 'Zatorze', x: 86, y: 30 });
+    state.towns.push(a, b);
+    expect(renameDuplicateDistricts(state)).toBe(true);
+    const names = state.towns.flatMap((t) => t.districts.slice(1).map((d) => d.name));
+    expect(new Set(names).size).toBe(names.length);
+    expect(a.districts.map((d) => d.name)).toEqual(['Centrum', 'Osiedle Parowe', 'Zatorze']);
+    expect(renameDuplicateDistricts(state)).toBe(false);
+  });
+});
+
+describe('licznik styku', () => {
+  it('rok styku liczy się bez przerwy, także gdy w trakcie zmieni się, które miasto jest większe', () => {
+    const state = world();
+    const big = newTown(1, 'Żelazowo', 30, 30);
+    const small = newTown(2, 'Stalówka', 50, 30);
+    state.towns.push(big, small);
+    const put = (x: number, y: number, id: number, level = 1) => {
+      state.map.house[y * W + x] = level;
+      state.map.town[y * W + x] = id;
+    };
+    // Na początku Stalówka jest większa.
+    put(39, 29, 1);
+    for (let x = 40; x < 50; x++) put(x, 29, 2, 4);
+    const half = ECONOMY.town.absorbMonths / 2;
+    for (let k = 0; k < half; k++) absorbTowns(state, []);
+    // Po pół roku Żelazowo rośnie i staje się większe – licznik Stalówki biegnie dalej.
+    for (let x = 20; x < 39; x++) put(x, 30, 1, 4);
+    for (let k = 0; k < half - 1; k++) absorbTowns(state, []);
+    expect(state.towns).toHaveLength(2);
+    expect(small.contact).toEqual({ townId: 1, months: ECONOMY.town.absorbMonths - 1 });
+    absorbTowns(state, []);
+    expect(state.towns).toEqual([big]);
   });
 });

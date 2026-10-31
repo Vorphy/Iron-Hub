@@ -32,18 +32,24 @@ import {
   monthlyProduction,
   workersNeeded,
 } from '../sim/economy/industry';
-import { districtInfo, metroStatus, type Town, townHouseCount } from '../sim/economy/town';
+import { districtInfo, metroStatus, type Town, townHouseCount, townPopulation } from '../sim/economy/town';
 import { ECONOMY } from '../data/economy';
 import { CARGOS, type Cargo } from '../sim/economy/cargo';
 import { MAX_RATING, ratingParts, ratingTarget, stationAccepts, stationRating } from '../sim/economy/cargoFlow';
 import { wagonDef } from '../sim/trains/vehicles';
 import type { TrainSummary, WindowData, WindowRef } from './hudStore';
 
-/** Miasto zrasta się z większym – z którym i ile miesięcy zostało do wchłonięcia. */
-function mergingInfo(state: GameState, town: Town): { name: string; monthsLeft: number } | null {
-  const big = town.contact && state.towns.find((t) => t.id === town.contact!.townId);
-  if (!big) return null;
-  return { name: big.name, monthsLeft: Math.max(1, ECONOMY.town.absorbMonths - town.contact!.months) };
+/** Miasto styka się z innym – z którym, kto kogo przejmie i ile miesięcy zostało. */
+function mergingInfo(state: GameState, town: Town): { name: string; absorbedBy: boolean; monthsLeft: number } | null {
+  const other = town.contact && state.towns.find((t) => t.id === town.contact!.townId);
+  if (!other) return null;
+  const a = townPopulation(state, other);
+  const b = townPopulation(state, town);
+  return {
+    name: other.name,
+    absorbedBy: a > b || (a === b && other.id < town.id),
+    monthsLeft: Math.max(1, ECONOMY.town.absorbMonths - town.contact!.months),
+  };
 }
 
 function stationName(sim: Simulation, id: number | undefined): string {

@@ -51,7 +51,10 @@ export interface Town {
   districts: District[];
   /** Miasto już ogłosiło, że chce metra (komunikat tylko raz). */
   metroDemand?: boolean;
-  /** Styka się z większym miastem `townId` od `months` miesięcy – po roku zostanie jego dzielnicą. */
+  /**
+   * Od `months` miesięcy (bez przerwy) styka się z innym miastem; `townId` – największy sąsiad.
+   * Po roku większy sąsiad przejmuje miasto.
+   */
   contact?: { townId: number; months: number };
 }
 

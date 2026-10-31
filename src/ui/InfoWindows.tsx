@@ -101,7 +101,9 @@ export function TownWindow({ data: t, actions }: { data: TownWindowData; actions
       {t.metro !== 'small' && <div class={`small metro-${t.metro}`}>{METRO_TEXT[t.metro]}</div>}
       {t.merging && (
         <div class="small">
-          🏙 Miasto zrosło się z miastem {t.merging.name} – za {t.merging.monthsLeft} mies. stanie się jego dzielnicą.
+          {t.merging.absorbedBy
+            ? `🏙 Miasto zrosło się z miastem ${t.merging.name} – za ${t.merging.monthsLeft} mies. stanie się jego dzielnicą.`
+            : `🏙 Miasto zrosło się z mniejszym miastem ${t.merging.name} – przejmie je, gdy oba stykają się co najmniej rok.`}
         </div>
       )}
     </div>

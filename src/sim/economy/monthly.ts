@@ -32,7 +32,7 @@ import {
   townTiles,
   type Town,
 } from './town';
-import { foundDistrict, pruneEmptyDistricts } from './districts';
+import { foundDistrict, pruneEmptyDistricts, renameDuplicateDistricts } from './districts';
 import { absorbTowns } from './townMerge';
 
 // Reguły z pliku ekonomii (src/data/economy.ts).
@@ -65,6 +65,7 @@ export function monthlyEconomy(state: GameState, events: SimEvent[]): void {
   const nearStations = stationCatchmentMask(state);
   for (const town of state.towns) closeTownMonth(state, town, nearStations, events);
   absorbTowns(state, events);
+  if (renameDuplicateDistricts(state)) events.push({ type: 'districtsChanged', townId: 0 });
   chargeRunningCosts(state);
   spend(state, 'interest', monthlyInterest(state));
   const left = checkDebt(state);

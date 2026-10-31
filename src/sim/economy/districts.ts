@@ -17,6 +17,10 @@ const EDGE_MARGIN = 3;
 const DISTRICT_NAMES = [
   'Osiedle Parowe', 'Osiedle Kolejarzy', 'Przedmieście', 'Zalesie', 'Podgórze', 'Osiedle Słoneczne',
   'Kolonia', 'Osiedle Robotnicze', 'Nowy Gród', 'Zielone Wzgórze', 'Osiedle Hutnicze', 'Zagrodzie',
+  'Zawodzie', 'Zarzecze', 'Podlesie', 'Górki', 'Błonia', 'Łęgi', 'Osiedle Torowe', 'Osiedle Semaforowe',
+  'Osiedle Węglowe', 'Osiedle Młynarskie', 'Nowe Miasto', 'Stare Przedmieście', 'Osiedle Ogrodowe', 'Osiedle Leśne',
+  'Wygoda', 'Pod Lipami', 'Kamionka', 'Piaski', 'Glinki', 'Wrzosowisko', 'Osiedle Kwiatowe', 'Osiedle Parkowe',
+  'Słoneczny Stok', 'Dolina', 'Wzgórze Kolejowe', 'Nowiny', 'Osiedle Maszynistów', 'Osiedle Zwrotniczych',
 ];
 
 /**
@@ -41,18 +45,48 @@ function trackBetween(state: GameState, a: District, x: number, y: number): bool
   return false;
 }
 
-/** Nazwa nowej dzielnicy (niepowtarzalna w mieście): „Zatorze”, strona świata albo z listy. */
+/** Nazwy miast i dzielnic na całej mapie – nowa nazwa nie może się powtórzyć. */
+function takenNames(state: GameState): Set<string> {
+  return new Set(state.towns.flatMap((t) => [t.name, ...t.districts.map((d) => d.name)]));
+}
+
+/** Pierwsza wolna nazwa z listy osiedli, a gdy zabraknie – „Osiedle N”. */
+function freeListName(taken: Set<string>): string {
+  for (const name of DISTRICT_NAMES) if (!taken.has(name)) return name;
+  let n = 1;
+  while (taken.has(`Osiedle ${n}`)) n++;
+  return `Osiedle ${n}`;
+}
+
+/** Nazwa nowej dzielnicy (niepowtarzalna na mapie): „Zatorze”, strona świata albo z listy. */
 export function districtName(state: GameState, town: Town, parent: District, x: number, y: number): string {
-  const taken = new Set(town.districts.map((d) => d.name));
+  const taken = takenNames(state);
   const options = [
     ...(trackBetween(state, parent, x, y) ? ['Zatorze'] : []),
     `${town.name}-${screenDirection(x - town.x, y - town.y)}`,
-    ...DISTRICT_NAMES,
   ];
   for (const name of options) if (!taken.has(name)) return name;
-  let n = town.districts.length;
-  while (taken.has(`Osiedle ${n}`)) n++;
-  return `Osiedle ${n}`;
+  return freeListName(taken);
+}
+
+/**
+ * Powtórzone nazwy dzielnic (ze starszych wersji gry albo po wchłonięciu miasta z tak samo nazwaną
+ * dzielnicą): późniejsze dostają wolną nazwę z listy. Centrów nie ruszamy. Zwraca, czy coś zmieniono.
+ */
+export function renameDuplicateDistricts(state: GameState): boolean {
+  const seen = new Set(state.towns.map((t) => t.name));
+  for (const t of state.towns) seen.add(t.districts[0]!.name);
+  let changed = false;
+  for (const t of state.towns) {
+    for (const d of t.districts.slice(1)) {
+      if (seen.has(d.name)) {
+        d.name = freeListName(new Set([...seen, ...takenNames(state)]));
+        changed = true;
+      }
+      seen.add(d.name);
+    }
+  }
+  return changed;
 }
 
 /**
