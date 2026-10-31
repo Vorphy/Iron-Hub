@@ -125,9 +125,26 @@ export interface TrainWindowData {
   lost: boolean;
   /** `nonStop` – przejazd bez zatrzymania; `waypoint` – punkt kontrolny (zawsze przejazd). */
   orders: { stationId: number; name: string; fullLoad: boolean; waitDays: number; nonStop: boolean; waypoint: boolean }[];
-  /** Równe odstępy na linii i odstęp w dniach (null – jeszcze nieznany). */
+  /** Równe odstępy na linii. */
   spacing: boolean;
-  headwayDays: number | null;
+  /**
+   * Równe odstępy (null – wyłączone albo linia bez wspólnego rozkładu): zajezdnia linii i stacja, po której
+   * pociągi do niej zjeżdżają; odstęp (null – po pierwszym okrążeniu) i okrążenie w dniach, jeżdżące
+   * pociągi; przeciążenie – korki za pociągami linii (`jamDays` na okrążenie), mieści się `maxTrains`.
+   */
+  line: {
+    depotName: string;
+    /** null – z trasy linii nie da się dojechać do zajezdni. */
+    afterStation: string | null;
+    headwayDays: number | null;
+    cycleDays: number;
+    trains: number;
+    overloaded: boolean;
+    maxTrains: number;
+    jamDays: number;
+  } | null;
+  /** Odstęp od poprzedniego pociągu linii przy ostatnim wyjeździe z zajezdni (dni). */
+  lastGapDays: number | null;
   currentOrder: number;
   resale: number;
   /** Trwa wskazywanie stacji do rozkładu. */

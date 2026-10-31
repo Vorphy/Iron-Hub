@@ -43,7 +43,10 @@ export interface Plan {
 }
 
 /** `pass` – cel tylko do przejechania (bez zatrzymania, punkt kontrolny): trasa prowadzi przez niego dalej. */
-export type Goal = { kind: 'station'; stationId: number; pass: boolean } | { kind: 'depot' } | null;
+export type Goal =
+  | { kind: 'station'; stationId: number; pass: boolean }
+  | { kind: 'depot' /** Konkretna zajezdnia (równe odstępy); bez – najbliższa. */; depotId?: number }
+  | null;
 
 /**
  * Dokąd liczyć trasę (wynika wyłącznie ze stanu gry). Pozycje „tylko przejazd”, przez które
@@ -51,6 +54,10 @@ export type Goal = { kind: 'station'; stationId: number; pass: boolean } | { kin
  */
 export function trainGoal(state: GameState, train: Train): Goal {
   if (train.goToDepot) return { kind: 'depot' };
+  // Równe odstępy: zjazd do zajezdni linii, potem dalej według rozkładu.
+  if (train.unbunchDepot !== null && state.depots.some((d) => d.id === train.unbunchDepot)) {
+    return { kind: 'depot', depotId: train.unbunchDepot };
+  }
   const n = train.orders.length;
   for (let k = 0; k < n; k++) {
     const index = (train.currentOrder + k) % n;
@@ -78,7 +85,11 @@ export function isPlatformEnd(state: GameState, s: Step, stationId: number): boo
 }
 
 function goalTest(state: GameState, goal: NonNullable<Goal>): (s: Step) => boolean {
-  if (goal.kind === 'depot') return (s) => s.track === 0 && s.exit === -1;
+  if (goal.kind === 'depot') {
+    const { depotId } = goal;
+    if (depotId === undefined) return (s) => s.track === 0 && s.exit === -1;
+    return (s) => s.track === 0 && s.exit === -1 && state.map.depot[s.y * state.map.width + s.x] === depotId;
+  }
   return (s) => isPlatformEnd(state, s, goal.stationId);
 }
 
@@ -219,8 +230,9 @@ function uphillPenalty(state: GameState, s: Step): number {
 function goalEstimate(state: GameState, goal: NonNullable<Goal>): (s: Step) => number {
   const W = state.map.width;
   let tiles: number[];
-  if (goal.kind === 'depot') tiles = state.depots.map((d) => d.y * W + d.x);
-  else {
+  if (goal.kind === 'depot') {
+    tiles = state.depots.filter((d) => goal.depotId === undefined || d.id === goal.depotId).map((d) => d.y * W + d.x);
+  } else {
     const st = state.stations.find((x) => x.id === goal.stationId);
     tiles = st ? [...st.tiles, ...(st.underTiles ?? [])] : [];
   }

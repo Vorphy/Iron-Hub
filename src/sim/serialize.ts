@@ -18,7 +18,7 @@ import { MAX_HEIGHT } from './world/height';
 import { TICKS_PER_DAY } from './time';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 33;
+export const SAVE_VERSION = 34;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -379,6 +379,24 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     }
     d.version = 33;
   }
+  if (d.version === 33) {
+    // v34: równe odstępy przez zajezdnię linii (jak „unbunching” w OpenTTD) zamiast czekania na stacji.
+    mapTrains((t) => {
+      const { departedFirstTick: _d, loopTicks: _l, ...rest } = t;
+      return {
+        ...rest,
+        holding: false,
+        unbunchDepot: null,
+        lastUnbunchDeparture: -1,
+        nextUnbunchDeparture: 0,
+        roundTripTicks: 0,
+        roundTripJam: 0,
+        lapJamTicks: 0,
+        lastGap: -1,
+      };
+    });
+    d.version = 34;
+  }
   return d as Partial<SerializedState>;
 }
 
@@ -694,9 +712,14 @@ function isTrain(v: unknown): v is Train {
     t.waitDays.length === t.orders.length &&
     t.waitDays.every(isInt) &&
     typeof t.spacing === 'boolean' &&
-    isInt(t.departedFirstTick) &&
-    isInt(t.loopTicks) &&
-    typeof t.holding === 'boolean'
+    typeof t.holding === 'boolean' &&
+    (t.unbunchDepot === null || isInt(t.unbunchDepot)) &&
+    isInt(t.lastUnbunchDeparture) &&
+    isInt(t.nextUnbunchDeparture) &&
+    isInt(t.roundTripTicks) &&
+    isInt(t.roundTripJam) &&
+    isInt(t.lapJamTicks) &&
+    isInt(t.lastGap)
   );
 }
 

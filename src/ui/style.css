@@ -988,6 +988,13 @@ ul.orders {
   white-space: normal;
   align-items: flex-start;
 }
+.spacing-info {
+  margin: -2px 0 4px 22px;
+}
+.small.warn {
+  color: #ffcf6e;
+  margin: 0 0 4px 22px;
+}
 
 /* Zajezdnia jak w OpenTTD: rzędy pociągów z pojazdami z boku, wolne wagony, kosz, „Nowe pojazdy”. */
 .depot-window {

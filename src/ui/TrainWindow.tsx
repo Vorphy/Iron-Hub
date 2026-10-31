@@ -136,13 +136,29 @@ export function TrainWindow({ data: t, actions }: { data: TrainWindowData; actio
       {t.sharedWith.length > 0 && (
         <label
           class="full-load spacing"
-          title="Na pierwszej stacji rozkładu pociąg czeka, aż od odjazdu poprzedniego pociągu linii minie czas okrążenia / liczba pociągów"
+          title="Raz na okrążenie każdy pociąg linii zjeżdża do zajezdni, w której go kupiono, i czeka tam na swój odstęp (okrążenie / liczba pociągów) – jak „rozrzedzanie” w OpenTTD"
         >
           <input type="checkbox" checked={t.spacing} onChange={() => actions.setSpacing(id, !t.spacing)} />
           Równe odstępy na linii
           {t.spacing &&
-            (t.headwayDays !== null ? ` – co ok. ${t.headwayDays} d.` : ' – po pierwszym okrążeniu gra policzy odstęp')}
+            t.line &&
+            (t.line.headwayDays !== null ? ` – co ${t.line.headwayDays} d.` : ' – po pierwszym okrążeniu gra policzy odstęp')}
         </label>
+      )}
+      {t.sharedWith.length > 0 && t.spacing && t.line && (
+        <div class="muted small spacing-info">
+          {t.line.afterStation === null
+            ? `⚠ Z trasy linii nie da się dojechać do zajezdni (${t.line.depotName}) – połącz ją z linią torem`
+            : `Wyrównanie w zajezdni (${t.line.depotName}) po stacji ${t.line.afterStation}`}
+          {t.line.headwayDays !== null && ` · okrążenie ${t.line.cycleDays} d. ÷ ${t.line.trains} poc.`}
+          {t.lastGapDays !== null && ` · ten pociąg wyjechał ${t.lastGapDays} d. po poprzednim`}
+        </div>
+      )}
+      {t.sharedWith.length > 0 && t.spacing && t.line?.overloaded && (
+        <div class="small warn">
+          ⚠ Linia przeciążona: pociągi stoją w korkach za sobą średnio {t.line.jamDays} d. na okrążenie. Bez korków zmieści się
+          ok. {t.line.maxTrains} poc. – zabierz pociągi albo dobuduj tor lub peron tam, gdzie się korkują.
+        </div>
       )}
       {t.orders.length === 0 && <div class="muted small">Brak stacji – pociąg jeździ przed siebie.</div>}
       <ul class="orders">

@@ -27,7 +27,15 @@ import { isPlatformEnd, planRoute, type Plan } from './path';
 import { addTaken, blockerOf, buildTaken, isFree, isSafeStop, type Taken } from './reservation';
 import { flipStep, isBend, stepHeight, stepLength } from './steps';
 import { STRAIGHT_LENGTH } from '../track/graph';
-import { depotExit, leaveDepot, lineHeadway, passesOrder, replaceOnArrival, sharedTrains, type Step, type Train } from './train';
+import { depotExit, leaveDepot, passesOrder, replaceOnArrival, type Step, type Train } from './train';
+import {
+  countJam,
+  enterUnbunchDepot,
+  leaveUnbunchDepot,
+  onOrderDeparture,
+  resetUnbunching,
+  waitingForUnbunching,
+} from './spacing';
 import { consistStats, engineDef } from './vehicles';
 
 /** Po tylu dniach bez trasy do celu gra zgłasza zgubiony pociąg (jak „Train is lost” w OpenTTD). */
@@ -80,7 +88,8 @@ export function tickTrains(state: GameState, planner: Planner, events: SimEvent[
   // Kolejność pociągów jest stała (po id), więc rozstrzyganie, kto pierwszy zarezerwuje tor, jest deterministyczne.
   for (const train of state.trains) {
     if (train.status === 'depot') {
-      if (!train.stopped) tryLeaveDepot(ctx, train);
+      // Równe odstępy: w zajezdni linii czeka na swój termin wyjazdu.
+      if (!train.stopped && !waitingForUnbunching(state, train)) tryLeaveDepot(ctx, train);
       continue;
     }
     if (train.status === 'loading' && train.reverseRequested) {
@@ -98,11 +107,7 @@ export function tickTrains(state: GameState, planner: Planner, events: SimEvent[
         // „Pełny ładunek”: zostaje i ładuje dalej, aż wagony na ładunek tej stacji będą pełne.
         if (st && !train.goToDepot && waitsForFullLoad(state, train, st)) train.waitTicks = FULL_LOAD_CHECK_TICKS;
         else {
-          const hold = train.goToDepot ? 0 : spacingHold(state, train);
-          if (hold > 0) {
-            train.holding = true;
-            train.waitTicks = Math.min(hold, FULL_LOAD_CHECK_TICKS);
-          } else departStation(state, train);
+          departStation(state, train);
         }
       }
       continue;
@@ -148,6 +153,7 @@ function tryLeaveDepot(ctx: TickContext, train: Train): void {
     return;
   }
   leaveDepot(train, exit, ctx.events);
+  leaveUnbunchDepot(ctx.state, train);
   addTaken(ctx.state, ctx.taken, exit, train.id);
   train.blockedTicks = 0;
   train.blockedBy = null;
@@ -204,35 +210,17 @@ export function platformPenalty(state: GameState, train: Train): number {
   return Math.min(2, Math.max(1, trainTiles(train) / platform));
 }
 
-/**
- * Równe odstępy: na pierwszej stacji rozkładu pociąg linii czeka, aż od odjazdu poprzedniego minie
- * odstęp (czas okrążenia / liczba pociągów). Zwraca, ile ticków jeszcze czekać (0 – może jechać).
- */
-export function spacingHold(state: GameState, train: Train): number {
-  if (!train.spacing || train.currentOrder !== 0 || train.stopped) return 0;
-  const headway = lineHeadway(state, train);
-  if (headway <= 0) return 0;
-  let last = -1;
-  for (const t of sharedTrains(state, train)) if (t !== train) last = Math.max(last, t.departedFirstTick);
-  if (last < 0) return 0;
-  return Math.max(0, last + headway - state.tick);
-}
-
 function departStation(state: GameState, train: Train): void {
-  train.holding = false;
   train.status = 'running';
   nextOrder(state, train);
   train.mayReverse = true;
   train.resTerminal = null;
 }
 
-/** Następna pozycja rozkładu; odjazd z pierwszej (albo przejazd przez nią) – pomiar czasu okrążenia linii. */
+/** Następna pozycja rozkładu; po stacji najbliższej zajezdni linii – zjazd do niej (równe odstępy). */
 function nextOrder(state: GameState, train: Train): void {
   if (!train.orders.length) return;
-  if (train.currentOrder === 0) {
-    if (train.departedFirstTick >= 0) train.loopTicks = state.tick - train.departedFirstTick;
-    train.departedFirstTick = state.tick;
-  }
+  onOrderDeparture(state, train, train.currentOrder);
   train.currentOrder = (train.currentOrder + 1) % train.orders.length;
 }
 
@@ -300,7 +288,10 @@ function moveTrain(ctx: TickContext, train: Train): void {
     const retry = !isWaiting(train) || (state.tick + train.id) % RESERVE_RETRY_TICKS === 0;
     if (retry && extendReservation(ctx, train) === 'reversed') return;
   }
-  if (isWaiting(train) && train.speed === 0) train.blockedTicks++;
+  if (isWaiting(train) && train.speed === 0) {
+    train.blockedTicks++;
+    countJam(state, train);
+  }
 
   const maxSpeed = engineMaxSpeed(state, engineDef(train.engine)!.maxSpeed);
   const head = train.trail[0]!;
@@ -430,14 +421,18 @@ function arrive(ctx: TickContext, train: Train): void {
     }
     case 'depot': {
       const head = train.trail[0]!;
+      // Zjazd do zajezdni linii po swój odstęp (nie na polecenie gracza) – nie zatrzymuje się.
+      const unbunch = !train.goToDepot && train.unbunchDepot !== null;
       train.status = 'depot';
       train.depotId = state.map.depot[head.y * state.map.width + head.x] || null;
       train.trail = [];
       train.reservedAhead = [];
       train.progress = 0;
-      train.stopped = true;
+      train.stopped = !unbunch;
       train.goToDepot = false;
       train.reversed = false;
+      if (unbunch) enterUnbunchDepot(state, train);
+      else resetUnbunching(train);
       replaceOnArrival(state, train, ctx.events);
       ctx.events.push({ type: 'trainsChanged' });
       break;

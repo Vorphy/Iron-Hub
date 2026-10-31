@@ -41,6 +41,6 @@ describe('długość dnia (44 ticki, jak w OpenTTD)', () => {
     expect(daysAgo(loaded.trains[0]!.engineBuilt)).toBeCloseTo(400, 5);
     expect(daysAgo(loaded.trains[0]!.loads[0]!.loadedTick)).toBeCloseTo(5, 5);
     expect(daysAgo(loaded.stations[0]!.cargo.passengers!.lastPickup)).toBeCloseTo(7, 5);
-    expect(loaded.trains[0]!.departedFirstTick).toBe(-1);
+    expect(loaded.trains[0]!.lastUnbunchDeparture).toBe(-1);
   });
 });

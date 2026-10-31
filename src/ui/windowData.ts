@@ -6,7 +6,6 @@ import {
   engineAge,
   engineTradeIn,
   oneEngineTradeIn,
-  lineHeadway,
   passesOrder,
   replaceCost,
   resaleValue,
@@ -15,6 +14,7 @@ import {
   type Train,
 } from '../sim/trains/train';
 import { isWaiting, platformPenalty, waitsForFullLoad } from '../sim/trains/movement';
+import { lineTiming } from '../sim/trains/spacing';
 import { consistStats, engineDef, ENGINES } from '../sim/trains/vehicles';
 import { infrastructureCost } from '../sim/economy/monthly';
 import { BANKRUPTCY_MONTHS, LOAN_INTEREST, LOAN_MAX, LOAN_STEP, monthlyInterest } from '../sim/economy/finance';
@@ -37,7 +37,7 @@ import { ECONOMY } from '../data/economy';
 import { CARGOS, type Cargo } from '../sim/economy/cargo';
 import { MAX_RATING, ratingParts, ratingTarget, stationAccepts, stationRating } from '../sim/economy/cargoFlow';
 import { wagonDef } from '../sim/trains/vehicles';
-import type { TrainSummary, WindowData, WindowRef } from './hudStore';
+import type { TrainSummary, TrainWindowData, WindowData, WindowRef } from './hudStore';
 
 /** Miasto styka się z innym – z którym, kto kogo przejmie i ile miesięcy zostało. */
 function mergingInfo(state: GameState, town: Town): { name: string; absorbedBy: boolean; monthsLeft: number } | null {
@@ -57,12 +57,18 @@ function stationName(sim: Simulation, id: number | undefined): string {
 }
 
 function trainStatus(sim: Simulation, t: Train): string {
-  if (t.status === 'depot') return t.stopped ? 'W zajezdni' : 'Czeka na wyjazd z zajezdni';
+  if (t.status === 'depot') {
+    if (t.stopped) return 'W zajezdni';
+    if (t.holding && t.nextUnbunchDeparture > sim.state.tick) {
+      const days = Math.ceil((t.nextUnbunchDeparture - sim.state.tick) / TICKS_PER_DAY);
+      return `Równe odstępy: czeka w zajezdni na swój odstęp (jeszcze ${days} d.)`;
+    }
+    return 'Czeka na wyjazd z zajezdni';
+  }
   if (t.status === 'loading') {
     const h = t.trail[0]!;
     const st = sim.state.stations.find((s) => s.id === sim.state.map.station[h.y * sim.state.map.width + h.x]);
     if (st && t.waitTicks > 0 && waitsForFullLoad(sim.state, t, st)) return `Czeka na pełny ładunek: ${st.name}`;
-    if (t.holding) return `Czeka na odstęp od poprzedniego pociągu linii: ${st?.name ?? ''}`;
     const short = platformPenalty(sim.state, t) > 1 ? ' (peron za krótki – dłuższy postój)' : '';
     return `Postój: ${stationName(sim, st?.id ?? 0)}${short}`;
   }
@@ -70,6 +76,7 @@ function trainStatus(sim: Simulation, t: Train): string {
   if (t.reverseRequested) return 'Zawraca';
   if (isWaiting(t) && t.speed < 1) return 'Czeka na wolny tor';
   if (t.replaceWith) return `Jedzie do zajezdni – wymiana lokomotywy na ${engineDef(t.replaceWith)!.name}`;
+  if (t.unbunchDepot !== null && !t.goToDepot) return 'Równe odstępy: jedzie do zajezdni linii po swój odstęp';
   if (t.goToDepot) return 'Jedzie do zajezdni';
   const target = t.orders[t.currentOrder];
   if (target === undefined) return 'Jedzie (brak rozkładu)';
@@ -309,7 +316,8 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
       waypoint: state.stations.some((s) => s.id === id && s.waypoint),
     })),
     spacing: t.spacing,
-    headwayDays: lineHeadway(state, t) > 0 ? Math.round((lineHeadway(state, t) / TICKS_PER_DAY) * 10) / 10 : null,
+    line: lineInfo(sim, t),
+    lastGapDays: t.spacing && t.lastGap >= 0 ? days(t.lastGap) : null,
     currentOrder: t.currentOrder,
     resale: resaleValue(sim.state, t),
     picking: pickingFor === t.id,
@@ -331,5 +339,24 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
     sameEngineTrains: state.trains.filter((o) => o.engine === t.engine).length,
     cloneCost: consistStats(t.engine, t.wagons, t.engineCount).cost,
     cloneAvailable: engineOnSale(state, engineDef(t.engine)!),
+  };
+}
+
+const days = (ticks: number) => Math.round((ticks / TICKS_PER_DAY) * 10) / 10;
+
+/** Równe odstępy: zajezdnia linii, odstęp, okrążenie, przeciążenie (null – wyłączone albo brak linii). */
+function lineInfo(sim: Simulation, t: Train): TrainWindowData['line'] {
+  const timing = lineTiming(sim.state, t);
+  if (!timing) return null;
+  const depot = sim.state.depots.find((d) => d.id === timing.depotId);
+  return {
+    depotName: depot ? `Zajezdnia #${depot.id}` : '?',
+    afterStation: timing.afterOrder >= 0 ? stationName(sim, t.orders[timing.afterOrder]) : null,
+    headwayDays: timing.headway > 0 ? days(timing.headway) : null,
+    cycleDays: days(timing.cycle),
+    trains: timing.trains,
+    overloaded: timing.overloaded,
+    maxTrains: timing.maxTrains,
+    jamDays: days(timing.congestion),
   };
 }

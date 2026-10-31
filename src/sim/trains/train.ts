@@ -1,4 +1,5 @@
 import { isElectrified, needsCatenary } from '../track/catenary';
+import { resetUnbunching } from './spacing';
 import { engineOnSale } from '../research';
 import { DAYS_PER_MONTH, MONTHS_PER_YEAR, TICKS_PER_DAY } from '../time';
 import { ECONOMY } from '../../data/economy';
@@ -58,13 +59,25 @@ export interface Train {
   shareId: number | null;
   /** Dodatkowy postój (dni gry) przy każdej pozycji rozkładu (ta sama długość co `orders`). */
   waitDays: number[];
-  /** Równe odstępy na linii: na pierwszej stacji rozkładu czeka, aż minie odstęp od poprzedniego pociągu. */
+  /**
+   * Równe odstępy na linii (spacing.ts, jak „unbunching” w OpenTTD): raz na okrążenie pociąg zjeżdża do
+   * zajezdni linii i czeka tam na swój termin.
+   */
   spacing: boolean;
-  /** Tick ostatniego odjazdu z pierwszej stacji rozkładu (-1 – jeszcze nie) i czas ostatniego okrążenia linii. */
-  departedFirstTick: number;
-  loopTicks: number;
-  /** Teraz czeka na odstęp (do statusu). */
+  /** Teraz czeka w zajezdni linii na swój odstęp. */
   holding: boolean;
+  /** Jedzie do zajezdni linii wyrównać odstęp (id zajezdni; null – nie). */
+  unbunchDepot: number | null;
+  /** Tick ostatniego wyjazdu z zajezdni linii (-1 – jeszcze nie) i najwcześniejszy następny wyjazd. */
+  lastUnbunchDeparture: number;
+  nextUnbunchDeparture: number;
+  /** Okrążenie: od wyjazdu z zajezdni linii do ponownego wjazdu (wygładzone; 0 – niezmierzone). */
+  roundTripTicks: number;
+  /** Ile z ostatniego okrążenia stał w korku za pociągiem swojej linii; licznik bieżącego okrążenia. */
+  roundTripJam: number;
+  lapJamTicks: number;
+  /** Odstęp od poprzedniego pociągu linii przy ostatnim wyjeździe z zajezdni (ticki, -1 – nieznany). */
+  lastGap: number;
   /** Zatrzymany przez gracza. */
   stopped: boolean;
   /** Tick przyjazdu na stację, przy której teraz stoi – kolejka załadunku (kto pierwszy, ten ładuje). */
@@ -180,9 +193,14 @@ export function buyTrain(
     shareId: null,
     waitDays: [],
     spacing: false,
-    departedFirstTick: -1,
-    loopTicks: 0,
     holding: false,
+    unbunchDepot: null,
+    lastUnbunchDeparture: -1,
+    nextUnbunchDeparture: 0,
+    roundTripTicks: 0,
+    roundTripJam: 0,
+    lapJamTicks: 0,
+    lastGap: -1,
     engineBuilt: state.tick,
   });
   spend(state, 'construction', plan.cost);
@@ -388,6 +406,8 @@ export function cloneTrain(state: GameState, trainId: number, events: SimEvent[]
   copy.nonStop = [...train.nonStop];
   copy.waitDays = [...train.waitDays];
   copy.spacing = train.spacing;
+  // Kopia jeździ tak samo – przejmuje zmierzone okrążenie.
+  copy.roundTripTicks = train.roundTripTicks;
   copy.groupId = train.groupId;
   if (shared && train.orders.length) {
     train.shareId ??= state.nextShareId++;
@@ -560,19 +580,8 @@ export function setSpacing(state: GameState, trainId: number, on: boolean): Comm
   if (!train) return { ok: false, reason: 'blocked' };
   for (const t of sharedTrains(state, train)) {
     t.spacing = on;
-    t.holding = false;
+    // Wyłączone – czekający w zajezdni wyjeżdża (sprawdza to tick), zaplanowany zjazd odpada.
+    if (!on) resetUnbunching(t);
   }
   return { ok: true };
-}
-
-/**
- * Odstęp między pociągami linii (ticki): średni czas okrążenia / liczba pociągów. 0 – jeszcze
- * nieznany (żaden pociąg nie objechał linii) albo linia ma jeden pociąg.
- */
-export function lineHeadway(state: GameState, train: Train): number {
-  const line = sharedTrains(state, train);
-  if (line.length < 2) return 0;
-  const loops = line.map((t) => t.loopTicks).filter((v) => v > 0);
-  if (!loops.length) return 0;
-  return Math.round(loops.reduce((s, v) => s + v, 0) / loops.length / line.length);
 }
