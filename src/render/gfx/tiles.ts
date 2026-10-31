@@ -266,38 +266,70 @@ export function gfxYear(): number {
   return year;
 }
 
-/** Budynki dostępne od początku gry (bez roku wprowadzenia) – zastępstwo, zanim pojawi się wylosowany. */
-let houseFallback: HouseDef[][] | null = null;
+/** Domy subarktyczne łącznie dostają najwyżej taką część szans w puli (reszta – domy klimatu umiarkowanego). */
+const ARCTIC_SHARE = 1 / 3;
+/** Pula domu mieszkalnego: budynki z jego poziomu i niższych (najwyżej o 2), aż będzie ich co najmniej tyle. */
+const MIN_POOL = 4;
 
-function fallbacks(): HouseDef[][] {
-  if (houseFallback) return houseFallback;
+interface WeightedHouse {
+  def: HouseDef;
+  weight: number;
+}
+
+/** Pule budynków dla poziomów 1–4 w danym roku (liczone raz na rok). */
+let poolYear = -1;
+let pools: WeightedHouse[][] = [];
+
+function housePools(): WeightedHouse[][] {
+  if (poolYear === year) return pools;
+  poolYear = year;
   const bands = levels();
-  houseFallback = bands.map((_, k) => {
-    // Najbliższy niższy (albo ten sam) poziom, w którym są domy dostępne od zawsze.
-    for (let j = k; j >= 0; j--) {
-      const always = bands[j]!.filter((d) => d.min <= 1900);
-      if (always.length) return always;
-    }
-    return bands[k]!;
+  const exists = (d: HouseDef) => d.min <= year && year <= d.max;
+  pools = bands.slice(0, 4).map((_, k) => {
+    let list: HouseDef[] = [];
+    for (let j = k; j >= Math.max(0, k - 2) && list.length < MIN_POOL; j--) list = list.concat(bands[j]!.filter(exists));
+    if (!list.length) list = bands[k]!;
+    const arctic = list.filter((d) => d.arctic).length;
+    const normal = list.length - arctic;
+    // Subarktycznych bywa w danych prawie połowa – razem nie więcej niż ARCTIC_SHARE puli.
+    const arcticWeight = normal && arctic ? Math.min(1, (normal * ARCTIC_SHARE) / ((1 - ARCTIC_SHARE) * arctic)) : 1;
+    return list.map((def) => ({ def, weight: def.arctic ? arcticWeight : 1 }));
   });
-  return houseFallback;
+  return pools;
+}
+
+/** Liczba z (0, 1] dla pary kafelek – budynek. */
+function unitHash(h: number, id: number): number {
+  let v = Math.imul(h ^ Math.imul(id + 1, 0x9e3779b1), 0x85ebca6b);
+  v = Math.imul(v ^ (v >>> 13), 0xc2b2ae35);
+  return (((v ^ (v >>> 16)) >>> 0) + 1) / 4294967297;
 }
 
 /**
- * Wygląd domu stały dla kafelka: budynek losowany raz z całego poziomu (bez względu na rok).
- * Dopóki wylosowany budynek nie istnieje w danym roku, stoi zastępczy z poziomu – więc kafelek zmienia
- * wygląd najwyżej raz (gdy wylosowany budynek wejdzie do gry) albo gdy dom się rozbuduje.
+ * Wygląd domu stały dla kafelka: losowanie ważone „każdy budynek osobno” (rendezvous) – kafelek bierze
+ * budynek z najlepszym wynikiem. Gdy w nowym roku do puli dojdzie albo z niej wypadnie budynek, zmienia
+ * się tylko część kafelków (te, które ten budynek wygrywa), a nie całe miasto.
  */
 function houseVariant(x: number, y: number, level: number): HouseVariant {
   const h = tileHash(x, y);
   const k = Math.min(levels().length - 1, Math.max(0, level - 1));
-  const band = levels()[k]!;
-  let def = band[h % band.length]!;
-  if (def.min > year) {
-    const list = fallbacks()[k]!;
-    def = list[(h >>> 4) % list.length]!;
+  if (k >= 4) {
+    // Ozdoby i kościoły: istniejące w danym roku (gdy żadnej – wszystkie).
+    const all = levels()[k]!;
+    const now = all.filter((d) => d.min <= year && year <= d.max);
+    const band = now.length ? now : all;
+    return band[h % band.length]!.variants[(h >>> 8) & 3]!;
   }
-  return def.variants[(h >>> 8) & 3]!;
+  let best: HouseDef | null = null;
+  let bestScore = Infinity;
+  for (const { def, weight } of housePools()[k]!) {
+    const score = -Math.log(unitHash(h, def.id)) / weight;
+    if (score < bestScore) {
+      bestScore = score;
+      best = def;
+    }
+  }
+  return best!.variants[(h >>> 8) & 3]!;
 }
 
 /** Wygląd domu w obecnym etapie budowy (warstwa `houseBuild`: 3 – wykop … 1 – stan surowy, 0 – gotowy). */

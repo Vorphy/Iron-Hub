@@ -12,8 +12,9 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-31',
-    title: 'Poprawka: zjazd do zajezdni ze stacji',
+    title: 'Poprawka: zjazd do zajezdni ze stacji; mniej ceglanych domów',
     items: [
+      'Ceglanych domów z klimatu subarktycznego było w miastach za dużo – w centrach dużych miast nawet 2/3 budynków. Teraz to najwyżej 1/3, a domy losują się tylko spośród budynków istniejących w danym roku. Po wczytaniu gry miasta raz zmienią wygląd.',
       'Pociąg czekający na stacji na pełny ładunek (albo na wyrównanie odstępu) po kliknięciu „Do zajezdni” od razu rusza do zajezdni – wcześniej stał dalej, aż wagony się zapełnią.',
     ],
   },
