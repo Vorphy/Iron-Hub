@@ -1,7 +1,7 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import { allTiles } from '../sim/station/station';
 import { industryDef } from '../sim/economy/industry';
-import { districtIndexAt, townTiles } from '../sim/economy/town';
+import { districtIndexAt, districtLabel, townTiles } from '../sim/economy/town';
 import type { GameState } from '../sim/state';
 import type { Rect } from './camera';
 import { tileCenter, tileToWorld } from './iso';
@@ -48,7 +48,7 @@ export class MapLabels {
         if (k === 0) return;
         const s = sum[k]!;
         const dc = s.n ? tileCenter(Math.round(s.x / s.n), Math.round(s.y / s.n)) : tileCenter(d.x, d.y);
-        this.add('district', d.name, dc.x, dc.y - 30);
+        this.add('district', districtLabel(town, d), dc.x, dc.y - 30);
       });
     }
     for (const depot of state.depots) {

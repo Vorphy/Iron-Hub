@@ -21,7 +21,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
     date: '2026-10-31',
     title: 'Dzielnice i ruch miejski',
     items: [
-      'Miasta, które się zrosły (domy się stykają albo łączy je droga), po roku łączą się w jedno: większe przejmuje mniejsze, a to zostaje dzielnicą pod swoją dotychczasową nazwą. Tak z kilku miast powstaje metropolia. Komunikat mówi, które miasta się zrosły, a okno miasta – ile miesięcy zostało; stacje nie zmieniają nazw.',
+      'Miasta, które się zrosły (domy się stykają albo łączy je droga), po roku łączą się w jedno: większe przejmuje mniejsze, a to zostaje dzielnicą pod swoją dotychczasową nazwą – na mapie i w oknie miasta jako np. „Bocznica – Torzyce”. Tak z kilku miast powstaje metropolia. Komunikat mówi, które miasta się zrosły, a okno miasta – ile miesięcy zostało; stacje nie zmieniają nazw.',
       'Miasto, które zabuduje całą okolicę rynku, zakłada przy brzegu nową dzielnicę – chętniej w stronę Twoich stacji – i rośnie dalej. Nazwy: Zatorze (gdy powstaje za torami), „Żelazowo-Północ” i inne strony świata, osiedla. Duże miasto potrzebuje do tego metra – bez niego powyżej 10 000 mieszkańców stoi.',
       'Ruch miejski: pasażerowie przewiezieni między różnymi dzielnicami tego samego miasta płacą podwójnie – gdy przejazd ma co najmniej 10 kafelków. Liczy się każdy pociąg, metrem i po powierzchni. Okno miasta pokazuje, ilu takich pasażerów było w tym miesiącu.',
       'Metro w każdej dzielnicy: każda dzielnica ze stacją metra przyspiesza wzrost miasta, nie tylko pierwsza stacja.',

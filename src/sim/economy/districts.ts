@@ -45,11 +45,6 @@ function trackBetween(state: GameState, a: District, x: number, y: number): bool
   return false;
 }
 
-/** Nazwy miast i dzielnic na całej mapie – nowa nazwa nie może się powtórzyć. */
-function takenNames(state: GameState): Set<string> {
-  return new Set(state.towns.flatMap((t) => [t.name, ...t.districts.map((d) => d.name)]));
-}
-
 /** Pierwsza wolna nazwa z listy osiedli, a gdy zabraknie – „Osiedle N”. */
 function freeListName(taken: Set<string>): string {
   for (const name of DISTRICT_NAMES) if (!taken.has(name)) return name;
@@ -58,29 +53,28 @@ function freeListName(taken: Set<string>): string {
   return `Osiedle ${n}`;
 }
 
-/** Nazwa nowej dzielnicy (niepowtarzalna na mapie): „Zatorze”, strona świata albo z listy. */
+/**
+ * Nazwa nowej dzielnicy (niepowtarzalna w mieście – na mapie i w oknach stoi z nazwą miasta,
+ * np. „Bocznica – Zatorze”): „Zatorze”, strona świata albo z listy.
+ */
 export function districtName(state: GameState, town: Town, parent: District, x: number, y: number): string {
-  const taken = takenNames(state);
-  const options = [
-    ...(trackBetween(state, parent, x, y) ? ['Zatorze'] : []),
-    `${town.name}-${screenDirection(x - town.x, y - town.y)}`,
-  ];
+  const taken = new Set([town.name, ...town.districts.map((d) => d.name)]);
+  const options = [...(trackBetween(state, parent, x, y) ? ['Zatorze'] : []), screenDirection(x - town.x, y - town.y)];
   for (const name of options) if (!taken.has(name)) return name;
   return freeListName(taken);
 }
 
 /**
- * Powtórzone nazwy dzielnic (ze starszych wersji gry albo po wchłonięciu miasta z tak samo nazwaną
- * dzielnicą): późniejsze dostają wolną nazwę z listy. Centrów nie ruszamy. Zwraca, czy coś zmieniono.
+ * Powtórzone nazwy dzielnic w mieście (ze starszych wersji gry albo po wchłonięciu miasta z tak samo
+ * nazwaną dzielnicą): późniejsze dostają wolną nazwę z listy. Centrum zostaje. Zwraca, czy coś zmieniono.
  */
 export function renameDuplicateDistricts(state: GameState): boolean {
-  const seen = new Set(state.towns.map((t) => t.name));
-  for (const t of state.towns) seen.add(t.districts[0]!.name);
   let changed = false;
   for (const t of state.towns) {
+    const seen = new Set([t.name, t.districts[0]!.name]);
     for (const d of t.districts.slice(1)) {
       if (seen.has(d.name)) {
-        d.name = freeListName(new Set([...seen, ...takenNames(state)]));
+        d.name = freeListName(new Set([...seen, ...t.districts.map((dd) => dd.name)]));
         changed = true;
       }
       seen.add(d.name);

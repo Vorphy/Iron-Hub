@@ -426,7 +426,7 @@ export class Game {
         this.districtTint.markDirty();
         const town = this.sim.state.towns.find((t) => t.id === ev.townId);
         if (town)
-          showMessage(`${town.name} rośnie – powstaje nowa dzielnica ${ev.district}.`, () => {
+          showMessage(`${town.name} rośnie – powstaje nowa dzielnica ${town.name} – ${ev.district}.`, () => {
             const d = town.districts.find((dd) => dd.name === ev.district);
             if (d) this.focusTile(d.x, d.y);
             this.openWindow({ kind: 'town', townId: town.id });

@@ -7,6 +7,7 @@ import {
   districtInfo,
   forEachTownTile,
   HOUSE_POPULATION,
+  districtLabel,
   isStreet,
   metroStatus,
   newTown,
@@ -80,7 +81,7 @@ describe('dzielnice', () => {
     }
     state.stations.push({ underTiles: [32 * W + 59] } as never);
     const info = districtInfo(state, t);
-    expect(info.map((d) => d.name)).toEqual(['Centrum', 'Stalówka']);
+    expect(info.map((d) => d.name)).toEqual(['Testowo – Centrum', 'Testowo – Stalówka']);
     expect(info[0]!.population).toBe(HOUSE_POPULATION[2]);
     expect(info[1]!.population).toBe(HOUSE_POPULATION[4]! + HOUSE_POPULATION[1]!);
     expect(info.map((d) => d.metro)).toEqual([false, true]);
@@ -263,12 +264,12 @@ describe('nowe dzielnice przy wzroście', () => {
     const town = newTown(1, 'Żelazowo', 48, 48);
     state.towns.push(town);
     // Na ekranie w górę (północ) to −x −y.
-    expect(districtName(state, town, town.districts[0]!, 36, 36)).toBe('Żelazowo-Północ');
-    expect(districtName(state, town, town.districts[0]!, 60, 36)).toBe('Żelazowo-Wschód');
+    expect(districtName(state, town, town.districts[0]!, 36, 36)).toBe('Północ');
+    expect(districtName(state, town, town.districts[0]!, 60, 36)).toBe('Wschód');
     state.map.track[48 * W + 56] = Track.X;
     expect(districtName(state, town, town.districts[0]!, 64, 48)).toBe('Zatorze');
     town.districts.push({ name: 'Zatorze', x: 64, y: 48 });
-    expect(districtName(state, town, town.districts[0]!, 64, 48)).toBe('Żelazowo-Wschód');
+    expect(districtName(state, town, town.districts[0]!, 64, 48)).toBe('Wschód');
   });
 
   it('miesiąc: zabudowane miasto z metrem zakłada dzielnicę z komunikatem', () => {
@@ -427,27 +428,31 @@ describe('puste dzielnice', () => {
 });
 
 describe('nazwy dzielnic na całej mapie', () => {
-  it('nowa nazwa nie powtarza nazwy dzielnicy innego miasta', () => {
+  it('na mapie i w oknie dzielnica stoi z nazwą miasta; inne miasto może mieć tak samo nazwaną', () => {
     const state = world();
-    const a = newTown(1, 'Żelazowo', 30, 48);
-    const b = newTown(2, 'Kolejno', 70, 48);
-    a.districts.push({ name: 'Zatorze', x: 30, y: 60 });
+    const a = newTown(1, 'Bocznica', 30, 48);
+    const b = newTown(2, 'Węglewo', 70, 48);
+    a.districts.push({ name: 'Zatorze', x: 30, y: 60 }, { name: 'Bocznica-Północ', x: 18, y: 36 });
     state.towns.push(a, b);
     state.map.track[48 * W + 76] = Track.X;
-    expect(districtName(state, b, b.districts[0]!, 82, 48)).toBe('Kolejno-Wschód');
+    expect(districtName(state, b, b.districts[0]!, 82, 48)).toBe('Zatorze');
+    expect(a.districts.map((d) => districtLabel(a, d))).toEqual([
+      'Bocznica – Centrum',
+      'Bocznica – Zatorze',
+      'Bocznica – Północ',
+    ]);
   });
 
-  it('powtórzone nazwy (stare zapisy) dostają wolną nazwę z listy', () => {
+  it('powtórzone nazwy w jednym mieście (np. po wchłonięciu) dostają wolną nazwę z listy', () => {
     const state = world();
-    const a = newTown(1, 'Żelazowo', 30, 30);
-    const b = newTown(2, 'Kolejno', 70, 30);
-    a.districts.push({ name: 'Osiedle Parowe', x: 30, y: 46 }, { name: 'Zatorze', x: 46, y: 30 });
-    b.districts.push({ name: 'Osiedle Parowe', x: 70, y: 46 }, { name: 'Zatorze', x: 86, y: 30 });
+    const a = newTown(1, 'Bocznica', 30, 30);
+    a.districts.push({ name: 'Zatorze', x: 46, y: 30 }, { name: 'Torzyce', x: 30, y: 60 }, { name: 'Zatorze', x: 30, y: 76 });
+    const b = newTown(2, 'Węglewo', 70, 30);
+    b.districts.push({ name: 'Zatorze', x: 86, y: 30 });
     state.towns.push(a, b);
     expect(renameDuplicateDistricts(state)).toBe(true);
-    const names = state.towns.flatMap((t) => t.districts.slice(1).map((d) => d.name));
-    expect(new Set(names).size).toBe(names.length);
-    expect(a.districts.map((d) => d.name)).toEqual(['Centrum', 'Osiedle Parowe', 'Zatorze']);
+    expect(a.districts.map((d) => d.name)).toEqual(['Centrum', 'Zatorze', 'Torzyce', 'Osiedle Parowe']);
+    expect(b.districts.map((d) => d.name)).toEqual(['Centrum', 'Zatorze']);
     expect(renameDuplicateDistricts(state)).toBe(false);
   });
 });

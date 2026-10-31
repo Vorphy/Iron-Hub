@@ -67,6 +67,15 @@ export interface District {
 
 export const CENTER_DISTRICT_NAME = 'Centrum';
 
+/**
+ * Nazwa dzielnicy do pokazania: z nazwą miasta, np. „Bocznica – Torzyce”. Starsze nazwy stron świata
+ * zapisane razem z nazwą miasta („Bocznica-Północ”) – bez powtórzenia miasta.
+ */
+export function districtLabel(town: Town, d: District): string {
+  const name = d.name.startsWith(`${town.name}-`) ? d.name.slice(town.name.length + 1) : d.name;
+  return `${town.name} – ${name}`;
+}
+
 export function emptyTownMonth(): TownMonth {
   return { passengers: 0, passengersTransported: 0, mail: 0, mailTransported: 0, interDistrict: 0 };
 }
@@ -270,7 +279,7 @@ export interface DistrictInfo {
 /** Mieszkańcy i metro w każdej dzielnicy (do okna miasta). */
 export function districtInfo(state: GameState, town: Town): DistrictInfo[] {
   const { map } = state;
-  const out = town.districts.map((d) => ({ name: d.name, population: 0, metro: false }));
+  const out = town.districts.map((d) => ({ name: districtLabel(town, d), population: 0, metro: false }));
   for (const i of townTiles(state, town)) {
     out[districtIndexAt(town, i % map.width, Math.floor(i / map.width))]!.population += HOUSE_POPULATION[map.house[i]!]!;
   }
