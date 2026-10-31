@@ -200,13 +200,11 @@ export const ECONOMY = {
     metroGrowthExtra: 2,
     metroUpgradeChance: 0.6,
     /**
-     * Wchłanianie (co miesiąc): gdy domy dwóch miast stoją najwyżej `absorbReach` kafelków od siebie,
-     * miasto z co najmniej `absorbMinPop` mieszkańcami i ponad `absorbRatio` razy większe od sąsiada
-     * wchłania go – sąsiad zostaje dzielnicą z dotychczasową nazwą.
+     * Wchłanianie: miasta się stykają, gdy ich domy stoją najwyżej `absorbReach` kafelków od siebie.
+     * Po `absorbMonths` miesiącach styku większe przejmuje mniejsze – to zostaje dzielnicą z dotychczasową nazwą.
      */
     absorbReach: 3,
-    absorbMinPop: 5000,
-    absorbRatio: 2,
+    absorbMonths: 12,
     /**
      * Nowa dzielnica: gdy miasto (od `newDistrictMinPop` mieszkańców) nie ma już gdzie postawić domu,
      * przy brzegu zabudowy – `newDistrictStep` kafelków od środka istniejącej dzielnicy – powstaje

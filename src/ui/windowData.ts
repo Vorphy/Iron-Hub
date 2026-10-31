@@ -32,11 +32,19 @@ import {
   monthlyProduction,
   workersNeeded,
 } from '../sim/economy/industry';
-import { districtInfo, metroStatus, townHouseCount } from '../sim/economy/town';
+import { districtInfo, metroStatus, type Town, townHouseCount } from '../sim/economy/town';
+import { ECONOMY } from '../data/economy';
 import { CARGOS, type Cargo } from '../sim/economy/cargo';
 import { MAX_RATING, ratingParts, ratingTarget, stationAccepts, stationRating } from '../sim/economy/cargoFlow';
 import { wagonDef } from '../sim/trains/vehicles';
 import type { TrainSummary, WindowData, WindowRef } from './hudStore';
+
+/** Miasto zrasta się z większym – z którym i ile miesięcy zostało do wchłonięcia. */
+function mergingInfo(state: GameState, town: Town): { name: string; monthsLeft: number } | null {
+  const big = town.contact && state.towns.find((t) => t.id === town.contact!.townId);
+  if (!big) return null;
+  return { name: big.name, monthsLeft: Math.max(1, ECONOMY.town.absorbMonths - town.contact!.months) };
+}
 
 function stationName(sim: Simulation, id: number | undefined): string {
   return sim.state.stations.find((s) => s.id === id)?.name ?? '?';
@@ -240,6 +248,7 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
       metro: metroStatus(state, town, population),
       districts,
       interDistrict: Math.round(town.month.interDistrict),
+      merging: mergingInfo(state, town),
     };
   }
   if (ref.kind === 'industry') {

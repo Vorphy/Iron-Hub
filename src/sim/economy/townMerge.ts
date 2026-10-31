@@ -38,22 +38,44 @@ export function absorbTown(state: GameState, big: Town, small: Town): void {
   const total = bigPop + smallPop;
   if (total > 0) big.lastTransported = (big.lastTransported * bigPop + small.lastTransported * smallPop) / total;
   state.towns.splice(state.towns.indexOf(small), 1);
+  // Kto zrastał się z wchłoniętym, zrasta się teraz z `big` – bez liczenia roku od nowa.
+  for (const t of state.towns) if (t.contact?.townId === small.id) t.contact.townId = big.id;
+  if (big.contact?.townId === big.id) delete big.contact;
 }
 
-/** Zamknięcie miesiąca: duże miasta wchłaniają mniejszych sąsiadów, z którymi się zrosły. */
+/**
+ * Zamknięcie miesiąca: miasto, które styka się z większym sąsiadem (przy równej liczbie mieszkańców –
+ * starszym, o niższym numerze), po `absorbMonths` miesiącach styku zostaje jego dzielnicą. Miasta
+ * nie przejmują się nawzajem w inny sposób.
+ */
 export function absorbTowns(state: GameState, events: SimEvent[]): void {
   const pop = new Map(state.towns.map((t) => [t.id, townPopulation(state, t)]));
-  const order = [...state.towns].sort((a, b) => pop.get(b.id)! - pop.get(a.id)! || a.id - b.id);
-  for (const big of order) {
-    if (!state.towns.includes(big)) continue;
-    if (pop.get(big.id)! < T.absorbMinPop) break;
-    for (const id of touchingTowns(state, big)) {
-      const small = state.towns.find((t) => t.id === id);
-      if (!small || pop.get(big.id)! <= T.absorbRatio * pop.get(id)!) continue;
-      absorbTown(state, big, small);
-      pop.set(big.id, pop.get(big.id)! + pop.get(id)!);
-      pop.delete(id);
-      events.push({ type: 'townAbsorbed', townId: big.id, district: small.name });
+  const bigger = (a: Town, b: Town) => pop.get(a.id)! > pop.get(b.id)! || (pop.get(a.id) === pop.get(b.id) && a.id < b.id);
+  for (const town of state.towns) {
+    let absorber: Town | undefined;
+    for (const id of touchingTowns(state, town)) {
+      const other = state.towns.find((t) => t.id === id);
+      if (other && bigger(other, town) && (!absorber || bigger(other, absorber))) absorber = other;
     }
+    if (!absorber) {
+      delete town.contact;
+      continue;
+    }
+    if (town.contact?.townId === absorber.id) town.contact.months++;
+    else {
+      town.contact = { townId: absorber.id, months: 1 };
+      events.push({ type: 'townsTouching', townId: absorber.id, smallId: town.id });
+    }
+  }
+  // Najpierw najmniejsze – łańcuch C → B → A w jednym miesiącu kończy się w A.
+  const ready = state.towns
+    .filter((t) => t.contact && t.contact.months >= T.absorbMonths)
+    .sort((a, b) => pop.get(a.id)! - pop.get(b.id)! || b.id - a.id);
+  for (const small of ready) {
+    const big = state.towns.find((t) => t.id === small.contact?.townId);
+    if (!big || !state.towns.includes(small)) continue;
+    delete small.contact;
+    absorbTown(state, big, small);
+    events.push({ type: 'townAbsorbed', townId: big.id, district: small.name });
   }
 }

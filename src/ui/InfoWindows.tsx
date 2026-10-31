@@ -99,6 +99,11 @@ export function TownWindow({ data: t, actions }: { data: TownWindowData; actions
         nowe domy pojawiają się w pobliżu stacji.
       </div>
       {t.metro !== 'small' && <div class={`small metro-${t.metro}`}>{METRO_TEXT[t.metro]}</div>}
+      {t.merging && (
+        <div class="small">
+          🏙 Miasto zrosło się z miastem {t.merging.name} – za {t.merging.monthsLeft} mies. stanie się jego dzielnicą.
+        </div>
+      )}
     </div>
   );
 }

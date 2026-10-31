@@ -162,6 +162,8 @@ export type SimEvent =
   | { type: 'metroDemand'; townId: number }
   /** Miasto `townId` wchłonęło sąsiada – ten jest teraz jego dzielnicą `district`. */
   | { type: 'townAbsorbed'; townId: number; district: string }
+  /** Miasto `smallId` zrosło się z większym `townId` – za rok zostanie jego dzielnicą. */
+  | { type: 'townsTouching'; townId: number; smallId: number }
   /** Miasto `townId` doszło do brzegu zabudowy – powstała dzielnica `district`. */
   | { type: 'districtFounded'; townId: number; district: string }
   /** Lista dzielnic miasta się zmieniła bez komunikatu (np. usunięte puste dzielnice). */

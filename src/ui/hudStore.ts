@@ -171,6 +171,8 @@ export interface TownWindowData {
   districts: DistrictInfo[];
   /** Pasażerowie przewiezieni w tym miesiącu między dzielnicami (z premią). */
   interDistrict: number;
+  /** Zrasta się z większym miastem: jego nazwa i ile miesięcy zostało do wchłonięcia. */
+  merging: { name: string; monthsLeft: number } | null;
 }
 
 export interface IndustryWindowData {

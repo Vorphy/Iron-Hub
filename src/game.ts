@@ -430,6 +430,14 @@ export class Game {
             if (d) this.focusTile(d.x, d.y);
             this.openWindow({ kind: 'town', townId: town.id });
           });
+      } else if (ev.type === 'townsTouching') {
+        const big = this.sim.state.towns.find((t) => t.id === ev.townId);
+        const small = this.sim.state.towns.find((t) => t.id === ev.smallId);
+        if (big && small)
+          showMessage(`Miasto ${small.name} zrosło się z miastem ${big.name} – za rok stanie się jego dzielnicą.`, () => {
+            this.focusTile(small.x, small.y);
+            this.openWindow({ kind: 'town', townId: small.id });
+          });
       } else if (ev.type === 'townAbsorbed') {
         this.labels.rebuild(this.sim.state);
         this.districtTint.markDirty();

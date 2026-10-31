@@ -140,52 +140,85 @@ describe('wchłanianie miast', () => {
     return { state, big, small };
   }
 
-  it('zrośnięte mniejsze miasto zostaje dzielnicą większego', () => {
+  /** Kolejne zamknięcia miesiąca (samo wchłanianie). */
+  const months = (state: ReturnType<typeof world>, n: number, events: SimEvent[] = []) => {
+    for (let k = 0; k < n; k++) absorbTowns(state, events);
+    return events;
+  };
+  const YEAR = ECONOMY.town.absorbMonths;
+
+  it('zrośnięte mniejsze miasto po roku zostaje dzielnicą większego', () => {
     const { state, big, small } = twoTowns([
       [42, 29],
       [50, 30],
     ]);
     small.districts.push({ name: 'Stalówka-Północ', x: 50, y: 20 });
+    const events = months(state, YEAR - 1);
+    expect(state.towns).toHaveLength(2);
+    expect(small.contact).toEqual({ townId: 1, months: YEAR - 1 });
+    expect(events).toEqual([{ type: 'townsTouching', townId: 1, smallId: 2 }]);
     small.month.passengers = 10;
     big.month.passengers = 5;
-    const events: SimEvent[] = [];
-    absorbTowns(state, events);
+    months(state, 1, events);
     expect(state.towns).toEqual([big]);
     expect(big.districts.map((d) => d.name)).toEqual(['Centrum', 'Stalówka', 'Stalówka-Północ']);
     expect(big.districts[1]).toMatchObject({ x: 50, y: 30 });
     expect(state.map.town[30 * W + 50]).toBe(1);
     expect(state.map.town.includes(2)).toBe(false);
     expect(big.month.passengers).toBe(15);
-    expect(events).toEqual([{ type: 'townAbsorbed', townId: 1, district: 'Stalówka' }]);
+    expect(events.at(-1)).toEqual({ type: 'townAbsorbed', townId: 1, district: 'Stalówka' });
     expect(townPopulation(state, big)).toBe(40 * HOUSE_POPULATION[4]! + 2 * HOUSE_POPULATION[1]!);
   });
 
-  it('za daleko – bez wchłaniania', () => {
-    const { state } = twoTowns([[43, 29]]); // 4 kafelki od ostatniego domu Żelazowa (x 39)
-    absorbTowns(state, []);
+  it('podobnej wielkości i małe miasta też się łączą – większe przejmuje mniejsze', () => {
+    const { state, big, small } = twoTowns([]);
+    for (let n = 0; n < 39; n++) {
+      const i = (32 + Math.floor(n / 20)) * W + 41 + (n % 20);
+      state.map.house[i] = 4; // 39 domów – o jeden mniej niż Żelazowo
+      state.map.town[i] = 2;
+    }
+    months(state, YEAR);
+    expect(state.towns).toEqual([big]);
+    expect(small.districts).toHaveLength(1);
+    expect(big.districts.map((d) => d.name)).toEqual(['Centrum', 'Stalówka']);
+  });
+
+  it('za daleko – bez wchłaniania; rozdzielenie zeruje licznik', () => {
+    const far = twoTowns([[43, 29]]); // 4 kafelki od ostatniego domu Żelazowa (x 39)
+    months(far.state, YEAR * 2);
+    expect(far.state.towns).toHaveLength(2);
+
+    const { state, small } = twoTowns([[42, 29]]);
+    months(state, YEAR - 1);
+    state.map.town[29 * W + 42] = 0; // dom przy granicy wyburzony
+    state.map.house[29 * W + 42] = 0;
+    state.map.house[30 * W + 50] = 1;
+    state.map.town[30 * W + 50] = 2;
+    months(state, 1);
+    expect(small.contact).toBeUndefined();
     expect(state.towns).toHaveLength(2);
   });
 
-  it('za małe albo nie dość duże miasto nie wchłania', () => {
-    const tooSmall = twoTowns([[42, 29]]);
-    for (let x = 20; x < 30; x++) tooSmall.state.map.house[28 * W + x] = 0; // 30 domów = 4 200 < 5 000
-    for (let x = 20; x < 30; x++) tooSmall.state.map.town[28 * W + x] = 0;
-    absorbTowns(tooSmall.state, []);
-    expect(tooSmall.state.towns).toHaveLength(2);
-
-    const similar = twoTowns([]);
-    for (let n = 0; n < 20; n++) {
-      const i = (32 + Math.floor(n / 10)) * W + 41 + n;
-      similar.state.map.house[i] = 4; // 20 domów po 140 = 2 800 > 5 600 / 2
-      similar.state.map.town[i] = 2;
+  it('łańcuch: najmniejsze do średniego, średnie do dużego – wszystko w jednym mieście', () => {
+    const { state, big } = twoTowns([[42, 29]]);
+    for (let x = 42; x <= 46; x++) {
+      state.map.house[29 * W + x] = 2;
+      state.map.town[29 * W + x] = 2;
     }
-    absorbTowns(similar.state, []);
-    expect(similar.state.towns).toHaveLength(2);
+    state.towns.push(newTown(3, 'Dymnik', 52, 29));
+    state.map.house[29 * W + 49] = 1;
+    state.map.town[29 * W + 49] = 3;
+    months(state, YEAR);
+    expect(state.towns).toEqual([big]);
+    expect(big.districts.map((d) => d.name)).toEqual(['Centrum', 'Stalówka', 'Dymnik']);
   });
 
-  it('zapis z wchłoniętym miastem się wczytuje', () => {
+  it('zapis z licznikiem styku i z wchłoniętym miastem się wczytuje', () => {
     const { state } = twoTowns([[42, 29]]);
-    absorbTowns(state, []);
+    months(state, 3);
+    const back = deserializeState(JSON.parse(JSON.stringify(serializeState(state))));
+    expect(back.towns[1]!.contact).toEqual({ townId: 1, months: 3 });
+    months(state, YEAR);
     expect(deserializeState(JSON.parse(JSON.stringify(serializeState(state)))).towns[0]!.districts).toHaveLength(2);
   });
 });

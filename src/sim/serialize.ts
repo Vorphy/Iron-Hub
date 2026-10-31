@@ -470,6 +470,7 @@ function checkReferences(state: GameState): GameState {
   for (const t of state.towns) {
     if (t.districts.some((d) => !inMap(d.x, d.y))) fail(`dzielnica miasta ${t.name} poza mapą`);
     if (t.districts[0]!.x !== t.x || t.districts[0]!.y !== t.y) fail(`centrum miasta ${t.name} poza rynkiem`);
+    if (t.contact && (!towns.has(t.contact.townId) || t.contact.townId === t.id)) delete t.contact;
   }
 
   for (const t of state.trains) {
@@ -697,7 +698,8 @@ function isTown(v: unknown): v is Town {
     Array.isArray(t.districts) &&
     t.districts.length > 0 &&
     t.districts.every((d) => isObj(d) && typeof d.name === 'string' && isInt(d.x) && isInt(d.y)) &&
-    (t.metroDemand === undefined || typeof t.metroDemand === 'boolean')
+    (t.metroDemand === undefined || typeof t.metroDemand === 'boolean') &&
+    (t.contact === undefined || (isObj(t.contact) && isInt(t.contact.townId) && isInt(t.contact.months)))
   );
 }
 
