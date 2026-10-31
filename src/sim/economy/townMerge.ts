@@ -5,19 +5,51 @@ import { type Town, townPopulation, townTiles } from './town';
 
 const T = ECONOMY.town;
 
-/** Miasta, których domy stoją najwyżej `absorbReach` kafelków od domów `town`. */
+/** Sąsiedzi kafelka (także po skosie) w obrębie mapy. */
+function forEachAround(map: { width: number; height: number }, i: number, fn: (j: number) => void): void {
+  const x = i % map.width;
+  const y = Math.floor(i / map.width);
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      const nx = x + dx;
+      const ny = y + dy;
+      if ((dx || dy) && nx >= 0 && ny >= 0 && nx < map.width && ny < map.height) fn(ny * map.width + nx);
+    }
+  }
+}
+
+/**
+ * Miasta zrośnięte z `town`: ich dom styka się z jego domem (także po skosie) albo łączy je droga –
+ * ciąg dróg od ulicy przy domu `town` do ulicy przy domu innego miasta.
+ */
 export function touchingTowns(state: GameState, town: Town): number[] {
   const { map } = state;
-  const r = T.absorbReach;
   const out = new Set<number>();
+  const other = (j: number) => {
+    const id = map.town[j]!;
+    if (id && id !== town.id) out.add(id);
+  };
+  // Drogi przy domach miasta – start przeszukiwania sieci dróg.
+  const seen = new Set<number>();
+  const queue: number[] = [];
   for (const i of townTiles(state, town)) {
-    const x = i % map.width;
-    const y = Math.floor(i / map.width);
-    for (let ny = Math.max(0, y - r); ny <= Math.min(map.height - 1, y + r); ny++) {
-      for (let nx = Math.max(0, x - r); nx <= Math.min(map.width - 1, x + r); nx++) {
-        const id = map.town[ny * map.width + nx]!;
-        if (id && id !== town.id) out.add(id);
+    forEachAround(map, i, (j) => {
+      other(j);
+      if (map.road[j] && !seen.has(j)) {
+        seen.add(j);
+        queue.push(j);
       }
+    });
+  }
+  const w = map.width;
+  while (queue.length) {
+    const i = queue.pop()!;
+    forEachAround(map, i, other);
+    const x = i % w;
+    for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, i - w, i + w]) {
+      if (j < 0 || j >= map.road.length || !map.road[j] || seen.has(j)) continue;
+      seen.add(j);
+      queue.push(j);
     }
   }
   return [...out].sort((a, b) => a - b);

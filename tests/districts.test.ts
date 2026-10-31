@@ -149,7 +149,7 @@ describe('wchłanianie miast', () => {
 
   it('zrośnięte mniejsze miasto po roku zostaje dzielnicą większego', () => {
     const { state, big, small } = twoTowns([
-      [42, 29],
+      [40, 29],
       [50, 30],
     ]);
     small.districts.push({ name: 'Stalówka-Północ', x: 50, y: 20 });
@@ -173,7 +173,7 @@ describe('wchłanianie miast', () => {
   it('podobnej wielkości i małe miasta też się łączą – większe przejmuje mniejsze', () => {
     const { state, big, small } = twoTowns([]);
     for (let n = 0; n < 39; n++) {
-      const i = (32 + Math.floor(n / 20)) * W + 41 + (n % 20);
+      const i = (30 + Math.floor(n / 20)) * W + 40 + (n % 20);
       state.map.house[i] = 4; // 39 domów – o jeden mniej niż Żelazowo
       state.map.town[i] = 2;
     }
@@ -183,15 +183,15 @@ describe('wchłanianie miast', () => {
     expect(big.districts.map((d) => d.name)).toEqual(['Centrum', 'Stalówka']);
   });
 
-  it('za daleko – bez wchłaniania; rozdzielenie zeruje licznik', () => {
-    const far = twoTowns([[43, 29]]); // 4 kafelki od ostatniego domu Żelazowa (x 39)
+  it('bez styku domów i bez drogi – osobne miasta; rozdzielenie zeruje licznik', () => {
+    const far = twoTowns([[41, 29]]); // jeden wolny kafelek od ostatniego domu Żelazowa (x 39)
     months(far.state, YEAR * 2);
     expect(far.state.towns).toHaveLength(2);
 
-    const { state, small } = twoTowns([[42, 29]]);
+    const { state, small } = twoTowns([[40, 29]]);
     months(state, YEAR - 1);
-    state.map.town[29 * W + 42] = 0; // dom przy granicy wyburzony
-    state.map.house[29 * W + 42] = 0;
+    state.map.town[29 * W + 40] = 0; // dom przy granicy wyburzony
+    state.map.house[29 * W + 40] = 0;
     state.map.house[30 * W + 50] = 1;
     state.map.town[30 * W + 50] = 2;
     months(state, 1);
@@ -199,22 +199,29 @@ describe('wchłanianie miast', () => {
     expect(state.towns).toHaveLength(2);
   });
 
+  it('miasta połączone drogą też się zrastają', () => {
+    const { state, big } = twoTowns([[50, 29]]);
+    for (let x = 40; x <= 49; x++) state.map.road[30 * W + x] = 1; // ulica od Żelazowa do domu Stalówki
+    months(state, YEAR);
+    expect(state.towns).toEqual([big]);
+  });
+
   it('łańcuch: najmniejsze do średniego, średnie do dużego – wszystko w jednym mieście', () => {
-    const { state, big } = twoTowns([[42, 29]]);
-    for (let x = 42; x <= 46; x++) {
+    const { state, big } = twoTowns([[40, 29]]);
+    for (let x = 40; x <= 44; x++) {
       state.map.house[29 * W + x] = 2;
       state.map.town[29 * W + x] = 2;
     }
     state.towns.push(newTown(3, 'Dymnik', 52, 29));
-    state.map.house[29 * W + 49] = 1;
-    state.map.town[29 * W + 49] = 3;
+    state.map.house[29 * W + 45] = 1;
+    state.map.town[29 * W + 45] = 3;
     months(state, YEAR);
     expect(state.towns).toEqual([big]);
     expect(big.districts.map((d) => d.name)).toEqual(['Centrum', 'Stalówka', 'Dymnik']);
   });
 
   it('zapis z licznikiem styku i z wchłoniętym miastem się wczytuje', () => {
-    const { state } = twoTowns([[42, 29]]);
+    const { state } = twoTowns([[40, 29]]);
     months(state, 3);
     const back = deserializeState(JSON.parse(JSON.stringify(serializeState(state))));
     expect(back.towns[1]!.contact).toEqual({ townId: 1, months: 3 });
