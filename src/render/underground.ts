@@ -4,11 +4,11 @@ import { METRO_LEVEL, rampDown, rampTrack } from '../sim/track/metro';
 import type { Tunnel } from '../sim/track/tunnel';
 import { Side, TRACK_SIDES, tracksOn } from '../sim/track/track';
 import type { WorldMap } from '../sim/world/map';
-import { MAX_HEIGHT } from '../sim/world/height';
+import { heightAt, MAX_HEIGHT } from '../sim/world/height';
 import { gfxOn } from './gfx/gfx';
 import { drawTrackOverlays, drawUnderPlatform, platformAxis } from './gfx/tiles';
 import { flatDiamond, HEIGHT_PX, TILE_H, TILE_W, toWorld } from './iso';
-import { drawTrackTile, TRACK_STYLE } from './trackDraw';
+import { drawTrackSegment, drawTrackTile, SIDE_MID, TRACK_STYLE } from './trackDraw';
 
 /** Przyciemnienie powierzchni w widoku metra – obrysy terenu, ulic i domów zostają lekko widoczne. */
 const SHADE = 0x05070b;
@@ -72,12 +72,16 @@ export class UndergroundRenderer {
       if (!bits && !ramp) continue;
       const x = i % map.width;
       const y = Math.floor(i / map.width);
-      // Kafelek tunelu metra (zjazd – jaśniejszy, to wejście z powierzchni).
+      if (ramp) {
+        drawRamp(this.floor, g, map, x, y, rampDown(map, x, y)!);
+        continue;
+      }
+      // Kafelek tunelu metra.
       this.floor
         .poly(flatDiamond(x, y, METRO_LEVEL))
-        .fill(ramp ? RAMP_FLOOR : FLOOR)
+        .fill(FLOOR)
         .stroke({ width: 1, color: FLOOR_EDGE, alpha: 0.8 });
-      const draw = ramp ? rampTrack(rampDown(map, x, y)!) : bits;
+      const draw = bits;
       const station = map.stationUnder[i] ? stations.get(map.stationUnder[i]!) : undefined;
       if (station && sprites) {
         drawUnderPlatform(g, x, y, METRO_LEVEL, platformAxis(bits, station));
@@ -93,6 +97,39 @@ export class UndergroundRenderer {
     }
     drawThirdRail(g, map);
   }
+}
+
+/** Narożnik kafelka (0/1, 0/1) leży na boku `side`. */
+function cornerOnSide(cx: number, cy: number, side: Side): boolean {
+  if (side === Side.NE) return cy === 0;
+  if (side === Side.SE) return cx === 1;
+  if (side === Side.SW) return cy === 1;
+  return cx === 0;
+}
+
+/**
+ * Zjazd: pochylnia od wysokości terenu (tam łączy się z torem na powierzchni) do poziomu metra po
+ * stronie `down` – także na wzgórzu, gdzie metro leży dużo niżej niż teren.
+ */
+function drawRamp(floor: Graphics, g: Graphics, map: WorldMap, x: number, y: number, down: Side): void {
+  const top = heightAt(map, x + 0.5, y + 0.5);
+  const corners = [
+    [0, 0],
+    [1, 0],
+    [1, 1],
+    [0, 1],
+  ] as const;
+  const pts = corners.flatMap(([cx, cy]) => {
+    const p = toWorld(x + cx, y + cy, cornerOnSide(cx, cy, down) ? METRO_LEVEL : top);
+    return [p.x, p.y];
+  });
+  floor.poly(pts).fill(RAMP_FLOOR).stroke({ width: 1, color: FLOOR_EDGE, alpha: 0.8 });
+  const [sa, sb] = TRACK_SIDES[rampTrack(down)];
+  const [ax, ay] = SIDE_MID[sa];
+  const [bx, by] = SIDE_MID[sb];
+  const za = sa === down ? METRO_LEVEL : top;
+  const zb = sb === down ? METRO_LEVEL : top;
+  drawTrackSegment(g, x + ax, y + ay, x + bx, y + by, TRACK_STYLE, (t) => za + (zb - za) * t);
 }
 
 // Środki boków kafelka w układzie logicznym.
