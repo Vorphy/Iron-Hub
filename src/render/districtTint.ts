@@ -1,9 +1,43 @@
-import { districtIndexAt, forEachTownTile, TOWN_EXTENT } from '../sim/economy/town';
+import { districtIndexAt, forEachTownTile, TOWN_EXTENT, type Town } from '../sim/economy/town';
 import type { GameState } from '../sim/state';
 import type { WorldMap } from '../sim/world/map';
 
-/** Kolory dzielnic (kolejne w mieście); bez niebieskiego zasięgu stacji. */
-const COLORS = [0xffd166, 0xf4845f, 0x90be6d, 0xb197fc, 0xff8fab, 0x5fd3c8, 0xe9c46a, 0xc77dff];
+/** Kolory dzielnic; bez niebieskiego zasięgu stacji (0x4cc9f0). */
+// biome-ignore format: zwarta paleta
+const COLORS = [
+  0xffd166, 0xf4845f, 0x90be6d, 0xb197fc, 0xff8fab, 0x5fd3c8, 0xc77dff, 0xff5d5d,
+  0xc5f277, 0x7aa2ff, 0xc08552, 0x9ef0c9, 0xff4fd8, 0xf1f1f1, 0xe9a03b, 0x5fae7f,
+];
+/** Dzielnice o środkach bliżej niż tyle kafelków (w kwadracie) mogą się stykać – dostają różne kolory. */
+const NEIGHBOUR_REACH = 2 * TOWN_EXTENT + 2;
+
+/**
+ * Kolor każdej dzielnicy (miasta z co najmniej dwiema): pierwszy z palety, którego nie ma żadna wcześniejsza
+ * sąsiednia dzielnica – także z innego miasta. Kolejność stała (miasta, potem dzielnice), więc dołożenie
+ * nowej dzielnicy nie przemalowuje starszych.
+ */
+export function districtColors(towns: readonly Town[]): Map<Town, number[]> {
+  const placed: { x: number; y: number; color: number }[] = [];
+  const out = new Map<Town, number[]>();
+  for (const town of towns) {
+    if (town.districts.length < 2) continue;
+    out.set(
+      town,
+      town.districts.map((d) => {
+        const used = new Set(
+          placed
+            .filter((p) => Math.abs(p.x - d.x) <= NEIGHBOUR_REACH && Math.abs(p.y - d.y) <= NEIGHBOUR_REACH)
+            .map((p) => p.color),
+        );
+        const free = COLORS.findIndex((c) => !used.has(c));
+        const color = COLORS[free >= 0 ? free : placed.length % COLORS.length]!;
+        placed.push({ x: d.x, y: d.y, color });
+        return color;
+      }),
+    );
+  }
+  return out;
+}
 export const DISTRICT_TINT_ALPHA = 0.6;
 /** Najczęściej co tyle ms – przy szybkiej grze zmiany kafelków przychodzą w każdej klatce. */
 const MIN_REDRAW_MS = 250;
@@ -68,11 +102,10 @@ export class DistrictTint {
     }
     const next = new Map<number, number>();
     if (this.shown) {
-      for (const town of state.towns) {
-        if (town.districts.length < 2) continue;
+      for (const [town, colors] of districtColors(state.towns)) {
         forEachTownTile(map, town, TOWN_EXTENT, (x, y, i) => {
           if (map.town[i] !== town.id && !(map.road[i] && roadOfTown(map, x, y, town.id))) return;
-          next.set(i, COLORS[districtIndexAt(town, x, y) % COLORS.length]!);
+          next.set(i, colors[districtIndexAt(town, x, y)]!);
         });
       }
     }
