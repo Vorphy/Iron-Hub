@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 import type { SimEvent } from '../src/sim/commands';
 import { monthlyEconomy } from '../src/sim/economy/monthly';
 import {
+  addMissingLandmarks,
   advanceHouseConstruction,
   newTown,
   HOUSE_BUILD_STAGES,
   HOUSE_CHURCH,
   HOUSE_ORNAMENT,
   MAX_HOUSE_LEVEL,
+  startRenovations,
   townHouseCount,
   townPopulation,
   townTiles,
@@ -123,5 +125,44 @@ describe('etapy budowy domów', () => {
     const loaded = deserializeState(data);
     expect(loaded.map.houseBuild.every((v) => v === 0)).toBe(true);
     expect(loaded.map.house).toEqual(state.map.house);
+  });
+});
+
+describe('kościoły, parki i remonty w dzielnicach', () => {
+  /** Dwie dzielnice zabudowane samymi domami poziomu 4 (jak gęste centrum metropolii). */
+  function denseCity() {
+    const state = createGame({ width: 64, height: 64, seed: 1, empty: true });
+    state.map.terrain.fill(Terrain.Grass);
+    const town = newTown(1, 'Bocznica', 15, 30);
+    town.districts.push({ name: 'Torzyce', x: 45, y: 30 });
+    state.towns.push(town);
+    for (const cx of [15, 45]) {
+      for (let y = 25; y <= 35; y++) {
+        for (let x = cx - 5; x <= cx + 5; x++) {
+          state.map.house[y * 64 + x] = 4;
+          state.map.town[y * 64 + x] = 1;
+        }
+      }
+    }
+    return { state, town };
+  }
+
+  it('każda dzielnica dostaje kościół i park – także w miejscu wysokiego domu', () => {
+    const { state, town } = denseCity();
+    const out = addMissingLandmarks(state, town, townTiles(state, town), () => 0);
+    const at = (kind: number) => out.filter((i) => state.map.house[i] === kind).map((i) => (i % 64 < 30 ? 0 : 1));
+    expect(at(HOUSE_CHURCH).sort()).toEqual([0, 1]);
+    expect(at(HOUSE_ORNAMENT).sort()).toEqual([0, 1]);
+  });
+
+  it('remonty: ok. 1 na 100 gotowych domów co miesiąc przechodzi przez etapy budowy', () => {
+    const { state, town } = denseCity();
+    const tiles = townTiles(state, town); // 242 domy
+    const out = startRenovations(state, tiles, () => 0);
+    expect(out).toHaveLength(3);
+    for (const i of out) {
+      expect(state.map.houseBuild[i]).toBe(HOUSE_BUILD_STAGES);
+      expect(state.map.house[i]).toBe(4);
+    }
   });
 });

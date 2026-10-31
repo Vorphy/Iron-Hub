@@ -306,40 +306,60 @@ export function metroStatus(state: GameState, town: Town, population: number): M
 }
 
 /**
- * Kościół i ozdoba w mieście, które ich nie ma (np. ze starego zapisu albo z zabudowanym centrum,
- * gdzie wzrost nie znajdzie wolnego kafelka przy rynku): zamiast nowego budynku przebudowuje się
- * najniższy dom najbliżej rynku. Kościół od razu, ozdoba z szansą `ornamentChance` na miesiąc.
+ * Kościół i ozdoby w każdej dzielnicy (także ze starego zapisu albo w zabudowanym centrum, gdzie wzrost
+ * nie znajdzie wolnego kafelka): zamiast nowego budynku przebudowuje się najniższy dom najbliżej środka
+ * dzielnicy (do `landmarkRadius`). Kościół – od `churchMinHouses` domów w dzielnicy, od razu; ozdoba –
+ * gdy jest ich mniej niż 1 + domy / `housesPerOrnament`, z szansą `landmarkChance` na miesiąc.
  * Zwraca przebudowane kafelki.
  */
-export function addMissingLandmarks(state: GameState, town: Town, tiles: number[], chance: number): number[] {
+export function addMissingLandmarks(state: GameState, town: Town, tiles: number[], random: () => number): number[] {
   const { map } = state;
   const T = ECONOMY.town;
-  let church = false;
-  let ornaments = 0;
-  let homes = 0;
-  const near: number[] = [];
+  const per = town.districts.map(() => ({ church: false, ornaments: 0, homes: 0, near: [] as number[] }));
+  const distTo = (i: number, k: number) =>
+    Math.abs((i % map.width) - town.districts[k]!.x) + Math.abs(Math.floor(i / map.width) - town.districts[k]!.y);
   for (const i of tiles) {
+    const k = districtIndexAt(town, i % map.width, Math.floor(i / map.width));
+    const d = per[k]!;
     const kind = map.house[i]!;
-    if (kind === HOUSE_CHURCH) church = true;
-    else if (kind === HOUSE_ORNAMENT) ornaments++;
+    if (kind === HOUSE_CHURCH) d.church = true;
+    else if (kind === HOUSE_ORNAMENT) d.ornaments++;
     else if (kind) {
-      homes++;
-      const dist = Math.abs((i % map.width) - town.x) + Math.abs(Math.floor(i / map.width) - town.y);
-      if (dist <= T.ornamentRadius && kind <= 2 && !map.houseBuild[i]) near.push(i);
+      d.homes++;
+      if (distTo(i, k) <= T.landmarkRadius && !map.houseBuild[i]) d.near.push(i);
     }
   }
-  if (homes < T.churchMinHouses || near.length === 0) return [];
-  const dist = (i: number) => Math.abs((i % map.width) - town.x) + Math.abs(Math.floor(i / map.width) - town.y);
-  near.sort((a, b) => map.house[a]! - map.house[b]! || dist(a) - dist(b) || a - b);
   const out: number[] = [];
-  if (!church) {
-    const i = near.shift()!;
-    map.house[i] = HOUSE_CHURCH;
-    out.push(i);
-  }
-  if (ornaments === 0 && near.length > 0 && chance < T.ornamentChance) {
-    const i = near.shift()!;
-    map.house[i] = HOUSE_ORNAMENT;
+  per.forEach((d, k) => {
+    if (d.homes < T.churchMinHouses || d.near.length === 0) return;
+    d.near.sort((a, b) => map.house[a]! - map.house[b]! || distTo(a, k) - distTo(b, k) || a - b);
+    if (!d.church) {
+      const i = d.near.shift()!;
+      map.house[i] = HOUSE_CHURCH;
+      out.push(i);
+    }
+    if (d.ornaments < 1 + Math.floor(d.homes / T.housesPerOrnament) && d.near.length > 0 && random() < T.landmarkChance) {
+      const i = d.near.shift()!;
+      map.house[i] = HOUSE_ORNAMENT;
+      out.push(i);
+    }
+  });
+  return out;
+}
+
+/**
+ * Remonty: co miesiąc mniej więcej jeden na `renovationHouses` gotowych domów miasta przechodzi przez
+ * etapy budowy (bez zmiany poziomu) – w dużym mieście widać, że coś się buduje. Zwraca te kafelki.
+ */
+export function startRenovations(state: GameState, tiles: number[], random: () => number): number[] {
+  const { map } = state;
+  const ready = tiles.filter((i) => map.house[i]! >= 1 && map.house[i]! <= MAX_HOUSE_LEVEL && !map.houseBuild[i]);
+  const want = ready.length / ECONOMY.town.renovationHouses;
+  let n = Math.floor(want) + (random() < want - Math.floor(want) ? 1 : 0);
+  const out: number[] = [];
+  while (n-- > 0 && ready.length) {
+    const i = ready.splice(Math.floor(random() * ready.length), 1)[0]!;
+    startHouseConstruction(state, i);
     out.push(i);
   }
   return out;

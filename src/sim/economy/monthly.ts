@@ -29,6 +29,7 @@ import {
   MAX_HOUSE_LEVEL,
   metroStatus,
   startHouseConstruction,
+  startRenovations,
   townTiles,
   type Town,
 } from './town';
@@ -150,10 +151,15 @@ function closeTownMonth(state: GameState, town: Town, nearStations: Uint8Array, 
     events.push(tileEvent(state, i));
   }
   updateTownRoads(state, town, events);
-  for (const i of addMissingLandmarks(state, town, townTiles(state, town), nextFloat(state.rng))) {
-    startHouseConstruction(state, i);
-    events.push(tileEvent(state, i));
+  const random = () => nextFloat(state.rng);
+  // Miasto, które stoi bez metra, nie przebudowuje domów na kościoły i parki (nie traci mieszkańców).
+  if (metro !== 'stalled') {
+    for (const i of addMissingLandmarks(state, town, townTiles(state, town), random)) {
+      startHouseConstruction(state, i);
+      events.push(tileEvent(state, i));
+    }
   }
+  for (const i of startRenovations(state, townTiles(state, town), random)) events.push(tileEvent(state, i));
 
   // W obsługiwanym mieście część domów się rozbudowuje (z metrem – częściej).
   if (metro !== 'stalled' && before.size > 0) {

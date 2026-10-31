@@ -177,6 +177,14 @@ export const ECONOMY = {
     ornamentChance: 0.08,
     housesPerOrnament: 25,
     churchMinHouses: 8,
+    /**
+     * Przebudowa na kościół albo ozdobę w zabudowanej dzielnicy: najniższy dom do `landmarkRadius` kafelków
+     * od środka dzielnicy; brakująca ozdoba z szansą `landmarkChance` na miesiąc.
+     */
+    landmarkRadius: 6,
+    landmarkChance: 0.3,
+    /** Remonty: co miesiąc ok. 1 na tyle gotowych domów przechodzi przez etapy budowy. */
+    renovationHouses: 100,
     /** Nowy albo rozbudowywany dom: 3 etapy budowy (wykop, rusztowanie, stan surowy) po tyle dni. */
     constructionStageDays: 5,
     /** Pasażerowie na miesiąc = mieszkańcy / passengerDivisor; poczta = mieszkańcy / mailDivisor. */
