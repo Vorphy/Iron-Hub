@@ -40,6 +40,8 @@ export interface WorldMap {
   road: Uint8Array;
   /** Sieć trakcyjna nad torem na kafelku (1 – jest). */
   electric: Uint8Array;
+  /** Trzecia szyna w metrze (poziom −1) na kafelku (1 – jest) – zasila lokomotywy elektryczne pod ziemią. */
+  electricUnder: Uint8Array;
   /** Metro (poziom −1): bity elementów toru pod kafelkiem – jak `track` (patrz track/metro.ts). */
   under: Uint8Array;
   /** Zjazd do metra: 0 – brak, inaczej 1 + bok, którym tor schodzi pod ziemię. */
@@ -104,6 +106,7 @@ export function generateMap(width: number, height: number, seed: number): WorldM
     ramp: new Uint8Array(n),
     stationUnder: new Uint32Array(n),
     underTunnel: new Uint16Array(n),
+    electricUnder: new Uint8Array(n),
   };
   matchWaterToHeights(map);
   return map;

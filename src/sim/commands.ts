@@ -108,8 +108,8 @@ export type Command =
   | { type: 'terraform'; vx: number; vy: number; delta: 1 | -1 }
   | { type: 'levelLand'; vx0: number; vy0: number; vx1: number; vy1: number; level: number }
   /** Sieć trakcyjna nad torami na wskazanych kafelkach (most / tunel – w całości). */
-  | { type: 'buildCatenary'; tiles: { x: number; y: number }[] }
-  | { type: 'removeCatenary'; tiles: { x: number; y: number }[] }
+  | { type: 'buildCatenary'; tiles: { x: number; y: number }[]; under?: boolean }
+  | { type: 'removeCatenary'; tiles: { x: number; y: number }[]; under?: boolean }
   /** Kredyt: pożyczka / spłata (kwota zaokrąglana do kroku kredytu, przycinana do możliwej). */
   | { type: 'borrow'; amount: number }
   | { type: 'repay'; amount: number }
@@ -308,9 +308,9 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
       state.money += cmd.amount;
       return { ok: true };
     case 'buildCatenary':
-      return buildCatenary(state, cmd.tiles, false, events);
+      return buildCatenary(state, cmd.tiles, false, events, !!cmd.under);
     case 'removeCatenary':
-      return buildCatenary(state, cmd.tiles, true, events);
+      return buildCatenary(state, cmd.tiles, true, events, !!cmd.under);
     case 'borrow':
       return borrow(state, cmd.amount);
     case 'repay':

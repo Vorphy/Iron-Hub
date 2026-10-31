@@ -94,28 +94,62 @@ describe('metro (poziom −1)', () => {
     expect(visited).toEqual([a!.id, b!.id, a!.id]);
   });
 
-  it('lokomotywa elektryczna: sieć tylko na powierzchni, zjazd i metro na trzeciej szynie', () => {
+  it('lokomotywa elektryczna: w metrze potrzebna trzecia szyna (Trakcja w widoku −1)', () => {
     const sim = metroLine(1962);
     const { state } = sim;
-    const surface = [...Array.from({ length: 8 }, (_, x) => x), ...Array.from({ length: 9 }, (_, i) => 22 + i)];
-    sim.enqueue({ type: 'buildCatenary', tiles: surface.map((x) => ({ x, y: 5 })) });
+    const row = (x0: number, x1: number) => Array.from({ length: x1 - x0 + 1 }, (_, i) => ({ x: x0 + i, y: 5 }));
+    // Sieć na powierzchni, razem z kafelkami zjazdów.
+    sim.enqueue({ type: 'buildCatenary', tiles: [...row(0, 8), ...row(21, 30)] });
     sim.enqueue({ type: 'buyTrain', depotId: 1, engine: 'elektra', wagons: ['osobowy'] });
     sim.step();
     expect(fails(sim)).toEqual([]);
-    expect(state.map.electric[5 * 32 + 8]).toBe(0);
+    expect(state.map.electricUnder[5 * 32 + 12]).toBe(0);
     const train = state.trains[0]!;
     const [a, b] = state.stations;
     sim.enqueue({ type: 'setOrders', trainId: train.id, orders: [a!.id, b!.id] });
     sim.enqueue({ type: 'startTrain', trainId: train.id });
-    const visited: number[] = [];
-    for (let i = 0; i < 40 * 60 && visited.length < 3; i++) {
-      sim.step();
-      if (train.status === 'loading') {
-        const st = state.map.station[train.trail[0]!.y * 32 + train.trail[0]!.x];
-        if (st && visited[visited.length - 1] !== st) visited.push(st);
+    const run = (ticks: number) => {
+      const visited: number[] = [];
+      for (let i = 0; i < ticks && visited.length < 3; i++) {
+        sim.step();
+        if (train.status === 'loading') {
+          const st = state.map.station[train.trail[0]!.y * 32 + train.trail[0]!.x];
+          if (st && visited[visited.length - 1] !== st) visited.push(st);
+        }
       }
-    }
-    expect(visited).toEqual([a!.id, b!.id, a!.id]);
+      return visited;
+    };
+    // Bez trzeciej szyny pociąg nie wjeżdża do metra.
+    run(20 * 60);
+    expect(train.trail.some((s) => isUnderTrack(s.track))).toBe(false);
+    expect(train.trail[0]!.x).toBeLessThan(9);
+    // Na powierzchni nad metrem nie ma toru – trakcję w metrze kładzie się w widoku −1.
+    sim.enqueue({ type: 'buildCatenary', tiles: row(9, 20) });
+    sim.step();
+    expect(fails(sim)).toEqual(['noTrack']);
+    const before = state.money;
+    sim.enqueue({ type: 'buildCatenary', tiles: row(9, 20), under: true });
+    sim.step();
+    expect(fails(sim)).toEqual([]);
+    expect(state.money).toBeLessThan(before);
+    expect(state.map.electricUnder[5 * 32 + 12]).toBe(1);
+    expect(run(40 * 60).slice(0, 2)).toEqual([b!.id, a!.id]);
+    // Pociągowi w metrze nie da się zdjąć trzeciej szyny spod kół.
+    for (let i = 0; i < 40 * 60 && !train.trail.some((s) => isUnderTrack(s.track)); i++) sim.step();
+    sim.enqueue({ type: 'removeCatenary', tiles: row(9, 20), under: true });
+    sim.step();
+    expect(fails(sim)).toEqual(['trainInWay']);
+  });
+
+  it('zapis v32: istniejące metro dostaje trzecią szynę', () => {
+    const sim = metroLine();
+    const data = serializeState(sim.state) as unknown as Record<string, unknown> & { map: Record<string, unknown> };
+    data.version = 32;
+    delete data.map.electricUnder;
+    const state = deserializeState(JSON.parse(JSON.stringify(data)));
+    expect(state.map.electricUnder[5 * 32 + 12]).toBe(1);
+    expect(state.map.electricUnder[5 * 32 + 8]).toBe(0);
+    expect(state.map.electricUnder[5 * 32 + 3]).toBe(0);
   });
 
   it('pociąg pod metrem nie blokuje toru na powierzchni nad nim', () => {

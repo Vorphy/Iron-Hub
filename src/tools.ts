@@ -262,10 +262,13 @@ export class Tools {
       return;
     }
     // Pod ziemią (metro): tory, perony, zjazdy, przejścia pod torem, rozkład i rozbiórka.
-    const underTools: Tool[] = ['track', 'bulldozer', 'station', 'orders', 'signal', 'tunnel'];
+    const underTools: Tool[] = ['track', 'bulldozer', 'station', 'orders', 'signal', 'tunnel', 'catenary'];
     if (this.under && (!underTools.includes(this.tool) || (this.tool === 'station' && this.stationKind === 'waypoint'))) {
       this.overlay.setHover(tile, 0x9aa0a8);
-      this.label = { text: 'Pod ziemią: tory, perony, semafory, zjazdy, przejścia i rozbiórka (Q – powierzchnia)', ok: false };
+      this.label = {
+        text: 'Pod ziemią: tory, perony, semafory, zjazdy, przejścia, trakcja i rozbiórka (Q – powierzchnia)',
+        ok: false,
+      };
       return;
     }
     if (this.under && this.tool === 'tunnel') {
@@ -364,7 +367,7 @@ export class Tools {
 
     if (this.tool === 'catenary') {
       this.overlay.setHover(null);
-      const plan = planCatenary(this.sim.state, catenaryTiles(start, p), this.catenaryMode === 'remove');
+      const plan = planCatenary(this.sim.state, catenaryTiles(start, p), this.catenaryMode === 'remove', this.under);
       this.overlay.setTerrainPreview(plan.tiles, map.width, plan.result.ok, null);
       this.label = planLabel(plan);
       return;
@@ -540,7 +543,7 @@ export class Tools {
 
   private commandFor(start: Point, end: Point): Command | null {
     // Pod ziemią działają tylko narzędzia metra (pozostałe budowałyby na powierzchni).
-    const metroTools: Tool[] = ['track', 'bulldozer', 'station', 'orders', 'signal', 'ramp', 'tunnel'];
+    const metroTools: Tool[] = ['track', 'bulldozer', 'station', 'orders', 'signal', 'ramp', 'tunnel', 'catenary'];
     if (this.under && !metroTools.includes(this.tool)) return null;
     if (this.under && this.tool === 'tunnel') {
       if (sameTile(start, end)) return null;
@@ -570,7 +573,8 @@ export class Tools {
     }
     if (this.tool === 'catenary') {
       const tiles = catenaryTiles(start, end);
-      return { type: this.catenaryMode === 'remove' ? 'removeCatenary' : 'buildCatenary', tiles };
+      const under = this.under ? { under: true } : {};
+      return { type: this.catenaryMode === 'remove' ? 'removeCatenary' : 'buildCatenary', tiles, ...under };
     }
     if (this.tool === 'ramp') {
       const x = Math.floor(end.x);

@@ -2,7 +2,8 @@ import { Container, Graphics } from 'pixi.js';
 import type { GameState } from '../sim/state';
 import { METRO_LEVEL, rampDown, rampTrack } from '../sim/track/metro';
 import type { Tunnel } from '../sim/track/tunnel';
-import { tracksOn } from '../sim/track/track';
+import { Side, TRACK_SIDES, tracksOn } from '../sim/track/track';
+import type { WorldMap } from '../sim/world/map';
 import { MAX_HEIGHT } from '../sim/world/height';
 import { gfxOn } from './gfx/gfx';
 import { drawTrackOverlays, drawUnderPlatform, platformAxis } from './gfx/tiles';
@@ -15,6 +16,8 @@ const SHADE_ALPHA = 0.74;
 const FLOOR = 0x2b3038;
 const FLOOR_EDGE = 0x434a55;
 const RAMP_FLOOR = 0x4a5a6e;
+/** Trzecia szyna (zasilanie lokomotyw elektrycznych w metrze). */
+const THIRD_RAIL = 0xe0b84a;
 
 /**
  * Widok poziomu −1 (metro): półprzezroczysta „ziemia” nad powierzchnią i tory metra pod nią – płasko,
@@ -60,7 +63,7 @@ export class UndergroundRenderer {
     this.floor.clear();
     this.passes.clear();
     const { map } = state;
-    for (const t of state.tunnels) if (t.under) drawPass(this.passes, t);
+    for (const t of state.tunnels) if (t.under) drawPass(this.passes, t, map.electricUnder[t.y * map.width + t.x] === 1);
     const sprites = gfxOn();
     const stations = new Map(state.stations.map((s) => [s.id, s]));
     for (let i = 0; i < map.under.length; i++) {
@@ -88,7 +91,42 @@ export class UndergroundRenderer {
         drawTrackTile(g, x, y, tracksOn(draw), TRACK_STYLE, map, METRO_LEVEL);
       }
     }
+    drawThirdRail(g, map);
   }
+}
+
+// Środki boków kafelka w układzie logicznym.
+const MID: Record<Side, readonly [number, number]> = {
+  [Side.NE]: [0.5, 0],
+  [Side.SE]: [1, 0.5],
+  [Side.SW]: [0.5, 1],
+  [Side.NW]: [0, 0.5],
+};
+
+/** Trzecia szyna: żółta linia z boku każdego elementu toru metra na kafelkach z zasilaniem. */
+function drawThirdRail(g: Graphics, map: WorldMap): void {
+  const z = METRO_LEVEL;
+  let any = false;
+  for (let i = 0; i < map.under.length; i++) {
+    const bits = map.under[i]!;
+    if (!bits || !map.electricUnder[i]) continue;
+    const x = i % map.width;
+    const y = Math.floor(i / map.width);
+    for (const track of tracksOn(bits)) {
+      const [a, b] = TRACK_SIDES[track].map((s) => MID[s]);
+      const dx = b![0] - a![0];
+      const dy = b![1] - a![1];
+      const len = Math.hypot(dx, dy);
+      // Przesunięcie w bok od osi toru (prostopadle), żeby szyna nie zlewała się z torem.
+      const ox = (-dy / len) * 0.2;
+      const oy = (dx / len) * 0.2;
+      const p = toWorld(x + a![0] + ox, y + a![1] + oy, z);
+      const q = toWorld(x + b![0] + ox, y + b![1] + oy, z);
+      g.moveTo(p.x, p.y).lineTo(q.x, q.y);
+      any = true;
+    }
+  }
+  if (any) g.stroke({ width: 1.5, color: THIRD_RAIL, alpha: 0.95 });
 }
 
 const PASS = 0x101317;
@@ -98,7 +136,7 @@ const PASS_EDGE = 0x8a94a3;
  * Przejście pod torem metra: ciemny wykop w osi między portalami (od połowy portalu do połowy
  * drugiego) z przerywanymi brzegami – tory nad nim to druga linia, przejeżdżająca górą.
  */
-function drawPass(g: Graphics, t: Tunnel): void {
+function drawPass(g: Graphics, t: Tunnel, powered: boolean): void {
   const z = METRO_LEVEL;
   // a – wzdłuż osi przejścia (od środka portalu A do środka portalu B), b – w poprzek.
   const at = (a: number, b: number) => (t.axis === 'x' ? toWorld(t.x + a, t.y + b, z) : toWorld(t.x + b, t.y + a, z));
@@ -115,4 +153,9 @@ function drawPass(g: Graphics, t: Tunnel): void {
     }
   }
   g.stroke({ width: 1.5, color: PASS_EDGE, alpha: 0.9 });
+  if (powered) {
+    const p = at(a0, 0.3);
+    const q = at(a1, 0.3);
+    g.moveTo(p.x, p.y).lineTo(q.x, q.y).stroke({ width: 1.5, color: THIRD_RAIL, alpha: 0.6 });
+  }
 }

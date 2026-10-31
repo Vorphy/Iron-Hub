@@ -18,7 +18,7 @@ import { MAX_HEIGHT } from './world/height';
 import { TICKS_PER_DAY } from './time';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 32;
+export const SAVE_VERSION = 33;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -38,6 +38,7 @@ const LAYERS = {
   ramp: 1,
   stationUnder: 4,
   underTunnel: 2,
+  electricUnder: 1,
 } as const;
 type LayerName = keyof typeof LAYERS;
 
@@ -359,6 +360,25 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     if (d.map) d.map.underTunnel = emptyLayer('underTunnel');
     d.version = 32;
   }
+  if (d.version === 32) {
+    // v33: trzecia szyna w metrze (`electricUnder`). Dotąd metro zasilało elektryczne samo – istniejące
+    // tory, perony i przejścia dostają ją od razu, żeby pociągi w zapisanej grze jeździły dalej.
+    const m = d.map;
+    if (m && isInt(m.width) && isInt(m.height)) {
+      const n = m.width * m.height;
+      try {
+        const under = fromBase64(m.under, n);
+        const st = new Uint32Array(fromBase64(m.stationUnder, n * 4).buffer);
+        const pass = new Uint16Array(fromBase64(m.underTunnel, n * 2).buffer);
+        const layer = new Uint8Array(n);
+        for (let i = 0; i < n; i++) if (under[i] || st[i] || pass[i]) layer[i] = 1;
+        m.electricUnder = toBase64(layer);
+      } catch {
+        // Uszkodzone warstwy – błąd zgłosi wczytanie mapy niżej.
+      }
+    }
+    d.version = 33;
+  }
   return d as Partial<SerializedState>;
 }
 
@@ -391,6 +411,7 @@ export function deserializeState(data: unknown): GameState {
     ramp: bytes('ramp'),
     stationUnder: new Uint32Array(bytes('stationUnder').buffer),
     underTunnel: new Uint16Array(bytes('underTunnel').buffer),
+    electricUnder: bytes('electricUnder'),
   };
   if (map.heights.some((h) => h > MAX_HEIGHT)) throw new SaveError('Uszkodzone wysokości terenu');
   const ints = [

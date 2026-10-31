@@ -14,7 +14,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
     date: '2026-10-31',
     title: 'Metro płasko na poziomie −1; przejście pod torem metra; kolejność w rozkładzie',
     items: [
-      'Poprawka: lokomotywy elektryczne wjeżdżają do metra, gdy sieć trakcyjna kończy się przed zjazdem. Trzecia szyna zaczyna się już na kafelku zjazdu, więc sieć wystarczy na torach na powierzchni.',
+      'Trzecia szyna w metrze: lokomotywy elektryczne jeżdżą pod ziemią tylko po torach z zasilaniem. Kładziesz je narzędziem Trakcja (E) w widoku metra (Q) – tak samo jak sieć na powierzchni, ta sama cena i utrzymanie; na torach widać żółtą szynę z boku. Kafelek zjazdu leży na powierzchni, więc potrzebuje zwykłej sieci. W zapisanych grach istniejące metro dostało trzecią szynę od razu.',
       'Rozkład jazdy: kolejność stacji zmieniasz przeciąganiem za uchwyt ⠿ przed numerem. Stacja przenosi się razem z opcjami (pełny ładunek, postój, bez zatrzymania), a pociąg jedzie dalej do tej samej stacji co przed zmianą. Przy wspólnym rozkładzie zmiana dotyczy całej linii.',
       'Przejście pod torem metra: narzędzie Tunel (N) w widoku metra – przeciągnij wzdłuż swojej linii przez tor drugiej linii. Twoja linia schodzi tam poziom niżej, druga biegnie górą bez połączenia, więc pociągi obu linii nie blokują się nawzajem jak na płaskim skrzyżowaniu. Przeciągnięcie przez istniejące skrzyżowanie od razu je przebudowuje. Rozbiórka – buldożer na wejściu przejścia.',
       'Metro nie wspina się już na pagórki razem z terenem nad nim: cała sieć leży płasko na poziomie −1. Pociągi metra nie zwalniają pod wzgórzami, a widok −1 rysuje tory, perony i pociągi na jednej wysokości – na wzgórzach trochę niżej na ekranie niż teren nad nimi.',

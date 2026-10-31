@@ -135,7 +135,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
           '**Zajezdnie** są tylko na powierzchni – pociąg kupujesz na górze i zjeżdża do metra zjazdem.',
         ],
       },
-      'Pod ziemią jeździ każda lokomotywa, także elektryczna (trzecia szyna od zjazdu w dół – sieć trakcyjna potrzebna tylko na torach na powierzchni i w zajezdni). Pociąg w metrze widać tylko w widoku −1; tam też klikasz stacje metra (okno stacji, dodawanie do rozkładu). Pociągi same wybierają trasę przez metro, jeśli jest krótsza.',
+      'Pod ziemią jeździ każda lokomotywa, także elektryczna – po torach z **trzecią szyną**: narzędzie Trakcja (E) w widoku −1, cena i utrzymanie jak sieci trakcyjnej (żółta szyna z boku toru). Zjazd leży na powierzchni, więc potrzebuje zwykłej sieci. Pociąg w metrze widać tylko w widoku −1; tam też klikasz stacje metra (okno stacji, dodawanie do rozkładu). Pociągi same wybierają trasę przez metro, jeśli jest krótsza.',
       'Utrzymanie torów i peronów metra jest dwa razy droższe niż na powierzchni. Na minimapie metro jest niebieskie.',
       `**Duże miasta chcą metra**: od ${E.town.metroDemandPop.toLocaleString('pl-PL')} mieszkańców metro przyspiesza wzrost miasta, a bez niego miasto powyżej ${E.town.metroRequiredPop.toLocaleString('pl-PL')} mieszkańców stoi (patrz Miasta).`,
     ],

@@ -16,14 +16,13 @@ import {
 } from '../config';
 import { CURVE_LENGTH, STRAIGHT_LENGTH } from '../track/graph';
 import { trainLength } from './geometry';
-import { baseTrack, isUnderTrack, levelTrackBits, rampDown, stationLayer } from '../track/metro';
-import { isMetroTunnelTrack } from '../track/metroTunnel';
+import { baseTrack, levelTrackBits, stationLayer } from '../track/metro';
 import { dirBit, type SignalIndex } from '../signals/signals';
 import type { GameState } from '../state';
 import { SIDE_DELTA, Track } from '../track/track';
 import { isFlat } from '../world/height';
 import { inBounds } from '../world/map';
-import { isElectrified, needsCatenary } from '../track/catenary';
+import { needsCatenary, stepPowered } from '../track/catenary';
 import { blockerOf, type Taken } from './reservation';
 import { flipStep, isBend, stepDirection, stepHeight, stepKey, stepLength, successors } from './steps';
 import { passesOrder, type Step, type Train } from './train';
@@ -125,16 +124,8 @@ export function planRoute(state: GameState, train: Train, ctx: RouteContext): Pl
   const next = (s: Step) => {
     let out = successors(state, s);
     if (manual) out = out.filter((n) => !ctx.signals.forbids(n));
-    // Metro ma zasilanie z trzeciej szyny (od zjazdu w dół) – jeździ tam każda lokomotywa elektryczna.
-    if (electric) {
-      out = out.filter(
-        (n) =>
-          isUnderTrack(n.track) ||
-          isMetroTunnelTrack(n.track) ||
-          rampDown(state.map, n.x, n.y) !== null ||
-          isElectrified(state.map, n.x, n.y),
-      );
-    }
+    // Na powierzchni sieć nad torem, w metrze trzecia szyna.
+    if (electric) out = out.filter((n) => stepPowered(state.map, n));
     return out;
   };
   if (!goal) return wander(head, next);
