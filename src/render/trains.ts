@@ -50,6 +50,8 @@ interface Drawn {
  */
 export class TrainRenderer {
   readonly gfx = new Graphics();
+  /** Stan ostatnio narysowanej klatki – ten sam (pauza, kamera stoi) oznacza, że nic nie trzeba rysować. */
+  private lastFrame = '';
   private prev = new Map<string, Pose>();
   /** Środki pojazdów w świecie (px) do wskazywania myszą. */
   private hits: { trainId: number; x: number; y: number }[] = [];
@@ -74,6 +76,18 @@ export class TrainRenderer {
     metro = false,
     view: Rect | null = null,
   ): void {
+    // Pauza i nieruchoma kamera: pociągi i auta stoją – zostaje poprzednia klatka.
+    let carsSum = 0;
+    for (const c of cars) carsSum += c.x * 7 + c.y * 13;
+    // Pociągi też mogą się zmienić w pauzie (sprzedaż, zawrócenie, wyjazd z zajezdni na polecenie).
+    let trainsSum = 0;
+    for (const t of state.trains) {
+      const h = t.trail[0];
+      trainsSum += t.id * 31 + (h ? h.x * 7 + h.y * 13 + h.track : -1) + t.progress + (t.reversed ? 0.5 : 0);
+    }
+    const frame = `${state.tick}|${alpha}|${selectedId}|${metro}|${gfxOn()}|${cars.length}|${carsSum}|${state.trains.length}|${trainsSum}|${view?.x}|${view?.y}|${view?.w}|${view?.h}`;
+    if (frame === this.lastFrame) return;
+    this.lastFrame = frame;
     const g = this.gfx;
     g.clear();
     this.view = view;
@@ -90,7 +104,7 @@ export class TrainRenderer {
       }
     }
     // Budynki przed pojazdami zasłaniają je – dorysowujemy je (z tym, co stoi przed nimi) w kolejności głębokości.
-    const front = new FrontObjects(state);
+    const front = new FrontObjects(state, view);
     // W metrze nic pojazdów nie zasłania (budynki są na powierzchni, nad przyciemnieniem).
     for (const it of metro ? [] : items) {
       const { front: f, back: b } = it.pose;
@@ -135,6 +149,11 @@ export class TrainRenderer {
       }
       if (!under.has(o.item)) drawItem(o.item);
     }
+  }
+
+  /** Wymusza narysowanie następnej klatki (np. zmienił się dom albo widok budynków). */
+  invalidate(): void {
+    this.lastFrame = '';
   }
 
   /** Pociąg pod punktem świata (px), jeśli jakiś jest blisko. */

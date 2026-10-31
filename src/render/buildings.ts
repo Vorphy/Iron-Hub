@@ -1,7 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import { MAX_HEIGHT } from '../sim/world/height';
 import type { Rect } from './camera';
-import { HEIGHT_PX, tileToWorld, tileToWorldFlat } from './iso';
+import { HEIGHT_PX, TILE_H, TILE_W, tileToWorld, tileToWorldFlat } from './iso';
 import { HOUSE_BUILD_STAGES, HOUSE_CHURCH, HOUSE_ORNAMENT } from '../sim/economy/town';
 import { industryDef, type Industry } from '../sim/economy/industry';
 import { darken, drawBox, drawChimney, drawGableRoof, drawPile, drawTree, lighten, tileHash } from './shapes';
@@ -60,12 +60,35 @@ export function drawHouse(g: Graphics, x: number, y: number, level: number, hash
 /** Głębokość domu do sortowania z pojazdami (środek kafelka, x + y). */
 export const houseDepth = (map: WorldMap, i: number) => (i % map.width) + Math.floor(i / map.width) + 1;
 
+/** Najwyższy obiekt nad podstawą kafelka (px) – budynki zakładów i wysokie domy z zapasem. */
+const MAX_OBJECT_PX = 160;
+
 /** Zbiór obiektów dorysowywanych nad pojazdami w jednej klatce (wspólny dla wszystkich pojazdów). */
 export class FrontObjects {
   readonly tiles = new Set<number>();
   private readonly queue: number[] = [];
 
-  constructor(private readonly state: GameState) {}
+  /**
+   * `view` – widoczna część świata: obiektu poza nią nie dorysowujemy (nie widać go), więc nie trzeba też
+   * poprawiać tego, co by zasłonił – domknięcie kończy się na brzegu ekranu, a nie na brzegu miasta.
+   */
+  constructor(
+    private readonly state: GameState,
+    private readonly view: Rect | null = null,
+  ) {}
+
+  /** Czy obiekt na kafelku może być choć trochę widoczny (z zapasem na wysokość terenu i budynku). */
+  private inView(x: number, y: number): boolean {
+    const v = this.view;
+    if (!v) return true;
+    const p = tileToWorldFlat(x + 0.5, y + 0.5);
+    return (
+      p.x > v.x - TILE_W &&
+      p.x < v.x + v.w + TILE_W &&
+      p.y > v.y - TILE_H &&
+      p.y < v.y + v.h + MAX_HEIGHT * HEIGHT_PX + MAX_OBJECT_PX
+    );
+  }
 
   /** Obiekt mogący zasłonić coś za sobą: dom, a z grafiką OpenGFX też peron, zakład i drzewa. */
   private isObject(x: number, y: number, trees: boolean): boolean {
@@ -79,7 +102,7 @@ export class FrontObjects {
 
   private add(x: number, y: number, trees: boolean): void {
     const i = y * this.state.map.width + x;
-    if (this.tiles.has(i) || !this.isObject(x, y, trees)) return;
+    if (this.tiles.has(i) || !this.isObject(x, y, trees) || !this.inView(x, y)) return;
     this.tiles.add(i);
     this.queue.push(i);
   }

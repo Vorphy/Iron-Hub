@@ -104,6 +104,33 @@ Zamiast profilu w przeglądarce: pomiar w Node na syntetycznym scenariuszu – p
 
 **Ograniczenia pomiaru:** proste linie bez rozjazdów i semaforów, Node zamiast przeglądarki, bez rysowania. Nadal niezmierzone (tylko w przeglądarce, zakładka Performance): ruch uliczny, minimapa, podpisy, daleki zoom, Preact, pamięć po kilku „Nowa gra”.
 
+## Audyt 2 – profil w przeglądarce (2026-10-31)
+
+**Jak mierzono:** Chrome 156 sterowany protokołem DevTools (skrypt w Node, bez zależności), wersja produkcyjna bez minifikacji (czytelne nazwy w profilu), zapis gracza (mapa 512, kilkadziesiąt pociągów, metro, duże miasta), okno 1600×900, karta Intel Iris Xe przez WebGL2 (ANGLE / Direct3D 11). Dla każdej sytuacji: klatki na sekundę, czas procesora wątku strony (`Performance.getMetrics` – TaskDuration) i profil próbkujący (czas własny funkcji).
+
+**Wniosek główny:** gra trzyma 60 klatek, ale wątek strony był zajęty w 60–90 % – nawet w pauzie. Ograniczeniem jest procesor (JavaScript buduje geometrię w każdej klatce), nie karta graficzna: GPU dostaje gotowe, małe porcje i ma zapas. Mocniejsza karta niewiele da, mocniejszy procesor – tak.
+
+**Przyczyna nr 1 – ruch uliczny i domy „przed pojazdami”.** Każdy pojazd (także ~90 aut z ruchu ulicznego) dokłada domy, które go zasłaniają, a `FrontObjects.close()` – wszystko, co stoi przed nimi, łańcuchem aż do brzegu miasta (także poza ekranem). W każdej klatce ok. **2000 domów i drzew** było rysowanych od nowa do jednej grafiki, a PixiJS przebudowywał jej geometrię (`buildContextBatches`). Bez ruchu ulicznego obciążenie spadało o połowę.
+
+**Zrobione:**
+- Domknięcie tylko w obrębie widoku (z zapasem na wysokość terenu i budynków) – obiektu, którego nie widać, nie trzeba dorysowywać, więc nie trzeba też poprawiać tego, co by zasłonił. **2000 → ~450 obiektów na klatkę.**
+- Warstwa pojazdów i warstwa semaforów nie rysują się od nowa, gdy nic się nie zmieniło (pauza, stojąca kamera) – sygnatura klatki: tick, interpolacja, kamera, pojazdy, semafory; po zmianie kafelka i semaforów wymuszone przerysowanie.
+- Semafory: tylko widoczne (dotąd wszystkie na mapie, co klatkę) i klucze liczbowe zamiast napisów (pkt 5 z pierwszego audytu).
+- Próba odrzucona: domy w pamięci jako osobne grafiki (bez przebudowy co klatkę) – ułożenie ~2000 obiektów w PixiJS co klatkę kosztowało tyle samo, a pamięć rosła do 400 MB.
+
+| Sytuacja (ms procesora na sekundę) | Przed | Po |
+|---|---|---|
+| Gra 1× | ~750 | **323** |
+| Gra 8× | 698 | **375** |
+| Przesuwanie mapy przy 8× | 642 | **383** |
+| Daleki zoom 8× | 468 | **341** |
+| Widok metra 8× | 398 | **259** |
+| Pauza | ~750 | **140** |
+
+**Co zostało (każde poniżej ~25 ms/s):** rysowanie pojazdów i domów przed nimi (`TrainRenderer.draw`, `close`, `houseVariant`, `drawTrees`), pozycje wagonów (`capture`, `vehiclesInOrder`), `dailyCargo`, wybór widocznych kawałków mapy (`cull`), odświeżanie sceny przez PixiJS co klatkę (~50 ms/s „program” – także w pauzie). Dalsze kroki, gdyby było trzeba: rysowanie na żądanie (bez renderu sceny, gdy nic się nie zmienia), pamięć wariantów domów i drzew na kafelek (`houseVariant`, `treeNoise`), mniej aut w gęstym centrum przy dalekim zoomie.
+
+**Do sprawdzenia:** Edge i Firefox tym samym skryptem (Firefox – innym protokołem), mapa 1024 przy 8×, pamięć po kilku „Nowa gra”.
+
 ## Czego audyt nie objął
 
 Audyt to przegląd kodu i pomiary w Node, nie profil gry w przeglądarce. Nie mierzono: ruchu ulicznego (`traffic.ts`), minimapy, podpisów na mapie, renderu dalekiego zoomu, odświeżania interfejsu Preact, pamięci (wycieki, GC) ani generowania mapy (~2 s na 1024, jednorazowo). Pewność „reszta jest optymalna” da dopiero profil z DevTools (zakładka Performance) na dużej mapie przy 8× z kilkudziesięcioma pociągami.

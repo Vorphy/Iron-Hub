@@ -192,6 +192,7 @@ export class Game {
   redrawAll(): void {
     const state = this.sim.state;
     this.mapRenderer.markAllDirty();
+    this.trains.invalidate();
     this.industries.draw(state.industries);
     this.bridges.draw(state);
     this.tunnels.draw(state);
@@ -383,8 +384,11 @@ export class Game {
     let labelsDirty = false;
     let tunnelsDirty = false;
     for (const ev of events) {
+      if (ev.type === 'signalsChanged') this.signals.invalidate();
       if (ev.type === 'tileChanged') {
         this.districtTint.markDirty();
+        this.trains.invalidate();
+        this.signals.invalidate();
         // Drogi łączą się z sąsiadami – odświeżamy też sąsiednie kafelki (mogą być w innym kawałku).
         for (const [dx, dy] of [
           [0, 0],
@@ -521,7 +525,7 @@ export class Game {
     this.underground.update(this.sim.state);
     const win = hudStore.get().window;
     this.signals.showDirections = this.tools.tool === 'signal';
-    this.signals.draw(this.sim.state, this.underground.visible);
+    this.signals.draw(this.sim.state, this.underground.visible, this.camera.viewRect());
     const metro = this.underground.visible;
     this.trains.draw(
       this.sim.state,

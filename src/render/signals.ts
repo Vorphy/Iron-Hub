@@ -8,7 +8,9 @@ import { trackHeight } from '../sim/track/foundation';
 import { drawSprite, gfxOn } from './gfx/gfx';
 import { pointOnStep, stepHeight, stepLength } from '../sim/trains/steps';
 import type { Step } from '../sim/trains/train';
-import { type Point, tileToWorld, toWorld } from './iso';
+import type { Rect } from './camera';
+import { HEIGHT_PX, type Point, TILE_W, tileToWorld, tileToWorldFlat, toWorld } from './iso';
+import { MAX_HEIGHT } from '../sim/world/height';
 
 const POST_H = 12;
 /** Strzałka kierunku na torze (ułamki kafelka). */
@@ -29,9 +31,25 @@ export class SignalRenderer {
   showReservations = false;
   /** Narzędzie Semafor: strzałka kierunku jazdy przy każdym semaforze (także z grafiką OpenGFX). */
   showDirections = false;
+  /** Stan ostatnio narysowanej klatki – ten sam (pauza, kamera stoi) oznacza, że nic nie trzeba rysować. */
+  private lastFrame = '';
 
-  /** `metro` – widok poziomu −1: tylko semafory metra (na powierzchni – tylko zwykłe). */
-  draw(state: GameState, metro = false): void {
+  /** Wymusza narysowanie następnej klatki (zmiana semaforów albo torów). */
+  invalidate(): void {
+    this.lastFrame = '';
+  }
+
+  /**
+   * `metro` – widok poziomu −1: tylko semafory metra (na powierzchni – tylko zwykłe). `view` – widoczna
+   * część świata: semafory poza nią nie są rysowane.
+   */
+  draw(state: GameState, metro = false, view: Rect | null = null): void {
+    // Rezerwacje pociągów zmieniają się też w pauzie (sprzedaż, zawrócenie) – zielone semafory.
+    let reserved = 0;
+    for (const t of state.trains) reserved += t.id * (t.trail.length * 97 + t.reservedAhead.length);
+    const frame = `${state.tick}|${metro}|${this.showReservations}|${this.showDirections}|${gfxOn()}|${state.signalMode}|${state.signals.length}|${reserved}|${view?.x}|${view?.y}|${view?.w}|${view?.h}`;
+    if (frame === this.lastFrame) return;
+    this.lastFrame = frame;
     const g = this.gfx;
     g.clear();
     if (this.showReservations && !metro) drawReservations(g, state);
@@ -39,20 +57,32 @@ export class SignalRenderer {
 
     // Odcinki, przez które jakiś pociąg ma zarezerwowany przejazd dalej (semafor „zielony”).
     const W = state.map.width;
-    const passing = new Set<string>();
+    const key = (tile: number, track: number, bit: number) => (tile * 65536 + track) * 4 + bit;
+    const passing = new Set<number>();
     for (const t of state.trains) {
       const path = [...t.trail].reverse().concat(t.reservedAhead);
       for (let i = 0; i + 1 < path.length; i++) {
         const s = path[i]!;
-        if ((s.track && s.track <= 32) || isUnderTrack(s.track)) passing.add(`${s.y * W + s.x}:${s.track}:${dirBit(s)}`);
+        if ((s.track && s.track <= 32) || isUnderTrack(s.track)) passing.add(key(s.y * W + s.x, s.track, dirBit(s)));
       }
     }
     const sprites = gfxOn();
+    const margin = TILE_W + MAX_HEIGHT * HEIGHT_PX;
     for (const sig of state.signals) {
       if (!!sig.under !== metro) continue;
+      if (view) {
+        const p = tileToWorldFlat(sig.x + 0.5, sig.y + 0.5);
+        if (
+          p.x < view.x - margin ||
+          p.x > view.x + view.w + margin ||
+          p.y < view.y - margin ||
+          p.y > view.y + view.h + margin * 2
+        )
+          continue;
+      }
       for (const bit of [1, 2] as const) {
         if (!(sig.dirs & bit)) continue;
-        const green = passing.has(`${sig.y * W + sig.x}:${signalCode(sig)}:${bit}`);
+        const green = passing.has(key(sig.y * W + sig.x, signalCode(sig), bit));
         if (sprites) drawSignalSprite(g, state.map, sig, bit, green);
         else drawSignal(g, sig, bit, green ? GREEN : RED);
         if (sprites && this.showDirections) drawDirectionArrow(g, sig, bit, DIRECTION_ARROW);

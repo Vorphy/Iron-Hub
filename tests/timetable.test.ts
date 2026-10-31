@@ -132,7 +132,8 @@ function departures(sim: Simulation, ticks: number, index = 1): number[] {
 
 const gapsOf = (deps: number[]) => deps.slice(1).map((d, i) => d - deps[i]!);
 
-describe('równe odstępy na linii (jak „unbunching” w OpenTTD)', () => {
+// Symulacja kilkudziesięciu tysięcy ticków – przy równoległych testach dłużej niż domyślne 5 s.
+describe('równe odstępy na linii (jak „unbunching” w OpenTTD)', { timeout: 30_000 }, () => {
   it('bez równych odstępów pociągi wypuszczone razem jeżdżą w grupie', () => {
     const sim = ring(4);
     startBunched(sim);
