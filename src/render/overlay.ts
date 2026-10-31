@@ -7,7 +7,7 @@ import { drawDepot } from './depotDraw';
 import { drawDirectionArrow, drawSignal, drawSignalSprite } from './signals';
 import { gfxOn } from './gfx/gfx';
 import type { WorldMap } from '../sim/world/map';
-import { tileDiamond, tileToWorld } from './iso';
+import { flatDiamond, tileDiamond, tileToWorld } from './iso';
 import { drawTrackPiece, type TrackStyle } from './trackDraw';
 
 const PREVIEW_OK: TrackStyle = { ballast: 0xffffff, sleeper: 0xffe066, rail: 0xffffff, alpha: 0.55 };
@@ -21,15 +21,22 @@ export class Overlay {
   private readonly hover = new Graphics();
   private readonly preview = new Graphics();
 
+  /** Stała wysokość nakładek (widok metra) – null: na terenie. */
+  level: number | null = null;
+
   constructor() {
     this.container.addChild(this.catchment, this.hover, this.preview);
+  }
+
+  private diamond(x: number, y: number): number[] {
+    return this.level === null ? tileDiamond(x, y) : flatDiamond(x, y, this.level);
   }
 
   /** Zasięg stacji: indeksy kafelków (y * width + x). */
   setCatchment(tiles: readonly number[] | null, mapWidth = 0): void {
     this.catchment.clear();
     if (!tiles) return;
-    for (const t of tiles) this.catchment.poly(tileDiamond(t % mapWidth, Math.floor(t / mapWidth)));
+    for (const t of tiles) this.catchment.poly(this.diamond(t % mapWidth, Math.floor(t / mapWidth)));
     this.catchment.fill({ color: 0x4cc9f0, alpha: 0.18 });
   }
 
@@ -40,7 +47,7 @@ export class Overlay {
     for (const { x, y, ok } of plan.tiles) {
       const bad = failed || !ok;
       this.preview
-        .poly(tileDiamond(x, y))
+        .poly(this.diamond(x, y))
         .fill({ color: bad ? 0xe0503a : 0xffffff, alpha: bad ? 0.45 : 0.35 })
         .stroke({ width: 1.5, color: bad ? 0xe0503a : 0xffe066, alpha: 0.9 });
     }
@@ -62,7 +69,7 @@ export class Overlay {
   /** Podświetlenie elementu toru i podgląd semafora po kliknięciu (narzędzie Semafor). */
   setPieceHighlight(x: number, y: number, track: number, signal: Signal | null = null, map: WorldMap | null = null): void {
     this.preview.clear();
-    drawTrackPiece(this.preview, x, y, track as Track, PREVIEW_OK);
+    drawTrackPiece(this.preview, x, y, track as Track, PREVIEW_OK, undefined, undefined, this.level ?? undefined);
     if (!signal) return;
     for (const bit of [1, 2] as const) {
       if (!(signal.dirs & bit)) continue;
@@ -79,7 +86,7 @@ export class Overlay {
   setTerrainPreview(tiles: readonly number[], mapWidth: number, ok: boolean, vertex: { x: number; y: number } | null): void {
     this.preview.clear();
     const color = ok ? 0xffe066 : 0xe0503a;
-    for (const t of tiles) this.preview.poly(tileDiamond(t % mapWidth, Math.floor(t / mapWidth)));
+    for (const t of tiles) this.preview.poly(this.diamond(t % mapWidth, Math.floor(t / mapWidth)));
     if (tiles.length) this.preview.fill({ color, alpha: 0.22 }).stroke({ width: 1, color, alpha: 0.8 });
     if (vertex) {
       const p = tileToWorld(vertex.x, vertex.y);
@@ -90,7 +97,7 @@ export class Overlay {
   setHover(tile: { x: number; y: number } | null, color = 0xffe066): void {
     this.hover.clear();
     if (!tile) return;
-    this.hover.poly(tileDiamond(tile.x, tile.y)).fill({ color: 0xffffff, alpha: 0.15 }).stroke({ width: 2, color, alpha: 0.9 });
+    this.hover.poly(this.diamond(tile.x, tile.y)).fill({ color: 0xffffff, alpha: 0.15 }).stroke({ width: 2, color, alpha: 0.9 });
   }
 
   /** Podgląd budowy (removal = rozbiórka – istniejące elementy na czerwono). */
@@ -106,7 +113,7 @@ export class Overlay {
       } else {
         style = status === 'blocked' || failed ? PREVIEW_BAD : status === 'exists' ? PREVIEW_EXISTS : PREVIEW_OK;
       }
-      drawTrackPiece(this.preview, piece.x, piece.y, piece.track, style);
+      drawTrackPiece(this.preview, piece.x, piece.y, piece.track, style, undefined, undefined, this.level ?? undefined);
     }
   }
 }

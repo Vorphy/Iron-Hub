@@ -4,7 +4,7 @@ import { trackHeight } from '../track/foundation';
 import { pieceLength, STRAIGHT_LENGTH } from '../track/graph';
 import { isTunnelTrack, portalInnerSide, tunnelAt, tunnelRole, tunnelTrack } from '../track/tunnel';
 import { heightAt } from '../world/height';
-import { baseTrack, isUnderTrack, rampDown, rampTrack, underEntries } from '../track/metro';
+import { baseTrack, isUnderTrack, METRO_LEVEL, rampDown, rampTrack, underEntries } from '../track/metro';
 import { oppositeSide, Side, SIDE_DELTA, Track, TRACK_SIDES, tracksOn } from '../track/track';
 import { inBounds } from '../world/map';
 import type { Step } from './train';
@@ -149,8 +149,10 @@ export function stepHeight(state: GameState, s: Step, d: number): number {
   if (tunnel && (isTunnelTrack(s.track) || (tunnelRole(tunnel, s.x, s.y) !== 'inside' && s.track === axisTrack(tunnel.axis)))) {
     return tunnel.level;
   }
-  // Metro: tor pod ziemią poziom niżej niż teren nad nim; zjazd schodzi od powierzchni do tej głębokości.
-  if (isUnderTrack(s.track)) return heightAt(state.map, p.x, p.y) - 1;
+  // Metro: płasko na stałym poziomie −1. Zjazd w fizyce schodzi o jeden poziom (z dowolnej wysokości
+  // powierzchni – bez stromego spadku na płaskowyżu); skok między zjazdem a metrem nie liczy się do wzniesień,
+  // bo te mierzymy w obrębie jednego odcinka.
+  if (isUnderTrack(s.track)) return METRO_LEVEL;
   const down = rampDown(state.map, s.x, s.y);
   if (down !== null) {
     const t = d / stepLength(s);

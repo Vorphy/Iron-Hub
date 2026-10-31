@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { deserializeState, serializeState } from '../src/sim/serialize';
 import { Simulation } from '../src/sim/simulation';
 import { createGame } from '../src/sim/state';
-import { isUnderTrack } from '../src/sim/track/metro';
+import { isUnderTrack, METRO_LEVEL, underTrack } from '../src/sim/track/metro';
+import { stepHeight, stepLength } from '../src/sim/trains/steps';
 import { Side, Track, type TrackPiece } from '../src/sim/track/track';
 import { Terrain } from '../src/sim/world/map';
 
@@ -54,6 +55,19 @@ describe('metro (poziom −1)', () => {
     sim.enqueue({ type: 'removeTrack', pieces: [{ x: 8, y: 5, track: Track.X }] });
     sim.step();
     expect(fails(sim)).toEqual(['nothingToRemove']);
+  });
+
+  it('metro leży płasko na poziomie −1, także pod pagórkiem', () => {
+    const sim = metroLine();
+    const { map } = sim.state;
+    // Pagórek nad metrem: wierzchołki x 12–16 o dwa poziomy wyżej.
+    const vw = map.width + 1;
+    for (let y = 3; y <= 8; y++) for (let x = 12; x <= 16; x++) map.heights[y * vw + x] = 2;
+    for (const x of [10, 12, 14, 16]) {
+      const step = { x, y: 5, track: underTrack(Track.X), entry: Side.NW, exit: Side.SE };
+      expect(stepHeight(sim.state, step, 0)).toBe(METRO_LEVEL);
+      expect(stepHeight(sim.state, step, stepLength(step))).toBe(METRO_LEVEL);
+    }
   });
 
   it('pociąg jedzie ze stacji A przez metro do stacji B i z powrotem', () => {

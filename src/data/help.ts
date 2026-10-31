@@ -123,7 +123,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     id: 'metro',
     title: 'Metro (poziom −1)',
     blocks: [
-      'Metro to druga warstwa mapy pod powierzchnią: tory i stacje pod miastem, wodą i wzgórzami, bez burzenia domów. Przełączasz się przyciskiem nad narzędziami budowy albo klawiszem **Q** – pod ziemią powierzchnia jest przyciemniona, ale jej obrysy zostają widoczne.',
+      'Metro to druga warstwa mapy pod powierzchnią: tory i stacje pod miastem, wodą i wzgórzami, bez burzenia domów. Przełączasz się przyciskiem nad narzędziami budowy albo klawiszem **Q** – pod ziemią powierzchnia jest przyciemniona, ale jej obrysy zostają widoczne. Metro leży płasko na jednej głębokości, więc pod wzgórzami widać je na ekranie trochę niżej niż teren nad nim.',
       {
         list: [
           `**Tory metra**: narzędzie Tory na poziomie −1, ${zl(E.construction.metroTrackPiece)} za element. Rozbiórka działa tak samo.`,

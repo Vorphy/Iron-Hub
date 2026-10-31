@@ -174,6 +174,8 @@ export function drawTrackPiece(
   style: TrackStyle,
   map?: WorldMap,
   layers: number = TrackLayer.All,
+  /** Stała wysokość toru (metro) zamiast terenu. */
+  level?: number,
 ): void {
   const [sa, sb] = TRACK_SIDES[track];
   const [ax, ay] = SIDE_MID[sa];
@@ -182,9 +184,11 @@ export function drawTrackPiece(
   const clips = map ? [sa, sb].filter((side) => jointClipped(map, x, y, side)).map((side) => tileSidePlane(x, y, side)) : [];
   // Na fundamencie tor biegnie po jego wierzchu, nie po terenie.
   const zAlong =
-    map && tileFoundation(map, x, y) !== Foundation.None
-      ? (t: number) => trackHeight(map, x, y, ax + (bx - ax) * t, ay + (by - ay) * t)
-      : undefined;
+    level !== undefined
+      ? () => level
+      : map && tileFoundation(map, x, y) !== Foundation.None
+        ? (t: number) => trackHeight(map, x, y, ax + (bx - ax) * t, ay + (by - ay) * t)
+        : undefined;
   drawTrackSegment(g, x + ax, y + ay, x + bx, y + by, style, zAlong, miters, layers, clips);
 }
 
@@ -196,13 +200,15 @@ export function drawTrackTile(
   tracks: readonly Track[],
   style: TrackStyle,
   map: WorldMap,
+  /** Stała wysokość toru (metro) zamiast terenu. */
+  level?: number,
 ): void {
   if (tracks.length === 1) {
-    drawTrackPiece(g, x, y, tracks[0]!, style, map);
+    drawTrackPiece(g, x, y, tracks[0]!, style, map, TrackLayer.All, level);
     return;
   }
   for (const layer of [TrackLayer.Ballast, TrackLayer.Sleepers, TrackLayer.Rails])
-    for (const track of tracks) drawTrackPiece(g, x, y, track, style, map, layer);
+    for (const track of tracks) drawTrackPiece(g, x, y, track, style, map, layer, level);
 }
 
 /** Odcinek toru między dwoma punktami w układzie logicznym. */

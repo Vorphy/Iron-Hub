@@ -53,6 +53,16 @@ export function worldToTile(wx: number, wy: number): Point {
 }
 
 /** Wierzchołki kafelka na powierzchni terenu: góra, prawo, dół, lewo. */
+/** Romb kafelka na stałej wysokości `z` (metro) – płaski, niezależnie od terenu. */
+export function flatDiamond(x: number, y: number, z: number): number[] {
+  return [toWorld(x, y, z), toWorld(x + 1, y, z), toWorld(x + 1, y + 1, z), toWorld(x, y + 1, z)].flatMap((p) => [p.x, p.y]);
+}
+
+/** Odwrotność rzutu na płaszczyznę na wysokości `z` (kursor w widoku metra). */
+export function pickFlat(wx: number, wy: number, z: number): Point {
+  return worldToTileF(wx, wy + z * HEIGHT_PX);
+}
+
 export function tileDiamond(x: number, y: number): number[] {
   const t = tileToWorld(x, y);
   const r = tileToWorld(x + 1, y);

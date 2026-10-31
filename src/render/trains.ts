@@ -173,9 +173,7 @@ function drawVehicleSprite(g: Graphics, item: Drawn, selected: boolean): Point |
     if (!w) return null;
     id = (item.pose.loaded && w.full ? w.full : w.base) + (dir & 3);
   }
-  // Metro rysujemy w miejscu kafelków nad nim (tor metra leży poziom niżej).
-  const lift = item.pose.under ? 1 : 0;
-  const mid = toWorld((f.x + b.x) / 2, (f.y + b.y) / 2, (f.z + b.z) / 2 + lift);
+  const mid = toWorld((f.x + b.x) / 2, (f.y + b.y) / 2, (f.z + b.z) / 2);
   if (!drawSprite(g, palKey(id, pal), mid.x, mid.y, selected ? 0xfff27a : 0xffffff)) return null;
   return { x: mid.x, y: mid.y - 6 };
 }
@@ -186,9 +184,8 @@ function lerp(a: Point3, b: Point3, t: number): Point3 {
 
 /** Pojazd jako prostopadłościan: obrys (ciemny) + dach (kolor pojazdu). Zwraca środek w px. */
 function drawVehicle(g: Graphics, pose: VehiclePose, selected: boolean): Point {
-  const lift = pose.under ? 1 : 0;
-  const f = { ...pose.front, z: pose.front.z + lift };
-  const b = { ...pose.back, z: pose.back.z + lift };
+  const f = pose.front;
+  const b = pose.back;
   const len = Math.hypot(f.x - b.x, f.y - b.y) || 1;
   const ux = (f.x - b.x) / len;
   const uy = (f.y - b.y) / len;

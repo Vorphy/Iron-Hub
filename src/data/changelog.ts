@@ -12,6 +12,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-31',
+    title: 'Poprawka: metro leży płasko na poziomie −1',
+    items: [
+      'Metro nie wspina się już na pagórki razem z terenem nad nim: cała sieć leży płasko na poziomie −1. Pociągi metra nie zwalniają pod wzgórzami, a widok −1 rysuje tory, perony i pociągi na jednej wysokości – na wzgórzach trochę niżej na ekranie niż teren nad nimi.',
+    ],
+  },
+  {
+    date: '2026-10-31',
     title: 'Poprawka: zjazd do zajezdni ze stacji; mniej ceglanych domów; parki w dzielnicach; wolniejsze dni',
     items: [
       'Dni płyną o 10% wolniej – dzień trwa 2,2 s przy 1×, jak w OpenTTD. Pociągi jeżdżą tak samo szybko, więc w ciągu dnia przejadą trochę dalej. W zapisanych grach data, wiek pociągów i czas ładunku w drodze zostają bez zmian.',

@@ -4,7 +4,8 @@ import { Input } from './input/input';
 import { GameLoop, SPEEDS, type Speed } from './loop';
 import { Camera } from './render/camera';
 import { GraphDebug } from './render/graphDebug';
-import { pickTile, setHeightProvider, tileCenter, type Point } from './render/iso';
+import { pickFlat, pickTile, setHeightProvider, tileCenter, type Point } from './render/iso';
+import { METRO_LEVEL } from './sim/track/metro';
 import { heightAt, MAX_HEIGHT } from './sim/world/height';
 import { MapRenderer } from './render/mapRenderer';
 import { Overlay } from './render/overlay';
@@ -585,6 +586,8 @@ export class Game {
   /** Punkt ekranu -> ułamkowe współrzędne kafelka. */
   private tileF(sx: number, sy: number): Point {
     const w = this.camera.screenToWorld(sx, sy);
+    // W widoku metra – płaska siatka na poziomie metra.
+    if (this.underground.visible) return pickFlat(w.x, w.y, METRO_LEVEL);
     return pickTile(w.x, w.y, MAX_HEIGHT);
   }
 

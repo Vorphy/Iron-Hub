@@ -24,7 +24,7 @@ import { getTerrain, inBounds, Terrain } from './sim/world/map';
 import { levelTargets, planTerraform, terraformTargets } from './sim/world/terraform';
 import { bridgeAt, bridgeRole, bridgeTileCoords, planBridge } from './sim/track/bridge';
 import { planTunnel, tunnelAt, tunnelRole, tunnelTileCoords } from './sim/track/tunnel';
-import { autoRampDown, planBuildUnderTrack, planRamp, planRemoveUnderTrack } from './sim/track/metro';
+import { autoRampDown, METRO_LEVEL, planBuildUnderTrack, planRamp, planRemoveUnderTrack } from './sim/track/metro';
 import type { Point } from './render/iso';
 
 /** 'orders' – wskazywanie stacji do rozkładu pociągu `ordersTrain` (z okna pociągu). */
@@ -180,6 +180,7 @@ export class Tools {
 
   setUnder(on: boolean): void {
     this.under = on;
+    this.overlay.level = on ? METRO_LEVEL : null;
     this.dragStart = null;
     this.dirty = true;
   }

@@ -1,15 +1,14 @@
 import { Graphics } from 'pixi.js';
-import { isUnderTrack } from '../sim/track/metro';
+import { isUnderTrack, METRO_LEVEL } from '../sim/track/metro';
 import type { WorldMap } from '../sim/world/map';
 import { dirBit, type Signal, signalCode } from '../sim/signals/signals';
 import type { GameState } from '../sim/state';
 import { Track, TRACK_SIDES } from '../sim/track/track';
 import { trackHeight } from '../sim/track/foundation';
-import { heightAt } from '../sim/world/height';
 import { drawSprite, gfxOn } from './gfx/gfx';
 import { pointOnStep, stepHeight, stepLength } from '../sim/trains/steps';
 import type { Step } from '../sim/trains/train';
-import { tileToWorld, toWorld } from './iso';
+import { type Point, tileToWorld, toWorld } from './iso';
 
 const POST_H = 12;
 /** Strzałka kierunku na torze (ułamki kafelka). */
@@ -62,6 +61,11 @@ export class SignalRenderer {
   }
 }
 
+/** Punkt na torze semafora: na terenie albo na poziomie metra. */
+function sigPoint(sig: Signal, x: number, y: number): Point {
+  return sig.under ? toWorld(x, y, METRO_LEVEL) : tileToWorld(x, y);
+}
+
 /**
  * Strzałka na torze semafora wskazująca kierunek jazdy, którego dotyczy (jednokierunkowy – podwójna).
  * Zwraca grot i prawą stronę kierunku jazdy (do słupa semafora).
@@ -86,9 +90,9 @@ export function drawDirectionArrow(g: Graphics, sig: Signal, bit: 1 | 2, color: 
   const chevron = (back: number) => {
     const t = { x: p1.x - fx * back, y: p1.y - fy * back };
     const pts = [
-      tileToWorld(t.x, t.y),
-      tileToWorld(t.x - fx * ARROW_LEN + rx * ARROW_W, t.y - fy * ARROW_LEN + ry * ARROW_W),
-      tileToWorld(t.x - fx * ARROW_LEN - rx * ARROW_W, t.y - fy * ARROW_LEN - ry * ARROW_W),
+      sigPoint(sig, t.x, t.y),
+      sigPoint(sig, t.x - fx * ARROW_LEN + rx * ARROW_W, t.y - fy * ARROW_LEN + ry * ARROW_W),
+      sigPoint(sig, t.x - fx * ARROW_LEN - rx * ARROW_W, t.y - fy * ARROW_LEN - ry * ARROW_W),
     ];
     g.poly(pts.flatMap((v) => [v.x, v.y]))
       .fill({ color, alpha })
@@ -107,7 +111,7 @@ export function drawSignal(g: Graphics, sig: Signal, bit: 1 | 2, light: number, 
   const { p1, rx, ry } = drawDirectionArrow(g, sig, bit, 0xffffff, alpha);
 
   // Słup po prawej stronie kierunku jazdy.
-  const base = tileToWorld(p1.x + rx * 0.3, p1.y + ry * 0.3);
+  const base = sigPoint(sig, p1.x + rx * 0.3, p1.y + ry * 0.3);
   g.moveTo(base.x, base.y)
     .lineTo(base.x, base.y - POST_H)
     .stroke({ width: 2, color: 0x2b2b2b, alpha });
@@ -153,8 +157,8 @@ export function drawSignalSprite(g: Graphics, map: WorldMap, sig: Signal, bit: 1
   const [px, py] = SIGNAL_POS[pos]!;
   // Oś x OpenTTD = nasza oś y.
   const [u, v] = [py / 16, px / 16];
-  // Na powierzchni – wierzch fundamentu, jeśli jest; w widoku metra – teren jak dotąd.
-  const z = sig.under ? heightAt(map, sig.x + u, sig.y + v) : trackHeight(map, sig.x, sig.y, u, v);
+  // Na powierzchni – wierzch fundamentu, jeśli jest; metro – stały poziom.
+  const z = sig.under ? METRO_LEVEL : trackHeight(map, sig.x, sig.y, u, v);
   const p = toWorld(sig.x + u, sig.y + v, z);
   drawSprite(g, `PRE_SIGNAL_SEMAPHORE_PBS:${(sig.oneWay ? 128 : 112) + image * 2 + (green ? 1 : 0)}`, p.x, p.y);
 }

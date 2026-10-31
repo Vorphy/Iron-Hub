@@ -3,7 +3,7 @@ import { METRO_RAMP_COST, METRO_TRACK_COST, TRACK_REFUND_RATE } from '../config'
 import { spend } from '../economy/finance';
 import type { GameState } from '../state';
 import { occupiedTiles } from '../trains/train';
-import { isFlat } from '../world/height';
+import { isFlat, SEA_LEVEL } from '../world/height';
 import { getTerrain, hasBuilding, inBounds, Terrain, type WorldMap } from '../world/map';
 import type { TrackPlan } from './build';
 import { oppositeSide, Side, SIDE_DELTA, Track, TRACK_SIDES, tracksOn, type TrackPiece } from './track';
@@ -17,6 +17,12 @@ import { oppositeSide, Side, SIDE_DELTA, Track, TRACK_SIDES, tracksOn, type Trac
  * więc nie myli się z torami na powierzchni, mostami (64, 128) ani tunelami (256, 512).
  */
 export const UNDER_SHIFT = 10;
+
+/**
+ * Wysokość torów metra: stały poziom −1 (pod poziomem morza), niezależnie od terenu nad nimi –
+ * jak w prawdziwym metrze, które nie wspina się na pagórki. Widok metra rysuje całą sieć na tej wysokości.
+ */
+export const METRO_LEVEL = SEA_LEVEL - 1;
 
 /** Kod elementu toru pod ziemią (w odcinkach jazdy pociągu). */
 export function underTrack(track: Track): number {
