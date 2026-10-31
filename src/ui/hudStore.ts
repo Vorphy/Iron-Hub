@@ -361,7 +361,7 @@ export const hudStore = new Store<HudState>({
   gfxAvailable: false,
   gfx: true,
   buildingsHidden: false,
-  districtsShown: true,
+  districtsShown: false,
   underground: false,
   newGameOpen: false,
   window: null,

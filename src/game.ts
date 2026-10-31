@@ -134,6 +134,8 @@ export class Game {
     );
     this.loop.onBeforeStep = () => this.trains.capture(this.sim.state);
     this.labels.rebuild(state);
+    // Kolory dzielnic po wczytaniu i w nowej grze wyłączone (🏘 / I włącza).
+    hudStore.set({ districtsShown: false });
     this.industries.draw(state.industries);
     this.bridges.draw(state);
     this.tunnels.draw(state);

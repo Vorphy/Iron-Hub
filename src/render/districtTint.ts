@@ -26,7 +26,7 @@ function roadOfTown(map: WorldMap, x: number, y: number, townId: number): boolea
  * może wejść na dom z przodu); tu tylko liczymy kolor kafelków i zgłaszamy te, które się zmieniły.
  */
 export class DistrictTint {
-  private shown = true;
+  private shown = false;
   private dirty = true;
   private lastDraw = -Infinity;
   /** Kolor kafelka albo −1. */
