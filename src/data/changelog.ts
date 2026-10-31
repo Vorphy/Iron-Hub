@@ -15,7 +15,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
     title: 'Dzielnice – miasta się zrastają',
     items: [
       'Duże miasto (od 5 000 mieszkańców), które dorośnie do mniejszego sąsiada, wchłania go – sąsiad zostaje dzielnicą pod swoją dotychczasową nazwą. Komunikat pokazuje, gdzie to się stało; stacje nie zmieniają nazw.',
-      'Miasto rośnie dalej także wokół środka nowej dzielnicy – nie jest już zamknięte w kwadracie wokół rynku.',
+      'Miasto, które zabuduje całą okolicę rynku, zakłada przy brzegu nową dzielnicę – chętniej w stronę Twoich stacji – i rośnie dalej. Nazwy: Zatorze (gdy powstaje za torami), „Żelazowo-Północ” i inne strony świata, osiedla. Duże miasto potrzebuje do tego metra – bez niego powyżej 10 000 mieszkańców stoi.',
       'Okno miasta pokazuje listę dzielnic: mieszkańców i to, czy dzielnica ma stację metra. Po przybliżeniu mapy nazwy dzielnic widać mniejszym napisem.',
     ],
   },

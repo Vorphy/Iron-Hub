@@ -404,6 +404,15 @@ export class Game {
         const town = this.sim.state.towns.find((t) => t.id === ev.townId);
         if (town)
           showMessage(`${town.name} domaga się metra! Bez stacji metra miasto przestanie rosnąć powyżej 10 000 mieszkańców.`);
+      } else if (ev.type === 'districtFounded') {
+        this.labels.rebuild(this.sim.state);
+        const town = this.sim.state.towns.find((t) => t.id === ev.townId);
+        if (town)
+          showMessage(`${town.name} rośnie – powstaje nowa dzielnica ${ev.district}.`, () => {
+            const d = town.districts.find((dd) => dd.name === ev.district);
+            if (d) this.focusTile(d.x, d.y);
+            this.openWindow({ kind: 'town', townId: town.id });
+          });
       } else if (ev.type === 'townAbsorbed') {
         this.labels.rebuild(this.sim.state);
         this.minimapDirty = true;

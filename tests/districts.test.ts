@@ -6,12 +6,19 @@ import {
   forEachTownTile,
   HOUSE_POPULATION,
   isStreet,
+  metroStatus,
   newTown,
   townPopulation,
   townTiles,
 } from '../src/sim/economy/town';
 import { absorbTowns } from '../src/sim/economy/townMerge';
+import { districtName, foundDistrict } from '../src/sim/economy/districts';
+import { monthlyEconomy } from '../src/sim/economy/monthly';
+import { createRng } from '../src/sim/rng';
+import { Track } from '../src/sim/track/track';
+import { growTown } from '../src/sim/world/generate';
 import { deserializeState, SaveError, serializeState } from '../src/sim/serialize';
+import { Simulation } from '../src/sim/simulation';
 import { createGame } from '../src/sim/state';
 import { Terrain } from '../src/sim/world/map';
 
@@ -178,5 +185,65 @@ describe('wchłanianie miast', () => {
     const { state } = twoTowns([[42, 29]]);
     absorbTowns(state, []);
     expect(deserializeState(JSON.parse(JSON.stringify(serializeState(state)))).towns[0]!.districts).toHaveLength(2);
+  });
+});
+
+describe('nowe dzielnice przy wzroście', () => {
+  /** Miasto zabudowane do brzegu: wzrost nie znajduje już miejsca. */
+  function fullTown() {
+    const state = world();
+    const town = newTown(1, 'Żelazowo', 48, 48);
+    state.towns.push(town);
+    const rng = createRng(3);
+    while (growTown(state, rng, town, 50) === 50);
+    return { state, town, rng };
+  }
+
+  it('zabudowane miasto dostaje dzielnicę przy brzegu i rośnie dalej', () => {
+    const { state, town, rng } = fullTown();
+    expect(growTown(state, rng, town, 5)).toBe(0);
+    const d = foundDistrict(state, town)!;
+    expect(d).not.toBeNull();
+    expect(Math.max(Math.abs(d.x - 48), Math.abs(d.y - 48))).toBeGreaterThanOrEqual(12);
+    expect(town.districts).toHaveLength(2);
+    expect(growTown(state, rng, town, 5)).toBe(5);
+  });
+
+  it('dzielnica powstaje w stronę stacji', () => {
+    const { state, town } = fullTown();
+    // „Stacja” na wschód od rynku w osi x: kafelki x ≥ 60 przyciągają.
+    const d = foundDistrict(state, town, (i) => (i % W >= 60 ? 6 : 1))!;
+    expect(d.x).toBeGreaterThan(48);
+  });
+
+  it('nazwa: Zatorze za torami, potem strona świata, bez powtórzeń', () => {
+    const state = world();
+    const town = newTown(1, 'Żelazowo', 48, 48);
+    state.towns.push(town);
+    // Na ekranie w górę (północ) to −x −y.
+    expect(districtName(state, town, town.districts[0]!, 36, 36)).toBe('Żelazowo-Północ');
+    expect(districtName(state, town, town.districts[0]!, 60, 36)).toBe('Żelazowo-Wschód');
+    state.map.track[48 * W + 56] = Track.X;
+    expect(districtName(state, town, town.districts[0]!, 64, 48)).toBe('Zatorze');
+    town.districts.push({ name: 'Zatorze', x: 64, y: 48 });
+    expect(districtName(state, town, town.districts[0]!, 64, 48)).toBe('Żelazowo-Wschód');
+  });
+
+  it('miesiąc: zabudowane miasto z metrem zakłada dzielnicę z komunikatem', () => {
+    const { state, town } = fullTown();
+    // Ponad 10 tys. mieszkańców – bez metra miasto by stało.
+    state.money = 1_000_000;
+    const sim = new Simulation(state);
+    const pieces = Array.from({ length: 7 }, (_, i) => ({ x: 45 + i, y: 49, track: Track.X }));
+    sim.enqueue({ type: 'buildTrack', pieces, under: true });
+    sim.enqueue({ type: 'buildStation', x0: 47, y0: 49, x1: 49, y1: 49, axis: 'x', under: true });
+    sim.processCommands();
+    expect(metroStatus(state, town, townPopulation(state, town))).toBe('metro');
+    town.month.passengers = 100;
+    town.month.passengersTransported = 80;
+    const events: SimEvent[] = [];
+    monthlyEconomy(state, events);
+    expect(town.districts).toHaveLength(2);
+    expect(events).toContainEqual({ type: 'districtFounded', townId: 1, district: town.districts[1]!.name });
   });
 });

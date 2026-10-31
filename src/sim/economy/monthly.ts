@@ -31,6 +31,7 @@ import {
   townTiles,
   type Town,
 } from './town';
+import { foundDistrict } from './districts';
 import { absorbTowns } from './townMerge';
 
 // Reguły z pliku ekonomii (src/data/economy.ts).
@@ -45,6 +46,7 @@ const UPGRADE_CHANCE = ECONOMY.town.upgradeChance;
 const STATION_PULL = ECONOMY.town.stationPull;
 const METRO_GROWTH_EXTRA = ECONOMY.town.metroGrowthExtra;
 const METRO_UPGRADE_CHANCE = ECONOMY.town.metroUpgradeChance;
+const NEW_DISTRICT_MIN_POP = ECONOMY.town.newDistrictMinPop;
 /** Utrzymanie toru i peronu metra względem zwykłego. */
 const METRO_MAINTENANCE = 2;
 
@@ -112,11 +114,8 @@ function closeTownMonth(state: GameState, town: Town, nearStations: Uint8Array, 
   town.lastTransported = m.passengers > 0 ? Math.min(1, m.passengersTransported / m.passengers) : 0;
   const served = m.passengersTransported > 0;
   const tiles = townTiles(state, town);
-  const metro = metroStatus(
-    state,
-    town,
-    tiles.reduce((pop, i) => pop + HOUSE_POPULATION[state.map.house[i]!]!, 0),
-  );
+  const population = tiles.reduce((pop, i) => pop + HOUSE_POPULATION[state.map.house[i]!]!, 0);
+  const metro = metroStatus(state, town, population);
   if ((metro === 'wanted' || metro === 'stalled') && !town.metroDemand) {
     town.metroDemand = true;
     events.push({ type: 'metroDemand', townId: town.id });
@@ -130,7 +129,16 @@ function closeTownMonth(state: GameState, town: Town, nearStations: Uint8Array, 
   else if (metro === 'stalled') houses = 0;
 
   const before = new Set(tiles);
-  growTown(state, state.rng, town, houses, (i) => (nearStations[i] ? STATION_PULL : 1));
+  const prefer = (i: number) => (nearStations[i] ? STATION_PULL : 1);
+  const built = growTown(state, state.rng, town, houses, prefer);
+  // Zabudowa doszła do brzegu dzielnic: nowa dzielnica przy krawędzi i dalszy wzrost wokół niej.
+  if (built < houses && population >= NEW_DISTRICT_MIN_POP) {
+    const district = foundDistrict(state, town, prefer);
+    if (district) {
+      events.push({ type: 'districtFounded', townId: town.id, district: district.name });
+      growTown(state, state.rng, town, houses - built, prefer);
+    }
+  }
   for (const i of townTiles(state, town)) {
     if (before.has(i)) continue;
     startHouseConstruction(state, i);

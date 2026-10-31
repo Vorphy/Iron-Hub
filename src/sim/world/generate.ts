@@ -112,7 +112,7 @@ function isLand(map: WorldMap, x: number, y: number): boolean {
 }
 
 /** Wolny, płaski kafelek lądu – tylko na takich stawiamy domy i zakłady. */
-function isFree(map: WorldMap, x: number, y: number): boolean {
+export function isFree(map: WorldMap, x: number, y: number): boolean {
   if (!isLand(map, x, y) || !isFlat(map, x, y)) return false;
   const i = y * map.width + x;
   return !hasBuilding(map, i) && !map.track[i] && !map.station[i] && !map.depot[i] && !map.road[i];

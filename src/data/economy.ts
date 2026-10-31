@@ -207,6 +207,14 @@ export const ECONOMY = {
     absorbReach: 3,
     absorbMinPop: 5000,
     absorbRatio: 2,
+    /**
+     * Nowa dzielnica: gdy miasto (od `newDistrictMinPop` mieszkańców) nie ma już gdzie postawić domu,
+     * przy brzegu zabudowy – `newDistrictStep` kafelków od środka istniejącej dzielnicy – powstaje
+     * nowy środek. Wymaga co najmniej `newDistrictMinFree` wolnych kafelków w promieniu wzrostu.
+     */
+    newDistrictMinPop: 1000,
+    newDistrictStep: 16,
+    newDistrictMinFree: 40,
   },
 
   /** Zakłady przemysłowe – reguły rozwoju (docs/03-mechaniki.md). */
