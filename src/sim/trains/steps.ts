@@ -4,7 +4,8 @@ import { trackHeight } from '../track/foundation';
 import { pieceLength, STRAIGHT_LENGTH } from '../track/graph';
 import { isTunnelTrack, portalInnerSide, tunnelAt, tunnelRole, tunnelTrack } from '../track/tunnel';
 import { heightAt } from '../world/height';
-import { baseTrack, isUnderTrack, METRO_LEVEL, rampDown, rampTrack, underEntries } from '../track/metro';
+import { baseTrack, isUnderTrack, METRO_LEVEL, rampDown, rampTrack, underEntries, underTrack } from '../track/metro';
+import { isMetroTunnelTrack, metroTunnelAt, metroTunnelTrack } from '../track/metroTunnel';
 import { oppositeSide, Side, SIDE_DELTA, Track, TRACK_SIDES, tracksOn } from '../track/track';
 import { inBounds } from '../world/map';
 import type { Step } from './train';
@@ -24,7 +25,7 @@ const MID: Record<number, readonly [number, number]> = {
 export function stepLength(s: Step): number {
   if (s.track === 0) return DEPOT_STUB_LENGTH;
   if (isUnderTrack(s.track)) return pieceLength(baseTrack(s.track));
-  if (isBridgeTrack(s.track) || isTunnelTrack(s.track)) return STRAIGHT_LENGTH;
+  if (isBridgeTrack(s.track) || isTunnelTrack(s.track) || isMetroTunnelTrack(s.track)) return STRAIGHT_LENGTH;
   return pieceLength(s.track as Track);
 }
 
@@ -51,11 +52,14 @@ const TRACK_INDEX: Record<number, number> = {
   8192: 14,
   16384: 15,
   32768: 16,
+  // Wnętrze przejścia pod torem metra.
+  65536: 17,
+  131072: 18,
 };
 
 /** Jednoznaczny klucz skierowanego odcinka (do słowników w wyszukiwaniu trasy). */
 export function stepKey(s: Step, mapWidth: number): number {
-  return ((s.y * mapWidth + s.x) * 17 + TRACK_INDEX[s.track]!) * 5 + (s.entry + 1);
+  return ((s.y * mapWidth + s.x) * 19 + TRACK_INDEX[s.track]!) * 5 + (s.entry + 1);
 }
 
 /**
@@ -71,10 +75,28 @@ export function successors(state: GameState, s: Step): Step[] {
   if (!inBounds(map, x, y)) return [];
   const entry = oppositeSide(s.exit);
   const straight = (track: number): Step => ({ x, y, track, entry, exit: oppositeSide(entry) });
-  const metro = () => underEntries(map, x, y, entry).map((e) => ({ x, y, track: e.track, entry, exit: e.exit }));
+  // Przejście pod torem metra: do portalu od strony wnętrza wjeżdża się tylko z przejścia.
+  const passNext = metroTunnelAt(state, x, y);
+  const passPortalInner =
+    !!passNext &&
+    tunnelRole(passNext, x, y) !== 'inside' &&
+    entry === portalInnerSide(passNext, tunnelRole(passNext, x, y) as 'portalA' | 'portalB');
+  const metro = () =>
+    passPortalInner ? [] : underEntries(map, x, y, entry).map((e) => ({ x, y, track: e.track, entry, exit: e.exit }));
 
+  // Wnętrzem przejścia prosto, z wnętrza na tor portalu.
+  if (isMetroTunnelTrack(s.track)) {
+    if (!passNext || passNext.id !== map.underTunnel[s.y * map.width + s.x]) return [];
+    return [straight(tunnelRole(passNext, x, y) === 'inside' ? s.track : underTrack(axisTrack(passNext.axis)))];
+  }
   // Metro: pod ziemią tylko tory metra, a w zjazd – od jego dolnego boku – na powierzchnię.
   if (isUnderTrack(s.track)) {
+    // Z portalu przejścia w głąb.
+    const passHere = metroTunnelAt(state, s.x, s.y);
+    if (passHere && baseTrack(s.track) === axisTrack(passHere.axis)) {
+      const role = tunnelRole(passHere, s.x, s.y);
+      if (role !== 'inside' && s.exit === portalInnerSide(passHere, role)) return [straight(metroTunnelTrack(passHere.axis))];
+    }
     const down = rampDown(map, x, y);
     if (down !== null && entry === down) return [straight(rampTrack(down))];
     return metro();
@@ -149,6 +171,8 @@ export function stepHeight(state: GameState, s: Step, d: number): number {
   if (tunnel && (isTunnelTrack(s.track) || (tunnelRole(tunnel, s.x, s.y) !== 'inside' && s.track === axisTrack(tunnel.axis)))) {
     return tunnel.level;
   }
+  // Przejście pod torem metra: poziom niżej niż metro (pociąg jest tam niewidoczny).
+  if (isMetroTunnelTrack(s.track)) return METRO_LEVEL - 1;
   // Metro: płasko na stałym poziomie −1. Zjazd w fizyce schodzi o jeden poziom (z dowolnej wysokości
   // powierzchni – bez stromego spadku na płaskowyżu); skok między zjazdem a metrem nie liczy się do wzniesień,
   // bo te mierzymy w obrębie jednego odcinka.

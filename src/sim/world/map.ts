@@ -34,6 +34,8 @@ export interface WorldMap {
   bridge: Uint16Array;
   /** Id tunelu pod kafelkiem (portale i wnętrze; 0 – brak). */
   tunnel: Uint16Array;
+  /** Id przejścia pod torem metra (portale i wnętrze, poziom głębiej niż metro; 0 – brak). */
+  underTunnel: Uint16Array;
   /** Droga w mieście na kafelku (1 – jest). */
   road: Uint8Array;
   /** Sieć trakcyjna nad torem na kafelku (1 – jest). */
@@ -101,6 +103,7 @@ export function generateMap(width: number, height: number, seed: number): WorldM
     under: new Uint8Array(n),
     ramp: new Uint8Array(n),
     stationUnder: new Uint32Array(n),
+    underTunnel: new Uint16Array(n),
   };
   matchWaterToHeights(map);
   return map;

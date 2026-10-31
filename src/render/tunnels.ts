@@ -23,7 +23,7 @@ export class TunnelRenderer {
     g.clear();
     // Z grafiką OpenGFX portale rysuje mapa (grunt i sklepienie na kafelku wjazdu).
     if (gfxOn()) return;
-    for (const t of state.tunnels) drawPortals(g, state, t);
+    for (const t of state.tunnels) if (!t.under) drawPortals(g, state, t);
   }
 }
 

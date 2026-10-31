@@ -238,7 +238,7 @@ function canPlace(map: WorldMap, x: number, y: number, axisTrack: Track): boolea
 function canPlaceUnder(map: WorldMap, x: number, y: number, axisTrack: Track): boolean {
   if (!inBounds(map, x, y)) return false;
   const i = y * map.width + x;
-  if (map.stationUnder[i] || map.ramp[i]) return false;
+  if (map.stationUnder[i] || map.ramp[i] || map.underTunnel[i]) return false;
   return map.under[i] === 0 || map.under[i] === axisTrack;
 }
 

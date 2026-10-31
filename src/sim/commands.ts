@@ -32,6 +32,7 @@ import {
 } from './trains/train';
 import { bridgeAt, bridgeRole, bridgeTileCoords, buildBridge, removeBridge } from './track/bridge';
 import { buildTunnel, removeTunnel, tunnelAt, tunnelRole, tunnelTileCoords } from './track/tunnel';
+import { buildMetroTunnel, metroTunnelAt, metroTunnelBusy, removeMetroTunnel } from './track/metroTunnel';
 import { getTerrain, inBounds, setTerrain, Terrain } from './world/map';
 import { applyTerraform, levelTargets, planTerraform, terraformTargets } from './world/terraform';
 
@@ -57,6 +58,8 @@ export type Command =
     }
   /** Rozbiórka kafelka peronu metra. */
   | { type: 'removeUnderStation'; x: number; y: number }
+  | { type: 'buildMetroTunnel'; x0: number; y0: number; x1: number; y1: number }
+  | { type: 'removeMetroTunnel'; x: number; y: number }
   /** Punkt kontrolny na istniejącym prostym torze. */
   | { type: 'buildWaypoint'; x: number; y: number }
   | { type: 'buildDepot'; x: number; y: number; side: Side }
@@ -189,7 +192,12 @@ export function applyCommand(state: GameState, cmd: Command, events: SimEvent[])
   // Rozbiórka toru lub stacji mogła zostawić semafory bez toru.
   if (
     result.ok &&
-    (cmd.type === 'removeTrack' || cmd.type === 'clearTile' || cmd.type === 'buildStation' || cmd.type === 'removeUnderStation')
+    (cmd.type === 'removeTrack' ||
+      cmd.type === 'clearTile' ||
+      cmd.type === 'buildStation' ||
+      cmd.type === 'removeUnderStation' ||
+      cmd.type === 'removeMetroTunnel' ||
+      cmd.type === 'buildMetroTunnel')
   ) {
     dropOrphanSignals(state, events);
     dropOrphanCatenary(state, events);
@@ -213,6 +221,14 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
       return buildRamp(state, cmd.x, cmd.y, cmd.down, events);
     case 'buildStation':
       return buildStation(state, cmd.x0, cmd.y0, cmd.x1, cmd.y1, cmd.axis, events, cmd.separate === true, cmd.under === true);
+    case 'buildMetroTunnel':
+      return buildMetroTunnel(state, cmd.x0, cmd.y0, cmd.x1, cmd.y1, events);
+    case 'removeMetroTunnel': {
+      const tunnel = metroTunnelAt(state, cmd.x, cmd.y);
+      if (!tunnel || tunnelRole(tunnel, cmd.x, cmd.y) === 'inside') return { ok: false, reason: 'nothingToRemove' };
+      if (metroTunnelBusy(state, tunnel)) return { ok: false, reason: 'trainInWay' };
+      return removeMetroTunnel(state, tunnel, events);
+    }
     case 'removeUnderStation':
       if (occupiedTiles(state).has(cmd.y * state.map.width + cmd.x)) return { ok: false, reason: 'trainInWay' };
       return removeStationTile(state, cmd.x, cmd.y, events, true);

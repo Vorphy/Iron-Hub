@@ -21,6 +21,8 @@ export interface Tunnel {
   /** Liczba kafelków razem z portalami. */
   length: number;
   level: number;
+  /** Przejście pod torem metra (patrz metroTunnel.ts) – nie tunel pod wzniesieniem. */
+  under?: true;
 }
 
 export const TUNNEL_X = 256;

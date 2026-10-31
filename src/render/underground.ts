@@ -1,6 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { GameState } from '../sim/state';
 import { METRO_LEVEL, rampDown, rampTrack } from '../sim/track/metro';
+import type { Tunnel } from '../sim/track/tunnel';
 import { tracksOn } from '../sim/track/track';
 import { MAX_HEIGHT } from '../sim/world/height';
 import { gfxOn } from './gfx/gfx';
@@ -23,6 +24,9 @@ const RAMP_FLOOR = 0x4a5a6e;
 export class UndergroundRenderer {
   readonly container = new Container();
   private readonly shade = new Graphics();
+  private readonly floor = new Graphics();
+  /** Przejścia pod torem metra – między podłogą a torami, więc tor drugiej linii biegnie nad nimi. */
+  private readonly passes = new Graphics();
   private readonly tracks = new Graphics();
   private dirty = true;
 
@@ -32,7 +36,7 @@ export class UndergroundRenderer {
     const top = -MAX_HEIGHT * HEIGHT_PX - 2 * TILE_H;
     const bottom = ((width + height) * TILE_H) / 2 + 2 * TILE_H - METRO_LEVEL * HEIGHT_PX;
     this.shade.rect(left, top, right - left, bottom - top).fill({ color: SHADE, alpha: SHADE_ALPHA });
-    this.container.addChild(this.shade, this.tracks);
+    this.container.addChild(this.shade, this.floor, this.passes, this.tracks);
     this.container.visible = false;
   }
 
@@ -53,7 +57,10 @@ export class UndergroundRenderer {
     this.dirty = false;
     const g = this.tracks;
     g.clear();
+    this.floor.clear();
+    this.passes.clear();
     const { map } = state;
+    for (const t of state.tunnels) if (t.under) drawPass(this.passes, t);
     const sprites = gfxOn();
     const stations = new Map(state.stations.map((s) => [s.id, s]));
     for (let i = 0; i < map.under.length; i++) {
@@ -63,7 +70,8 @@ export class UndergroundRenderer {
       const x = i % map.width;
       const y = Math.floor(i / map.width);
       // Kafelek tunelu metra (zjazd – jaśniejszy, to wejście z powierzchni).
-      g.poly(flatDiamond(x, y, METRO_LEVEL))
+      this.floor
+        .poly(flatDiamond(x, y, METRO_LEVEL))
         .fill(ramp ? RAMP_FLOOR : FLOOR)
         .stroke({ width: 1, color: FLOOR_EDGE, alpha: 0.8 });
       const draw = ramp ? rampTrack(rampDown(map, x, y)!) : bits;
@@ -81,4 +89,30 @@ export class UndergroundRenderer {
       }
     }
   }
+}
+
+const PASS = 0x101317;
+const PASS_EDGE = 0x8a94a3;
+
+/**
+ * Przejście pod torem metra: ciemny wykop w osi między portalami (od połowy portalu do połowy
+ * drugiego) z przerywanymi brzegami – tory nad nim to druga linia, przejeżdżająca górą.
+ */
+function drawPass(g: Graphics, t: Tunnel): void {
+  const z = METRO_LEVEL;
+  // a – wzdłuż osi przejścia (od środka portalu A do środka portalu B), b – w poprzek.
+  const at = (a: number, b: number) => (t.axis === 'x' ? toWorld(t.x + a, t.y + b, z) : toWorld(t.x + b, t.y + a, z));
+  const a0 = 0.5;
+  const a1 = t.length - 0.5;
+  const quad = (b0: number, b1: number) => [at(a0, b0), at(a1, b0), at(a1, b1), at(a0, b1)].flatMap((p) => [p.x, p.y]);
+  g.poly(quad(0.22, 0.78)).fill({ color: PASS, alpha: 0.92 });
+  // Brzegi przerywane: tor biegnie tu głębiej, pod spodem.
+  for (const b of [0.22, 0.78]) {
+    for (let a = a0; a < a1; a += 0.25) {
+      const p = at(a, b);
+      const q = at(Math.min(a + 0.14, a1), b);
+      g.moveTo(p.x, p.y).lineTo(q.x, q.y);
+    }
+  }
+  g.stroke({ width: 1.5, color: PASS_EDGE, alpha: 0.9 });
 }

@@ -18,7 +18,7 @@ import { MAX_HEIGHT } from './world/height';
 import { TICKS_PER_DAY } from './time';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 31;
+export const SAVE_VERSION = 32;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -37,6 +37,7 @@ const LAYERS = {
   under: 1,
   ramp: 1,
   stationUnder: 4,
+  underTunnel: 2,
 } as const;
 type LayerName = keyof typeof LAYERS;
 
@@ -353,6 +354,11 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     }
     d.version = 31;
   }
+  if (d.version === 31) {
+    // v32: przejścia pod torem metra (tunele `under: true`, warstwa `underTunnel`)
+    if (d.map) d.map.underTunnel = emptyLayer('underTunnel');
+    d.version = 32;
+  }
   return d as Partial<SerializedState>;
 }
 
@@ -384,6 +390,7 @@ export function deserializeState(data: unknown): GameState {
     under: bytes('under'),
     ramp: bytes('ramp'),
     stationUnder: new Uint32Array(bytes('stationUnder').buffer),
+    underTunnel: new Uint16Array(bytes('underTunnel').buffer),
   };
   if (map.heights.some((h) => h > MAX_HEIGHT)) throw new SaveError('Uszkodzone wysokości terenu');
   const ints = [
@@ -479,6 +486,7 @@ function checkReferences(state: GameState): GameState {
     [map.industry, industries, 'zakład na mapie'],
     [map.bridge, bridges, 'most na mapie'],
     [map.tunnel, tunnels, 'tunel na mapie'],
+    [map.underTunnel, tunnels, 'przejście pod metrem na mapie'],
   ];
   for (const [layer, set, what] of layers) {
     let last = 0;
@@ -558,7 +566,8 @@ function isTunnel(v: unknown): v is Tunnel {
     (t.axis === 'x' || t.axis === 'y') &&
     isInt(t.length) &&
     t.length >= 2 &&
-    isInt(t.level)
+    isInt(t.level) &&
+    (t.under === undefined || t.under === true)
   );
 }
 

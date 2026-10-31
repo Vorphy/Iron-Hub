@@ -20,6 +20,7 @@ export const TUNNEL_TILE_COST = C.tunnelTile;
 export const METRO_TRACK_COST = C.metroTrackPiece;
 export const METRO_RAMP_COST = C.metroRamp;
 export const METRO_STATION_EXTRA = C.metroStationExtra;
+export const METRO_TUNNEL_TILE_COST = C.metroTunnelTile;
 export const DEPOT_COST = C.depot;
 export const SIGNAL_COST = C.signal;
 export const TRAIN_RESALE_RATE = ECONOMY.refunds.trainResale;

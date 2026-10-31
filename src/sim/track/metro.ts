@@ -6,6 +6,7 @@ import { occupiedTiles } from '../trains/train';
 import { isFlat, SEA_LEVEL } from '../world/height';
 import { getTerrain, hasBuilding, inBounds, Terrain, type WorldMap } from '../world/map';
 import type { TrackPlan } from './build';
+import { tunnelRole } from './tunnel';
 import { oppositeSide, Side, SIDE_DELTA, Track, TRACK_SIDES, tracksOn, type TrackPiece } from './track';
 
 /**
@@ -14,7 +15,8 @@ import { oppositeSide, Side, SIDE_DELTA, Track, TRACK_SIDES, tracksOn, type Trac
  * je zjazdy (`map.ramp`): kafelek z prostym torem, który jednym bokiem schodzi pod ziemię.
  *
  * W trasie pociągu element toru pod ziemią ma kod przesunięty o UNDER_SHIFT bitów (1024–32768),
- * więc nie myli się z torami na powierzchni, mostami (64, 128) ani tunelami (256, 512).
+ * więc nie myli się z torami na powierzchni, mostami (64, 128), tunelami (256, 512) ani wnętrzem
+ * przejścia pod torem metra (65536, 131072 – metroTunnel.ts).
  */
 export const UNDER_SHIFT = 10;
 
@@ -30,7 +32,7 @@ export function underTrack(track: Track): number {
 }
 
 export function isUnderTrack(track: number): boolean {
-  return track >= 1 << UNDER_SHIFT;
+  return track >= 1 << UNDER_SHIFT && track < 1 << (UNDER_SHIFT + 6);
 }
 
 /** Zwykły element toru (bity jak na powierzchni) dla kodu spod ziemi. */
@@ -60,12 +62,22 @@ export function rampTrack(down: Side): Track {
   return down === Side.NW || down === Side.SE ? Track.X : Track.Y;
 }
 
-function underBuildable(map: WorldMap, p: TrackPiece): boolean {
+/** Portal przejścia pod torem metra na kafelku (jego tor w osi należy do przejścia). */
+function isMetroTunnelPortal(state: GameState, i: number): boolean {
+  const id = state.map.underTunnel[i];
+  if (!id) return false;
+  const t = state.tunnels.find((u) => u.id === id);
+  const { map } = state;
+  return !!t && tunnelRole(t, i % map.width, Math.floor(i / map.width)) !== 'inside';
+}
+
+function underBuildable(state: GameState, p: TrackPiece): boolean {
+  const { map } = state;
   if (!inBounds(map, p.x, p.y)) return false;
   const i = p.y * map.width + p.x;
   // Także pod wodą (jak prawdziwe metro pod rzeką); tylko nie pod zjazdem – tam tor dopiero schodzi.
-  // Na peronie metra – tylko jego własny tor.
-  if (map.stationUnder[i]) return map.under[i] === p.track;
+  // Na peronie metra i portalu przejścia – tylko ich własny tor.
+  if (map.stationUnder[i] || isMetroTunnelPortal(state, i)) return map.under[i] === p.track;
   return !map.ramp[i];
 }
 
@@ -85,7 +97,7 @@ export function planBuildUnderTrack(state: GameState, pieces: readonly TrackPiec
   let cost = 0;
   let blocked = false;
   const out = unique(pieces).map((piece) => {
-    if (!underBuildable(map, piece)) {
+    if (!underBuildable(state, piece)) {
       blocked = true;
       return { piece, status: 'blocked' as const };
     }
@@ -120,7 +132,12 @@ export function planRemoveUnderTrack(state: GameState, pieces: readonly TrackPie
   let inWay = false;
   const out = unique(pieces).map((piece) => {
     const i = piece.y * map.width + piece.x;
-    const exists = inBounds(map, piece.x, piece.y) && !map.stationUnder[i] && (map.under[i]! & piece.track) !== 0;
+    // Tor peronu i portalu przejścia rozbiera się razem z nimi.
+    const exists =
+      inBounds(map, piece.x, piece.y) &&
+      !map.stationUnder[i] &&
+      !isMetroTunnelPortal(state, i) &&
+      (map.under[i]! & piece.track) !== 0;
     if (!exists) return { piece, status: 'blocked' as const };
     count++;
     if (busy.has(i)) inWay = true;

@@ -51,6 +51,8 @@ export const ECONOMY = {
     metroRamp: 3000,
     /** Dopłata za kafelek peronu metra (hala peronu pod ziemią) – do ceny zwykłego peronu. */
     metroStationExtra: 1500,
+    /** Kafelek przejścia pod torem metra (tunel poziom głębiej – drążenie pod drugą linią). */
+    metroTunnelTile: 1500,
   },
 
   /** Kredyt i bankructwo. */

@@ -1,6 +1,7 @@
 import { VEHICLE_GAP } from '../config';
 import type { GameState } from '../state';
 import { isUnderTrack } from '../track/metro';
+import { isMetroTunnelTrack } from '../track/metroTunnel';
 import { isTunnelTrack } from '../track/tunnel';
 import { pointOnStep, stepHeight, stepLength } from './steps';
 import type { Step, Train } from './train';
@@ -54,7 +55,7 @@ export function pointBehindHead(train: Train, d: number): { x: number; y: number
 export function pointBehindHeadZ(state: GameState, train: Train, d: number): Point3 | null {
   const at = locateBehindHead(train, d);
   // We wnętrzu tunelu pojazdu nie widać.
-  if (!at || isTunnelTrack(at.step.track)) return null;
+  if (!at || isTunnelTrack(at.step.track) || isMetroTunnelTrack(at.step.track)) return null;
   return { ...pointOnStep(at.step, at.pos), z: stepHeight(state, at.step, at.pos), under: isUnderTrack(at.step.track) };
 }
 

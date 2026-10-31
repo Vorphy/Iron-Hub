@@ -12,8 +12,9 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-31',
-    title: 'Poprawka: metro leży płasko na poziomie −1',
+    title: 'Metro płasko na poziomie −1; przejście pod torem metra',
     items: [
+      'Przejście pod torem metra: narzędzie Tunel (N) w widoku metra – przeciągnij wzdłuż swojej linii przez tor drugiej linii. Twoja linia schodzi tam poziom niżej, druga biegnie górą bez połączenia, więc pociągi obu linii nie blokują się nawzajem jak na płaskim skrzyżowaniu. Przeciągnięcie przez istniejące skrzyżowanie od razu je przebudowuje. Rozbiórka – buldożer na wejściu przejścia.',
       'Metro nie wspina się już na pagórki razem z terenem nad nim: cała sieć leży płasko na poziomie −1. Pociągi metra nie zwalniają pod wzgórzami, a widok −1 rysuje tory, perony i pociągi na jednej wysokości – na wzgórzach trochę niżej na ekranie niż teren nad nimi.',
     ],
   },

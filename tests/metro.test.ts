@@ -4,6 +4,7 @@ import { Simulation } from '../src/sim/simulation';
 import { createGame } from '../src/sim/state';
 import { isUnderTrack, METRO_LEVEL, underTrack } from '../src/sim/track/metro';
 import { stepHeight, stepLength } from '../src/sim/trains/steps';
+import { isMetroTunnelTrack } from '../src/sim/track/metroTunnel';
 import { Side, Track, type TrackPiece } from '../src/sim/track/track';
 import { Terrain } from '../src/sim/world/map';
 
@@ -217,5 +218,76 @@ describe('metro (poziom −1)', () => {
     sim.step();
     expect(fails(sim)).toEqual([]);
     expect(state.signals).toEqual([]);
+  });
+
+  it('przejście pod torem metra: druga linia biegnie górą, pociąg przejeżdża dołem', () => {
+    const sim = metroLine();
+    const { state } = sim;
+    const { map } = state;
+    const yLine = (x: number, y0: number, y1: number): TrackPiece[] =>
+      Array.from({ length: y1 - y0 + 1 }, (_, i) => ({ x, y: y0 + i, track: Track.Y }));
+    // Płaskie skrzyżowanie wolno zbudować…
+    sim.enqueue({ type: 'buildTrack', pieces: yLine(14, 1, 10), under: true });
+    sim.step();
+    expect(fails(sim)).toEqual([]);
+    expect(map.under[5 * 32 + 14]).toBe(Track.X | Track.Y);
+    // …a przeciągnięcie przejścia wzdłuż linii zamienia je w bezkolizyjne.
+    sim.enqueue({ type: 'buildMetroTunnel', x0: 12, y0: 5, x1: 16, y1: 5 });
+    sim.step();
+    expect(fails(sim)).toEqual([]);
+    expect(map.under[5 * 32 + 14]).toBe(Track.Y);
+    expect(map.under[5 * 32 + 13]).toBe(0);
+    expect(map.under[5 * 32 + 12]).toBe(Track.X);
+    // Toru portalu nie rozbiera się osobno, a na portalu nie dokłada innego toru.
+    sim.enqueue({ type: 'removeTrack', pieces: [{ x: 12, y: 5, track: Track.X }], under: true });
+    sim.enqueue({ type: 'buildTrack', pieces: [{ x: 12, y: 5, track: Track.Y }], under: true });
+    sim.step();
+    expect(fails(sim)).toEqual(['nothingToRemove', 'blocked']);
+
+    sim.enqueue({ type: 'buyTrain', depotId: 1, engine: 'iskra', wagons: ['osobowy'] });
+    sim.step();
+    const train = state.trains[0]!;
+    const [a, b] = state.stations;
+    sim.enqueue({ type: 'setOrders', trainId: train.id, orders: [a!.id, b!.id] });
+    sim.enqueue({ type: 'startTrain', trainId: train.id });
+    let wentThrough = false;
+    const visited: number[] = [];
+    for (let i = 0; i < 40 * 60 && visited.length < 3; i++) {
+      sim.step();
+      if (train.trail.some((s) => isMetroTunnelTrack(s.track))) wentThrough = true;
+      if (train.status === 'loading') {
+        const st = map.station[train.trail[0]!.y * 32 + train.trail[0]!.x];
+        if (st && visited[visited.length - 1] !== st) visited.push(st);
+      }
+    }
+    expect(wentThrough).toBe(true);
+    expect(visited).toEqual([a!.id, b!.id, a!.id]);
+
+    // Zapis zachowuje przejście; buldożer na portalu rozbiera je razem z torami portali.
+    const loaded = deserializeState(JSON.parse(JSON.stringify(serializeState(state))));
+    expect(loaded.map.underTunnel[5 * 32 + 14]).toBe(map.underTunnel[5 * 32 + 14]);
+    expect(loaded.tunnels).toEqual(state.tunnels);
+  });
+
+  it('przejścia nie da się zbudować po skosie, za krótkiego ani z peronem na końcu', () => {
+    const sim = metroLine();
+    for (const [x0, y0, x1, y1] of [
+      [12, 5, 14, 7],
+      [12, 5, 13, 5],
+    ] as const) {
+      sim.enqueue({ type: 'buildMetroTunnel', x0, y0, x1, y1 });
+    }
+    sim.step();
+    expect(fails(sim)).toEqual(['blocked', 'blocked']);
+    sim.enqueue({ type: 'buildMetroTunnel', x0: 12, y0: 5, x1: 16, y1: 5 });
+    sim.step();
+    expect(fails(sim)).toEqual([]);
+    sim.enqueue({ type: 'removeMetroTunnel', x: 16, y: 5 });
+    sim.step();
+    expect(fails(sim)).toEqual([]);
+    const { map } = sim.state;
+    expect(map.underTunnel[5 * 32 + 14]).toBe(0);
+    expect(map.under[5 * 32 + 12]).toBe(0);
+    expect(sim.state.tunnels).toEqual([]);
   });
 });

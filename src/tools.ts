@@ -23,6 +23,7 @@ import type { Simulation } from './sim/simulation';
 import { getTerrain, inBounds, Terrain } from './sim/world/map';
 import { levelTargets, planTerraform, terraformTargets } from './sim/world/terraform';
 import { bridgeAt, bridgeRole, bridgeTileCoords, planBridge } from './sim/track/bridge';
+import { metroTunnelAt, metroTunnelRefund, planMetroTunnel } from './sim/track/metroTunnel';
 import { planTunnel, tunnelAt, tunnelRole, tunnelTileCoords } from './sim/track/tunnel';
 import { autoRampDown, METRO_LEVEL, planBuildUnderTrack, planRamp, planRemoveUnderTrack } from './sim/track/metro';
 import type { Point } from './render/iso';
@@ -260,12 +261,35 @@ export class Tools {
       this.label = { ...planLabel(plan), text: `Zjazd ${SIDE_ARROWS[down]} · ${planLabel(plan).text} (R – obróć)` };
       return;
     }
-    // Pod ziemią (metro): tory, perony, zjazdy, rozkład i rozbiórka.
-    const underTools: Tool[] = ['track', 'bulldozer', 'station', 'orders', 'signal'];
+    // Pod ziemią (metro): tory, perony, zjazdy, przejścia pod torem, rozkład i rozbiórka.
+    const underTools: Tool[] = ['track', 'bulldozer', 'station', 'orders', 'signal', 'tunnel'];
     if (this.under && (!underTools.includes(this.tool) || (this.tool === 'station' && this.stationKind === 'waypoint'))) {
       this.overlay.setHover(tile, 0x9aa0a8);
-      this.label = { text: 'Pod ziemią: tory, perony, semafory, zjazdy i rozbiórka (Q – powierzchnia)', ok: false };
+      this.label = { text: 'Pod ziemią: tory, perony, semafory, zjazdy, przejścia i rozbiórka (Q – powierzchnia)', ok: false };
       return;
+    }
+    if (this.under && this.tool === 'tunnel') {
+      this.overlay.setHover(tile);
+      if (!this.dragStart || !tile || sameTile(start, p)) {
+        this.label = { text: 'Przejście pod torem: przeciągnij wzdłuż toru metra przez tor drugiej linii', ok: true };
+        return;
+      }
+      const [x0, y0, x1, y1] = bridgeEnds(start, p);
+      const plan = planMetroTunnel(this.sim.state, x0, y0, x1, y1);
+      if (plan.tunnel) {
+        const tiles = tunnelTileCoords(plan.tunnel).map((t) => t.y * map.width + t.x);
+        this.overlay.setTerrainPreview(tiles, map.width, plan.result.ok, null);
+      }
+      this.label = planLabel(plan);
+      return;
+    }
+    if (this.under && this.tool === 'bulldozer' && sameTile(start, p) && tile) {
+      const pass = metroTunnelAt(this.sim.state, tile.x, tile.y);
+      if (pass && tunnelRole(pass, tile.x, tile.y) !== 'inside') {
+        this.overlay.setHover(tile, 0xe0503a);
+        this.label = { text: `Przejście pod torem – zwrot: ${formatMoney(metroTunnelRefund(pass))}`, ok: true };
+        return;
+      }
     }
     if (this.under && this.tool === 'bulldozer' && sameTile(start, p) && tile && map.stationUnder[tile.y * map.width + tile.x]) {
       const station = stationAt(this.sim.state, tile.x, tile.y, true);
@@ -516,8 +540,13 @@ export class Tools {
 
   private commandFor(start: Point, end: Point): Command | null {
     // Pod ziemią działają tylko narzędzia metra (pozostałe budowałyby na powierzchni).
-    const metroTools: Tool[] = ['track', 'bulldozer', 'station', 'orders', 'signal', 'ramp'];
+    const metroTools: Tool[] = ['track', 'bulldozer', 'station', 'orders', 'signal', 'ramp', 'tunnel'];
     if (this.under && !metroTools.includes(this.tool)) return null;
+    if (this.under && this.tool === 'tunnel') {
+      if (sameTile(start, end)) return null;
+      const [x0, y0, x1, y1] = bridgeEnds(start, end);
+      return { type: 'buildMetroTunnel', x0, y0, x1, y1 };
+    }
     if (this.tool === 'tunnel') return { type: 'buildTunnel', x: Math.floor(end.x), y: Math.floor(end.y) };
     if (this.tool === 'bridge') {
       if (sameTile(start, end)) return null;
@@ -557,6 +586,8 @@ export class Tools {
         const y = Math.floor(end.y);
         const { map } = this.sim.state;
         if (inBounds(map, x, y) && map.stationUnder[y * map.width + x]) return { type: 'removeUnderStation', x, y };
+        const pass = metroTunnelAt(this.sim.state, x, y);
+        if (pass && tunnelRole(pass, x, y) !== 'inside') return { type: 'removeMetroTunnel', x, y };
       }
       if (this.tool === 'track' || this.tool === 'bulldozer') {
         const pieces = this.removalPieces(start, end);
