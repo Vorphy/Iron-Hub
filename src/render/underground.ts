@@ -157,7 +157,8 @@ function drawThirdRail(g: Graphics, map: WorldMap): void {
       any = true;
     }
   }
-  if (any) g.stroke({ width: 1, color: THIRD_RAIL, alpha: 0.9 });
+  // Zawsze 1 piksel ekranu – przy oddaleniu cienka linia (zwłaszcza na krótkich łukach) by znikała.
+  if (any) g.stroke({ width: 1, color: THIRD_RAIL, alpha: 0.9, pixelLine: true });
 }
 
 const PASS = 0x101317;
@@ -187,6 +188,6 @@ function drawPass(g: Graphics, t: Tunnel, powered: boolean): void {
   if (powered) {
     const p = at(a0, 0.5);
     const q = at(a1, 0.5);
-    g.moveTo(p.x, p.y).lineTo(q.x, q.y).stroke({ width: 1, color: THIRD_RAIL, alpha: 0.5 });
+    g.moveTo(p.x, p.y).lineTo(q.x, q.y).stroke({ width: 1, color: THIRD_RAIL, alpha: 0.5, pixelLine: true });
   }
 }
