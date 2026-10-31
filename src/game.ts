@@ -68,7 +68,7 @@ export class Game {
   private readonly overlay = new Overlay();
   private readonly graphDebug = new GraphDebug();
   private readonly labels = new MapLabels();
-  private readonly districtTint = new DistrictTint();
+  private readonly districtTint = new DistrictTint((x, y) => this.mapRenderer.markTileDirty(x, y));
   private readonly industries = new IndustryRenderer();
   private readonly bridges = new BridgeRenderer();
   private readonly tunnels = new TunnelRenderer();
@@ -117,9 +117,9 @@ export class Game {
       () => this.sim.state.stations,
       () => this.sim.state.industries,
     );
+    this.mapRenderer.tileTint = (i) => this.districtTint.tileColor(i);
     world.addChild(
       this.mapRenderer.container,
-      this.districtTint.gfx,
       this.traffic.gfx,
       this.industries.gfx,
       this.bridges.gfx,

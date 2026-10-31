@@ -34,6 +34,7 @@ import {
 import { drawCatenary } from './catenaryDraw';
 import { drawDepot } from './depotDraw';
 import { drawTrackTile, TRACK_STYLE } from './trackDraw';
+import { DISTRICT_TINT_ALPHA } from './districtTint';
 
 const CHUNK = 16;
 /** Ile nowych kawałków mapy rysować na klatkę (płynność przy przewijaniu). */
@@ -90,6 +91,8 @@ export class MapRenderer {
   private readonly chunksX: number;
   private frame = 0;
   private drawnCount = 0;
+  /** Kolor dzielnicy na gruncie kafelka (pod budynkami); null – bez koloru. */
+  tileTint: (i: number) => number | null = () => null;
 
   constructor(
     private readonly renderer: Renderer,
@@ -310,8 +313,15 @@ export class MapRenderer {
       const trees = buildingsHidden() ? 0 : tileTrees(map, x, y);
       if (trees) drawTrees(objects, map, x, y, trees);
     }
+    this.drawTint(g, x, y);
     if (station?.waypoint) drawWaypoint(objects, x, y, bits === Track.X);
     if (map.electric[i]) drawCatenarySprites(objects, map, x, y, bits);
+  }
+
+  /** Kolor dzielnicy na gruncie kafelka – przed budynkami, które są nad nim. */
+  private drawTint(g: Graphics, x: number, y: number): void {
+    const tint = this.tileTint(y * this.map.width + x);
+    if (tint !== null) g.poly(tileDiamond(x, y)).fill({ color: tint, alpha: DISTRICT_TINT_ALPHA });
   }
 
   /** Kafelek z prostych kształtów (bez atlasu grafiki). */
@@ -331,6 +341,7 @@ export class MapRenderer {
     }
     // Droga pod torem (przejazd) – najpierw droga, tor nad nią.
     if (this.map.road[y * this.map.width + x]) drawRoad(tracksG, this.map, x, y);
+    this.drawTint(tracksG, x, y);
     const bridge = this.map.bridge[y * this.map.width + x]
       ? this.getBridges().find((b) => b.id === this.map.bridge[y * this.map.width + x])
       : undefined;
