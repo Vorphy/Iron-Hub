@@ -417,6 +417,9 @@ export class Game {
         const town = this.sim.state.towns.find((t) => t.id === ev.townId);
         if (town)
           showMessage(`${town.name} domaga się metra! Bez stacji metra miasto przestanie rosnąć powyżej 10 000 mieszkańców.`);
+      } else if (ev.type === 'districtsChanged') {
+        this.labels.rebuild(this.sim.state);
+        this.districtTint.markDirty();
       } else if (ev.type === 'districtFounded') {
         this.labels.rebuild(this.sim.state);
         this.districtTint.markDirty();

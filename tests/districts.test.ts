@@ -353,3 +353,35 @@ describe('metro w dzielnicach', () => {
     expect(grew2 - grew1).toBe(ECONOMY.town.metroGrowthExtra);
   });
 });
+
+describe('puste dzielnice', () => {
+  it('nie powstaje dzielnica w polu, bez domów miasta w zasięgu', () => {
+    const state = world();
+    const town = newTown(1, 'Żelazowo', 48, 48);
+    state.towns.push(town);
+    // Skupisko 3×3 przy rynku: w kwadratach możliwych dzielnic (16 / 12 po skosie dalej, ±12) najwyżej 4 domy.
+    for (let y = 47; y <= 49; y++) {
+      for (let x = 47; x <= 49; x++) {
+        state.map.house[y * W + x] = 1;
+        state.map.town[y * W + x] = 1;
+      }
+    }
+    expect(foundDistrict(state, town)).toBeNull();
+    expect(town.districts).toHaveLength(1);
+  });
+
+  it('dzielnica bez domów znika przy zamknięciu miesiąca (z odświeżeniem mapy)', () => {
+    const state = world();
+    const town = newTown(1, 'Torzyce', 30, 30);
+    town.districts.push({ name: 'Przedmieście', x: 70, y: 30 }, { name: 'Zatorze', x: 30, y: 60 });
+    state.towns.push(town);
+    state.map.house[30 * W + 31] = 1;
+    state.map.town[30 * W + 31] = 1;
+    state.map.house[60 * W + 31] = 1;
+    state.map.town[60 * W + 31] = 1;
+    const events: SimEvent[] = [];
+    monthlyEconomy(state, events);
+    expect(town.districts.map((d) => d.name)).toEqual(['Centrum', 'Zatorze']);
+    expect(events).toContainEqual({ type: 'districtsChanged', townId: 1 });
+  });
+});

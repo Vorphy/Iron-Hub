@@ -164,6 +164,8 @@ export type SimEvent =
   | { type: 'townAbsorbed'; townId: number; district: string }
   /** Miasto `townId` doszło do brzegu zabudowy – powstała dzielnica `district`. */
   | { type: 'districtFounded'; townId: number; district: string }
+  /** Lista dzielnic miasta się zmieniła bez komunikatu (np. usunięte puste dzielnice). */
+  | { type: 'districtsChanged'; townId: number }
   /** Zapłata za dostawę – (x, y) w układzie logicznym, do napisu nad pociągiem. */
   | { type: 'income'; amount: number; x: number; y: number }
   /** Zamknięcie miesiąca z ujemnym saldem: tyle miesięcy do bankructwa. */

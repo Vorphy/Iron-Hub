@@ -2,7 +2,7 @@ import { ECONOMY } from '../../data/economy';
 import type { GameState } from '../state';
 import { isFree } from '../world/generate';
 import { inBounds } from '../world/map';
-import type { District, Town } from './town';
+import { districtIndexAt, type District, type Town, townTiles } from './town';
 
 const T = ECONOMY.town;
 
@@ -83,15 +83,19 @@ export function foundDistrict(state: GameState, town: Town, prefer: (i: number) 
       if (x < EDGE_MARGIN || y < EDGE_MARGIN || x >= map.width - EDGE_MARGIN || y >= map.height - EDGE_MARGIN) continue;
       if (centers.some((c) => Math.abs(c.x - x) < MIN_CENTER_GAP && Math.abs(c.y - y) < MIN_CENTER_GAP)) continue;
       let free = 0;
+      let houses = 0;
       let score = 0;
       for (let ty = y - GROWTH_RADIUS; ty <= y + GROWTH_RADIUS; ty++) {
         for (let tx = x - GROWTH_RADIUS; tx <= x + GROWTH_RADIUS; tx++) {
-          if (!inBounds(map, tx, ty) || !isFree(map, tx, ty)) continue;
+          if (!inBounds(map, tx, ty)) continue;
+          if (map.town[ty * map.width + tx] === town.id) houses++;
+          if (!isFree(map, tx, ty)) continue;
           free++;
           score += prefer(ty * map.width + tx);
         }
       }
-      if (free < T.newDistrictMinFree) continue;
+      // Wzrost idzie od istniejących domów – bez nich w promieniu dzielnica zostałaby pusta.
+      if (free < T.newDistrictMinFree || houses < T.newDistrictMinHouses) continue;
       if (!best || score > best.score) best = { x, y, parent, score };
     }
   }
@@ -99,4 +103,18 @@ export function foundDistrict(state: GameState, town: Town, prefer: (i: number) 
   const district = { name: districtName(state, town, best.parent, best.x, best.y), x: best.x, y: best.y };
   town.districts.push(district);
   return district;
+}
+
+/**
+ * Usuwa dzielnice bez żadnego domu (poza centrum) – np. założone w polu przez starszą wersję gry.
+ * Zwraca, czy coś usunięto.
+ */
+export function pruneEmptyDistricts(state: GameState, town: Town): boolean {
+  if (town.districts.length < 2) return false;
+  const { map } = state;
+  const used = new Set<number>([0]);
+  for (const i of townTiles(state, town)) used.add(districtIndexAt(town, i % map.width, Math.floor(i / map.width)));
+  if (used.size === town.districts.length) return false;
+  town.districts = town.districts.filter((_, k) => used.has(k));
+  return true;
 }

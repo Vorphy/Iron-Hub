@@ -234,6 +234,13 @@ function TopbarControls({ s, actions }: { s: HudState; actions: HudActions }) {
           🏠
         </button>
         <button
+          class={s.districtsShown ? 'active' : ''}
+          title={s.districtsShown ? 'Ukryj kolory dzielnic (I)' : 'Pokaż kolory dzielnic w miastach, które mają ich kilka (I)'}
+          onClick={actions.toggleDistricts}
+        >
+          🏘
+        </button>
+        <button
           class={s.helpTopic ? 'active' : ''}
           title="Pomoc (H)"
           onClick={() => (s.helpTopic ? actions.closeHelp() : actions.openHelp())}

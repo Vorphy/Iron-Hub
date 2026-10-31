@@ -32,7 +32,7 @@ import {
   townTiles,
   type Town,
 } from './town';
-import { foundDistrict } from './districts';
+import { foundDistrict, pruneEmptyDistricts } from './districts';
 import { absorbTowns } from './townMerge';
 
 // Reguły z pliku ekonomii (src/data/economy.ts).
@@ -114,6 +114,7 @@ function closeTownMonth(state: GameState, town: Town, nearStations: Uint8Array, 
   const m = town.month;
   town.lastTransported = m.passengers > 0 ? Math.min(1, m.passengersTransported / m.passengers) : 0;
   const served = m.passengersTransported > 0;
+  if (pruneEmptyDistricts(state, town)) events.push({ type: 'districtsChanged', townId: town.id });
   const tiles = townTiles(state, town);
   const population = tiles.reduce((pop, i) => pop + HOUSE_POPULATION[state.map.house[i]!]!, 0);
   const metro = metroStatus(state, town, population);

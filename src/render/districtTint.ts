@@ -1,4 +1,4 @@
-import { Graphics } from 'pixi.js';
+import { Container, Graphics } from 'pixi.js';
 import { districtIndexAt, forEachTownTile, TOWN_EXTENT } from '../sim/economy/town';
 import type { GameState } from '../sim/state';
 import type { WorldMap } from '../sim/world/map';
@@ -6,7 +6,9 @@ import { tileDiamond } from './iso';
 
 /** Kolory dzielnic (kolejne w mieście); bez niebieskiego zasięgu stacji. */
 const COLORS = [0xffd166, 0xf4845f, 0x90be6d, 0xb197fc, 0xff8fab, 0x5fd3c8, 0xe9c46a, 0xc77dff];
-const ALPHA = 0.2;
+const ALPHA = 0.32;
+/** Najczęściej co tyle ms – przy szybkiej grze zmiany kafelków przychodzą w każdej klatce. */
+const MIN_REDRAW_MS = 250;
 
 /** Ulica należy do miasta, gdy stoi przy jego domu (także po skosie). */
 function roadOfTown(map: WorldMap, x: number, y: number, townId: number): boolean {
@@ -22,11 +24,13 @@ function roadOfTown(map: WorldMap, x: number, y: number, townId: number): boolea
 
 /**
  * Lekkie zabarwienie dzielnic (I): domy i ulice miast z co najmniej dwiema dzielnicami, każda dzielnica
- * swoim kolorem. Rysowane od nowa tylko po zmianie (`markDirty`).
+ * swoim kolorem. Rysowane od nowa tylko po zmianie (`markDirty`), najwyżej co `MIN_REDRAW_MS`,
+ * do nowej grafiki podmienianej w całości (bez czyszczenia tej, która jest na ekranie).
  */
 export class DistrictTint {
-  readonly gfx = new Graphics();
+  readonly gfx = new Container();
   private dirty = true;
+  private lastDraw = -Infinity;
 
   get visible(): boolean {
     return this.gfx.visible;
@@ -43,9 +47,11 @@ export class DistrictTint {
 
   update(state: GameState): void {
     if (!this.dirty || !this.gfx.visible) return;
+    const now = performance.now();
+    if (now - this.lastDraw < MIN_REDRAW_MS) return;
+    this.lastDraw = now;
     this.dirty = false;
-    const g = this.gfx;
-    g.clear();
+    const g = new Graphics();
     const { map } = state;
     for (const town of state.towns) {
       if (town.districts.length < 2) continue;
@@ -60,5 +66,7 @@ export class DistrictTint {
         g.fill({ color: COLORS[k % COLORS.length]!, alpha: ALPHA });
       });
     }
+    for (const old of this.gfx.removeChildren()) old.destroy();
+    this.gfx.addChild(g);
   }
 }
