@@ -34,6 +34,11 @@ export class FloatingTexts {
     this.items.push({ text, age: 0, x: p.x, y: p.y - 20 });
   }
 
+  /** Czy jakiś napis jeszcze się wznosi (trzeba rysować klatki). */
+  get active(): boolean {
+    return this.items.length > 0;
+  }
+
   update(deltaMs: number, zoom: number): void {
     for (const f of this.items) {
       f.age += deltaMs;

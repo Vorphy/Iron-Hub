@@ -129,7 +129,25 @@ Zamiast profilu w przeglądarce: pomiar w Node na syntetycznym scenariuszu – p
 
 **Co zostało (każde poniżej ~25 ms/s):** rysowanie pojazdów i domów przed nimi (`TrainRenderer.draw`, `close`, `houseVariant`, `drawTrees`), pozycje wagonów (`capture`, `vehiclesInOrder`), `dailyCargo`, wybór widocznych kawałków mapy (`cull`), odświeżanie sceny przez PixiJS co klatkę (~50 ms/s „program” – także w pauzie). Dalsze kroki, gdyby było trzeba: rysowanie na żądanie (bez renderu sceny, gdy nic się nie zmienia), pamięć wariantów domów i drzew na kafelek (`houseVariant`, `treeNoise`), mniej aut w gęstym centrum przy dalekim zoomie.
 
-**Do sprawdzenia:** Edge i Firefox tym samym skryptem (Firefox – innym protokołem), mapa 1024 przy 8×, pamięć po kilku „Nowa gra”.
+**Do sprawdzenia:** mapa 1024 przy 8×, pamięć po kilku „Nowa gra”.
+
+### Chrome, Edge, Firefox – karta graficzna (2026-10-31)
+
+Pomiar niezależny od przeglądarki: ten sam zapis w oknie 1600×900, obciążenie procesora i silnika 3D karty (Intel Iris Xe) z liczników Windows dla całego drzewa procesów przeglądarki, 20 s gry przy 8× i 15 s pauzy. Wszystkie trzy przeglądarki rysują przez WebGL2 (ANGLE / Direct3D 11) i trzymają 60 klatek/s.
+
+| GPU (CPU) | Chrome | Edge | Firefox |
+|---|---|---|---|
+| Gra 8×, przed | 55% (5,8%) | 57% (4,4%) | 47% + 10% w procesie systemowym (5,5%) |
+| Pauza, przed | 55% (3,3%) | 58% (1,8%) | 49% + 11% (10,6%) |
+| Gra 8×, po | 47% (5,5%) | 58% (7,1%) | 49% + 9% (11,3%) |
+| **Pauza, po** | **8% (3,6%)** | **7% (3,7%)** | **10% (3,5%)** |
+
+- Przeglądarki zachowują się podobnie; obciążenie karty to cecha gry, nie Firefoksa.
+- Wyłączanie warstw po kolei (Chrome, pauza): bez rysowania w ogóle ~5%, pusta scena (sam obraz 60×/s) ~20%, cała scena ~55%; z tego teren i tory (`MapRenderer`, kawałki 16×16 jako grafika wektorowa z tysiącami prostokątów tekstur) ~22 pkt, reszta warstw po kilka punktów.
+- Zmiana: **rysowanie na żądanie** – `Game.frame` sam wywołuje `app.render()` zamiast automatu PixiJS, i tylko gdy gra idzie, kamera się rusza, przyszło zdarzenie symulacji, wznosi się napis z dochodem albo przez 0,5 s po ruchu myszy / klawiszu / kliknięciu; w spokojnej pauzie klatka co 0,5 s.
+- Iris Xe przy lekkim obciążeniu obniża taktowanie, więc procent w Menedżerze zadań zawyża faktyczną pracę.
+
+**Dalej, gdyby było trzeba w trakcie gry:** limit 30 klatek/s jako opcja (≈ połowa pracy karty), kawałki terenu przy bliskim zoomie jako gotowe tekstury (jeden prostokąt zamiast tysięcy – uwaga na pamięć: przy zoomie 2× kawałek to ~2048×1300 px).
 
 ## Czego audyt nie objął
 

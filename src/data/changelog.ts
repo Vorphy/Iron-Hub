@@ -14,6 +14,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
     date: '2026-10-31',
     title: 'Metro płasko na poziomie −1; przejście pod torem metra; kolejność w rozkładzie; równe odstępy przez zajezdnię',
     items: [
+      'Mniej pracy dla karty graficznej: w pauzie, gdy nic się nie rusza, gra nie rysuje obrazu od nowa 60 razy na sekundę (obciążenie karty spada z ~55% do ~8% w Chrome, Edge i Firefoksie). Po ruchu myszy, klawiszu, przesunięciu mapy albo zdarzeniu w grze obraz od razu odświeża się płynnie.',
       'Równe odstępy na linii działają teraz jak „rozrzedzanie” w OpenTTD: raz na okrążenie każdy pociąg linii zjeżdża do zajezdni, w której go kupiono (na odcinku z najkrótszym objazdem), i czeka tam na swój odstęp – okrążenie ÷ liczba pociągów. W zajezdni nikogo nie blokuje, więc nie robi się korek jak przy czekaniu na peronie, a odstęp nie rośnie sam z siebie. Okno pociągu pokazuje zajezdnię, okrążenie, odstęp od poprzedniego pociągu i ostrzega, gdy linia jest przeciążona (pociągi korkują się za sobą) – z liczbą pociągów, które się zmieszczą.',
       'Widok metra: zjazd rysuje się jako pochylnia od wysokości terenu do poziomu −1, więc łączy się z torem na powierzchni (np. do zajezdni na wzgórzu) i z metrem pod spodem.',
       'Poprawka: w trybie Ekspert jednokierunkowy semafor w metrze potrafił zablokować wjazd na zupełnie inny tor metra (16 kafelków dalej w tym samym rzędzie) – pociąg dojeżdżał pod stację, zawracał i krążył. Semafory metra nie mylą się już z innymi torami.',

@@ -1,4 +1,4 @@
-import { type Application, Container } from 'pixi.js';
+import { type Application, Container, UPDATE_PRIORITY } from 'pixi.js';
 import { researchDef, researchLevel } from './sim/research';
 import { Input } from './input/input';
 import { GameLoop, SPEEDS, type Speed } from './loop';
@@ -58,6 +58,13 @@ const KEY_TOOLS: Record<string, Tool> = {
   Delete: 'bulldozer',
 };
 
+/** Po ruchu myszy, klawiszu albo zdarzeniu gry rysujemy każdą klatkę jeszcze przez tyle ms. */
+const ACTIVE_RENDER_MS = 500;
+/** W spokojnej pauzie klatka co tyle ms (zmiany bez zdarzenia, np. odroczone kolory dzielnic). */
+const IDLE_RENDER_MS = 500;
+/** Zdarzenia przeglądarki, po których obraz może się zmienić (także kliknięcia w okna gry). */
+const ACTIVITY_EVENTS = ['pointermove', 'pointerdown', 'pointerup', 'wheel', 'keydown', 'keyup'] as const;
+
 /** Spina symulację z prezentacją: pętla, renderer, wejście, narzędzia, HUD. */
 export class Game {
   readonly sim: Simulation;
@@ -92,8 +99,17 @@ export class Game {
   private windowRef: WindowRef | null = null;
   private windowCommands = 0;
   private readonly world = new Container();
-  private readonly onResize = (w: number, h: number) => this.camera.resize(w, h);
+  private readonly onResize = (w: number, h: number) => {
+    this.camera.resize(w, h);
+    this.onActivity();
+  };
   private readonly onTick = (ticker: { deltaMS: number }) => this.frame(ticker.deltaMS);
+  /** Do kiedy (performance.now) rysujemy każdą klatkę – po ruchu myszy, klawiszu, zdarzeniu gry. */
+  private renderUntil = 0;
+  private lastRender = 0;
+  private readonly onActivity = () => {
+    this.renderUntil = performance.now() + ACTIVE_RENDER_MS;
+  };
   /** Ctrl / Shift – modyfikator narzędzi (np. osobna stacja zamiast rozbudowy). */
   private readonly onModifier = (e: KeyboardEvent | PointerEvent) => this.tools.setModifier(e.ctrlKey || e.shiftKey);
 
@@ -166,6 +182,10 @@ export class Game {
 
     app.renderer.on('resize', this.onResize);
     app.ticker.add(this.onTick);
+    // Klatkę rysujemy sami (`frame`) – tylko gdy coś się zmienia; bez tego karta graficzna rysuje
+    // pełny obraz 60 razy na sekundę także w pauzie.
+    app.ticker.remove(app.render, app);
+    for (const type of ACTIVITY_EVENTS) window.addEventListener(type, this.onActivity, { capture: true, passive: true });
     window.addEventListener('keydown', this.onModifier);
     window.addEventListener('keyup', this.onModifier);
     window.addEventListener('pointermove', this.onModifier);
@@ -174,6 +194,8 @@ export class Game {
   /** Odłącza grę od aplikacji (przed wczytaniem innego stanu). */
   destroy(): void {
     this.app.ticker.remove(this.onTick);
+    this.app.ticker.add(this.app.render, this.app, UPDATE_PRIORITY.LOW);
+    for (const type of ACTIVITY_EVENTS) window.removeEventListener(type, this.onActivity, { capture: true });
     window.removeEventListener('keydown', this.onModifier);
     window.removeEventListener('keyup', this.onModifier);
     window.removeEventListener('pointermove', this.onModifier);
@@ -541,6 +563,16 @@ export class Game {
     this.updateTutorial(deltaMs);
     this.updateWindow(deltaMs);
     this.updateHud();
+
+    // Rysowanie na żądanie: gra idzie, kamera się rusza, przyszło zdarzenie albo gracz coś robi –
+    // każda klatka; w spokojnej pauzie tylko co `IDLE_RENDER_MS` (na wypadek zmian bez zdarzenia).
+    const now = performance.now();
+    const cameraMoved = cameraBefore !== `${this.camera.cx},${this.camera.cy},${this.camera.zoom}`;
+    if (this.loop.speed > 0 || cameraMoved || events.length > 0 || this.floaters.active) this.onActivity();
+    if (now < this.renderUntil || now - this.lastRender >= IDLE_RENDER_MS) {
+      this.lastRender = now;
+      this.app.render();
+    }
   }
 
   /** Teren minimapy po zmianach mapy najwyżej co sekundę (i przy przesuwaniu przybliżonej), reszta co klatkę. */
