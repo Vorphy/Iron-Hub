@@ -116,6 +116,7 @@ export function Hud({ actions }: { actions: HudActions }) {
           traffic={s.traffic}
           gfx={s.gfxAvailable ? s.gfx : null}
           buildingsHidden={s.buildingsHidden}
+          districtsShown={s.districtsShown}
           changelogUnseen={s.changelogUnseen}
         />
       )}
@@ -456,6 +457,7 @@ function Menu({
   traffic,
   gfx,
   buildingsHidden,
+  districtsShown,
   changelogUnseen,
 }: {
   actions: HudActions;
@@ -466,6 +468,7 @@ function Menu({
   /** null – atlas grafiki niedostępny. */
   gfx: boolean | null;
   buildingsHidden: boolean;
+  districtsShown: boolean;
   changelogUnseen: boolean;
 }) {
   const { hints, uiSize } = useStore(layoutStore);
@@ -508,6 +511,13 @@ function Menu({
         title="Ukryj domy, zakłady, drzewa i dachy peronów, żeby zobaczyć tory pod nimi"
       >
         Budynki: {buildingsHidden ? 'ukryte' : 'widoczne'} <small>U</small>
+      </button>
+      <button
+        class={districtsShown ? 'active' : ''}
+        onClick={actions.toggleDistricts}
+        title="Lekkie kolory dzielnic w miastach, które mają ich kilka"
+      >
+        Dzielnice: {districtsShown ? 'kolory' : 'bez kolorów'} <small>I</small>
       </button>
       <button class={hints ? 'active' : ''} onClick={() => setHints(!hints)} title="Podpowiedzi do narzędzi w rogu ekranu">
         Podpowiedzi: {hints ? 'wł.' : 'wył.'}

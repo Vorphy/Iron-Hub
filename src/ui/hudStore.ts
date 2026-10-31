@@ -309,6 +309,8 @@ export interface HudState {
   gfx: boolean;
   /** Widok bez budynków (U). */
   buildingsHidden: boolean;
+  /** Kolory dzielnic na mapie (I). */
+  districtsShown: boolean;
   /** Widok metra – poziom −1 (Q). */
   underground: boolean;
   /** Okno nowej gry (rozmiar mapy, ziarno). */
@@ -357,6 +359,7 @@ export const hudStore = new Store<HudState>({
   gfxAvailable: false,
   gfx: true,
   buildingsHidden: false,
+  districtsShown: true,
   underground: false,
   newGameOpen: false,
   window: null,
@@ -398,6 +401,7 @@ export interface HudActions {
   toggleTraffic(): void;
   toggleGfx(): void;
   toggleBuildings(): void;
+  toggleDistricts(): void;
   toggleUnderground(): void;
   openFinance(): void;
   /** Okno Badania (Y). */

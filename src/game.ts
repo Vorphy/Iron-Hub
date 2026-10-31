@@ -15,6 +15,7 @@ import { setGfxYear } from './render/gfx/tiles';
 import { UndergroundRenderer } from './render/underground';
 import { buildingsHidden, setBuildingsHidden } from './render/visibility';
 import { FloatingTexts } from './render/floatingText';
+import { DistrictTint } from './render/districtTint';
 import { MapLabels } from './render/mapLabels';
 import { SignalRenderer } from './render/signals';
 import { TrafficRenderer } from './render/traffic';
@@ -67,6 +68,7 @@ export class Game {
   private readonly overlay = new Overlay();
   private readonly graphDebug = new GraphDebug();
   private readonly labels = new MapLabels();
+  private readonly districtTint = new DistrictTint();
   private readonly industries = new IndustryRenderer();
   private readonly bridges = new BridgeRenderer();
   private readonly tunnels = new TunnelRenderer();
@@ -117,6 +119,7 @@ export class Game {
     );
     world.addChild(
       this.mapRenderer.container,
+      this.districtTint.gfx,
       this.traffic.gfx,
       this.industries.gfx,
       this.bridges.gfx,
@@ -198,6 +201,14 @@ export class Game {
     this.underground.markDirty();
     this.tools.setUnder(on);
     hudStore.set({ underground: on });
+  }
+
+  /** Kolory dzielnic na mapie (I). */
+  toggleDistricts(): void {
+    const on = !this.districtTint.visible;
+    this.districtTint.visible = on;
+    hudStore.set({ districtsShown: on });
+    showMessage(on ? 'Dzielnice zaznaczone kolorami (I – ukryj)' : 'Kolory dzielnic ukryte (I – pokaż)');
   }
 
   /** Widok bez budynków (U) – żeby zobaczyć tory zasłonięte domami i zakładami. */
@@ -348,6 +359,7 @@ export class Game {
     // Semafory tylko w trybie Ekspert.
     if (tool && (tool !== 'signal' || this.sim.state.signalMode === 'manual')) this.setTool(tool);
     if (code === 'KeyU') this.toggleBuildings();
+    if (code === 'KeyI') this.toggleDistricts();
     if (code === 'KeyY') this.toggleWindow({ kind: 'research' });
     if (code === 'KeyQ') this.toggleUnderground();
     if (code === 'KeyV') this.signals.showReservations = !this.signals.showReservations;
@@ -368,6 +380,7 @@ export class Game {
     let tunnelsDirty = false;
     for (const ev of events) {
       if (ev.type === 'tileChanged') {
+        this.districtTint.markDirty();
         // Drogi łączą się z sąsiadami – odświeżamy też sąsiednie kafelki (mogą być w innym kawałku).
         for (const [dx, dy] of [
           [0, 0],
@@ -406,6 +419,7 @@ export class Game {
           showMessage(`${town.name} domaga się metra! Bez stacji metra miasto przestanie rosnąć powyżej 10 000 mieszkańców.`);
       } else if (ev.type === 'districtFounded') {
         this.labels.rebuild(this.sim.state);
+        this.districtTint.markDirty();
         const town = this.sim.state.towns.find((t) => t.id === ev.townId);
         if (town)
           showMessage(`${town.name} rośnie – powstaje nowa dzielnica ${ev.district}.`, () => {
@@ -415,6 +429,7 @@ export class Game {
           });
       } else if (ev.type === 'townAbsorbed') {
         this.labels.rebuild(this.sim.state);
+        this.districtTint.markDirty();
         this.minimapDirty = true;
         const town = this.sim.state.towns.find((t) => t.id === ev.townId);
         if (town)
@@ -475,6 +490,7 @@ export class Game {
 
     this.camera.apply();
     this.labels.update(this.camera.zoom, this.camera.viewRect());
+    this.districtTint.update(this.sim.state);
     this.floaters.update(deltaMs, this.camera.zoom);
     // Kamera ruszyła (klawisze/zoom), a kursor stoi – zmienia się kafelek pod nim.
     if (this.pointer && cameraBefore !== `${this.camera.cx},${this.camera.cy},${this.camera.zoom}`) {
