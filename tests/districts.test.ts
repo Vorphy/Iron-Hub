@@ -411,6 +411,21 @@ describe('puste dzielnice', () => {
     expect(town.districts).toHaveLength(1);
   });
 
+  it('nie powstaje dzielnica, której domy w zasięgu należą do innych dzielnic', () => {
+    const state = world();
+    const town = newTown(1, 'Bocznica', 48, 48);
+    town.districts.push({ name: 'Wschód', x: 64, y: 48 });
+    state.towns.push(town);
+    // Pas zabudowy między Centrum a Wschodem – każdy dom bliżej jednego z ich środków.
+    for (let y = 46; y <= 50; y++) {
+      for (let x = 44; x <= 68; x++) {
+        state.map.house[y * W + x] = 1;
+        state.map.town[y * W + x] = 1;
+      }
+    }
+    expect(foundDistrict(state, town)).toBeNull();
+  });
+
   it('dzielnica bez domów znika przy zamknięciu miesiąca (z odświeżeniem mapy)', () => {
     const state = world();
     const town = newTown(1, 'Torzyce', 30, 30);

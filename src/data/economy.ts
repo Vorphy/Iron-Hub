@@ -220,8 +220,10 @@ export const ECONOMY = {
     newDistrictMinPop: 1000,
     newDistrictStep: 16,
     newDistrictMinFree: 40,
-    /** …i co najmniej tyle domów miasta w tym promieniu – dzielnica powstaje przy zabudowie, nie w polu. */
+    /** …i co najmniej tyle domów miasta, które od razu do niej należą – dzielnica powstaje przy zabudowie, nie w polu. */
     newDistrictMinHouses: 8,
+    /** Domy dobudowane w miesiącu założenia dzielnicy – tyle razy chętniej w jej promieniu wzrostu. */
+    newDistrictPull: 4,
     /**
      * Ruch miejski: pasażerowie przewiezieni między stacjami w różnych dzielnicach tego samego miasta,
      * co najmniej `interDistrictMinDist` kafelków (odległość jak przy zapłacie), płacą `interDistrictBonus` razy więcej.

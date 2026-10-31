@@ -49,6 +49,7 @@ const STATION_PULL = ECONOMY.town.stationPull;
 const METRO_GROWTH_EXTRA = ECONOMY.town.metroGrowthExtra;
 const METRO_UPGRADE_CHANCE = ECONOMY.town.metroUpgradeChance;
 const NEW_DISTRICT_MIN_POP = ECONOMY.town.newDistrictMinPop;
+const NEW_DISTRICT_PULL = ECONOMY.town.newDistrictPull;
 /** Utrzymanie toru i peronu metra względem zwykłego. */
 const METRO_MAINTENANCE = 2;
 
@@ -142,7 +143,10 @@ function closeTownMonth(state: GameState, town: Town, nearStations: Uint8Array, 
     const district = foundDistrict(state, town, prefer);
     if (district) {
       events.push({ type: 'districtFounded', townId: town.id, district: district.name });
-      growTown(state, state.rng, town, houses - built, prefer);
+      // Reszta domów z tego miesiąca – chętniej wokół nowej dzielnicy, żeby od razu było ją widać.
+      const w = state.map.width;
+      const near = (i: number) => Math.abs((i % w) - district.x) <= 12 && Math.abs(Math.floor(i / w) - district.y) <= 12;
+      growTown(state, state.rng, town, houses - built, (i) => prefer(i) * (near(i) ? NEW_DISTRICT_PULL : 1));
     }
   }
   for (const i of townTiles(state, town)) {

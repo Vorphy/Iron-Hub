@@ -83,6 +83,12 @@ export function renameDuplicateDistricts(state: GameState): boolean {
   return changed;
 }
 
+/** Kafelek (tx, ty) należałby do nowej dzielnicy o środku (x, y) – jest bliżej niego niż środka każdej obecnej. */
+function ownedByNew(town: Town, x: number, y: number, tx: number, ty: number): boolean {
+  const d = Math.abs(tx - x) + Math.abs(ty - y);
+  return town.districts.every((c) => d < Math.abs(tx - c.x) + Math.abs(ty - c.y));
+}
+
 /**
  * Nowa dzielnica przy brzegu zabudowy: `newDistrictStep` kafelków od środka istniejącej dzielnicy
  * (8 kierunków), z dala od innych środków, z wolnym terenem pod domy. Wolne kafelki liczą się z wagą
@@ -116,13 +122,14 @@ export function foundDistrict(state: GameState, town: Town, prefer: (i: number) 
       for (let ty = y - GROWTH_RADIUS; ty <= y + GROWTH_RADIUS; ty++) {
         for (let tx = x - GROWTH_RADIUS; tx <= x + GROWTH_RADIUS; tx++) {
           if (!inBounds(map, tx, ty)) continue;
-          if (map.town[ty * map.width + tx] === town.id) houses++;
+          // Liczą się domy, które od razu przejdą do nowej dzielnicy (bliżej jej środka niż każdego innego).
+          if (map.town[ty * map.width + tx] === town.id && ownedByNew(town, x, y, tx, ty)) houses++;
           if (!isFree(map, tx, ty)) continue;
           free++;
           score += prefer(ty * map.width + tx);
         }
       }
-      // Wzrost idzie od istniejących domów – bez nich w promieniu dzielnica zostałaby pusta.
+      // Dzielnica bez własnych domów zostałaby pusta (wzrost idzie od istniejących domów).
       if (free < T.newDistrictMinFree || houses < T.newDistrictMinHouses) continue;
       if (!best || score > best.score) best = { x, y, parent, score };
     }
