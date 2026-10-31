@@ -239,6 +239,7 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
       lastTransported: town.lastTransported,
       metro: metroStatus(state, town, population),
       districts,
+      interDistrict: Math.round(town.month.interDistrict),
     };
   }
   if (ref.kind === 'industry') {

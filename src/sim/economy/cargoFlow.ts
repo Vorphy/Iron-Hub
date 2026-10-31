@@ -10,7 +10,7 @@ import { engineDef, wagonDef } from '../trains/vehicles';
 import { CARGO_DEFS, type Cargo } from './cargo';
 import { earn } from './finance';
 import { industryDef, industryTiles, monthlyProduction, wantsWorkers } from './industry';
-import { HOUSE_POPULATION } from './town';
+import { districtAtPoint, HOUSE_POPULATION, type Town } from './town';
 
 // Reguły z pliku ekonomii (src/data/economy.ts).
 const S = ECONOMY.station;
@@ -217,7 +217,13 @@ export function serveTrainAtStation(state: GameState, train: Train, st: Station,
       const from = source ? stationCenter(state, source) : pos;
       const dist = Math.abs(from.x - pos.x) + Math.abs(from.y - pos.y);
       const days = (state.tick - load.loadedTick) / TICKS_PER_DAY;
-      income += deliveryPayment(def.cargo, load.amount, dist, days);
+      let pay = deliveryPayment(def.cargo, load.amount, dist, days);
+      const town = def.cargo === 'passengers' && source ? interDistrictTown(state, from, pos, dist) : null;
+      if (town) {
+        pay *= ECONOMY.town.interDistrictBonus;
+        town.month.interDistrict += load.amount;
+      }
+      income += pay;
       deliverToIndustries(state, st, def.cargo, load.amount);
       load.amount = 0;
       load.source = 0;
@@ -241,6 +247,22 @@ export function serveTrainAtStation(state: GameState, train: Train, st: Station,
     const head = train.trail[0]!;
     events.push({ type: 'income', amount: income, x: head.x + 0.5, y: head.y + 0.5 });
   }
+}
+
+/**
+ * Ruch miejski: przejazd między stacjami w różnych dzielnicach tego samego miasta, nie krótszy niż
+ * `interDistrictMinDist` kafelków. Zwraca to miasto (dostaje premię) albo null.
+ */
+function interDistrictTown(
+  state: GameState,
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  dist: number,
+): Town | null {
+  if (dist < ECONOMY.town.interDistrictMinDist) return null;
+  const a = districtAtPoint(state, from.x, from.y);
+  const b = districtAtPoint(state, to.x, to.y);
+  return a && b && a.town === b.town && a.district !== b.district ? a.town : null;
 }
 
 /**

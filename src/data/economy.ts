@@ -215,6 +215,12 @@ export const ECONOMY = {
     newDistrictMinPop: 1000,
     newDistrictStep: 16,
     newDistrictMinFree: 40,
+    /**
+     * Ruch miejski: pasażerowie przewiezieni między stacjami w różnych dzielnicach tego samego miasta,
+     * co najmniej `interDistrictMinDist` kafelków (odległość jak przy zapłacie), płacą `interDistrictBonus` razy więcej.
+     */
+    interDistrictMinDist: 10,
+    interDistrictBonus: 2,
   },
 
   /** Zakłady przemysłowe – reguły rozwoju (docs/03-mechaniki.md). */

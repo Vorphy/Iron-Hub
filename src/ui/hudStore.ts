@@ -169,6 +169,8 @@ export interface TownWindowData {
   metro: MetroStatus;
   /** Dzielnice: mieszkańcy i czy jest w nich metro. */
   districts: DistrictInfo[];
+  /** Pasażerowie przewiezieni w tym miesiącu między dzielnicami (z premią). */
+  interDistrict: number;
 }
 
 export interface IndustryWindowData {

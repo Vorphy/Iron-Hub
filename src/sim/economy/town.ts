@@ -34,6 +34,8 @@ export interface TownMonth {
   passengersTransported: number;
   mail: number;
   mailTransported: number;
+  /** Pasażerowie dowiezieni między dzielnicami miasta (z premią). */
+  interDistrict: number;
 }
 
 export interface Town {
@@ -61,7 +63,7 @@ export interface District {
 export const CENTER_DISTRICT_NAME = 'Centrum';
 
 export function emptyTownMonth(): TownMonth {
-  return { passengers: 0, passengersTransported: 0, mail: 0, mailTransported: 0 };
+  return { passengers: 0, passengersTransported: 0, mail: 0, mailTransported: 0, interDistrict: 0 };
 }
 
 /** Nowe miasto z jedną dzielnicą – centrum na rynku. */
@@ -79,6 +81,25 @@ export function districtIndexAt(town: Town, x: number, y: number): number {
     if (dist < bestD) {
       bestD = dist;
       best = k;
+    }
+  }
+  return best;
+}
+
+/** Miasto i dzielnica pod punktem (np. środkiem stacji); null – poza obszarem miast. */
+export function districtAtPoint(state: GameState, px: number, py: number): { town: Town; district: number } | null {
+  const x = Math.round(px);
+  const y = Math.round(py);
+  let best: { town: Town; district: number } | null = null;
+  let bestD = Infinity;
+  for (const town of state.towns) {
+    if (!inTownArea(town, x, y)) continue;
+    const k = districtIndexAt(town, x, y);
+    const d = town.districts[k]!;
+    const dist = Math.abs(x - d.x) + Math.abs(y - d.y);
+    if (dist < bestD) {
+      bestD = dist;
+      best = { town, district: k };
     }
   }
   return best;

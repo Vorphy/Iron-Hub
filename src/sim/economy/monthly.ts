@@ -22,6 +22,7 @@ import {
   type Industry,
 } from './industry';
 import {
+  districtInfo,
   addMissingLandmarks,
   emptyTownMonth,
   HOUSE_POPULATION,
@@ -124,8 +125,9 @@ function closeTownMonth(state: GameState, town: Town, nearStations: Uint8Array, 
   let houses = 0;
   if (served) houses = 1 + Math.round(TOWN_GROWTH_MAX_EXTRA * town.lastTransported);
   else if (nextFloat(state.rng) < UNSERVED_GROWTH_CHANCE) houses = 1;
-  // Duże miasto: metro przyspiesza rozwój, bez metra powyżej progu miasto stoi.
-  if (metro === 'metro') houses += METRO_GROWTH_EXTRA;
+  // Duże miasto: metro przyspiesza rozwój (za każdą dzielnicę ze stacją metra), bez metra powyżej progu miasto stoi.
+  const metroDistricts = metro === 'metro' ? districtInfo(state, town).filter((d) => d.metro).length : 0;
+  if (metro === 'metro') houses += METRO_GROWTH_EXTRA * metroDistricts;
   else if (metro === 'stalled') houses = 0;
 
   const before = new Set(tiles);
@@ -153,7 +155,9 @@ function closeTownMonth(state: GameState, town: Town, nearStations: Uint8Array, 
   // W obsługiwanym mieście część domów się rozbudowuje (z metrem – częściej).
   if (metro !== 'stalled' && before.size > 0) {
     if (served && nextFloat(state.rng) < UPGRADE_CHANCE) upgradeHouse(state, tiles, events);
-    if (metro === 'metro' && nextFloat(state.rng) < METRO_UPGRADE_CHANCE) upgradeHouse(state, tiles, events);
+    for (let k = 0; k < metroDistricts; k++) {
+      if (nextFloat(state.rng) < METRO_UPGRADE_CHANCE) upgradeHouse(state, tiles, events);
+    }
   }
   town.month = emptyTownMonth();
 }

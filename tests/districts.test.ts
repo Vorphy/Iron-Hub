@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { ECONOMY } from '../src/data/economy';
 import type { SimEvent } from '../src/sim/commands';
+import { serveTrainAtStation } from '../src/sim/economy/cargoFlow';
 import {
   districtIndexAt,
   districtInfo,
@@ -15,7 +17,7 @@ import { absorbTowns } from '../src/sim/economy/townMerge';
 import { districtName, foundDistrict } from '../src/sim/economy/districts';
 import { monthlyEconomy } from '../src/sim/economy/monthly';
 import { createRng } from '../src/sim/rng';
-import { Track } from '../src/sim/track/track';
+import { Side, Track } from '../src/sim/track/track';
 import { growTown } from '../src/sim/world/generate';
 import { deserializeState, SaveError, serializeState } from '../src/sim/serialize';
 import { Simulation } from '../src/sim/simulation';
@@ -245,5 +247,109 @@ describe('nowe dzielnice przy wzroście', () => {
     monthlyEconomy(state, events);
     expect(town.districts).toHaveLength(2);
     expect(events).toContainEqual({ type: 'districtFounded', townId: 1, district: town.districts[1]!.name });
+  });
+});
+
+describe('ruch między dzielnicami', () => {
+  const xLine = (x0: number, x1: number, y: number) =>
+    Array.from({ length: x1 - x0 + 1 }, (_, i) => ({ x: x0 + i, y, track: Track.X }));
+
+  /**
+   * Miasto: Centrum (30, 30) i opcjonalnie Stalówka (50, 30); tor y = 32, stacje A i B.
+   * Zwraca zarobek za dowiezienie 40 pasażerów z A do B.
+   */
+  function trip(a: [number, number], b: [number, number], twoDistricts: boolean) {
+    const state = world();
+    state.money = 1_000_000;
+    const town = newTown(1, 'Żelazowo', 30, 30);
+    if (twoDistricts) town.districts.push({ name: 'Stalówka', x: 50, y: 30 });
+    state.towns.push(town);
+    for (let x = 20; x <= 60; x++) {
+      state.map.house[33 * W + x] = 4;
+      state.map.town[33 * W + x] = 1;
+    }
+    const sim = new Simulation(state);
+    sim.enqueue({ type: 'buildTrack', pieces: xLine(15, 65, 32) });
+    sim.enqueue({ type: 'buildDepot', x: 14, y: 32, side: Side.SE });
+    sim.enqueue({ type: 'buildStation', x0: a[0], y0: 32, x1: a[1], y1: 32, axis: 'x' });
+    sim.enqueue({ type: 'buildStation', x0: b[0], y0: 32, x1: b[1], y1: 32, axis: 'x', separate: true });
+    sim.enqueue({ type: 'buyTrain', depotId: 1, engine: 'iskra', wagons: ['osobowy'] });
+    sim.processCommands();
+    const [sa, sb] = state.stations;
+    const train = state.trains[0]!;
+    train.trail = [{ x: b[0], y: 32, track: Track.X, entry: Side.NE, exit: Side.SW }];
+    train.loads[0] = { amount: 40, source: sa!.id, loadedTick: state.tick };
+    const before = state.money;
+    serveTrainAtStation(state, train, sb!, [], true);
+    return { income: state.money - before, town };
+  }
+
+  it('przejazd ≥ 10 kafelków między dzielnicami płaci ×2 i liczy się w mieście', () => {
+    const plain = trip([28, 30], [50, 52], false);
+    const city = trip([28, 30], [50, 52], true);
+    expect(plain.income).toBeGreaterThan(0);
+    expect(city.income).toBe(plain.income * ECONOMY.town.interDistrictBonus);
+    expect(city.town.month.interDistrict).toBe(40);
+    expect(plain.town.month.interDistrict).toBe(0);
+  });
+
+  it('krótki przejazd przez granicę dzielnic – bez premii', () => {
+    const plain = trip([36, 38], [42, 44], false);
+    const city = trip([36, 38], [42, 44], true);
+    expect(city.income).toBe(plain.income);
+    expect(city.town.month.interDistrict).toBe(0);
+  });
+
+  it('długi przejazd w jednej dzielnicy – bez premii', () => {
+    const plain = trip([20, 22], [36, 38], false);
+    const city = trip([20, 22], [36, 38], true);
+    expect(city.income).toBe(plain.income);
+  });
+
+  it('stary zapis (v29) dostaje zerowy licznik', () => {
+    const s = world();
+    s.towns.push(newTown(1, 'Testowo', 30, 30));
+    const data = JSON.parse(JSON.stringify(serializeState(s)));
+    data.version = 29;
+    delete data.towns[0].month.interDistrict;
+    expect(deserializeState(data).towns[0]!.month.interDistrict).toBe(0);
+  });
+});
+
+describe('metro w dzielnicach', () => {
+  /** Zabudowane centrum (48, 48) i dzielnica Wschód (64, 48); metro w podanych dzielnicach. */
+  function cityWithMetro(xs: number[]) {
+    const state = world();
+    const town = newTown(1, 'Żelazowo', 48, 48);
+    state.towns.push(town);
+    const rng = createRng(3);
+    while (growTown(state, rng, town, 50) === 50);
+    town.districts.push({ name: 'Wschód', x: 64, y: 48 });
+    state.money = 1_000_000;
+    const sim = new Simulation(state);
+    for (const x of xs) {
+      sim.enqueue({
+        type: 'buildTrack',
+        pieces: Array.from({ length: 7 }, (_, i) => ({ x: x - 3 + i, y: 49, track: Track.X })),
+        under: true,
+      });
+      sim.enqueue({ type: 'buildStation', x0: x - 1, y0: 49, x1: x + 1, y1: 49, axis: 'x', under: true, separate: true });
+    }
+    sim.processCommands();
+    town.month.passengers = 100;
+    town.month.passengersTransported = 100;
+    return { state, town };
+  }
+
+  it('każda dzielnica ze stacją metra dokłada domy co miesiąc', () => {
+    const one = cityWithMetro([48]);
+    const two = cityWithMetro([48, 64]);
+    expect(districtInfo(two.state, two.town).map((d) => d.metro)).toEqual([true, true]);
+    const before = [townTiles(one.state, one.town).length, townTiles(two.state, two.town).length];
+    monthlyEconomy(one.state, []);
+    monthlyEconomy(two.state, []);
+    const grew1 = townTiles(one.state, one.town).length - before[0]!;
+    const grew2 = townTiles(two.state, two.town).length - before[1]!;
+    expect(grew2 - grew1).toBe(ECONOMY.town.metroGrowthExtra);
   });
 });

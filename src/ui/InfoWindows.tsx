@@ -88,6 +88,12 @@ export function TownWindow({ data: t, actions }: { data: TownWindowData; actions
           {t.mailTransported} / {t.mail}
         </span>
       </div>
+      {t.districts.length > 1 && (
+        <div class="row" title="Przejazd co najmniej 10 kafelków między stacjami w różnych dzielnicach – zapłata ×2">
+          <span class="grow">Między dzielnicami (premia ×2)</span>
+          <span>{t.interDistrict}</span>
+        </div>
+      )}
       <div class="muted small">
         Poprzedni miesiąc: przewieziono {percent(t.lastTransported)} pasażerów. Miasto rośnie szybciej, gdy obsługują je pociągi –
         nowe domy pojawiają się w pobliżu stacji.

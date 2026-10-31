@@ -18,7 +18,7 @@ import { MAX_HEIGHT } from './world/height';
 import { TICKS_PER_DAY } from './time';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 29;
+export const SAVE_VERSION = 30;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -315,6 +315,13 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
       for (const t of d.towns as Record<string, unknown>[]) t.districts = [{ name: CENTER_DISTRICT_NAME, x: t.x, y: t.y }];
     }
     d.version = 29;
+  }
+  if (d.version === 29) {
+    // v30: licznik pasażerów między dzielnicami w miesiącu miasta
+    if (Array.isArray(d.towns)) {
+      for (const t of d.towns as { month?: Record<string, unknown> }[]) if (t.month) t.month.interDistrict = 0;
+    }
+    d.version = 30;
   }
   return d as Partial<SerializedState>;
 }

@@ -12,10 +12,12 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-31',
-    title: 'Dzielnice – miasta się zrastają',
+    title: 'Dzielnice i ruch miejski',
     items: [
       'Duże miasto (od 5 000 mieszkańców), które dorośnie do mniejszego sąsiada, wchłania go – sąsiad zostaje dzielnicą pod swoją dotychczasową nazwą. Komunikat pokazuje, gdzie to się stało; stacje nie zmieniają nazw.',
       'Miasto, które zabuduje całą okolicę rynku, zakłada przy brzegu nową dzielnicę – chętniej w stronę Twoich stacji – i rośnie dalej. Nazwy: Zatorze (gdy powstaje za torami), „Żelazowo-Północ” i inne strony świata, osiedla. Duże miasto potrzebuje do tego metra – bez niego powyżej 10 000 mieszkańców stoi.',
+      'Ruch miejski: pasażerowie przewiezieni między różnymi dzielnicami tego samego miasta płacą podwójnie – gdy przejazd ma co najmniej 10 kafelków. Liczy się każdy pociąg, metrem i po powierzchni. Okno miasta pokazuje, ilu takich pasażerów było w tym miesiącu.',
+      'Metro w każdej dzielnicy: każda dzielnica ze stacją metra przyspiesza wzrost miasta, nie tylko pierwsza stacja.',
       'Okno miasta pokazuje listę dzielnic: mieszkańców i to, czy dzielnica ma stację metra. Po przybliżeniu mapy nazwy dzielnic widać mniejszym napisem.',
     ],
   },
