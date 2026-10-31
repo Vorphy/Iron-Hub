@@ -6,7 +6,7 @@ import { tileDiamond } from './iso';
 
 /** Kolory dzielnic (kolejne w mieście); bez niebieskiego zasięgu stacji. */
 const COLORS = [0xffd166, 0xf4845f, 0x90be6d, 0xb197fc, 0xff8fab, 0x5fd3c8, 0xe9c46a, 0xc77dff];
-const ALPHA = 0.32;
+const ALPHA = 0.45;
 /** Najczęściej co tyle ms – przy szybkiej grze zmiany kafelków przychodzą w każdej klatce. */
 const MIN_REDRAW_MS = 250;
 

@@ -25,7 +25,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
       'Miasto, które zabuduje całą okolicę rynku, zakłada przy brzegu nową dzielnicę – chętniej w stronę Twoich stacji – i rośnie dalej. Nazwy: Zatorze (gdy powstaje za torami), „Żelazowo-Północ” i inne strony świata, osiedla. Duże miasto potrzebuje do tego metra – bez niego powyżej 10 000 mieszkańców stoi.',
       'Ruch miejski: pasażerowie przewiezieni między różnymi dzielnicami tego samego miasta płacą podwójnie – gdy przejazd ma co najmniej 10 kafelków. Liczy się każdy pociąg, metrem i po powierzchni. Okno miasta pokazuje, ilu takich pasażerów było w tym miesiącu.',
       'Metro w każdej dzielnicy: każda dzielnica ze stacją metra przyspiesza wzrost miasta, nie tylko pierwsza stacja.',
-      'Okno miasta pokazuje listę dzielnic: mieszkańców i to, czy dzielnica ma stację metra. Po przybliżeniu mapy nazwy dzielnic widać mniejszym napisem.',
+      'Okno miasta pokazuje listę dzielnic: mieszkańców i to, czy dzielnica ma stację metra. Na mapie nazwy dzielnic wyglądają jak nazwy miast, tylko bez pogrubienia.',
       'Dzielnice na mapie mają lekkie kolory (domy i ulice), więc od razu widać, gdzie kończy się jedna, a zaczyna druga. Przycisk 🏘 na górnym pasku, klawisz I albo Menu → Dzielnice włącza i wyłącza kolory.',
       'Dzielnica powstaje tylko przy zabudowie miasta – miasto otoczone torami, wodą i sąsiadami nie zakłada już co miesiąc pustych dzielnic w polu. Puste dzielnice ze starszych zapisów znikają przy zamknięciu miesiąca.',
     ],
