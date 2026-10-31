@@ -17,7 +17,7 @@ const FLOOR = 0x2b3038;
 const FLOOR_EDGE = 0x434a55;
 const RAMP_FLOOR = 0x4a5a6e;
 /** Trzecia szyna (zasilanie lokomotyw elektrycznych w metrze). */
-const THIRD_RAIL = 0xe0b84a;
+const THIRD_RAIL = 0xf2a23a;
 
 /**
  * Widok poziomu −1 (metro): półprzezroczysta „ziemia” nad powierzchnią i tory metra pod nią – płasko,
@@ -140,7 +140,7 @@ const MID: Record<Side, readonly [number, number]> = {
   [Side.NW]: [0, 0.5],
 };
 
-/** Trzecia szyna: żółta linia z boku każdego elementu toru metra na kafelkach z zasilaniem. */
+/** Trzecia szyna: cienka żółto-pomarańczowa linia w osi toru (między szynami) na kafelkach z zasilaniem. */
 function drawThirdRail(g: Graphics, map: WorldMap): void {
   const z = METRO_LEVEL;
   let any = false;
@@ -151,19 +151,13 @@ function drawThirdRail(g: Graphics, map: WorldMap): void {
     const y = Math.floor(i / map.width);
     for (const track of tracksOn(bits)) {
       const [a, b] = TRACK_SIDES[track].map((s) => MID[s]);
-      const dx = b![0] - a![0];
-      const dy = b![1] - a![1];
-      const len = Math.hypot(dx, dy);
-      // Przesunięcie w bok od osi toru (prostopadle), żeby szyna nie zlewała się z torem.
-      const ox = (-dy / len) * 0.2;
-      const oy = (dx / len) * 0.2;
-      const p = toWorld(x + a![0] + ox, y + a![1] + oy, z);
-      const q = toWorld(x + b![0] + ox, y + b![1] + oy, z);
+      const p = toWorld(x + a![0], y + a![1], z);
+      const q = toWorld(x + b![0], y + b![1], z);
       g.moveTo(p.x, p.y).lineTo(q.x, q.y);
       any = true;
     }
   }
-  if (any) g.stroke({ width: 1.5, color: THIRD_RAIL, alpha: 0.95 });
+  if (any) g.stroke({ width: 1, color: THIRD_RAIL, alpha: 0.9 });
 }
 
 const PASS = 0x101317;
@@ -191,8 +185,8 @@ function drawPass(g: Graphics, t: Tunnel, powered: boolean): void {
   }
   g.stroke({ width: 1.5, color: PASS_EDGE, alpha: 0.9 });
   if (powered) {
-    const p = at(a0, 0.3);
-    const q = at(a1, 0.3);
-    g.moveTo(p.x, p.y).lineTo(q.x, q.y).stroke({ width: 1.5, color: THIRD_RAIL, alpha: 0.6 });
+    const p = at(a0, 0.5);
+    const q = at(a1, 0.5);
+    g.moveTo(p.x, p.y).lineTo(q.x, q.y).stroke({ width: 1, color: THIRD_RAIL, alpha: 0.5 });
   }
 }
