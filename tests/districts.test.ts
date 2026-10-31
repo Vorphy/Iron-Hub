@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { SimEvent } from '../src/sim/commands';
 import {
   districtIndexAt,
   districtInfo,
@@ -9,6 +10,7 @@ import {
   townPopulation,
   townTiles,
 } from '../src/sim/economy/town';
+import { absorbTowns } from '../src/sim/economy/townMerge';
 import { deserializeState, SaveError, serializeState } from '../src/sim/serialize';
 import { createGame } from '../src/sim/state';
 import { Terrain } from '../src/sim/world/map';
@@ -107,5 +109,74 @@ describe('dzielnice w zapisie', () => {
     expect(() => deserializeState(data)).toThrow(SaveError);
     data.towns[0].districts = [];
     expect(() => deserializeState(data)).toThrow(SaveError);
+  });
+});
+
+describe('wchłanianie miast', () => {
+  /** Żelazowo (rynek 30, 30) – 40 domów po 140 = 5 600 mieszkańców w x 20–39; Stalówka (rynek 50, 30) obok. */
+  function twoTowns(smallHouses: [number, number][]) {
+    const state = world();
+    const big = newTown(1, 'Żelazowo', 30, 30);
+    const small = newTown(2, 'Stalówka', 50, 30);
+    state.towns.push(big, small);
+    for (let n = 0; n < 40; n++) {
+      const i = (28 + Math.floor(n / 20)) * W + 20 + (n % 20);
+      state.map.house[i] = 4;
+      state.map.town[i] = 1;
+    }
+    for (const [x, y] of smallHouses) {
+      state.map.house[y * W + x] = 1;
+      state.map.town[y * W + x] = 2;
+    }
+    return { state, big, small };
+  }
+
+  it('zrośnięte mniejsze miasto zostaje dzielnicą większego', () => {
+    const { state, big, small } = twoTowns([
+      [42, 29],
+      [50, 30],
+    ]);
+    small.districts.push({ name: 'Stalówka-Północ', x: 50, y: 20 });
+    small.month.passengers = 10;
+    big.month.passengers = 5;
+    const events: SimEvent[] = [];
+    absorbTowns(state, events);
+    expect(state.towns).toEqual([big]);
+    expect(big.districts.map((d) => d.name)).toEqual(['Centrum', 'Stalówka', 'Stalówka-Północ']);
+    expect(big.districts[1]).toMatchObject({ x: 50, y: 30 });
+    expect(state.map.town[30 * W + 50]).toBe(1);
+    expect(state.map.town.includes(2)).toBe(false);
+    expect(big.month.passengers).toBe(15);
+    expect(events).toEqual([{ type: 'townAbsorbed', townId: 1, district: 'Stalówka' }]);
+    expect(townPopulation(state, big)).toBe(40 * HOUSE_POPULATION[4]! + 2 * HOUSE_POPULATION[1]!);
+  });
+
+  it('za daleko – bez wchłaniania', () => {
+    const { state } = twoTowns([[43, 29]]); // 4 kafelki od ostatniego domu Żelazowa (x 39)
+    absorbTowns(state, []);
+    expect(state.towns).toHaveLength(2);
+  });
+
+  it('za małe albo nie dość duże miasto nie wchłania', () => {
+    const tooSmall = twoTowns([[42, 29]]);
+    for (let x = 20; x < 30; x++) tooSmall.state.map.house[28 * W + x] = 0; // 30 domów = 4 200 < 5 000
+    for (let x = 20; x < 30; x++) tooSmall.state.map.town[28 * W + x] = 0;
+    absorbTowns(tooSmall.state, []);
+    expect(tooSmall.state.towns).toHaveLength(2);
+
+    const similar = twoTowns([]);
+    for (let n = 0; n < 20; n++) {
+      const i = (32 + Math.floor(n / 10)) * W + 41 + n;
+      similar.state.map.house[i] = 4; // 20 domów po 140 = 2 800 > 5 600 / 2
+      similar.state.map.town[i] = 2;
+    }
+    absorbTowns(similar.state, []);
+    expect(similar.state.towns).toHaveLength(2);
+  });
+
+  it('zapis z wchłoniętym miastem się wczytuje', () => {
+    const { state } = twoTowns([[42, 29]]);
+    absorbTowns(state, []);
+    expect(deserializeState(JSON.parse(JSON.stringify(serializeState(state)))).towns[0]!.districts).toHaveLength(2);
   });
 });

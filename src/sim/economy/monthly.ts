@@ -31,6 +31,7 @@ import {
   townTiles,
   type Town,
 } from './town';
+import { absorbTowns } from './townMerge';
 
 // Reguły z pliku ekonomii (src/data/economy.ts).
 export const GROW_THRESHOLD = ECONOMY.industry.growThreshold;
@@ -60,6 +61,7 @@ export function monthlyEconomy(state: GameState, events: SimEvent[]): void {
   for (const ind of state.industries) closeIndustryMonth(ind);
   const nearStations = stationCatchmentMask(state);
   for (const town of state.towns) closeTownMonth(state, town, nearStations, events);
+  absorbTowns(state, events);
   chargeRunningCosts(state);
   spend(state, 'interest', monthlyInterest(state));
   const left = checkDebt(state);

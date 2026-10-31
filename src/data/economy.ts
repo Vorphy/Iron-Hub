@@ -199,6 +199,14 @@ export const ECONOMY = {
     /** Miasto z metrem (od metroDemandPop): tyle domów więcej na miesiąc i dodatkowa szansa na rozbudowę. */
     metroGrowthExtra: 2,
     metroUpgradeChance: 0.6,
+    /**
+     * Wchłanianie (co miesiąc): gdy domy dwóch miast stoją najwyżej `absorbReach` kafelków od siebie,
+     * miasto z co najmniej `absorbMinPop` mieszkańcami i ponad `absorbRatio` razy większe od sąsiada
+     * wchłania go – sąsiad zostaje dzielnicą z dotychczasową nazwą.
+     */
+    absorbReach: 3,
+    absorbMinPop: 5000,
+    absorbRatio: 2,
   },
 
   /** Zakłady przemysłowe – reguły rozwoju (docs/03-mechaniki.md). */

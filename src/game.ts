@@ -404,6 +404,16 @@ export class Game {
         const town = this.sim.state.towns.find((t) => t.id === ev.townId);
         if (town)
           showMessage(`${town.name} domaga się metra! Bez stacji metra miasto przestanie rosnąć powyżej 10 000 mieszkańców.`);
+      } else if (ev.type === 'townAbsorbed') {
+        this.labels.rebuild(this.sim.state);
+        this.minimapDirty = true;
+        const town = this.sim.state.towns.find((t) => t.id === ev.townId);
+        if (town)
+          showMessage(`Miasto ${ev.district} zrosło się z miastem ${town.name} i jest teraz jego dzielnicą.`, () => {
+            const d = town.districts.find((dd) => dd.name === ev.district);
+            if (d) this.focusTile(d.x, d.y);
+            this.openWindow({ kind: 'town', townId: town.id });
+          });
       } else if (ev.type === 'researchDone') {
         const def = researchDef(ev.id);
         if (def) showMessage(`Badanie zakończone: ${def.name} – poziom ${researchLevel(this.sim.state, ev.id)}`);

@@ -160,6 +160,8 @@ export type SimEvent =
   | { type: 'undergroundChanged' }
   /** Miasto urosło na tyle, że domaga się metra (raz na miasto). */
   | { type: 'metroDemand'; townId: number }
+  /** Miasto `townId` wchłonęło sąsiada – ten jest teraz jego dzielnicą `district`. */
+  | { type: 'townAbsorbed'; townId: number; district: string }
   /** Zapłata za dostawę – (x, y) w układzie logicznym, do napisu nad pociągiem. */
   | { type: 'income'; amount: number; x: number; y: number }
   /** Zamknięcie miesiąca z ujemnym saldem: tyle miesięcy do bankructwa. */

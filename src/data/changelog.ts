@@ -12,6 +12,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-31',
+    title: 'Dzielnice – miasta się zrastają',
+    items: [
+      'Duże miasto (od 5 000 mieszkańców), które dorośnie do mniejszego sąsiada, wchłania go – sąsiad zostaje dzielnicą pod swoją dotychczasową nazwą. Komunikat pokazuje, gdzie to się stało; stacje nie zmieniają nazw.',
+      'Miasto rośnie dalej także wokół środka nowej dzielnicy – nie jest już zamknięte w kwadracie wokół rynku.',
+      'Okno miasta pokazuje listę dzielnic: mieszkańców i to, czy dzielnica ma stację metra. Po przybliżeniu mapy nazwy dzielnic widać mniejszym napisem.',
+    ],
+  },
+  {
+    date: '2026-10-31',
     title: 'Strzałki semaforów, bezpieczniejsze wczytywanie i czas grania',
     items: [
       'Uszkodzony albo ręcznie zmieniony plik zapisu nie zawiesza gry w trakcie – przy wczytaniu pojawia się komunikat, co jest nie tak (np. rozkład pociągu wskazuje nieistniejącą stację).',
