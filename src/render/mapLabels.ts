@@ -1,6 +1,7 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import { allTiles } from '../sim/station/station';
 import { industryDef } from '../sim/economy/industry';
+import { districtIndexAt, townTiles } from '../sim/economy/town';
 import type { GameState } from '../sim/state';
 import type { Rect } from './camera';
 import { tileCenter, tileToWorld } from './iso';
@@ -31,11 +32,24 @@ export class MapLabels {
     for (const town of state.towns) {
       const c = tileCenter(town.x, town.y);
       this.add('town', town.name, c.x, c.y - 36);
-      // Dzielnice poza centrum (to leży pod nazwą miasta) – jak miasto, tylko bez pogrubienia.
-      for (const d of town.districts.slice(1)) {
-        const dc = tileCenter(d.x, d.y);
-        this.add('district', d.name, dc.x, dc.y - 30);
+      // Dzielnice poza centrum (to leży pod nazwą miasta) – jak miasto, tylko bez pogrubienia. Napis w środku
+      // zabudowy dzielnicy (jej środek bywa jeszcze pustym polem, w które dopiero rośnie).
+      if (town.districts.length < 2) continue;
+      const sum = town.districts.map(() => ({ x: 0, y: 0, n: 0 }));
+      for (const i of townTiles(state, town)) {
+        const x = i % W;
+        const y = Math.floor(i / W);
+        const s = sum[districtIndexAt(town, x, y)]!;
+        s.x += x;
+        s.y += y;
+        s.n++;
       }
+      town.districts.forEach((d, k) => {
+        if (k === 0) return;
+        const s = sum[k]!;
+        const dc = s.n ? tileCenter(Math.round(s.x / s.n), Math.round(s.y / s.n)) : tileCenter(d.x, d.y);
+        this.add('district', d.name, dc.x, dc.y - 30);
+      });
     }
     for (const depot of state.depots) {
       const c = tileCenter(depot.x, depot.y);

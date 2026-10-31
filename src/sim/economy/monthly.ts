@@ -114,7 +114,8 @@ function closeTownMonth(state: GameState, town: Town, nearStations: Uint8Array, 
   const m = town.month;
   town.lastTransported = m.passengers > 0 ? Math.min(1, m.passengersTransported / m.passengers) : 0;
   const served = m.passengersTransported > 0;
-  if (pruneEmptyDistricts(state, town)) events.push({ type: 'districtsChanged', townId: town.id });
+  // Usunięte puste dzielnice albo przesunięta zabudowa dzielnic – nazwy na mapie do odświeżenia.
+  if (pruneEmptyDistricts(state, town) || town.districts.length > 1) events.push({ type: 'districtsChanged', townId: town.id });
   const tiles = townTiles(state, town);
   const population = tiles.reduce((pop, i) => pop + HOUSE_POPULATION[state.map.house[i]!]!, 0);
   const metro = metroStatus(state, town, population);

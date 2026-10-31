@@ -377,6 +377,7 @@ export class Game {
 
     const events = this.sim.drainEvents();
     let bridgesDirty = false;
+    let labelsDirty = false;
     let tunnelsDirty = false;
     for (const ev of events) {
       if (ev.type === 'tileChanged') {
@@ -418,7 +419,7 @@ export class Game {
         if (town)
           showMessage(`${town.name} domaga się metra! Bez stacji metra miasto przestanie rosnąć powyżej 10 000 mieszkańców.`);
       } else if (ev.type === 'districtsChanged') {
-        this.labels.rebuild(this.sim.state);
+        labelsDirty = true;
         this.districtTint.markDirty();
       } else if (ev.type === 'districtFounded') {
         this.labels.rebuild(this.sim.state);
@@ -493,6 +494,7 @@ export class Game {
       }
     }
     if (bridgesDirty) this.bridges.draw(this.sim.state);
+    if (labelsDirty) this.labels.rebuild(this.sim.state);
     if (tunnelsDirty) this.tunnels.draw(this.sim.state);
     if (events.length) {
       this.tools.invalidate();
