@@ -45,7 +45,7 @@ Korzyści:
 | Zegar | Częstotliwość (startowo, do strojenia) | Co się dzieje |
 |---|---|---|
 | **Tick ruchu** | 20 / s przy prędkości x1 | Komendy, ruch pociągów, rezerwacje ścieżek, załadunek |
-| **Dzień gry** | co 40 ticków (~2 s przy x1) | Generowanie pasażerów i ładunku, wypłaty za dostawy |
+| **Dzień gry** | co 44 ticki (~2,2 s przy x1, jak w OpenTTD; do zapisu v30 – 40) | Generowanie pasażerów i ładunku, wypłaty za dostawy |
 | **Miesiąc gry** | co 30 dni | Ocena fabryk i miast (wzrost/spadek), koszty utrzymania, statystyki |
 
 Renderer działa na `requestAnimationFrame` i w każdej klatce wykonuje tyle ticków, ile wynika z upływu czasu i wybranej prędkości (akumulator czasu, fixed timestep).

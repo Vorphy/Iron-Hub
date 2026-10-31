@@ -12,8 +12,9 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-31',
-    title: 'Poprawka: zjazd do zajezdni ze stacji; mniej ceglanych domów; parki w dzielnicach',
+    title: 'Poprawka: zjazd do zajezdni ze stacji; mniej ceglanych domów; parki w dzielnicach; wolniejsze dni',
     items: [
+      'Dni płyną o 10% wolniej – dzień trwa 2,2 s przy 1×, jak w OpenTTD. Pociągi jeżdżą tak samo szybko, więc w ciągu dnia przejadą trochę dalej. W zapisanych grach data, wiek pociągów i czas ładunku w drodze zostają bez zmian.',
       'Każda dzielnica ma swój kościół i parki, stawy, pomniki albo fontanny przy środku (jedna ozdoba na 25 domów). W gęstej zabudowie przebudowuje się na nie najniższy dom w pobliżu, także wysoki – dotąd w zabudowanych centrach nie było na nie miejsca.',
       'Remonty: co miesiąc mniej więcej jeden na 100 domów przechodzi przez etapy budowy (wykop, rusztowanie, stan surowy) – w dużym mieście widać, że ciągle coś się buduje.',
       'Ceglanych domów z klimatu subarktycznego było w miastach za dużo – w centrach dużych miast nawet 2/3 budynków. Teraz to najwyżej 1/3, a domy losują się tylko spośród budynków istniejących w danym roku. Po wczytaniu gry miasta raz zmienią wygląd.',

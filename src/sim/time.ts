@@ -1,6 +1,7 @@
 // Kalendarz gry: uproszczony, 30 dni w miesiącu (patrz docs/02-architektura.md).
 
-export const TICKS_PER_DAY = 40;
+/** 44 ticki po 50 ms = 2,2 s na dzień przy 1× – jak w OpenTTD (74 ticki po 30 ms). Do v30 zapisu: 40. */
+export const TICKS_PER_DAY = 44;
 export const DAYS_PER_MONTH = 30;
 export const MONTHS_PER_YEAR = 12;
 /** Domyślny rok startu nowej gry. */

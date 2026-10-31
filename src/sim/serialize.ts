@@ -18,7 +18,7 @@ import { MAX_HEIGHT } from './world/height';
 import { TICKS_PER_DAY } from './time';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 30;
+export const SAVE_VERSION = 31;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -322,6 +322,36 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
       for (const t of d.towns as { month?: Record<string, unknown> }[]) if (t.month) t.month.interDistrict = 0;
     }
     d.version = 30;
+  }
+  if (d.version === 30) {
+    // v31: dzień ma 44 ticki zamiast 40 (tempo OpenTTD). Momenty zapisane w tickach ×1,1 – data, wiek
+    // lokomotyw, czas ładunku w drodze i dni od odbioru na stacji zostają takie same.
+    const at = (v: unknown) => (isNum(v) && v >= 0 ? Math.round((v * 44) / 40) : v);
+    const scaleLoad = (l: Record<string, unknown> | undefined) => {
+      if (l && typeof l === 'object') l.loadedTick = at(l.loadedTick);
+    };
+    d.tick = at(d.tick);
+    const research = d.research as { current?: Record<string, unknown> | null } | undefined;
+    if (research?.current) {
+      research.current.startTick = at(research.current.startTick);
+      research.current.endTick = at(research.current.endTick);
+    }
+    if (Array.isArray(d.stations)) {
+      for (const st of d.stations as { cargo?: Record<string, Record<string, unknown>> }[]) {
+        for (const c of Object.values(st.cargo ?? {})) c.lastPickup = at(c.lastPickup);
+      }
+    }
+    mapTrains((t) => {
+      if (Array.isArray(t.loads)) for (const l of t.loads) scaleLoad(l);
+      for (const key of ['createdTick', 'departedFirstTick', 'arrivedTick', 'engineBuilt']) t[key] = at(t[key]);
+      return t;
+    });
+    if (Array.isArray(d.depots)) {
+      for (const dep of d.depots as { wagons?: { load?: Record<string, unknown> }[] }[]) {
+        for (const w of dep.wagons ?? []) scaleLoad(w.load);
+      }
+    }
+    d.version = 31;
   }
   return d as Partial<SerializedState>;
 }

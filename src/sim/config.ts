@@ -1,6 +1,7 @@
 // Parametry gry. Kwoty i reguły ekonomii są w src/data/economy.ts – tu tylko je udostępniamy
 // pod dotychczasowymi nazwami; poniżej limity budowy i fizyka ruchu.
 import { ECONOMY } from '../data/economy';
+import { TICKS_PER_DAY } from './time';
 
 const C = ECONOMY.construction;
 
@@ -57,8 +58,8 @@ export const GRADE_PER_LEVEL = 0.04;
 export const BEND_SPEED = 80;
 /** Prędkość dojazdu do celu na ostatnich metrach. */
 export const CREEP_SPEED = 6;
-/** Postój na stacji (ticki; 80 = 2 dni gry). */
-export const STATION_WAIT_TICKS = 80;
+/** Postój na stacji (ticki): 2 dni gry. */
+export const STATION_WAIT_TICKS = 2 * TICKS_PER_DAY;
 /** Odstęp między pojazdami w składzie (jednostki toru). */
 export const VEHICLE_GAP = 1;
 /** Kary w wyszukiwaniu trasy (jednostki toru). */
@@ -106,8 +107,8 @@ export const PLATFORM_LONGER_PENALTY = 8 * 16;
 export const FULL_LOAD_PENALTY = 4096;
 /**
  * Zakleszczenie (pociągi czekają na siebie nawzajem): po tylu tickach czekania zawraca pociąg
- * o najniższym numerze w zakleszczeniu (120 = 3 dni gry).
+ * o najniższym numerze w zakleszczeniu (3 dni gry).
  */
-export const DEADLOCK_REVERSE_TICKS = 120;
+export const DEADLOCK_REVERSE_TICKS = 3 * TICKS_PER_DAY;
 /** Czekający pociąg ponawia próbę rezerwacji co tyle ticków. */
 export const RESERVE_RETRY_TICKS = 10;
