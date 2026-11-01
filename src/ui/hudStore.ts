@@ -49,6 +49,7 @@ export type WindowRef =
   | { kind: 'industry'; industryId: number }
   | { kind: 'station'; stationId: number }
   | { kind: 'finance' }
+  | { kind: 'company' }
   | { kind: 'research' }
   | { kind: 'trains' };
 
@@ -268,7 +269,41 @@ export interface FinanceWindowData {
   trainsPerMonth: number;
 }
 
+/** Bilans okresu w oknie Firma: przychody według ładunku i wydatki według kategorii (zł). */
+export interface CompanyLedger {
+  cargo: { cargo: Cargo; income: number; amount: number }[];
+  income: number;
+  trains: number;
+  infrastructure: number;
+  /** Budowa i zakupy po odjęciu zwrotów (ujemna – więcej sprzedano, niż kupiono). */
+  construction: number;
+  interest: number;
+}
+
+/** Rok w historii firmy (ostatni – bieżący, niezamknięty). */
+export interface CompanyYear {
+  year: number;
+  months: number;
+  /** Bieżący rok – stan na dziś, bilans do teraz. */
+  current: boolean;
+  ledger: CompanyLedger;
+  money: number;
+  loan: number;
+  companyValue: number;
+  trains: number;
+  stations: number;
+  trackPieces: number;
+}
+
+export interface CompanyWindowData {
+  kind: 'company';
+  companyName: string;
+  /** Od najstarszego; ostatni – bieżący rok. */
+  years: CompanyYear[];
+}
+
 export type WindowData =
+  | CompanyWindowData
   | DepotWindowData
   | TrainWindowData
   | TownWindowData
@@ -441,6 +476,7 @@ export interface HudActions {
   toggleDistricts(): void;
   toggleUnderground(): void;
   openFinance(): void;
+  openCompany(): void;
   /** Okno Badania (Y). */
   openResearch(): void;
   startResearch(id: ResearchId): void;

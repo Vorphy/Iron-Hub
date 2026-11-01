@@ -1160,3 +1160,206 @@ ul.orders {
 .pip.on {
   background: var(--accent);
 }
+
+/* --- Okno Firma: wskaźniki i wykresy --- */
+.window.company {
+  width: 600px;
+  gap: 8px;
+  background: #1c2026;
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.kpi {
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.kpi-title,
+.kpi-note {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.kpi-note {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kpi-value {
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--text);
+}
+
+.kpi-value.pos,
+.kpi-delta.pos {
+  color: var(--money);
+}
+
+.kpi-value.neg,
+.kpi-delta.neg {
+  color: #ff9a85;
+}
+
+.kpi-delta {
+  font-size: 11px;
+}
+
+.period .center {
+  text-align: center;
+}
+
+.chart {
+  position: relative;
+}
+
+.chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--font);
+}
+
+.chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+  margin: 4px 0 2px;
+}
+
+.chart-title {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.legend {
+  display: flex;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.legend-item,
+.tip-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.sankey-link {
+  opacity: 0.42;
+  transition: opacity 0.12s;
+}
+
+.sankey-link:hover {
+  opacity: 0.7;
+}
+
+.sankey-link.dim,
+.sankey-node.dim {
+  opacity: 0.15;
+}
+
+.sankey-label {
+  fill: var(--text);
+  font-size: 11px;
+}
+
+.sankey-value {
+  fill: var(--muted);
+}
+
+.chart .grid {
+  stroke: var(--panel-border);
+  stroke-width: 1;
+  opacity: 0.5;
+}
+
+.chart .axis-zero {
+  stroke: var(--muted);
+  stroke-width: 1;
+}
+
+.chart .axis-label {
+  fill: var(--muted);
+  font-size: 10px;
+}
+
+.chart .crosshair {
+  stroke: var(--muted);
+  stroke-dasharray: 3 3;
+}
+
+.chart .dot {
+  stroke: #1c2026;
+  stroke-width: 2;
+}
+
+.chart-tip {
+  position: absolute;
+  pointer-events: none;
+  background: #111418;
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chart-tip .tip-row {
+  display: flex;
+  gap: 6px;
+}
+
+.chart-tip.fixed-tip {
+  top: 24px;
+}
+
+.chart-tip.fixed-tip.right {
+  right: 8px;
+}
+
+.chart-tip.fixed-tip.left {
+  left: 70px;
+}
+
+.table-scroll {
+  max-height: 220px;
+  overflow: auto;
+}
+
+.table-scroll .ledger {
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .window.company {
+    width: calc(100vw - 16px);
+  }
+  .kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

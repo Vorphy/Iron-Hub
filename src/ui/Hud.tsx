@@ -8,6 +8,7 @@ import { Terrain } from '../sim/world/map';
 import { formatMoney, type SignalKind, type Tool } from '../tools';
 import { DepotWindow } from './DepotWindow';
 import { NewGameDialog } from './NewGameDialog';
+import { CompanyWindow } from './CompanyWindow';
 import { GameRules, type GameRulesValue } from './GameRules';
 import { MinimapPanel, TutorialPanel } from './Guide';
 import { ChangelogWindow, HelpWindow } from './HelpWindows';
@@ -129,6 +130,7 @@ export function Hud({ actions }: { actions: HudActions }) {
       {s.windowData?.kind === 'station' && <StationWindow data={s.windowData} actions={actions} />}
       {s.windowData?.kind === 'trains' && <TrainsWindow data={s.windowData} actions={actions} />}
       {s.windowData?.kind === 'finance' && <FinanceWindow data={s.windowData} money={s.money} actions={actions} />}
+      {s.windowData?.kind === 'company' && <CompanyWindow data={s.windowData} actions={actions} />}
       {s.windowData?.kind === 'research' && <ResearchWindow data={s.windowData} money={s.money} actions={actions} />}
       {s.windowData?.kind === 'industry' && <IndustryWindow data={s.windowData} actions={actions} />}
 
@@ -221,6 +223,13 @@ function TopbarControls({ s, actions }: { s: HudState; actions: HudActions }) {
           onClick={() => (s.window?.kind === 'trains' ? actions.closeWindow() : actions.openTrains())}
         >
           🚆 Pociągi
+        </button>
+        <button
+          class={s.window?.kind === 'company' ? 'active' : ''}
+          title="Firma – bilans, wykresy i historia od założenia (F)"
+          onClick={actions.openCompany}
+        >
+          📊 Firma
         </button>
         <button
           class={s.window?.kind === 'research' ? 'active' : ''}

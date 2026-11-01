@@ -260,6 +260,16 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     ],
   },
   {
+    id: 'company',
+    title: 'Firma – bilans i historia',
+    blocks: [
+      `Okno Firma (📊 na górnym pasku albo F) pokazuje historię przedsiębiorstwa od założenia. Gra zapisuje bilans każdego roku na zawsze: przychody i przewozy według ładunku, wydatki, gotówkę, kredyt, wartość firmy, liczbę pociągów i stacji.`,
+      `**Bilans** – wykres Sankeya: z lewej, z czego firma zarobiła (każdy ładunek osobno), pośrodku suma przychodów, z prawej, na co poszły pieniądze (pociągi, utrzymanie, budowa i zakupy, odsetki) i ile zostało zysku. Grubość wstęgi = kwota. Najedź na wstęgę – kwota, udział i przewieziona ilość. Gdy wydatki są większe od przychodów, z lewej pojawia się czerwona „strata (z kasy)”; gdy więcej sprzedałeś i rozebrałeś, niż kupiłeś – „sprzedaż i rozbiórka”. Strzałki ◂ ▸ przełączają lata, „Od założenia” – suma całej historii.`,
+      `**Wskaźniki**: wartość firmy = gotówka − kredyt + ile dostałbyś za sprzedaż pociągów i wagonów (tory i stacje nie są wliczane); zmiana od końca poprzedniego roku. Marża = (przewozy − pociągi − utrzymanie) / przewozy – ile z każdej złotówki przychodu zostaje po kosztach bieżących, przed inwestycjami i odsetkami.`,
+      `**Lata** – wykresy przychodów, wydatków i zysku oraz wartości firmy w kolejnych latach (najedź, żeby zobaczyć liczby) i tabela roczna. Bieżący rok jest liczony do dziś. W grze wczytanej ze starszej wersji historia zaczyna się od roku wczytania, a pierwszy rok nie ma podziału na ładunki.`,
+    ],
+  },
+  {
     id: 'rules',
     title: 'Zasady gry (ustawienia)',
     blocks: [

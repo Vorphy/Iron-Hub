@@ -410,6 +410,7 @@ export class Game {
     if (code === 'KeyU') this.toggleBuildings();
     if (code === 'KeyI') this.toggleDistricts();
     if (code === 'KeyY') this.toggleWindow({ kind: 'research' });
+    if (code === 'KeyF') this.toggleWindow({ kind: 'company' });
     if (code === 'KeyQ') this.toggleUnderground();
     if (code === 'KeyV') this.signals.showReservations = !this.signals.showReservations;
     if (code === 'KeyR') this.tools.rotate();

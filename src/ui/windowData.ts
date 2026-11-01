@@ -17,7 +17,17 @@ import { isWaiting, platformPenalty, waitsForFullLoad } from '../sim/trains/move
 import { lineTiming } from '../sim/trains/spacing';
 import { consistStats, engineDef, ENGINES } from '../sim/trains/vehicles';
 import { infrastructureCost } from '../sim/economy/monthly';
-import { BANKRUPTCY_MONTHS, LOAN_INTEREST, LOAN_MAX, LOAN_STEP, monthlyInterest } from '../sim/economy/finance';
+import {
+  addLedger,
+  BANKRUPTCY_MONTHS,
+  emptyLedger,
+  type Ledger,
+  LOAN_INTEREST,
+  LOAN_MAX,
+  LOAN_STEP,
+  monthlyInterest,
+} from '../sim/economy/finance';
+import { companyValue, trackPieces } from '../sim/economy/history';
 import { DAYS_PER_MONTH, gameDate, MONTHS_PER_YEAR, TICKS_PER_DAY } from '../sim/time';
 import { isElectrified } from '../sim/track/catenary';
 import { wagonResale } from '../sim/trains/consist';
@@ -37,7 +47,7 @@ import { ECONOMY } from '../data/economy';
 import { CARGOS, type Cargo } from '../sim/economy/cargo';
 import { MAX_RATING, ratingParts, ratingTarget, stationAccepts, stationRating } from '../sim/economy/cargoFlow';
 import { wagonDef } from '../sim/trains/vehicles';
-import type { TrainSummary, TrainWindowData, WindowData, WindowRef } from './hudStore';
+import type { CompanyLedger, CompanyWindowData, TrainSummary, TrainWindowData, WindowData, WindowRef } from './hudStore';
 
 /** Miasto styka się z innym – z którym, kto kogo przejmie i ile miesięcy zostało. */
 function mergingInfo(state: GameState, town: Town): { name: string; absorbedBy: boolean; monthsLeft: number } | null {
@@ -184,6 +194,7 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
         : null,
     };
   }
+  if (ref.kind === 'company') return companyWindowData(state);
   if (ref.kind === 'finance') {
     const now = gameDate(state);
     // Okno Finanse: bieżący miesiąc i 12 poprzednich (starsze są w historii firmy).
@@ -360,4 +371,65 @@ function lineInfo(sim: Simulation, t: Train): TrainWindowData['line'] {
     maxTrains: timing.maxTrains,
     jamDays: days(timing.congestion),
   };
+}
+
+/** Bilans do okna Firma: zaokrąglone kwoty, ładunki od największego przychodu. */
+function companyLedger(l: Ledger): CompanyLedger {
+  const cargo = CARGOS.filter((c) => l.cargo[c])
+    .map((c) => ({ cargo: c, income: Math.round(l.cargo[c]!.income), amount: Math.round(l.cargo[c]!.amount) }))
+    .sort((a, b) => b.income - a.income);
+  return {
+    cargo,
+    income: Math.round(l.income),
+    trains: Math.round(l.trains),
+    infrastructure: Math.round(l.infrastructure),
+    construction: Math.round(l.construction),
+    interest: Math.round(l.interest),
+  };
+}
+
+/** Okno Firma: zamknięte lata z historii i bieżący rok (zamknięte miesiące + bieżący miesiąc, stan na dziś). */
+function companyWindowData(state: GameState): CompanyWindowData {
+  const f = state.finances;
+  const now = emptyLedger();
+  addLedger(now, f.year);
+  addLedger(now, f.month);
+  return {
+    kind: 'company',
+    companyName: state.companyName,
+    years: [
+      ...f.years.map((y) => ({
+        year: y.year,
+        months: y.months,
+        current: false,
+        ledger: companyLedger(y.ledger),
+        money: y.money,
+        loan: y.loan,
+        companyValue: y.companyValue,
+        trains: y.trains,
+        stations: y.stations,
+        trackPieces: y.trackPieces,
+      })),
+      {
+        year: gameDate(state).year,
+        months: f.yearMonths + 1,
+        current: true,
+        ledger: companyLedger(now),
+        money: Math.round(state.money),
+        loan: f.loan,
+        companyValue: companyValue(state),
+        trains: state.trains.length,
+        stations: state.stations.filter((s) => !s.waypoint).length,
+        trackPieces: cachedTrackPieces(state),
+      },
+    ],
+  };
+}
+
+/** Liczenie torów przegląda całą mapę – w otwartym oknie najwyżej raz na dzień gry. */
+let trackCache: { state: GameState; day: number; value: number } | null = null;
+function cachedTrackPieces(state: GameState): number {
+  const day = Math.floor(state.tick / TICKS_PER_DAY);
+  if (trackCache?.state !== state || trackCache.day !== day) trackCache = { state, day, value: trackPieces(state) };
+  return trackCache.value;
 }

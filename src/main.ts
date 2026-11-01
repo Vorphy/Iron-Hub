@@ -245,6 +245,7 @@ const actions: HudActions = {
   },
   minimapGoto: (u, v) => game?.minimapGoto(u, v),
   openFinance: () => game?.openWindow({ kind: 'finance' }),
+  openCompany: () => game?.toggleWindow({ kind: 'company' }),
   openResearch: () => game?.toggleWindow({ kind: 'research' }),
   startResearch: (id) => game?.command({ type: 'startResearch', id }),
   cancelResearch: () => game?.command({ type: 'cancelResearch' }),
