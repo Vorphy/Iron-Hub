@@ -1,0 +1,12 @@
+name = "iron-hub-stats"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+[vars]
+ALLOWED_ORIGINS = "https://vorphy.github.io,http://localhost:5173"
+
+# database_id uzupełnij po `npx wrangler d1 create iron-hub-stats` (patrz README.md)
+[[d1_databases]]
+binding = "DB"
+database_name = "iron-hub-stats"
+database_id = "UZUPELNIJ"

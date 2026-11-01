@@ -323,6 +323,9 @@ export interface HudState {
   tutorialSteps: boolean[];
   /** Ruch aut i autobusów w miastach. */
   traffic: boolean;
+  /** Anonimowe statystyki: odbiorca skonfigurowany przy budowie gry i zgoda gracza. */
+  statsAvailable: boolean;
+  statsEnabled: boolean;
   /** Limit klatek na sekundę (Menu → Klatki). */
   fpsLimit: 30 | 60;
   /** Grafika OpenGFX wczytana i włączona (wył. – proste kształty). */
@@ -377,6 +380,8 @@ export const hudStore = new Store<HudState>({
   tutorialOpen: true,
   tutorialSteps: [],
   traffic: true,
+  statsAvailable: false,
+  statsEnabled: false,
   fpsLimit: 60,
   gfxAvailable: false,
   gfx: true,
@@ -421,6 +426,7 @@ export interface HudActions {
   attachMinimap(canvas: HTMLCanvasElement | null): void;
   minimapGoto(u: number, v: number): void;
   toggleTraffic(): void;
+  toggleStats(): void;
   toggleFpsLimit(): void;
   toggleGfx(): void;
   toggleBuildings(): void;

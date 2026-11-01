@@ -112,6 +112,7 @@ export function Hud({ actions }: { actions: HudActions }) {
           actions={actions}
           saves={s.saves}
           playStats={s.playStats}
+          stats={s.statsAvailable ? s.statsEnabled : null}
           signalMode={s.signalMode}
           traffic={s.traffic}
           fpsLimit={s.fpsLimit}
@@ -461,6 +462,7 @@ function Menu({
   actions,
   saves,
   playStats,
+  stats,
   signalMode,
   traffic,
   fpsLimit,
@@ -472,6 +474,8 @@ function Menu({
   actions: HudActions;
   saves: HudState['saves'];
   playStats: HudState['playStats'];
+  /** null – wysyłanie statystyk nieskonfigurowane w tej wersji gry. */
+  stats: boolean | null;
   signalMode: HudState['signalMode'];
   traffic: boolean;
   fpsLimit: HudState['fpsLimit'];
@@ -565,10 +569,21 @@ function Menu({
       </button>
       <div class="menu-note">Autozapis co 30 s: {formatSaveDate(saves.auto)}</div>
       {playStats && (
-        <div class="menu-note" title="Liczone tylko w tej przeglądarce, nigdzie niewysyłane">
+        <div class="menu-note" title="Liczone w tej przeglądarce">
           Grasz od {new Date(playStats.since).toLocaleDateString('pl-PL')} · sesje: {playStats.sessions} · łącznie{' '}
           {formatPlayTime(playStats.seconds)}
         </div>
+      )}
+      {stats !== null && (
+        <>
+          <button class={stats ? 'active' : ''} onClick={actions.toggleStats} title="Pomaga nam stroić grę podczas testów">
+            Anonimowe statystyki: {stats ? 'wł.' : 'wył.'}
+          </button>
+          <div class="menu-note">
+            Wysyłamy losowy identyfikator przeglądarki, kod testera z linku, nazwę firmy, czas grania i rozmiar mapy. Bez adresu
+            IP i danych osobowych.
+          </div>
+        </>
       )}
       <div class="menu-title">Plik</div>
       <button onClick={actions.exportFile}>Eksportuj do pliku</button>

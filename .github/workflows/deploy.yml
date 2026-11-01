@@ -29,6 +29,9 @@ jobs:
       - run: npx biome ci src tests
       - run: npm test
       - run: npm run build
+        env:
+          # Adres Workera statystyk (worker/README.md); pusty – gra niczego nie wysyła.
+          VITE_STATS_URL: ${{ vars.STATS_URL }}
       - uses: actions/upload-pages-artifact@v5
         if: github.ref == 'refs/heads/main'
         with:

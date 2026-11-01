@@ -1,4 +1,6 @@
 import { addPlayTime, loadPlayStats, newSession, storePlayStats } from './persistence/playStats';
+import { PlayReporter, type StatsEvent, Telemetry } from './persistence/telemetry';
+import { CHANGELOG } from './data/changelog';
 import { customCounts, DEFAULT_DENSITY, isDensity } from './sim/world/generate';
 import { LATEST_CHANGELOG } from './ui/HelpWindows';
 import { START_YEAR, START_YEARS } from './sim/time';
@@ -54,6 +56,16 @@ function storedMinimap(): MinimapSettings {
   }
 }
 const TUTORIAL_KEY = 'ironhub.tutorial';
+/** Anonimowe statystyki testów – adres Workera z VITE_STATS_URL (patrz worker/README.md). */
+const telemetry = new Telemetry(
+  (import.meta.env.VITE_STATS_URL as string | undefined) ?? '',
+  CHANGELOG[0]?.date ?? '',
+  location.search,
+);
+
+function stat(event: StatsEvent, minutes = 0): void {
+  telemetry.send(event, game?.state.companyName ?? '', game ? game.state.map.width : null, minutes);
+}
 const CHANGELOG_KEY = 'ironhub.changelogSeen';
 
 function storedText(key: string): string | null {
@@ -185,6 +197,10 @@ const actions: HudActions = {
     if (game) game.fpsLimit = fpsLimit;
     storeText(FPS_KEY, String(fpsLimit));
   },
+  toggleStats: () => {
+    telemetry.enabled = !telemetry.enabled;
+    hudStore.set({ statsEnabled: telemetry.enabled });
+  },
   toggleTraffic: () => {
     const traffic = !hudStore.get().traffic;
     hudStore.set({ traffic });
@@ -295,6 +311,7 @@ const actions: HudActions = {
   startNewGame: (size, seed, settings) => {
     hudStore.set({ newGameOpen: false });
     newGame(seed, size, settings);
+    stat('new_game');
     void saveTo('auto', true);
   },
 };
@@ -303,6 +320,8 @@ async function start(): Promise<void> {
   hudStore.set({ changelogUnseen: storedText(CHANGELOG_KEY) !== LATEST_CHANGELOG, minimap: storedMinimap() });
   hudStore.set({
     traffic: storedFlag(TRAFFIC_KEY),
+    statsAvailable: telemetry.available,
+    statsEnabled: telemetry.enabled,
     fpsLimit: storedText(FPS_KEY) === '30' ? 30 : 60,
     minimapOpen: storedFlag(MINIMAP_KEY),
     tutorialOpen: storedFlag(TUTORIAL_KEY),
@@ -370,6 +389,8 @@ function trackPlayTime(): void {
   let stats = newSession(loadPlayStats(), new Date());
   storePlayStats(stats);
   hudStore.set({ playStats: stats });
+  stat('start');
+  const reporter = new PlayReporter();
   let last = Date.now();
   let visible = document.visibilityState === 'visible';
   const tick = () => {
@@ -380,9 +401,16 @@ function trackPlayTime(): void {
       stats = addPlayTime(stats, (now - last) / 1000);
       storePlayStats(stats);
       hudStore.set({ playStats: stats });
+      const minutes = reporter.add((now - last) / 1000);
+      if (minutes) stat('playing', minutes);
     }
     last = now;
     visible = document.visibilityState === 'visible';
+    // Schowana karta może już nie wrócić – wysyłamy uzbierane minuty.
+    if (!visible) {
+      const minutes = reporter.flush();
+      if (minutes) stat('playing', minutes);
+    }
   };
   setInterval(tick, 15_000);
   document.addEventListener('visibilitychange', tick);
