@@ -4,7 +4,7 @@ import { emptyResearch, type ResearchState } from './research';
 import { DEFAULT_SETTINGS, type GameSettings, isSettings } from './settings';
 import type { Depot } from './depot/depot';
 import { isCargo } from './economy/cargo';
-import type { Finances, Ledger } from './economy/finance';
+import { addLedger, emptyLedger, type Finances, type Ledger, type YearRecord } from './economy/finance';
 import { industryDef, type Industry } from './economy/industry';
 import { CENTER_DISTRICT_NAME, type Town } from './economy/town';
 import type { Signal, SignalMode } from './signals/signals';
@@ -16,10 +16,10 @@ import { ALL_TRACKS, Side } from './track/track';
 import type { Step, Train, WagonLoad } from './trains/train';
 import { engineDef, wagonDef } from './trains/vehicles';
 import { MAX_HEIGHT } from './world/height';
-import { TICKS_PER_DAY } from './time';
+import { gameDate, TICKS_PER_DAY } from './time';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 35;
+export const SAVE_VERSION = 36;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -405,6 +405,32 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     d.settings = { ...DEFAULT_SETTINGS };
     d.version = 35;
   }
+  if (d.version === 35) {
+    // v36: historia firmy – przewozy według ładunku w bilansie, suma bieżącego roku, zamknięte lata,
+    // zysk pociągów w każdym roku. Starsza gra zaczyna historię od bieżącego roku: suma roku z tych
+    // jego miesięcy, które są jeszcze w historii (bez podziału na ładunki).
+    const f = d.finances as Record<string, unknown> | undefined;
+    if (f && Array.isArray(f.history)) {
+      const withCargo = (l: unknown) => (isObj(l) ? { ...(l as object), cargo: {} } : l);
+      f.history = (f.history as unknown[]).map(withCargo);
+      f.month = withCargo(f.month);
+      const date = gameDate({ tick: isNum(d.tick) ? d.tick : 0, startYear: isNum(d.startYear) ? d.startYear : 0 });
+      // Miesiące bieżącego roku już zamknięte – ostatnie w historii (w styczniu żadne).
+      const closed = date.month - 1;
+      const months = closed > 0 ? (f.history as unknown[]).slice(-closed).filter(isLedger) : [];
+      const year = emptyLedger();
+      for (const l of months) addLedger(year, l);
+      f.year = year;
+      f.yearMonths = months.length;
+      f.years = [];
+    }
+    const lastYear = gameDate({ tick: isNum(d.tick) ? d.tick : 0, startYear: isNum(d.startYear) ? d.startYear : 0 }).year - 1;
+    mapTrains((t) => ({
+      ...t,
+      profitHistory: isNum(t.profitLastYear) && t.profitLastYear !== 0 ? [{ year: lastYear, profit: t.profitLastYear }] : [],
+    }));
+    d.version = 36;
+  }
   return d as Partial<SerializedState>;
 }
 
@@ -715,6 +741,8 @@ function isTrain(v: unknown): v is Train {
     (t.homeDepot === null || isInt(t.homeDepot)) &&
     isNum(t.profitThisYear) &&
     isNum(t.profitLastYear) &&
+    Array.isArray(t.profitHistory) &&
+    t.profitHistory.every((p) => isObj(p) && isInt(p.year) && isNum(p.profit)) &&
     isInt(t.createdTick) &&
     (t.groupId === null || isInt(t.groupId)) &&
     (t.shareId === null || isInt(t.shareId)) &&
@@ -819,7 +847,28 @@ function isIndustry(v: unknown): v is Industry {
 
 function isLedger(v: unknown): v is Ledger {
   const l = v as Ledger;
-  return isObj(l) && isNum(l.income) && isNum(l.trains) && isNum(l.infrastructure) && isNum(l.construction) && isNum(l.interest);
+  return (
+    isObj(l) &&
+    isNum(l.income) &&
+    isNum(l.trains) &&
+    isNum(l.infrastructure) &&
+    isNum(l.construction) &&
+    isNum(l.interest) &&
+    isObj(l.cargo) &&
+    Object.entries(l.cargo).every(([k, c]) => isCargo(k) && isObj(c) && isNum(c.income) && isNum(c.amount))
+  );
+}
+
+function isYearRecord(v: unknown): v is YearRecord {
+  const y = v as YearRecord;
+  return (
+    isObj(y) &&
+    isInt(y.year) &&
+    isInt(y.months) &&
+    isLedger(y.ledger) &&
+    [y.money, y.loan, y.companyValue].every(isNum) &&
+    [y.trains, y.stations, y.trackPieces].every(isInt)
+  );
 }
 
 function isFinances(v: unknown): v is Finances {
@@ -829,6 +878,10 @@ function isFinances(v: unknown): v is Finances {
     isLedger(f.month) &&
     Array.isArray(f.history) &&
     f.history.every(isLedger) &&
+    isLedger(f.year) &&
+    isInt(f.yearMonths) &&
+    Array.isArray(f.years) &&
+    f.years.every(isYearRecord) &&
     isNum(f.loan) &&
     f.loan >= 0 &&
     isInt(f.debtMonths) &&

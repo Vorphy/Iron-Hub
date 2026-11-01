@@ -14,6 +14,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
     date: '2026-11-01',
     title: 'Zasady gry jak w OpenTTD; prawdziwe auta osobowe na ulicach; limit klatek na sekundę',
     items: [
+      'Gra zaczęła zbierać historię Twojej firmy: bilans każdego roku (przychody i przewozy według ładunku, wydatki, gotówka, kredyt, wartość firmy, liczba pociągów, stacji i torów) zostaje w zapisie na zawsze, a zysk każdego pociągu – z każdego roku od zakupu. Okno z wykresami i raportami pokażemy wkrótce; dane zbierają się już teraz (w trwającej grze – od bieżącego roku).',
       'Menu → Ustawienia → Zasady gry (i to samo w oknie nowej gry): sygnalizacja Amator / Ekspert, koszty budowy (niskie / normalne / wysokie), wzrost miast (brak / wolno / normalnie / szybko) i łączenie zrośniętych miast (wł. / wył. – jak w OpenTTD). Zasady zapisują się razem z grą, a starsze zapisy grają się jak dotąd.',
       'Menu → Anonimowe statystyki: na czas testów gra może wysyłać nam losowy identyfikator przeglądarki, kod testera z linku, nazwę firmy, czas grania i rozmiar mapy – bez adresu IP i danych osobowych. Pomaga to stroić grę. Możesz to wyłączyć jednym przyciskiem.',
       'Poprawka: auto zachodzące na autobus albo ciężarówkę nie rysuje się już zawsze na wierzchu – pojazd bliżej widza zasłania ten dalej.',

@@ -33,6 +33,11 @@ export interface WagonLoad {
   loadedTick: number;
 }
 
+export interface TrainYearProfit {
+  year: number;
+  profit: number;
+}
+
 export interface Train {
   id: number;
   name: string;
@@ -48,6 +53,8 @@ export interface Train {
   /** Zysk (przewozy − utrzymanie) w bieżącym i poprzednim roku gry, zł. */
   profitThisYear: number;
   profitLastYear: number;
+  /** Zysk w każdym zamkniętym roku od zakupu (najstarszy na początku) – do rentowności przez całe życie pociągu. */
+  profitHistory: TrainYearProfit[];
   /** Tick zakupu pociągu (do oceny, czy jeździł cały rok). */
   createdTick: number;
   /** Grupa gracza (null – bez grupy). */
@@ -188,6 +195,7 @@ export function buyTrain(
     homeDepot: depotId,
     profitThisYear: 0,
     profitLastYear: 0,
+    profitHistory: [],
     createdTick: state.tick,
     groupId: null,
     shareId: null,

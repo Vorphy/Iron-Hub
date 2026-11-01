@@ -150,6 +150,14 @@ describe('łańcuch kopalnia → pociąg → elektrownia', () => {
     }
     expect(incomes.length).toBeGreaterThan(1);
     expect(state.finances.month.income + state.finances.history.reduce((s, l) => s + l.income, 0)).toBeGreaterThan(0);
+    // Historia firmy: cały przychód z węgla zapisany według ładunku, a suma roku = zamknięte miesiące.
+    const f = state.finances;
+    const ledgers = [...f.history, f.month];
+    const total = ledgers.reduce((s, l) => s + l.income, 0);
+    expect(ledgers.reduce((s, l) => s + (l.cargo.coal?.income ?? 0), 0)).toBeCloseTo(total);
+    expect(ledgers.reduce((s, l) => s + (l.cargo.coal?.amount ?? 0), 0)).toBeGreaterThan(0);
+    expect(f.yearMonths).toBe(f.history.length);
+    expect(f.year.income).toBeCloseTo(f.history.reduce((s, l) => s + l.income, 0));
     expect(state.money).toBeGreaterThan(money);
     // Statystyki zamykają się co miesiąc – sprawdzamy historię wskaźników.
     expect(state.industries[0]!.history.some((r) => r > 0)).toBe(true);

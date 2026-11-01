@@ -10,6 +10,7 @@ import { DAYS_PER_MONTH, gameDate, MONTHS_PER_YEAR, TICKS_PER_DAY } from '../tim
 import { growTown } from '../world/generate';
 import { updateTownRoads } from '../world/roads';
 import { checkDebt, closeMonth, monthlyInterest, spend } from './finance';
+import { closeFinanceYear } from './history';
 import {
   averageSupply,
   emptyIndustryMonth,
@@ -75,7 +76,10 @@ export function monthlyEconomy(state: GameState, events: SimEvent[]): void {
   if (left === 0) events.push({ type: 'bankrupt' });
   else if (left !== null) events.push({ type: 'debtWarning', monthsLeft: left });
   closeMonth(state);
-  if (date.month === 1) closeTrainYear(state, events);
+  if (date.month === 1) {
+    closeFinanceYear(state, date.year - 1);
+    closeTrainYear(state, date.year - 1, events);
+  }
 }
 
 /** Wskaźnik miesiąca: kopalnie – odsetek wywiezionej produkcji, przetwórnie – średnie zaopatrzenie. */
@@ -213,11 +217,12 @@ function chargeRunningCosts(state: GameState): void {
 }
 
 /** Nowy rok: zysk „w tym roku” przechodzi do „zeszłego”; pociągi na minusie (jeżdżące cały rok) – komunikat. */
-function closeTrainYear(state: GameState, events: SimEvent[]): void {
+function closeTrainYear(state: GameState, year: number, events: SimEvent[]): void {
   const yearTicks = TICKS_PER_DAY * DAYS_PER_MONTH * MONTHS_PER_YEAR;
   const unprofitable: number[] = [];
   for (const t of state.trains) {
     t.profitLastYear = Math.round(t.profitThisYear);
+    t.profitHistory.push({ year, profit: t.profitLastYear });
     t.profitThisYear = 0;
     if (t.profitLastYear < 0 && state.tick - t.createdTick >= yearTicks) unprofitable.push(t.id);
   }

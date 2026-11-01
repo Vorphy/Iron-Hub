@@ -186,7 +186,8 @@ export function buildWindowData(sim: Simulation, ref: WindowRef, pickingFor: num
   }
   if (ref.kind === 'finance') {
     const now = gameDate(state);
-    const ledgers = [state.finances.month, ...[...state.finances.history].reverse()];
+    // Okno Finanse: bieżący miesiąc i 12 poprzednich (starsze są w historii firmy).
+    const ledgers = [state.finances.month, ...[...state.finances.history].reverse()].slice(0, 13);
     return {
       kind: 'finance',
       companyName: state.companyName,

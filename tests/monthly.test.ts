@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { emptyLedger } from '../src/sim/economy/finance';
 import { emptyIndustryMonth, industryDef, monthlyProduction } from '../src/sim/economy/industry';
 import { infrastructureCost, LEVEL_POINTS, MAINTENANCE, monthlyEconomy, monthRatio } from '../src/sim/economy/monthly';
 import { newTown, townHouseCount, townTiles } from '../src/sim/economy/town';
@@ -98,7 +99,7 @@ describe('koszty miesięczne', () => {
     expect(last.trains).toBe(Math.round(consistStats('iskra', ['osobowy']).runningCost / 12));
     expect(last.infrastructure).toBe(infrastructureCost(s));
     expect(s.money).toBe(money - last.trains - last.infrastructure);
-    expect(s.finances.month).toEqual({ income: 0, trains: 0, infrastructure: 0, construction: 0, interest: 0 });
+    expect(s.finances.month).toEqual(emptyLedger());
   });
 
   it('budowa i zwroty trafiają do księgi jako koszty budowy', () => {

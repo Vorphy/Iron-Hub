@@ -8,7 +8,7 @@ import { DAYS_PER_MONTH, TICKS_PER_DAY } from '../time';
 import { engineAge, type Train } from '../trains/train';
 import { engineDef, wagonDef } from '../trains/vehicles';
 import { CARGO_DEFS, type Cargo } from './cargo';
-import { earn } from './finance';
+import { earn, recordCargo } from './finance';
 import { industryDef, industryTiles, monthlyProduction, wantsWorkers } from './industry';
 import { districtAtPoint, HOUSE_POPULATION, type Town } from './town';
 
@@ -224,6 +224,7 @@ export function serveTrainAtStation(state: GameState, train: Train, st: Station,
         town.month.interDistrict += load.amount;
       }
       income += pay;
+      recordCargo(state, def.cargo, pay, load.amount);
       deliverToIndustries(state, st, def.cargo, load.amount);
       load.amount = 0;
       load.source = 0;
