@@ -27,7 +27,7 @@ const DISTRICT_NAMES = [
  * Strona świata na ekranie (widok izometryczny): przesunięcie (dx, dy) na mapie to na ekranie
  * (dx − dy) w poziomie i (dx + dy) / 2 w pionie – w górę to północ.
  */
-function screenDirection(dx: number, dy: number): string {
+export function screenDirection(dx: number, dy: number): string {
   const sx = dx - dy;
   const sy = (dx + dy) / 2;
   if (Math.abs(sx) >= Math.abs(sy)) return sx > 0 ? 'Wschód' : 'Zachód';

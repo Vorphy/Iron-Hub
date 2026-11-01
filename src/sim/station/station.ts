@@ -14,6 +14,7 @@ import type { CommandResult, SimEvent } from '../commands';
 import type { Cargo } from '../economy/cargo';
 import type { GameState } from '../state';
 import { nearestTown } from '../economy/town';
+import { metroStationName } from './metroNames';
 import { getTrackBits, Track } from '../track/track';
 import { isFlat, tileBaseHeight } from '../world/height';
 import { dropStationFromOrders } from '../trains/train';
@@ -93,13 +94,12 @@ export function stationNameFor(state: GameState, tiles: readonly number[], under
   const W = state.map.width;
   const cx = tiles.reduce((s, t) => s + (t % W), 0) / tiles.length;
   const cy = tiles.reduce((s, t) => s + Math.floor(t / W), 0) / tiles.length;
-  const town = nearestTown(state, cx, cy, TOWN_NAME_RADIUS);
   const taken = new Set(state.stations.map((s) => s.name));
+  if (under) return metroStationName(state, cx, cy, taken);
+  const town = nearestTown(state, cx, cy, TOWN_NAME_RADIUS);
   if (town) {
-    const base = under ? `${town.name} Metro` : town.name;
-    for (const name of [base, ...SUFFIXES.map((s) => `${base} ${s}`)]) if (!taken.has(name)) return name;
+    for (const name of [town.name, ...SUFFIXES.map((s) => `${town.name} ${s}`)]) if (!taken.has(name)) return name;
   }
-  if (under) for (let i = 1; ; i++) if (!taken.has(`Metro ${i}`)) return `Metro ${i}`;
   for (let i = 0; ; i++) {
     const name = stationName(i);
     if (!taken.has(name)) return name;

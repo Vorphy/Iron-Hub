@@ -2,6 +2,7 @@ import type { TrainGroup } from './trains/groups';
 import { RESEARCH, type ResearchId } from '../data/research';
 import { emptyResearch, type ResearchState } from './research';
 import { DEFAULT_SETTINGS, type GameSettings, isSettings } from './settings';
+import { renameNumberedMetro } from './station/metroNames';
 import type { Depot } from './depot/depot';
 import { isCargo } from './economy/cargo';
 import { addLedger, emptyLedger, type Finances, type Ledger, type YearRecord } from './economy/finance';
@@ -19,7 +20,7 @@ import { MAX_HEIGHT } from './world/height';
 import { gameDate, TICKS_PER_DAY } from './time';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 36;
+export const SAVE_VERSION = 37;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -431,6 +432,11 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     }));
     d.version = 36;
   }
+  if (d.version === 36) {
+    // v37: nazwy stacji metra z miasta i okolicy – stare „Metro N” zmieniamy po wczytaniu (deserializeState).
+    d.renameMetro = true;
+    d.version = 37;
+  }
   return d as Partial<SerializedState>;
 }
 
@@ -438,6 +444,7 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
 export function deserializeState(data: unknown): GameState {
   if (!data || typeof data !== 'object') throw new SaveError('Brak danych');
   const d = migrate(data as Record<string, unknown>);
+  const renameMetro = (d as { renameMetro?: boolean }).renameMetro === true;
   if (d.version !== SAVE_VERSION) throw new SaveError(`Nieobsługiwana wersja zapisu: ${String(d.version)}`);
   const m = d.map;
   if (!m || !isInt(m.width) || !isInt(m.height) || m.width <= 0 || m.height <= 0) throw new SaveError('Uszkodzona mapa');
@@ -492,7 +499,7 @@ export function deserializeState(data: unknown): GameState {
   if (!isFinances(d.finances)) throw new SaveError('Uszkodzone finanse');
   if (!isResearch(d.research)) throw new SaveError('Uszkodzone badania');
   if (typeof d.companyName !== 'string') throw new SaveError('Uszkodzona nazwa firmy');
-  return checkReferences({
+  const state = checkReferences({
     version: 1,
     tick: d.tick!,
     startYear: d.startYear!,
@@ -521,6 +528,9 @@ export function deserializeState(data: unknown): GameState {
     nextShareId: d.nextShareId!,
     research: d.research,
   });
+  // Zapisy sprzed v37: stacje metra „Metro 1”, „Metro 2”… dostają nazwy z miasta i okolicy.
+  if (renameMetro) renameNumberedMetro(state);
+  return state;
 }
 
 /**
