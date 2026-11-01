@@ -114,6 +114,7 @@ export function Hud({ actions }: { actions: HudActions }) {
           playStats={s.playStats}
           signalMode={s.signalMode}
           traffic={s.traffic}
+          fpsLimit={s.fpsLimit}
           gfx={s.gfxAvailable ? s.gfx : null}
           buildingsHidden={s.buildingsHidden}
           districtsShown={s.districtsShown}
@@ -462,6 +463,7 @@ function Menu({
   playStats,
   signalMode,
   traffic,
+  fpsLimit,
   gfx,
   buildingsHidden,
   districtsShown,
@@ -472,6 +474,7 @@ function Menu({
   playStats: HudState['playStats'];
   signalMode: HudState['signalMode'];
   traffic: boolean;
+  fpsLimit: HudState['fpsLimit'];
   /** null – atlas grafiki niedostępny. */
   gfx: boolean | null;
   buildingsHidden: boolean;
@@ -502,6 +505,13 @@ function Menu({
         title="Auta i autobusy w miastach – tylko dekoracja"
       >
         Ruch w miastach: {traffic ? 'wł.' : 'wył.'}
+      </button>
+      <button
+        class={fpsLimit === 30 ? 'active' : ''}
+        onClick={actions.toggleFpsLimit}
+        title="30 klatek na sekundę – mniej pracy dla karty graficznej i procesora (laptop, bateria), ruch trochę mniej płynny"
+      >
+        Klatki: {fpsLimit === 60 ? '60/s (płynnie)' : '30/s (oszczędnie)'}
       </button>
       {gfx !== null && (
         <button

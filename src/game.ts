@@ -62,6 +62,10 @@ const KEY_TOOLS: Record<string, Tool> = {
 const ACTIVE_RENDER_MS = 500;
 /** W spokojnej pauzie klatka co tyle ms (zmiany bez zdarzenia, np. odroczone kolory dzielnic). */
 const IDLE_RENDER_MS = 500;
+/** Dozwolone limity klatek na sekundę (ustawienie w Menu). */
+export type FpsLimit = 30 | 60;
+/** Tolerancja limitu klatek (ms). */
+const FRAME_SLACK_MS = 4;
 /** Zdarzenia przeglądarki, po których obraz może się zmienić (także kliknięcia w okna gry). */
 const ACTIVITY_EVENTS = ['pointermove', 'pointerdown', 'pointerup', 'wheel', 'keydown', 'keyup'] as const;
 
@@ -103,7 +107,21 @@ export class Game {
     this.camera.resize(w, h);
     this.onActivity();
   };
-  private readonly onTick = (ticker: { deltaMS: number }) => this.frame(ticker.deltaMS);
+  /** Limit klatek na sekundę (Menu → Klatki): 60 albo 30 – mniej pracy dla karty i procesora. */
+  private maxFps: FpsLimit = 60;
+  /** Czas od ostatniej klatki gry – przy limicie 30 klatka co drugie odświeżenie ekranu. */
+  private sinceFrame = 0;
+  /** Klatki gry na sekundę (średnia krocząca) – do licznika w pasku. */
+  private fps = 0;
+  private readonly onTick = (ticker: { deltaMS: number }) => {
+    this.sinceFrame += ticker.deltaMS;
+    // Zapas na nierówne odstępy odświeżania ekranu (16,6 ms ± 2) – inaczej 30 zamienia się w 20.
+    if (this.sinceFrame < 1000 / this.maxFps - FRAME_SLACK_MS) return;
+    const dt = this.sinceFrame;
+    this.sinceFrame = 0;
+    this.fps = this.fps ? this.fps * 0.9 + (1000 / dt) * 0.1 : 1000 / dt;
+    this.frame(dt);
+  };
   /** Do kiedy (performance.now) rysujemy każdą klatkę – po ruchu myszy, klawiszu, zdarzeniu gry. */
   private renderUntil = 0;
   private lastRender = 0;
@@ -248,6 +266,11 @@ export class Game {
 
   set trafficEnabled(on: boolean) {
     this.traffic.enabled = on;
+  }
+
+  set fpsLimit(fps: FpsLimit) {
+    this.maxFps = fps;
+    this.fps = 0;
   }
 
   /** Płótno minimapy z interfejsu (null – minimapa zwinięta). */
@@ -677,7 +700,7 @@ export class Game {
       tool: this.tools.tool,
       signalMode: state.signalMode,
       toolOptions: this.toolOptions(prev.toolOptions),
-      fps: Math.round(this.app.ticker.FPS),
+      fps: Math.round(this.fps),
       zoom: this.camera.zoom,
       graphInfo: this.graphDebug.visible
         ? `${this.sim.graph.nodes.length} węzłów · ${this.sim.graph.edges.length} krawędzi`

@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    date: '2026-11-01',
+    title: 'Limit klatek na sekundę',
+    items: [
+      'Menu → Klatki: 60/s (płynnie) albo 30/s (oszczędnie). Przy 30 klatkach gra rysuje o połowę mniej obrazów, więc karta graficzna i procesor mają mniej pracy – przydaje się na laptopie. Przeglądarka zapamiętuje wybór.',
+    ],
+  },
+  {
     date: '2026-10-31',
     title: 'Metro płasko na poziomie −1; przejście pod torem metra; kolejność w rozkładzie; równe odstępy przez zajezdnię',
     items: [

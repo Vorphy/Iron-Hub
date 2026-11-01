@@ -371,7 +371,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
       'Menu → Gra pokazuje, od kiedy grasz, ile było sesji i łączny czas grania (liczony, gdy karta z grą jest widoczna). Te liczby zostają w przeglądarce – gra nigdzie ich nie wysyła.',
       '**Grafika**: Menu → Widok → Grafika przełącza między grafiką w stylu TTD (OpenGFX – darmowa grafika projektu OpenTTD, licencja GPL v2, na czas testów) a prostymi kształtami. Lasy, pojedyncze drzewa i wygląd domów to tylko dekoracja – nie wpływają na grę.',
       '**U** – widok bez budynków: domy, zakłady, drzewa i dachy peronów znikają, żeby zobaczyć tory, które zasłaniały. Ponowne U je przywraca (też w Menu → Widok → Budynki).',
-      'Menu → Ruch w miastach – auta i autobusy można wyłączyć na słabszym komputerze. Minimapę zwijasz przyciskiem ▾, przenosisz za nagłówek; jej położenie, zoom i filtry przeglądarka zapamiętuje.',
+      'Menu → Ruch w miastach – auta i autobusy można wyłączyć na słabszym komputerze. Menu → Klatki: przy 30/s gra rysuje o połowę mniej obrazów, więc mniej obciąża kartę graficzną i procesor (laptop, bateria, wentylator) – ruch jest wtedy trochę mniej płynny; przeglądarka zapamiętuje wybór. Minimapę zwijasz przyciskiem ▾, przenosisz za nagłówek; jej położenie, zoom i filtry przeglądarka zapamiętuje.',
       '**Planowanie z mapą**: ⛶ na minimapie otwiera dużą mapę z nazwami miast, a legenda (☰) pozwala pokazać tylko wybrane zakłady – np. „tylko” przy Kopalni węgla, potem przy Elektrowni – i znaleźć dobrą parę na pierwszą linię.',
       'Nowa gra: rozmiar mapy (64 – 1024), rok startu, gęstość miast, kopalń i lasów oraz przemysłu (brak / mało / normalnie / dużo) albo tryb „Własne” z dokładnymi liczbami każdego typu i ziarno – ta sama liczba i ustawienia dają tę samą mapę.',
     ],

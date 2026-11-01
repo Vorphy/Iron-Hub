@@ -323,6 +323,8 @@ export interface HudState {
   tutorialSteps: boolean[];
   /** Ruch aut i autobusów w miastach. */
   traffic: boolean;
+  /** Limit klatek na sekundę (Menu → Klatki). */
+  fpsLimit: 30 | 60;
   /** Grafika OpenGFX wczytana i włączona (wył. – proste kształty). */
   gfxAvailable: boolean;
   gfx: boolean;
@@ -375,6 +377,7 @@ export const hudStore = new Store<HudState>({
   tutorialOpen: true,
   tutorialSteps: [],
   traffic: true,
+  fpsLimit: 60,
   gfxAvailable: false,
   gfx: true,
   buildingsHidden: false,
@@ -418,6 +421,7 @@ export interface HudActions {
   attachMinimap(canvas: HTMLCanvasElement | null): void;
   minimapGoto(u: number, v: number): void;
   toggleTraffic(): void;
+  toggleFpsLimit(): void;
   toggleGfx(): void;
   toggleBuildings(): void;
   toggleDistricts(): void;

@@ -27,6 +27,7 @@ const DEFAULT_MAP_SIZE = 128;
 const ALLOWED_SIZES = [64, 128, 256, 512, 1024];
 const AUTOSAVE_MS = 30_000;
 const TRAFFIC_KEY = 'ironhub.traffic';
+const FPS_KEY = 'ironhub.fps';
 const GFX_KEY = 'ironhub.gfx';
 const MINIMAP_KEY = 'ironhub.minimap';
 const MINIMAP_SETTINGS_KEY = 'ironhub.minimapSettings';
@@ -73,8 +74,12 @@ function storedFlag(key: string): boolean {
 }
 
 function storeFlag(key: string, on: boolean): void {
+  storeText(key, on ? '1' : '0');
+}
+
+function storeText(key: string, value: string): void {
   try {
-    localStorage.setItem(key, on ? '1' : '0');
+    localStorage.setItem(key, value);
   } catch {
     // Bez dostępu do pamięci przeglądarki ustawienie działa do zamknięcia strony.
   }
@@ -97,6 +102,7 @@ function startGame(state: GameState, view: ViewState | null = null): void {
   game = new Game(app, state);
   if (view) game.view = view;
   game.trafficEnabled = hudStore.get().traffic;
+  game.fpsLimit = hudStore.get().fpsLimit;
   game.attachMinimap(minimapCanvas);
   hudStore.set({ tutorialSteps: [] });
   game.closeWindow();
@@ -172,6 +178,12 @@ const actions: HudActions = {
     setGfxEnabled(gfx);
     game?.redrawAll();
     storeFlag(GFX_KEY, gfx);
+  },
+  toggleFpsLimit: () => {
+    const fpsLimit = hudStore.get().fpsLimit === 60 ? 30 : 60;
+    hudStore.set({ fpsLimit });
+    if (game) game.fpsLimit = fpsLimit;
+    storeText(FPS_KEY, String(fpsLimit));
   },
   toggleTraffic: () => {
     const traffic = !hudStore.get().traffic;
@@ -291,6 +303,7 @@ async function start(): Promise<void> {
   hudStore.set({ changelogUnseen: storedText(CHANGELOG_KEY) !== LATEST_CHANGELOG, minimap: storedMinimap() });
   hudStore.set({
     traffic: storedFlag(TRAFFIC_KEY),
+    fpsLimit: storedText(FPS_KEY) === '30' ? 30 : 60,
     minimapOpen: storedFlag(MINIMAP_KEY),
     tutorialOpen: storedFlag(TUTORIAL_KEY),
   });
