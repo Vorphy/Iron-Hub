@@ -35,6 +35,12 @@ const CAR_COLORS = [0xc0392b, 0x2e6fb7, 0xe8e8e8, 0x2b2b2b, 0x3f8f4a, 0x8e44ad, 
 const CARS_PER_DISTRICT = 12;
 /** Poniżej tego przybliżenia auta są za małe, żeby je rysować. */
 const MIN_ZOOM = 0.5;
+/**
+ * Sprite'y autobusów i ciężarówek OpenGFX nie są wyśrodkowane na pozycji pojazdu: wzdłuż drogi środek obrazka
+ * leży 4 px niżej i ±4 px w bok, czyli (1/16, 3/16) kafelka bliżej widza. Nasze auta są wyśrodkowane, więc bez
+ * tej poprawki auto zachodzące na autobus prawie zawsze rysowało się na nim. O tyle głębiej sortujemy sprite'y OpenGFX.
+ */
+export const OPENGFX_ROAD_DEPTH = 0.25;
 /** Co tyle ms odświeżamy listy dróg i liczbę pojazdów miast w widoku. */
 const REFRESH_MS = 2000;
 
@@ -116,7 +122,7 @@ export class TrafficRenderer {
         out.push({
           x: pose.x,
           y: pose.y,
-          depth: pose.x + pose.y,
+          depth: pose.x + pose.y + (sprites && v.kind !== 'car' ? OPENGFX_ROAD_DEPTH : 0),
           draw: (g) => {
             if (!sprites || !drawVehicleSprite(g, pose, v)) drawCar(g, pose, v);
           },

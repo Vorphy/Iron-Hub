@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { type CarModel, carModel, directionVector, rasterizeCar } from '../src/render/gfx/cars';
 import { ttdDirection } from '../src/render/gfx/gfx';
+import { OPENGFX_ROAD_DEPTH } from '../src/render/traffic';
+import atlas from '../public/gfx/opengfx/gfx.json';
 
 const MODELS: CarModel[] = ['classic', 'sedan', 'hatch'];
 const RED = 0xc0392b;
@@ -61,5 +63,27 @@ describe('sprite auta osobowego', () => {
     expect(carModel(1950, 1)).toBe('classic');
     expect(new Set([0, 1].map((v) => carModel(1970, v)))).toEqual(new Set(['classic', 'sedan']));
     expect(new Set([0, 1].map((v) => carModel(2000, v)))).toEqual(new Set(['sedan', 'hatch']));
+  });
+});
+
+describe('kolejność aut i autobusów OpenGFX', () => {
+  it("poprawka głębokości odpowiada przesunięciu sprite'ów autobusu i ciężarówki w atlasie", () => {
+    const gfx = atlas as unknown as {
+      frames: Record<string, number[]>;
+      road: Record<string, { eras: number[]; colours: number[] }>;
+    };
+    for (const kind of ['bus', 'truck']) {
+      const def = gfx.road[kind]!;
+      for (const base of def.eras) {
+        for (const dir of [1, 3, 5, 7]) {
+          const [, , , w, h, ox, oy] = gfx.frames[`${base + dir}@${def.colours[0]}`]!;
+          // Środek podstawy obrazka względem pozycji: x − y z poziomu, x + y z przesunięcia dołu (pojazd ~10 jedn.).
+          const xMinusY = (ox! + w! / 2) / 2;
+          const xPlusY = oy! + h! - 5;
+          expect(Math.abs(xMinusY)).toBe(2);
+          expect(xPlusY / 16).toBe(OPENGFX_ROAD_DEPTH);
+        }
+      }
+    }
   });
 });
