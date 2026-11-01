@@ -30,6 +30,8 @@ const TRUCK_BOX = 0x9a8f7a;
 const INDUSTRY_REACH = TOWN_EXTENT + 8;
 const BUS_COLOR = 0xf2c230;
 const CAR_COLORS = [0xc0392b, 0x2e6fb7, 0xe8e8e8, 0x2b2b2b, 0x3f8f4a, 0x8e44ad, 0xd98236, 0x7f8c8d];
+/** Najwięcej aut osobowych (furgonetek) na jedną dzielnicę miasta. */
+const CARS_PER_DISTRICT = 12;
 /** Poniżej tego przybliżenia auta są za małe, żeby je rysować. */
 const MIN_ZOOM = 0.5;
 /** Co tyle ms odświeżamy listy dróg i liczbę pojazdów miast w widoku. */
@@ -140,8 +142,10 @@ export class TrafficRenderer {
       tt.roads = roads;
       this.towns.set(town.id, tt);
       const pop = townPopulation(state, town);
+      // Do 12 aut na dzielnicę – miasto zrośnięte z kilku miast nie traci ich ruchu.
+      const maxCars = CARS_PER_DISTRICT * Math.max(1, town.districts.length);
       const cars =
-        roads.length < 2 ? 0 : Math.min(Math.round(roads.length / 3), Math.max(1, Math.min(12, Math.round(pop / 150))));
+        roads.length < 2 ? 0 : Math.min(Math.round(roads.length / 3), Math.max(1, Math.min(maxCars, Math.round(pop / 150))));
       // Więcej autobusów w mieście obsługiwanym przez kolej (dowożą pasażerów na stację).
       const buses = roads.length < 6 ? 0 : town.lastTransported > 0 ? 2 + Math.floor(pop / 1500) : pop > 400 ? 1 : 0;
       // Ciężarówki dowożą do miasta z pobliskich zakładów (więcej z większych) i towary do dużych miast.
@@ -151,7 +155,7 @@ export class TrafficRenderer {
         if (town.districts.some((d) => Math.abs(ind.x + w / 2 - d.x) + Math.abs(ind.y + h / 2 - d.y) <= INDUSTRY_REACH))
           trucks += ind.level >= 3 ? 2 : 1;
       }
-      trucks = roads.length < 6 ? 0 : Math.min(4, trucks);
+      trucks = roads.length < 6 ? 0 : Math.min(4 * Math.max(1, town.districts.length), trucks);
       const want: Record<Kind, number> = { car: cars, bus: buses, truck: trucks };
       for (const kind of ['car', 'bus', 'truck'] as const) {
         const list = tt.vehicles.filter((v) => v.kind === kind);

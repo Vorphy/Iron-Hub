@@ -109,10 +109,11 @@ export class FrontObjects {
 
   /**
    * Obiekty, które zasłaniają pojazd w (fx, fy): stoją przed nim (większe x + y) i nachodzą na niego
-   * na ekranie (kolumna x − y różni się najwyżej o 2). Drzewa same pojazdów nie zasłaniają (w lesie
-   * każde zasłania kolejne) – trafiają tu tylko przez `close()`.
+   * na ekranie (kolumna x − y różni się najwyżej o 2). Drzewa zasłaniają tylko auta (`trees`) i tylko
+   * z trzech kafelków tuż przed nimi – pociągi jeżdżą przez lasy, a tam każde drzewo zasłania kolejne
+   * i domknięcie objęłoby cały las; inne drzewa trafiają tu tylko przez `close()`.
    */
-  addVehicle(fx: number, fy: number): void {
+  addVehicle(fx: number, fy: number, trees = false): void {
     if (buildingsHidden()) return;
     const x0 = Math.floor(fx);
     const y0 = Math.floor(fy);
@@ -123,6 +124,7 @@ export class FrontObjects {
         if (x + y + 1 > fx + fy && Math.abs(dx - dy) <= 2 && dx + dy <= 6) this.add(x, y, false);
       }
     }
+    if (trees) for (const [dx, dy] of NEAR_FRONT) this.add(x0 + dx, y0 + dy, true);
   }
 
   /**
@@ -143,6 +145,13 @@ export class FrontObjects {
     }
   }
 }
+
+/** Kafelki tuż przed pojazdem (bliżej widza), których drzewa mogą go zasłonić. */
+const NEAR_FRONT = [
+  [1, 0],
+  [0, 1],
+  [1, 1],
+] as const;
 
 /** Zabezpieczenie wydajności – w praktyce domknięcie kończy się wcześniej (brzeg miasta). */
 const MAX_FRONT_OBJECTS = 4000;

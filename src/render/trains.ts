@@ -110,7 +110,7 @@ export class TrainRenderer {
       const { front: f, back: b } = it.pose;
       front.addVehicle((f.x + b.x) / 2, (f.y + b.y) / 2);
     }
-    for (const c of cars) front.addVehicle(c.x, c.y);
+    for (const c of cars) front.addVehicle(c.x, c.y, true);
     front.close();
     const order: ({ depth: number; item: Drawn } | { depth: number; house: number } | { depth: number; car: StreetVehicle })[] = [
       ...items.map((item) => ({ depth: item.depth, item })),
