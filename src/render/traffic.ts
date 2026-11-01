@@ -6,6 +6,7 @@ import { inBounds, type WorldMap } from '../sim/world/map';
 import type { Rect } from './camera';
 import { tileCenter, tileToWorld, type Point } from './iso';
 import { darken, hull } from './trains';
+import { carFrame, carModel } from './gfx/cars';
 import { drawSprite, gfxData, gfxOn, palKey, ttdDirection } from './gfx/gfx';
 import { gfxYear } from './gfx/tiles';
 
@@ -280,14 +281,24 @@ function vehiclePose(map: WorldMap, v: Vehicle): Pose {
   return { x: ax + d[0] * v.t + rx * LANE, y: ay + d[1] * v.t + ry * LANE, ux: d[0], uy: d[1] };
 }
 
-/** Pojazd z grafiki OpenGFX: autobus, furgonetka (zamiast auta) lub ciężarówka z epoki gry. */
+/**
+ * Pojazd w grafice z epoki gry: autobus i ciężarówka z OpenGFX, auto osobowe z własnych sprite'ów
+ * (OpenGFX nie ma aut – jego furgonetka wyglądała jak ciężarówka).
+ */
 function drawVehicleSprite(g: Graphics, p: Pose, v: Vehicle): boolean {
-  const def = gfxData().road[v.kind];
   const year = gfxYear();
+  const dir = ttdDirection(p.ux, p.uy);
+  const at = tileToWorld(p.x, p.y);
+  if (v.kind === 'car') {
+    const f = carFrame(carModel(year, v.variant), dir, v.color);
+    if (!f) return false;
+    g.texture(f.texture, 0xffffff, Math.round(at.x) + f.ox, Math.round(at.y) + f.oy);
+    return true;
+  }
+  const def = gfxData().road[v.kind];
   const base = def.eras[year < 1960 ? 0 : year < 1985 ? 1 : 2]!;
   const pal = def.colours[v.variant % def.colours.length]!;
-  const at = tileToWorld(p.x, p.y);
-  return drawSprite(g, palKey(base + ttdDirection(p.ux, p.uy), pal), at.x, at.y);
+  return drawSprite(g, palKey(base + dir, pal), at.x, at.y);
 }
 
 function drawCar(g: Graphics, p: Pose, v: Vehicle): void {

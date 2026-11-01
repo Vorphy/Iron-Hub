@@ -12,8 +12,9 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-11-01',
-    title: 'Limit klatek na sekundę; więcej aut w dużych miastach; drzewa zasłaniają auta',
+    title: 'Prawdziwe auta osobowe na ulicach; limit klatek na sekundę; drzewa zasłaniają auta',
     items: [
+      'Auta osobowe mają własny wygląd: małe samochody z szybami i światłami, wyraźnie krótsze od autobusu, w kilku kolorach. Wcześniej rysowały się jako furgonetka z grafiki TTD, która wyglądała jak ciężarówka, więc na ulicach widać było tylko autobusy i ciężarówki. Model auta zależy od epoki: do 1960 r. stare auta, potem sedany, a od 1985 r. także hatchbacki.',
       'Poprawka: w mieście zrośniętym z kilku miast (dzielnice) jeździło najwyżej 12 aut na cały obszar, więc na ulicach widać było prawie same autobusy. Teraz do 12 aut i do 4 ciężarówek na każdą dzielnicę.',
       'Poprawka: autobusy i auta nie przejeżdżają już nad drzewami rosnącymi tuż przed nimi – drzewo zasłania pojazd jak dom.',
       'Menu → Klatki: 60/s (płynnie) albo 30/s (oszczędnie). Przy 30 klatkach gra rysuje o połowę mniej obrazów, więc karta graficzna i procesor mają mniej pracy – przydaje się na laptopie. Przeglądarka zapamiętuje wybór.',

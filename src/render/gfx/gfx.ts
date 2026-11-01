@@ -48,7 +48,7 @@ export interface GfxData {
   trees: { xy: [number, number][][]; layouts: number[][] };
   engines: Record<string, { base: number; views: number; pal: number }>;
   wagons: Record<string, { base: number; views: number; full: number | null }>;
-  /** Ruch uliczny: pierwszy sprite (8 kierunków) dla trzech epok i dostępne kolory. */
+  /** Ruch uliczny: pierwszy sprite (8 kierunków) dla trzech epok i dostępne kolory. `car` nieużywane – auta rysuje render/gfx/cars.ts. */
   road: Record<'bus' | 'car' | 'truck', { eras: number[]; colours: number[] }>;
   /** Most kratownicowy: przęsło [spód, barierka, filar] dla osi X i Y OpenTTD oraz 8 przyczółków. */
   bridge: { middle: number[][]; heads: number[] };
