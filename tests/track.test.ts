@@ -126,7 +126,7 @@ describe('rozbiórka torów', () => {
     expect(getTrackBits(sim.state.map, 1, 2)).toBe(Track.X);
     expect(getTrackBits(sim.state.map, 2, 2)).toBe(Track.Y);
     expect(getTrackBits(sim.state.map, 4, 2)).toBe(0);
-    expect(sim.state.money).toBe(START_MONEY - 5 * TRACK_COST + 3 * refund());
+    expect(sim.state.money).toBe(START_MONEY - 5 * TRACK_COST + 3 * refund(sim.state));
   });
 
   it('buldożer na kafelku usuwa wszystkie elementy toru', () => {
@@ -141,7 +141,7 @@ describe('rozbiórka torów', () => {
     sim.enqueue({ type: 'clearTile', x: 5, y: 5 });
     sim.step();
     expect(getTrackBits(sim.state.map, 5, 5)).toBe(0);
-    expect(sim.state.money).toBe(START_MONEY - 2 * TRACK_COST + 2 * refund());
+    expect(sim.state.money).toBe(START_MONEY - 2 * TRACK_COST + 2 * refund(sim.state));
   });
 
   it('rozbiórka bez torów kończy się błędem', () => {

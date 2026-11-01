@@ -1,3 +1,4 @@
+import { type GameSettings, isSettings, price } from './settings';
 import { CLEAR_ROUGH_COST, HOUSE_DEMOLISH_COST, ROAD_REMOVE_COST } from './config';
 import type { ResearchId } from '../data/research';
 import { cancelResearch, startResearch } from './research';
@@ -102,6 +103,8 @@ export type Command =
   | { type: 'placeSignal'; x: number; y: number; track: Track; oneWay: boolean; under?: boolean }
   | { type: 'removeSignal'; x: number; y: number; track: Track; under?: boolean }
   | { type: 'setSignalMode'; mode: SignalMode }
+  /** Zasady gry (Menu → Ustawienia) – zmiana w trakcie gry. */
+  | { type: 'setSettings'; settings: Partial<GameSettings> }
   | { type: 'renameCompany'; name: string }
   | { type: 'buildBridge'; x0: number; y0: number; x1: number; y1: number }
   | { type: 'buildTunnel'; x: number; y: number }
@@ -319,6 +322,12 @@ function apply(state: GameState, cmd: Command, events: SimEvent[]): CommandResul
       state.signalMode = cmd.mode;
       events.push({ type: 'signalsChanged' });
       return { ok: true };
+    case 'setSettings': {
+      const next = { ...state.settings, ...cmd.settings };
+      if (!isSettings(next)) return { ok: false, reason: 'blocked' };
+      state.settings = next;
+      return { ok: true };
+    }
     case 'renameCompany':
       state.companyName = cleanCompanyName(cmd.name);
       return { ok: true };
@@ -349,8 +358,9 @@ function clearTile(state: GameState, x: number, y: number, events: SimEvent[]): 
     return removeBridge(state, bridge, events);
   }
   if (map.house[i]) {
-    if (state.money < HOUSE_DEMOLISH_COST) return { ok: false, reason: 'noMoney' };
-    spend(state, 'construction', HOUSE_DEMOLISH_COST);
+    const cost = price(state, HOUSE_DEMOLISH_COST);
+    if (state.money < cost) return { ok: false, reason: 'noMoney' };
+    spend(state, 'construction', cost);
     map.house[i] = 0;
     map.houseBuild[i] = 0;
     map.town[i] = 0;
@@ -370,15 +380,17 @@ function clearTile(state: GameState, x: number, y: number, events: SimEvent[]): 
       events,
     );
   if (map.road[i]) {
-    if (state.money < ROAD_REMOVE_COST) return { ok: false, reason: 'noMoney' };
-    spend(state, 'construction', ROAD_REMOVE_COST);
+    const cost = price(state, ROAD_REMOVE_COST);
+    if (state.money < cost) return { ok: false, reason: 'noMoney' };
+    spend(state, 'construction', cost);
     map.road[i] = 0;
     events.push({ type: 'tileChanged', x, y });
     return { ok: true };
   }
   if (getTerrain(map, x, y) !== Terrain.Rough) return { ok: false, reason: 'nothingToClear' };
-  if (state.money < CLEAR_ROUGH_COST) return { ok: false, reason: 'noMoney' };
-  spend(state, 'construction', CLEAR_ROUGH_COST);
+  const cost = price(state, CLEAR_ROUGH_COST);
+  if (state.money < cost) return { ok: false, reason: 'noMoney' };
+  spend(state, 'construction', cost);
   setTerrain(map, x, y, Terrain.Grass);
   events.push({ type: 'tileChanged', x, y });
   return { ok: true };

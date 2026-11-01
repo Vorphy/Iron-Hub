@@ -1,3 +1,4 @@
+import { price } from '../settings';
 import type { CommandResult, SimEvent } from '../commands';
 import { MAX_TUNNEL_LENGTH, METRO_TRACK_COST, METRO_TUNNEL_TILE_COST, TRACK_REFUND_RATE } from '../config';
 import { spend } from '../economy/finance';
@@ -73,7 +74,7 @@ export function planMetroTunnel(state: GameState, x0: number, y0: number, x1: nu
     return fail('trainInWay', tunnel);
   }
   const newPortals = ends.filter((t) => !map.under[t.y * map.width + t.x]).length;
-  const cost = length * METRO_TUNNEL_TILE_COST + newPortals * METRO_TRACK_COST;
+  const cost = price(state, length * METRO_TUNNEL_TILE_COST + newPortals * METRO_TRACK_COST);
   if (cost > state.money) return fail('noMoney', tunnel, cost);
   return { tunnel, cost, result: { ok: true } };
 }
@@ -103,8 +104,8 @@ export function buildMetroTunnel(
   return { ok: true };
 }
 
-export function metroTunnelRefund(tunnel: Tunnel): number {
-  return Math.round(tunnel.length * METRO_TUNNEL_TILE_COST * TRACK_REFUND_RATE);
+export function metroTunnelRefund(state: GameState, tunnel: Tunnel): number {
+  return price(state, tunnel.length * METRO_TUNNEL_TILE_COST * TRACK_REFUND_RATE);
 }
 
 /** Pociąg w przejściu albo na torze metra jego portalu (pociągi nad wnętrzem i na powierzchni nie przeszkadzają). */
@@ -131,7 +132,7 @@ export function removeMetroTunnel(state: GameState, tunnel: Tunnel, events: SimE
     if (k === 0 || k === tiles.length - 1) map.under[i]! &= ~axisTrack(tunnel.axis);
   }
   state.tunnels = state.tunnels.filter((t) => t !== tunnel);
-  spend(state, 'construction', -metroTunnelRefund(tunnel));
+  spend(state, 'construction', -metroTunnelRefund(state, tunnel));
   events.push({ type: 'undergroundChanged' });
   return { ok: true };
 }

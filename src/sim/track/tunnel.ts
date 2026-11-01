@@ -1,3 +1,4 @@
+import { price } from '../settings';
 import type { CommandResult, SimEvent } from '../commands';
 import { MAX_TUNNEL_LENGTH, TRACK_COST, TRACK_REFUND_RATE, TUNNEL_TILE_COST } from '../config';
 import { spend } from '../economy/finance';
@@ -121,7 +122,7 @@ export function planTunnel(state: GameState, x: number, y: number): TunnelPlan {
         level,
       };
       const portals = [i, y * map.width + x].filter((p) => !map.track[p]).length;
-      const cost = tunnel.length * TUNNEL_TILE_COST + portals * TRACK_COST;
+      const cost = price(state, tunnel.length * TUNNEL_TILE_COST + portals * TRACK_COST);
       if (cost > state.money) return fail('noMoney', tunnel, cost);
       return { tunnel, cost, result: { ok: true } };
     }
@@ -163,7 +164,11 @@ export function removeTunnel(state: GameState, tunnel: Tunnel, events: SimEvent[
     }
   }
   state.tunnels = state.tunnels.filter((t) => t !== tunnel);
-  spend(state, 'construction', -Math.round(tunnel.length * TUNNEL_TILE_COST * TRACK_REFUND_RATE));
+  spend(state, 'construction', -tunnelRefund(state, tunnel));
   events.push({ type: 'tunnelsChanged' });
   return { ok: true };
+}
+
+export function tunnelRefund(state: GameState, tunnel: Tunnel): number {
+  return price(state, tunnel.length * TUNNEL_TILE_COST * TRACK_REFUND_RATE);
 }

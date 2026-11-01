@@ -1,3 +1,4 @@
+import { price } from '../settings';
 import { spend } from '../economy/finance';
 import { CLEAR_ROUGH_COST, FOUNDATION_COST, TRACK_COST, TRACK_REFUND_RATE } from '../config';
 import type { CommandResult, SimEvent } from '../commands';
@@ -49,6 +50,7 @@ export function planBuildTrack(state: GameState, pieces: readonly TrackPiece[]):
     if (after !== railFoundation(corners, map.track[i]!)) cost += FOUNDATION_COST;
     if (getTerrain(map, x, y) === Terrain.Rough) cost += CLEAR_ROUGH_COST;
   }
+  cost = price(state, cost);
   const blocked = out.some((p) => p.status === 'blocked');
   const result: CommandResult = blocked
     ? { ok: false, reason: 'blocked' }
@@ -95,7 +97,7 @@ export function planRemoveTrack(state: GameState, pieces: readonly TrackPiece[])
     : count > 0
       ? { ok: true }
       : { ok: false, reason: 'nothingToRemove' };
-  return { pieces: out, cost: -count * refund(), result };
+  return { pieces: out, cost: -count * refund(state), result };
 }
 
 export function removeTrack(state: GameState, pieces: readonly TrackPiece[], events: SimEvent[]): CommandResult {
@@ -111,8 +113,8 @@ export function removeTrack(state: GameState, pieces: readonly TrackPiece[], eve
   return { ok: true };
 }
 
-export function refund(): number {
-  return Math.round(TRACK_COST * TRACK_REFUND_RATE);
+export function refund(state: GameState): number {
+  return price(state, TRACK_COST * TRACK_REFUND_RATE);
 }
 
 function buildable(map: WorldMap, { x, y, track }: TrackPiece): boolean {

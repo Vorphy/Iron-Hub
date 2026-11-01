@@ -180,6 +180,7 @@ const actions: HudActions = {
   setStationKind: (kind) => game?.toolController.setStationKind(kind),
   setTerrainMode: (m) => game?.toolController.setTerrainMode(m),
   setSignalMode: (mode) => game?.command({ type: 'setSignalMode', mode }),
+  setSettings: (settings) => game?.command({ type: 'setSettings', settings }),
   toggleMenu: () => hudStore.set({ menuOpen: !hudStore.get().menuOpen }),
   toggleBuildings: () => game?.toggleBuildings(),
   toggleDistricts: () => game?.toggleDistricts(),

@@ -1,3 +1,4 @@
+import { price } from '../settings';
 import type { CommandResult, SimEvent } from '../commands';
 import { METRO_RAMP_COST, METRO_TRACK_COST, TRACK_REFUND_RATE } from '../config';
 import { spend } from '../economy/finance';
@@ -148,7 +149,7 @@ export function planRemoveUnderTrack(state: GameState, pieces: readonly TrackPie
     : count
       ? { ok: true }
       : { ok: false, reason: 'nothingToRemove' };
-  return { pieces: out, cost: -Math.round(count * METRO_TRACK_COST * TRACK_REFUND_RATE), result };
+  return { pieces: out, cost: -price(state, count * METRO_TRACK_COST * TRACK_REFUND_RATE), result };
 }
 
 export function removeUnderTrack(state: GameState, pieces: readonly TrackPiece[], events: SimEvent[]): CommandResult {
@@ -168,7 +169,7 @@ export function removeUnderTrack(state: GameState, pieces: readonly TrackPiece[]
  */
 export function planRamp(state: GameState, x: number, y: number, down: Side): { cost: number; result: CommandResult } {
   const { map } = state;
-  const cost = METRO_RAMP_COST;
+  const cost = price(state, METRO_RAMP_COST);
   if (!inBounds(map, x, y)) return { cost, result: { ok: false, reason: 'blocked' } };
   const i = y * map.width + x;
   const track = rampTrack(down);
@@ -232,7 +233,7 @@ export function removeRamp(state: GameState, x: number, y: number, events: SimEv
   if (occupiedTiles(state).has(i)) return { ok: false, reason: 'trainInWay' };
   map.ramp[i] = 0;
   map.track[i] = 0;
-  spend(state, 'construction', -Math.round(METRO_RAMP_COST * TRACK_REFUND_RATE));
+  spend(state, 'construction', -price(state, METRO_RAMP_COST * TRACK_REFUND_RATE));
   events.push({ type: 'tileChanged', x, y }, { type: 'undergroundChanged' });
   return { ok: true };
 }

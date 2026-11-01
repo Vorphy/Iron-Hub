@@ -12,8 +12,9 @@ export interface ChangelogEntry {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-11-01',
-    title: 'Prawdziwe auta osobowe na ulicach; limit klatek na sekundę; drzewa zasłaniają auta',
+    title: 'Zasady gry jak w OpenTTD; prawdziwe auta osobowe na ulicach; limit klatek na sekundę',
     items: [
+      'Menu → Ustawienia → Zasady gry (i to samo w oknie nowej gry): sygnalizacja Amator / Ekspert, koszty budowy (niskie / normalne / wysokie), wzrost miast (brak / wolno / normalnie / szybko) i łączenie zrośniętych miast (wł. / wył. – jak w OpenTTD). Zasady zapisują się razem z grą, a starsze zapisy grają się jak dotąd.',
       'Menu → Anonimowe statystyki: na czas testów gra może wysyłać nam losowy identyfikator przeglądarki, kod testera z linku, nazwę firmy, czas grania i rozmiar mapy – bez adresu IP i danych osobowych. Pomaga to stroić grę. Możesz to wyłączyć jednym przyciskiem.',
       'Poprawka: auto zachodzące na autobus albo ciężarówkę nie rysuje się już zawsze na wierzchu – pojazd bliżej widza zasłania ten dalej.',
       'Auta osobowe mają własny wygląd: małe samochody z szybami i światłami, wyraźnie krótsze od autobusu, w kilku kolorach. Wcześniej rysowały się jako furgonetka z grafiki TTD, która wyglądała jak ciężarówka, więc na ulicach widać było tylko autobusy i ciężarówki. Model auta zależy od epoki: do 1960 r. stare auta, potem sedany, a od 1985 r. także hatchbacki.',

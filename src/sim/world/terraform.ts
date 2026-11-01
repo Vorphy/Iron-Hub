@@ -1,3 +1,4 @@
+import { price } from '../settings';
 import type { CommandResult, SimEvent } from '../commands';
 import { TERRAFORM_COST } from '../config';
 import { spend } from '../economy/finance';
@@ -91,7 +92,7 @@ export function planTerraform(state: GameState, targets: ReadonlyMap<number, num
     }
   }
   const tileList = [...tiles].sort((a, b) => a - b);
-  const cost = changes.size * TERRAFORM_COST;
+  const cost = changes.size * price(state, TERRAFORM_COST);
   let result: CommandResult = { ok: true };
   if (changes.size === 0) result = { ok: false, reason: tooHigh ? 'tooHigh' : 'nothingToClear' };
   else if (tileList.some((t) => locked(map, t % map.width, Math.floor(t / map.width)))) result = { ok: false, reason: 'blocked' };

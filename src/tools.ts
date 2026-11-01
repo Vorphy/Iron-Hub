@@ -1,7 +1,9 @@
 import { planCatenary } from './sim/track/catenary';
 import type { Overlay } from './render/overlay';
 import type { Command, FailReason } from './sim/commands';
-import { BRIDGE_TILE_COST, CLEAR_ROUGH_COST, SIGNAL_COST, TRACK_REFUND_RATE, TUNNEL_TILE_COST } from './sim/config';
+import { CLEAR_ROUGH_COST, SIGNAL_COST } from './sim/config';
+import { price } from './sim/settings';
+import type { GameState } from './sim/state';
 import { CARGO_DEFS, type Cargo } from './sim/economy/cargo';
 import { catchmentCargo } from './sim/economy/cargoFlow';
 import { autoDepotSide, depotAt, depotRefund, planDepot } from './sim/depot/depot';
@@ -22,9 +24,9 @@ import { getTrackBits, Side, type Track, TRACK_SIDES, tracksOn, type TrackPiece 
 import type { Simulation } from './sim/simulation';
 import { getTerrain, inBounds, Terrain } from './sim/world/map';
 import { levelTargets, planTerraform, terraformTargets } from './sim/world/terraform';
-import { bridgeAt, bridgeRole, bridgeTileCoords, planBridge } from './sim/track/bridge';
+import { bridgeAt, bridgeRefund, bridgeRole, bridgeTileCoords, planBridge } from './sim/track/bridge';
 import { metroTunnelAt, metroTunnelRefund, planMetroTunnel } from './sim/track/metroTunnel';
-import { planTunnel, tunnelAt, tunnelRole, tunnelTileCoords } from './sim/track/tunnel';
+import { planTunnel, tunnelAt, tunnelRefund, tunnelRole, tunnelTileCoords } from './sim/track/tunnel';
 import { autoRampDown, METRO_LEVEL, planBuildUnderTrack, planRamp, planRemoveUnderTrack } from './sim/track/metro';
 import type { Point } from './render/iso';
 
@@ -290,14 +292,14 @@ export class Tools {
       const pass = metroTunnelAt(this.sim.state, tile.x, tile.y);
       if (pass && tunnelRole(pass, tile.x, tile.y) !== 'inside') {
         this.overlay.setHover(tile, 0xe0503a);
-        this.label = { text: `Przejście pod torem – zwrot: ${formatMoney(metroTunnelRefund(pass))}`, ok: true };
+        this.label = { text: `Przejście pod torem – zwrot: ${formatMoney(metroTunnelRefund(this.sim.state, pass))}`, ok: true };
         return;
       }
     }
     if (this.under && this.tool === 'bulldozer' && sameTile(start, p) && tile && map.stationUnder[tile.y * map.width + tile.x]) {
       const station = stationAt(this.sim.state, tile.x, tile.y, true);
       this.overlay.setHover(tile, 0xe0503a);
-      this.label = { text: `Zwrot: ${formatMoney(stationTileRefund(station, true))}`, ok: true };
+      this.label = { text: `Zwrot: ${formatMoney(stationTileRefund(this.sim.state, station, true))}`, ok: true };
       return;
     }
     if (this.under && (this.tool === 'track' || this.tool === 'bulldozer')) {
@@ -401,7 +403,7 @@ export class Tools {
             : { text: 'Brak semafora', ok: false }
           : existing
             ? { text: after?.dirs === 3 ? 'Kliknij: oba kierunki' : 'Kliknij: zmień kierunek', ok: true }
-            : { text: `Koszt: ${formatMoney(SIGNAL_COST)}`, ok: this.sim.state.money >= SIGNAL_COST };
+            : costLabel(this.sim.state, SIGNAL_COST);
       // Co znaczy strzałka: jednokierunkowy – pod prąd nie przejedzie nikt; zwykły – zatrzymuje tylko
       // jadących w stronę strzałki, z naprzeciwka mija się go od tyłu.
       if (after && this.label.ok) {
@@ -467,16 +469,16 @@ export class Tools {
       const bits = getTrackBits(map, tile.x, tile.y);
       const station = stationAt(this.sim.state, tile.x, tile.y);
       if (station) {
-        this.label = { text: `Zwrot: ${formatMoney(stationTileRefund(station))}`, ok: true };
+        this.label = { text: `Zwrot: ${formatMoney(stationTileRefund(this.sim.state, station))}`, ok: true };
       } else if (depotAt(this.sim.state, tile.x, tile.y)) {
-        this.label = { text: `Zwrot: ${formatMoney(depotRefund())}`, ok: true };
+        this.label = { text: `Zwrot: ${formatMoney(depotRefund(this.sim.state))}`, ok: true };
       } else if (structureAt(this.sim, tile.x, tile.y)) {
         const s = structureAt(this.sim, tile.x, tile.y)!;
         this.label = { text: `Rozbierz ${s.name} · zwrot: ${formatMoney(s.refund)}`, ok: true };
       } else if (bits) {
         this.previewRemoval(start, p, true);
       } else if (getTerrain(map, tile.x, tile.y) === Terrain.Rough) {
-        this.label = { text: `Koszt: ${formatMoney(CLEAR_ROUGH_COST)}`, ok: this.sim.state.money >= CLEAR_ROUGH_COST };
+        this.label = costLabel(this.sim.state, CLEAR_ROUGH_COST);
       }
       return;
     }
@@ -698,6 +700,12 @@ function describeCatchment(supplies: Set<Cargo>, accepts: Set<Cargo>): string {
   return `Zbiera: ${names(supplies)} · Przyjmuje: ${names(accepts)}`;
 }
 
+/** Podpis „Koszt: …” z ceną po ustawieniu kosztów; czerwony, gdy brakuje pieniędzy. */
+function costLabel(state: GameState, base: number): { text: string; ok: boolean } {
+  const cost = price(state, base);
+  return { text: `Koszt: ${formatMoney(cost)}`, ok: state.money >= cost };
+}
+
 /** Most (przyczółek albo pomost bez toru pod spodem) lub tunel (wejście) na kafelku – buldożer rozbiera całość. */
 function structureAt(sim: Simulation, x: number, y: number): { name: string; refund: number } | null {
   const state = sim.state;
@@ -706,11 +714,11 @@ function structureAt(sim: Simulation, x: number, y: number): { name: string; ref
   const i = y * map.width + x;
   const bridge = map.bridge[i] ? bridgeAt(state, x, y) : undefined;
   if (bridge && (bridgeRole(bridge, x, y) !== 'span' || !map.track[i])) {
-    return { name: 'most', refund: Math.round(bridge.length * BRIDGE_TILE_COST * TRACK_REFUND_RATE) };
+    return { name: 'most', refund: bridgeRefund(state, bridge) };
   }
   const tunnel = map.tunnel[i] ? tunnelAt(state, x, y) : undefined;
   if (tunnel && tunnelRole(tunnel, x, y) !== 'inside') {
-    return { name: 'tunel', refund: Math.round(tunnel.length * TUNNEL_TILE_COST * TRACK_REFUND_RATE) };
+    return { name: 'tunel', refund: tunnelRefund(state, tunnel) };
   }
   return null;
 }

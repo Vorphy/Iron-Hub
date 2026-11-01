@@ -277,6 +277,21 @@ body {
   font-size: 11px;
 }
 
+/* Zwijany „folder” w Menu (Ustawienia → Zasady gry). */
+.menu-folder {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 2px 0 6px 8px;
+  border-left: 2px solid var(--accent);
+}
+
+.menu-subtitle {
+  color: var(--text);
+  font-size: 11px;
+  margin-top: 4px;
+}
+
 .window {
   top: 56px;
   right: 8px;

@@ -16,6 +16,14 @@ export const ECONOMY = {
   /** Pieniądze na start nowej gry. */
   startMoney: 100_000,
 
+  /** Zasady gry do wyboru (Menu → Ustawienia, okno nowej gry) – mnożniki dla poziomów. */
+  settings: {
+    /** Ceny budowy (wszystko z `construction`, także zwroty za rozbiórkę) – jak „construction cost” w OpenTTD. */
+    costs: { low: 0.75, normal: 1, high: 1.5 },
+    /** Tempo wzrostu miast: mnożnik nowych domów i szans na rozbudowę – jak „town growth rate” w OpenTTD. */
+    townGrowth: { off: 0, slow: 0.5, normal: 1, fast: 2 },
+  },
+
   /** Ceny budowy. */
   construction: {
     /** Element toru (prosty lub łuk). */

@@ -82,6 +82,11 @@ export function absorbTown(state: GameState, big: Town, small: Town): void {
  * urósł dopiero niedawno. Miasta nie przejmują się nawzajem w inny sposób.
  */
 export function absorbTowns(state: GameState, events: SimEvent[]): void {
+  // Łączenie wyłączone w ustawieniach: miasta zostają osobno (jak w OpenTTD), bez licznika styku.
+  if (!state.settings.townMerge) {
+    for (const town of state.towns) delete town.contact;
+    return;
+  }
   const pop = new Map(state.towns.map((t) => [t.id, townPopulation(state, t)]));
   const bigger = (a: Town, b: Town) => pop.get(a.id)! > pop.get(b.id)! || (pop.get(a.id) === pop.get(b.id) && a.id < b.id);
   for (const town of state.towns) {

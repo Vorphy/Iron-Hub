@@ -1,3 +1,4 @@
+import { price } from '../settings';
 import type { WagonLoad } from '../trains/train';
 import { CLEAR_ROUGH_COST, DEPOT_COST, TRACK_REFUND_RATE } from '../config';
 import { spend } from '../economy/finance';
@@ -55,7 +56,7 @@ export function planDepot(state: GameState, x: number, y: number): { cost: numbe
   const { map } = state;
   if (!inBounds(map, x, y)) return { cost: 0, result: { ok: false, reason: 'outOfBounds' } };
   const i = y * map.width + x;
-  const cost = DEPOT_COST + (getTerrain(map, x, y) === Terrain.Rough ? CLEAR_ROUGH_COST : 0);
+  const cost = price(state, DEPOT_COST + (getTerrain(map, x, y) === Terrain.Rough ? CLEAR_ROUGH_COST : 0));
   if (
     getTerrain(map, x, y) === Terrain.Water ||
     map.track[i] ||
@@ -87,11 +88,11 @@ export function buildDepot(state: GameState, x: number, y: number, side: Side, e
 export function removeDepot(state: GameState, depot: Depot, events: SimEvent[]): CommandResult {
   state.map.depot[depot.y * state.map.width + depot.x] = 0;
   state.depots = state.depots.filter((d) => d !== depot);
-  spend(state, 'construction', -depotRefund());
+  spend(state, 'construction', -depotRefund(state));
   events.push({ type: 'tileChanged', x: depot.x, y: depot.y }, { type: 'depotsChanged' });
   return { ok: true };
 }
 
-export function depotRefund(): number {
-  return Math.round(DEPOT_COST * TRACK_REFUND_RATE);
+export function depotRefund(state: GameState): number {
+  return price(state, DEPOT_COST * TRACK_REFUND_RATE);
 }

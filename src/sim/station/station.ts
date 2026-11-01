@@ -1,3 +1,4 @@
+import { price } from '../settings';
 import {
   CATCHMENT_RADIUS,
   CLEAR_ROUGH_COST,
@@ -217,6 +218,7 @@ export function planStation(
     }
   }
 
+  cost = price(state, cost);
   let result: CommandResult = { ok: true };
   if (length > STATION_MAX_LENGTH || platforms > STATION_MAX_PLATFORMS) result = { ok: false, reason: 'tooBig' };
   else if (blocked) result = { ok: false, reason: 'blocked' };
@@ -312,20 +314,20 @@ export function removeStationTile(state: GameState, x: number, y: number, events
     state.stations = state.stations.filter((s) => s !== station);
     dropStationFromOrders(state, station.id);
   }
-  spend(state, 'construction', -stationTileRefund(station, under));
+  spend(state, 'construction', -stationTileRefund(state, station, under));
   events.push({ type: 'tileChanged', x, y }, { type: 'stationsChanged' });
   return { ok: true };
 }
 
-export function stationTileRefund(station?: Station, under = false): number {
+export function stationTileRefund(state: GameState, station?: Station, under = false): number {
   const cost = station?.waypoint ? WAYPOINT_COST : STATION_TILE_COST + (under ? METRO_STATION_EXTRA : 0);
-  return Math.round(cost * TRACK_REFUND_RATE);
+  return price(state, cost * TRACK_REFUND_RATE);
 }
 
 /** Punkt kontrolny: tylko na płaskim kafelku z jednym prostym torem (bez stacji, zajezdni, mostu, tunelu, drogi, semafora). */
 export function planWaypoint(state: GameState, x: number, y: number): { cost: number; result: CommandResult } {
   const { map } = state;
-  const cost = WAYPOINT_COST;
+  const cost = price(state, WAYPOINT_COST);
   if (!inBounds(map, x, y)) return { cost, result: { ok: false, reason: 'outOfBounds' } };
   const i = y * map.width + x;
   const bits = getTrackBits(map, x, y);

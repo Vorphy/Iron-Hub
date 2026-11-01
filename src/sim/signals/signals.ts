@@ -1,3 +1,4 @@
+import { price } from '../settings';
 import { SIGNAL_COST, TRACK_REFUND_RATE } from '../config';
 import { baseTrack, isUnderTrack, underTrack } from '../track/metro';
 import { spend } from '../economy/finance';
@@ -103,8 +104,9 @@ export function placeSignal(
   if (existing) {
     Object.assign(existing, nextSignalState(existing, oneWay));
   } else {
-    if (state.money < SIGNAL_COST) return { ok: false, reason: 'noMoney' };
-    spend(state, 'construction', SIGNAL_COST);
+    const cost = price(state, SIGNAL_COST);
+    if (state.money < cost) return { ok: false, reason: 'noMoney' };
+    spend(state, 'construction', cost);
     state.signals.push({ x, y, track, dirs: 1, oneWay, ...(under ? { under: true } : {}) });
   }
   events.push({ type: 'signalsChanged' });
@@ -122,7 +124,7 @@ export function removeSignal(
   const before = state.signals.length;
   state.signals = state.signals.filter((s) => !(s.x === x && s.y === y && s.track === track && !!s.under === under));
   if (state.signals.length === before) return { ok: false, reason: 'nothingToRemove' };
-  spend(state, 'construction', -Math.round(SIGNAL_COST * TRACK_REFUND_RATE));
+  spend(state, 'construction', -price(state, SIGNAL_COST * TRACK_REFUND_RATE));
   events.push({ type: 'signalsChanged' });
   return { ok: true };
 }

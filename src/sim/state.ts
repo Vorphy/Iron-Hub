@@ -1,5 +1,6 @@
 import { START_MONEY } from './config';
 import { emptyResearch, type ResearchState } from './research';
+import { DEFAULT_SETTINGS, type GameSettings } from './settings';
 import { START_YEAR } from './time';
 import type { Depot } from './depot/depot';
 import { emptyFinances, type Finances } from './economy/finance';
@@ -35,6 +36,8 @@ export interface GameState {
   nextTrainId: number;
   signals: Signal[];
   signalMode: SignalMode;
+  /** Zasady gry (koszty, wzrost i łączenie miast) – Menu → Ustawienia. */
+  settings: GameSettings;
   towns: Town[];
   industries: Industry[];
   finances: Finances;
@@ -68,6 +71,9 @@ export interface NewGameOptions {
   custom?: CustomCounts | null;
   /** Nazwa firmy (pusta – domyślna). */
   companyName?: string;
+  /** Zasady gry (domyślnie – normalne) i sygnalizacja (domyślnie Amator). */
+  settings?: Partial<GameSettings>;
+  signalMode?: SignalMode;
 }
 
 export const DEFAULT_COMPANY_NAME = 'Kolej Żelazna';
@@ -90,6 +96,8 @@ export function createGame({
   resources = DEFAULT_DENSITY,
   custom = null,
   companyName = '',
+  settings = {},
+  signalMode = 'auto',
 }: NewGameOptions): GameState {
   const state: GameState = {
     version: 1,
@@ -106,7 +114,8 @@ export function createGame({
     trains: [],
     nextTrainId: 1,
     signals: [],
-    signalMode: 'auto',
+    signalMode,
+    settings: { ...DEFAULT_SETTINGS, ...settings },
     towns: [],
     industries: [],
     finances: emptyFinances(),

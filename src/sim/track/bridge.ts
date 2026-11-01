@@ -1,3 +1,4 @@
+import { price } from '../settings';
 import type { CommandResult, SimEvent } from '../commands';
 import { BRIDGE_TILE_COST, MAX_BRIDGE_LENGTH, TRACK_COST, TRACK_REFUND_RATE } from '../config';
 import { spend } from '../economy/finance';
@@ -149,7 +150,7 @@ export function planBridge(state: GameState, x0: number, y0: number, x1: number,
     if (Math.max(...cornerHeights(map, t.x, t.y)) > bridge.deck - 1) return fail('bridgeLow', bridge);
   }
   const headTracks = [a, b].filter((t) => !map.track[t.y * map.width + t.x]).length;
-  const cost = length * BRIDGE_TILE_COST + headTracks * TRACK_COST;
+  const cost = price(state, length * BRIDGE_TILE_COST + headTracks * TRACK_COST);
   if (cost > state.money) return fail('noMoney', bridge, cost);
   return { bridge, cost, result: { ok: true } };
 }
@@ -184,7 +185,11 @@ export function removeBridge(state: GameState, bridge: Bridge, events: SimEvent[
     events.push({ type: 'tileChanged', x: t.x, y: t.y });
   }
   state.bridges = state.bridges.filter((b) => b !== bridge);
-  spend(state, 'construction', -Math.round(bridge.length * BRIDGE_TILE_COST * TRACK_REFUND_RATE));
+  spend(state, 'construction', -bridgeRefund(state, bridge));
   events.push({ type: 'bridgesChanged' });
   return { ok: true };
+}
+
+export function bridgeRefund(state: GameState, bridge: Bridge): number {
+  return price(state, bridge.length * BRIDGE_TILE_COST * TRACK_REFUND_RATE);
 }

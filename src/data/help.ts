@@ -260,6 +260,17 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     ],
   },
   {
+    id: 'rules',
+    title: 'Zasady gry (ustawienia)',
+    blocks: [
+      `Menu → Ustawienia → Zasady gry, a przy nowej grze – sekcja „Zasady gry”. Zasady zapisują się razem z grą (każda gra ma swoje) i można je zmienić w każdej chwili.`,
+      `**Sygnalizacja**: Amator (pociągi same trzymają odstęp) albo Ekspert (semafory stawiasz sam) – patrz Sygnalizacja.`,
+      `**Koszty budowy**: niskie (${pct(E.settings.costs.low)}), normalne albo wysokie (${pct(E.settings.costs.high)}) – tory, stacje, zajezdnie, semafory, mosty, tunele, metro, sieć trakcyjna, zmiany terenu i wyburzenia; zwrot za rozbiórkę w tej samej proporcji. Ceny w pomocy i podpowiedziach są normalne – dokładną cenę widać przy kursorze. Pociągi i utrzymanie kosztują tyle samo.`,
+      `**Wzrost miast**: brak (miasta nie budują nowych domów), wolno (${pct(E.settings.townGrowth.slow)}), normalnie albo szybko (${pct(E.settings.townGrowth.fast)}) – mnożnik nowych domów i szans na rozbudowę (patrz Miasta – jak rosną).`,
+      `**Łączenie miast**: wł. – zrośnięte miasta po ${E.town.absorbMonths} miesiącach styku łączą się (mniejsze zostaje dzielnicą większego); wył. – zostają osobnymi miastami, jak w OpenTTD.`,
+    ],
+  },
+  {
     id: 'towns',
     title: 'Miasta – jak rosną',
     blocks: [

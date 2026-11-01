@@ -8,6 +8,7 @@ import { Terrain } from '../sim/world/map';
 import { formatMoney, type SignalKind, type Tool } from '../tools';
 import { DepotWindow } from './DepotWindow';
 import { NewGameDialog } from './NewGameDialog';
+import { GameRules, type GameRulesValue } from './GameRules';
 import { MinimapPanel, TutorialPanel } from './Guide';
 import { ChangelogWindow, HelpWindow } from './HelpWindows';
 import { FinanceWindow, IndustryWindow, StationWindow, TownWindow } from './InfoWindows';
@@ -113,7 +114,7 @@ export function Hud({ actions }: { actions: HudActions }) {
           saves={s.saves}
           playStats={s.playStats}
           stats={s.statsAvailable ? s.statsEnabled : null}
-          signalMode={s.signalMode}
+          rules={{ signalMode: s.signalMode, settings: s.settings }}
           traffic={s.traffic}
           fpsLimit={s.fpsLimit}
           gfx={s.gfxAvailable ? s.gfx : null}
@@ -463,7 +464,7 @@ function Menu({
   saves,
   playStats,
   stats,
-  signalMode,
+  rules,
   traffic,
   fpsLimit,
   gfx,
@@ -476,7 +477,7 @@ function Menu({
   playStats: HudState['playStats'];
   /** null – wysyłanie statystyk nieskonfigurowane w tej wersji gry. */
   stats: boolean | null;
-  signalMode: HudState['signalMode'];
+  rules: GameRulesValue;
   traffic: boolean;
   fpsLimit: HudState['fpsLimit'];
   /** null – atlas grafiki niedostępny. */
@@ -486,22 +487,28 @@ function Menu({
   changelogUnseen: boolean;
 }) {
   const { hints, uiSize } = useStore(layoutStore);
+  const [rulesOpen, setRulesOpen] = useState(false);
   return (
     <div class="panel menu">
-      <div class="menu-title">Sygnalizacja</div>
-      <div class="buttons">
-        <button class={signalMode === 'auto' ? 'active' : ''} onClick={() => actions.setSignalMode('auto')}>
-          Amator
-        </button>
-        <button class={signalMode === 'manual' ? 'active' : ''} onClick={() => actions.setSignalMode('manual')}>
-          Ekspert
-        </button>
-      </div>
-      <div class="menu-note">
-        {signalMode === 'auto'
-          ? 'Pociągi same trzymają odstęp i nie wjeżdżają na zajęte rozjazdy.'
-          : 'Pociąg staje tylko przed semaforem, na końcu peronu lub toru. Semafory stawiasz sam (B).'}
-      </div>
+      <div class="menu-title">Ustawienia</div>
+      <button
+        class={rulesOpen ? 'active' : ''}
+        onClick={() => setRulesOpen(!rulesOpen)}
+        title="Zasady tej gry: sygnalizacja, koszty budowy, wzrost i łączenie miast – zapisywane razem z grą"
+      >
+        Zasady gry {rulesOpen ? '▾' : '▸'}
+      </button>
+      {rulesOpen && (
+        <div class="menu-folder">
+          <GameRules
+            value={rules}
+            onSignalMode={actions.setSignalMode}
+            onSettings={actions.setSettings}
+            titleClass="menu-subtitle"
+            noteClass="menu-note"
+          />
+        </div>
+      )}
       <div class="menu-title">Widok</div>
       <button
         class={traffic ? 'active' : ''}

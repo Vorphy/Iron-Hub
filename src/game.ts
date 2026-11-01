@@ -699,6 +699,7 @@ export class Game {
       speed: this.loop.speed,
       tool: this.tools.tool,
       signalMode: state.signalMode,
+      settings: state.settings,
       toolOptions: this.toolOptions(prev.toolOptions),
       fps: Math.round(this.fps),
       zoom: this.camera.zoom,

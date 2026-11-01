@@ -1,3 +1,4 @@
+import { price } from '../settings';
 import type { CommandResult, SimEvent } from '../commands';
 import { CATENARY_COST, CATENARY_REFUND } from '../config';
 import { spend } from '../economy/finance';
@@ -106,9 +107,9 @@ export function planCatenary(
   if (remove) {
     const busy = electricTrainTiles(state, under);
     if (tiles.some((i) => busy.has(i))) return { tiles, cost: 0, result: { ok: false, reason: 'trainInWay' } };
-    return { tiles, cost: -tiles.length * CATENARY_REFUND, result: { ok: true } };
+    return { tiles, cost: -tiles.length * price(state, CATENARY_REFUND), result: { ok: true } };
   }
-  const cost = tiles.length * CATENARY_COST;
+  const cost = tiles.length * price(state, CATENARY_COST);
   return { tiles, cost, result: cost > state.money ? { ok: false, reason: 'noMoney' } : { ok: true } };
 }
 

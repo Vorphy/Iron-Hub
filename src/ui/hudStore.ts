@@ -27,6 +27,9 @@ export interface NewWorldSettings {
   custom: CustomCounts | null;
   /** Nazwa firmy gracza. */
   companyName: string;
+  /** Zasady gry i sygnalizacja – można je potem zmienić w Menu → Ustawienia. */
+  settings: GameSettings;
+  signalMode: SignalMode;
 }
 import type { Speed } from '../loop';
 import type { Terrain } from '../sim/world/map';
@@ -35,6 +38,7 @@ import type { DistrictInfo, MetroStatus } from '../sim/economy/town';
 import type { StationAxis } from '../sim/station/station';
 import type { Side } from '../sim/track/track';
 import type { SignalMode } from '../sim/signals/signals';
+import { DEFAULT_SETTINGS, type GameSettings } from '../sim/settings';
 import type { SignalKind, StationKind, TerrainMode, Tool, TrackMode } from '../tools';
 import { Store } from './store';
 
@@ -294,6 +298,8 @@ export interface HudState {
     stationKind: StationKind;
   };
   signalMode: SignalMode;
+  /** Zasady bieżącej gry (Menu → Ustawienia). */
+  settings: GameSettings;
   fps: number;
   zoom: number;
   /** Podsumowanie grafu torów, gdy włączony podgląd (G). */
@@ -362,6 +368,7 @@ export const hudStore = new Store<HudState>({
     stationKind: 'platform',
   },
   signalMode: 'auto',
+  settings: DEFAULT_SETTINGS,
   fps: 0,
   zoom: 1,
   graphInfo: null,
@@ -412,6 +419,7 @@ export interface HudActions {
   setStationKind(kind: StationKind): void;
   setTerrainMode(mode: TerrainMode): void;
   setSignalMode(mode: SignalMode): void;
+  setSettings(patch: Partial<GameSettings>): void;
   toggleMenu(): void;
   /** Pomoc na danym temacie (domyślnie „Jak zacząć”). */
   openHelp(topic?: string): void;

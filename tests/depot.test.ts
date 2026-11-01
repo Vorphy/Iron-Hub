@@ -65,7 +65,7 @@ describe('zajezdnia', () => {
     sim.step();
     expect(sim.state.depots).toEqual([]);
     expect(sim.state.map.depot[4 * 16 + 4]).toBe(0);
-    expect(sim.state.money).toBe(START_MONEY - DEPOT_COST + depotRefund());
+    expect(sim.state.money).toBe(START_MONEY - DEPOT_COST + depotRefund(sim.state));
   });
 
   it('wjazd zajezdni jest węzłem grafu na końcu toru', () => {

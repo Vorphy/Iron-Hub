@@ -123,7 +123,7 @@ describe('rozbiórka stacji', () => {
     sim.step();
     expect(sim.state.stations).toEqual([]);
     expect(sim.state.map.station.every((v) => v === 0)).toBe(true);
-    expect(sim.state.money).toBe(START_MONEY - 2 * STATION_TILE_COST + 2 * stationTileRefund());
+    expect(sim.state.money).toBe(START_MONEY - 2 * STATION_TILE_COST + 2 * stationTileRefund(sim.state));
   });
 });
 

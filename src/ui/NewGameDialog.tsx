@@ -13,6 +13,9 @@ import {
   worldCounts,
 } from '../sim/world/generate';
 import type { HudActions } from './hudStore';
+import { COST_NAMES, GameRules, GROWTH_NAMES } from './GameRules';
+import { DEFAULT_SETTINGS, type GameSettings } from '../sim/settings';
+import type { SignalMode } from '../sim/signals/signals';
 
 export const MAP_SIZES: { size: number; name: string; note: string; title?: string }[] = [
   { size: 64, name: 'Mała', note: '64×64 – szybka gra' },
@@ -88,6 +91,13 @@ function plural(n: number, one: string, few: string, many: string): string {
   return d >= 2 && d <= 4 && (t < 12 || t > 14) ? few : many;
 }
 
+/** Krótki opis zasad na zwiniętym przycisku, np. „Amator · koszty normalne · miasta normalnie · łączenie wł.”. */
+function rulesSummary(signalMode: SignalMode, s: GameSettings): string {
+  const costs = COST_NAMES[s.costs];
+  const growth = s.townGrowth === 'off' ? 'nie rosną' : GROWTH_NAMES[s.townGrowth];
+  return `${signalMode === 'auto' ? 'Amator' : 'Ekspert'} · koszty ${costs} · miasta ${growth} · łączenie ${s.townMerge ? 'wł.' : 'wył.'}`;
+}
+
 function randomSeed(): number {
   return Math.floor(Math.random() * 1_000_000) + 1;
 }
@@ -103,6 +113,9 @@ export function NewGameDialog({ actions, canCancel }: { actions: HudActions; can
   const [resources, setResources] = useState<Density>(DEFAULT_DENSITY);
   // Tryb własny: dokładne liczby (null – według gęstości).
   const [custom, setCustom] = useState<CustomCounts | null>(null);
+  const [settings, setSettings] = useState<GameSettings>({ ...DEFAULT_SETTINGS });
+  const [signalMode, setSignalMode] = useState<SignalMode>('auto');
+  const [rulesOpen, setRulesOpen] = useState(false);
   const densityCounts = worldCounts(size, size, towns, industry, resources);
   const counts = custom ? customCounts(custom) : densityCounts;
   const limits = customLimits(size, size);
@@ -218,9 +231,35 @@ export function NewGameDialog({ actions, canCancel }: { actions: HudActions; can
         </div>
         <div class="muted small">Ta sama liczba i rozmiar dają zawsze tę samą mapę.</div>
 
+        <div class="section-title">Zasady gry</div>
+        <button class={rulesOpen ? 'active' : ''} onClick={() => setRulesOpen(!rulesOpen)}>
+          {rulesOpen ? 'Zwiń ▾' : `${rulesSummary(signalMode, settings)} ▸`}
+        </button>
+        {rulesOpen && (
+          <GameRules
+            value={{ signalMode, settings }}
+            onSignalMode={setSignalMode}
+            onSettings={(patch) => setSettings({ ...settings, ...patch })}
+            titleClass="muted small"
+            noteClass="muted small note"
+          />
+        )}
+        <div class="muted small">Zmienisz je też w trakcie gry: Menu → Ustawienia.</div>
+
         <button
           class="primary"
-          onClick={() => actions.startNewGame(size, seed, { startYear: year, towns, industry, resources, custom, companyName })}
+          onClick={() =>
+            actions.startNewGame(size, seed, {
+              startYear: year,
+              towns,
+              industry,
+              resources,
+              custom,
+              companyName,
+              settings,
+              signalMode,
+            })
+          }
         >
           Rozpocznij
         </button>

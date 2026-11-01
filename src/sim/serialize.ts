@@ -1,6 +1,7 @@
 import type { TrainGroup } from './trains/groups';
 import { RESEARCH, type ResearchId } from '../data/research';
 import { emptyResearch, type ResearchState } from './research';
+import { DEFAULT_SETTINGS, type GameSettings, isSettings } from './settings';
 import type { Depot } from './depot/depot';
 import { isCargo } from './economy/cargo';
 import type { Finances, Ledger } from './economy/finance';
@@ -18,7 +19,7 @@ import { MAX_HEIGHT } from './world/height';
 import { TICKS_PER_DAY } from './time';
 
 /** Wersja formatu zapisu – podbijana przy niezgodnych zmianach; starsze wersje migrujemy w `migrate()`. */
-export const SAVE_VERSION = 34;
+export const SAVE_VERSION = 35;
 
 /** Warstwy mapy zapisywane jako base64; bajty na kafelek. */
 const LAYERS = {
@@ -59,6 +60,7 @@ export interface SerializedState {
   nextTrainId: number;
   signals: Signal[];
   signalMode: SignalMode;
+  settings: GameSettings;
   towns: Town[];
   industries: Industry[];
   finances: Finances;
@@ -96,6 +98,7 @@ export function serializeState(state: GameState): SerializedState {
     nextTrainId: state.nextTrainId,
     signals: structuredClone(state.signals),
     signalMode: state.signalMode,
+    settings: { ...state.settings },
     towns: structuredClone(state.towns),
     industries: structuredClone(state.industries),
     finances: structuredClone(state.finances),
@@ -397,6 +400,11 @@ function migrate(data: Record<string, unknown>): Partial<SerializedState> {
     });
     d.version = 34;
   }
+  if (d.version === 34) {
+    // v35: zasady gry (Menu → Ustawienia) – stare gry dostają dotychczasowe zachowanie
+    d.settings = { ...DEFAULT_SETTINGS };
+    d.version = 35;
+  }
   return d as Partial<SerializedState>;
 }
 
@@ -454,6 +462,7 @@ export function deserializeState(data: unknown): GameState {
   check(d.tunnels, isTunnel, 'tunele');
   check(d.groups, isGroup, 'grupy');
   if (d.signalMode !== 'auto' && d.signalMode !== 'manual') throw new SaveError('Uszkodzony tryb sygnalizacji');
+  if (!isSettings(d.settings)) throw new SaveError('Uszkodzone ustawienia gry');
   if (!isFinances(d.finances)) throw new SaveError('Uszkodzone finanse');
   if (!isResearch(d.research)) throw new SaveError('Uszkodzone badania');
   if (typeof d.companyName !== 'string') throw new SaveError('Uszkodzona nazwa firmy');
@@ -473,6 +482,7 @@ export function deserializeState(data: unknown): GameState {
     nextTrainId: d.nextTrainId!,
     signals: d.signals!,
     signalMode: d.signalMode,
+    settings: { costs: d.settings.costs, townGrowth: d.settings.townGrowth, townMerge: d.settings.townMerge },
     towns: d.towns!,
     industries: d.industries!,
     finances: d.finances,

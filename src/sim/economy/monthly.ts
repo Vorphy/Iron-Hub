@@ -35,6 +35,7 @@ import {
 } from './town';
 import { foundDistrict, pruneEmptyDistricts, renameDuplicateDistricts } from './districts';
 import { absorbTowns } from './townMerge';
+import { townGrowthFactor } from '../settings';
 
 // Reguły z pliku ekonomii (src/data/economy.ts).
 export const GROW_THRESHOLD = ECONOMY.industry.growThreshold;
@@ -129,11 +130,14 @@ function closeTownMonth(state: GameState, town: Town, nearStations: Uint8Array, 
 
   let houses = 0;
   if (served) houses = 1 + Math.round(TOWN_GROWTH_MAX_EXTRA * town.lastTransported);
-  else if (nextFloat(state.rng) < UNSERVED_GROWTH_CHANCE) houses = 1;
+  else if (nextFloat(state.rng) < UNSERVED_GROWTH_CHANCE * townGrowthFactor(state)) houses = 1;
   // Duże miasto: metro przyspiesza rozwój (za każdą dzielnicę ze stacją metra), bez metra powyżej progu miasto stoi.
   const metroDistricts = metro === 'metro' ? districtInfo(state, town).filter((d) => d.metro).length : 0;
   if (metro === 'metro') houses += METRO_GROWTH_EXTRA * metroDistricts;
   else if (metro === 'stalled') houses = 0;
+  // Tempo wzrostu z ustawień: mnożnik domów (ułamek – losowo w górę albo w dół) i szans na rozbudowę.
+  const growth = townGrowthFactor(state);
+  houses = scaleCount(state, houses * growth);
 
   const before = new Set(tiles);
   const prefer = (i: number) => (nearStations[i] ? STATION_PULL : 1);
@@ -167,12 +171,19 @@ function closeTownMonth(state: GameState, town: Town, nearStations: Uint8Array, 
 
   // W obsługiwanym mieście część domów się rozbudowuje (z metrem – częściej).
   if (metro !== 'stalled' && before.size > 0) {
-    if (served && nextFloat(state.rng) < UPGRADE_CHANCE) upgradeHouse(state, tiles, events);
+    if (served && nextFloat(state.rng) < UPGRADE_CHANCE * growth) upgradeHouse(state, tiles, events);
     for (let k = 0; k < metroDistricts; k++) {
-      if (nextFloat(state.rng) < METRO_UPGRADE_CHANCE) upgradeHouse(state, tiles, events);
+      if (nextFloat(state.rng) < METRO_UPGRADE_CHANCE * growth) upgradeHouse(state, tiles, events);
     }
   }
   town.month = emptyTownMonth();
+}
+
+/** Liczba z ułamkiem -> całkowita: część ułamkowa to szansa na +1 (bez losowania, gdy wynik jest całkowity). */
+function scaleCount(state: GameState, value: number): number {
+  const whole = Math.floor(value);
+  const frac = value - whole;
+  return frac > 0 && nextFloat(state.rng) < frac ? whole + 1 : whole;
 }
 
 function upgradeHouse(state: GameState, tiles: number[], events: SimEvent[]): void {
