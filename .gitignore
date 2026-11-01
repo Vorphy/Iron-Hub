@@ -9,3 +9,6 @@ Thumbs.db
 .env
 .env.*
 .vitest/
+
+# Hasło do /summary statystyk (lokalnie, nie do repo)
+docs/cloudflare_admin_TOKEN.txt
